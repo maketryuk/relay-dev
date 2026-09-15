@@ -171,7 +171,8 @@ struct ProjectOverviewPane: View {
                     tint: ProjectAppearance.tint(for: project.rootPath),
                     status: model.aggregatedStatus(for: project.id),
                     isSelected: true,
-                    size: 56
+                    size: 56,
+                    image: model.projectIcons[project.id]
                 )
                 Text(project.name)
                     .font(.system(size: 18, weight: .semibold))

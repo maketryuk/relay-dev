@@ -98,6 +98,8 @@ struct ProjectSidebarView: View {
                         .font(Theme.Typography.rowSecondary)
                         .foregroundStyle(Theme.Palette.textTertiary)
                 }
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, Theme.Spacing.medium)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .padding(.top, Theme.Spacing.xlarge)
             } else {
@@ -126,10 +128,10 @@ struct ProjectSidebarView: View {
     /// Names the actual shortcut rather than pointing at a button, and stays
     /// correct if the user rebinds it.
     private var startHint: String {
-        if let shortcut = model.binding(for: .newShell)?.displayString {
-            return "Press \(shortcut) for a terminal, or + to choose"
+        guard let shortcut = model.binding(for: .newShell)?.displayString else {
+            return relayLocalized("Press + to start one")
         }
-        return "Press + to start one"
+        return String(format: relayLocalized("Press %@ for a terminal, or + to choose"), shortcut)
     }
 
     @ViewBuilder

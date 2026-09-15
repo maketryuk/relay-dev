@@ -1,3 +1,4 @@
+import AppKit
 import RelayProtocol
 import SwiftUI
 
@@ -9,6 +10,7 @@ public struct ProjectIcon: View {
     private let status: RuntimeStatus
     private let isSelected: Bool
     private let size: CGFloat
+    private let image: NSImage?
 
     @State private var isHovering = false
 
@@ -17,35 +19,30 @@ public struct ProjectIcon: View {
         tint: Color,
         status: RuntimeStatus,
         isSelected: Bool,
-        size: CGFloat = Theme.Metrics.projectIconSize
+        size: CGFloat = Theme.Metrics.projectIconSize,
+        /// The project's own artwork, when it has any. Initials are the
+        /// fallback, not the design.
+        image: NSImage? = nil
     ) {
         self.initials = initials
         self.tint = tint
         self.status = status
         self.isSelected = isSelected
         self.size = size
+        self.image = image
     }
 
     public var body: some View {
         ZStack(alignment: .bottomTrailing) {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [tint.opacity(isSelected || isHovering ? 0.85 : 0.55), tint.opacity(0.3)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .fill(background)
                 .frame(width: size, height: size)
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                         .strokeBorder(Color.white.opacity(isSelected ? 0.22 : 0.07), lineWidth: 1)
                 )
-                .overlay(
-                    Text(initials)
-                        .font(.system(size: size * 0.38, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color.white.opacity(0.95))
-                )
+                .overlay { mark }
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
 
             if status != .offline {
                 StatusDot(status: status, size: 8, showsRing: true)
@@ -56,6 +53,36 @@ public struct ProjectIcon: View {
         .animation(.spring(response: 0.28, dampingFraction: 0.72), value: isSelected)
         .animation(.easeOut(duration: 0.14), value: isHovering)
         .onHover { isHovering = $0 }
+    }
+
+    /// A favicon is usually transparent and often nearly the colour of the app,
+    /// so it keeps a plate behind it — muted, so the artwork stays the subject.
+    private var background: AnyShapeStyle {
+        guard image == nil else {
+            return AnyShapeStyle(Theme.Palette.surfaceRaised.opacity(isSelected || isHovering ? 1 : 0.75))
+        }
+        return AnyShapeStyle(
+            LinearGradient(
+                colors: [tint.opacity(isSelected || isHovering ? 0.85 : 0.55), tint.opacity(0.3)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+    }
+
+    @ViewBuilder
+    private var mark: some View {
+        if let image {
+            Image(nsImage: image)
+                .resizable()
+                .interpolation(.high)
+                .aspectRatio(contentMode: .fit)
+                .padding(size * 0.16)
+        } else {
+            Text(initials)
+                .font(.system(size: size * 0.38, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color.white.opacity(0.95))
+        }
     }
 
     private var cornerRadius: CGFloat {
