@@ -94,3 +94,40 @@ struct AgentActivityAdapterTests {
         #expect(ActivityAdapters.adapter(for: .opencode) is AgentActivityAdapter)
     }
 }
+
+@Suite("Working right now")
+struct AgentBusyTests {
+    private let adapter = AgentActivityAdapter()
+
+    @Test("An agent offering a way to interrupt is working")
+    func interruptHintMeansBusy() {
+        // Every one of them says this while a turn is running, and asking the
+        // screen beats inferring from the timing of bytes — which is how a
+        // slowly redrawing spinner came to read as an idle session.
+        #expect(adapter.isBusy(tail: "✻ Thinking… (esc to interrupt)"))
+        #expect(adapter.isBusy(tail: "Working  ctrl+c to stop"))
+    }
+
+    @Test("An idle input box is not working")
+    func idleBoxIsNotBusy() {
+        #expect(!adapter.isBusy(tail: "│ > try \"fix the build\"   /help for help"))
+        #expect(!adapter.isBusy(tail: "auto mode on (shift+tab to cycle)"))
+    }
+
+    @Test("A question on screen outranks a spinner behind it")
+    func waitingBeatsBusy() {
+        // It may still be rendering, but it is not going anywhere until it is
+        // answered, and "working" would send the user away from the one session
+        // that needs them.
+        let tail = "Do you want to allow this? (y/n)  (esc to interrupt)"
+        #expect(!adapter.isBusy(tail: tail))
+        #expect(adapter.verdict(tail: tail, producedOutput: false) == .waitingForUser)
+    }
+
+    @Test("A shell is never busy by this measure")
+    func shellsHaveNoSuchSignal() {
+        // Nothing a shell prints announces that it is working, so the question
+        // is answered by the volume and duration of its output instead.
+        #expect(!ShellActivityAdapter().isBusy(tail: "esc to interrupt"))
+    }
+}

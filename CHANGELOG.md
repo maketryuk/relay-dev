@@ -8,6 +8,11 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
+- **Every past conversation, not just Relay's own.** The History panel now lists
+  the Claude and Codex conversations belonging to a project — read from the
+  agents' own transcripts, so it is the same list their `/resume` offers,
+  whether the conversation was started in Relay or in a terminal. Clicking one
+  resumes it: the agent continues where it left off rather than starting again.
 - **How full each agent's context window is**, under the terminal it belongs to:
   a meter, the percentage and the token count, with the breakdown behind a
   click — what is cached, what was sent fresh, what the reply and its reasoning
@@ -167,6 +172,19 @@ than when a day of work ends. Until then everything lands here.
 
 ### Fixed
 
+- **A new session showed another conversation's context.** Relay matched a
+  session to the most recently written transcript in its directory, which for a
+  freshly opened pane was whichever long conversation was busy — so an empty
+  session read 93% full. It now matches the transcript that began when the
+  session did, and reports nothing when there is none.
+- **An agent at work could read as idle.** Whether a session is working was
+  being inferred from the timing of its output, so an agent whose spinner
+  redraws slowly looked like one doing nothing. Every agent says it is busy by
+  offering a way to interrupt, and Relay now reads that instead — with a
+  question on screen still outranking a spinner behind it.
+- **The state line in a session row comes and goes no longer.** It was shown
+  only when there was something to say, which changed the row's height as an
+  agent worked and left "what is this doing" answerable only by a dot.
 - **Closing sessions froze every other one.** Tearing a session down waited for
   its process to be reaped, on the same queue that carries terminal output — so
   closing a project with ten sessions could hold every pane for five seconds.

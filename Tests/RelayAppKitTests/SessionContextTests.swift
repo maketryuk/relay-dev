@@ -232,3 +232,134 @@ struct CodexSessionMetaTests {
         #expect(CodexContextReader.sessionMeta(of: log) == nil)
     }
 }
+
+@Suite("Matching a session to its transcript")
+struct TranscriptMatchingTests {
+    private let started = Date(timeIntervalSince1970: 10_000)
+
+    private func candidate(_ name: String, at offset: TimeInterval) -> (url: URL, createdAt: Date) {
+        (URL(fileURLWithPath: "/transcripts/\(name).jsonl"), started.addingTimeInterval(offset))
+    }
+
+    @Test("The transcript that began with the session is the session's")
+    func picksTheOneThatStartedWithIt() {
+        let chosen = ClaudeContextReader.choose(
+            from: [candidate("old", at: -86_400), candidate("ours", at: 2)],
+            startedAt: started
+        )
+        #expect(chosen?.lastPathComponent == "ours.jsonl")
+    }
+
+    @Test("A conversation that was already running is never claimed")
+    func refusesOlderTranscripts() {
+        // The bug this replaces: a freshly opened pane showed a long-running
+        // conversation's 93% as if it were its own, because that transcript was
+        // the most recently written.
+        let chosen = ClaudeContextReader.choose(
+            from: [candidate("someone-elses", at: -3_600)],
+            startedAt: started
+        )
+        #expect(chosen == nil)
+    }
+
+    @Test("Between two that began alongside it, the closer one wins")
+    func picksTheNearestStart() {
+        let chosen = ClaudeContextReader.choose(
+            from: [candidate("later", at: 40), candidate("ours", at: 1)],
+            startedAt: started
+        )
+        #expect(chosen?.lastPathComponent == "ours.jsonl")
+    }
+
+    @Test("The CLI opens its transcript a moment after being spawned")
+    func allowsForStartupSlack() {
+        // Relay spawns the process; the transcript appears once the CLI is up.
+        let chosen = ClaudeContextReader.choose(
+            from: [candidate("ours", at: -5)],
+            startedAt: started
+        )
+        #expect(chosen?.lastPathComponent == "ours.jsonl")
+    }
+
+    @Test("Nothing to match means nothing is reported")
+    func emptyCandidates() {
+        #expect(ClaudeContextReader.choose(from: [], startedAt: started) == nil)
+    }
+}
+
+@Suite("Conversations")
+struct ConversationTests {
+    private func claude(_ title: String?, prompt: String?, branch: String? = "main") -> Conversation? {
+        var objects: [[String: Any]] = []
+        if let title { objects.append(["type": "ai-title", "aiTitle": title]) }
+        if let prompt { objects.append(["type": "last-prompt", "lastPrompt": prompt]) }
+        if let branch { objects.append(["gitBranch": branch, "type": "assistant"]) }
+        return ClaudeConversationReader.conversation(
+            id: "abc-123",
+            objects: objects,
+            updatedAt: Date(timeIntervalSince1970: 1_000)
+        )
+    }
+
+    @Test("A conversation is named by the title the agent generated")
+    func usesTheGeneratedTitle() throws {
+        let conversation = try #require(claude("Implement the daemon", prompt: "start over"))
+        #expect(conversation.title == "Implement the daemon")
+        #expect(conversation.lastPrompt == "start over")
+        #expect(conversation.branch == "main")
+    }
+
+    @Test("Without one, the last thing the user said names it")
+    func fallsBackToThePrompt() throws {
+        let conversation = try #require(claude(nil, prompt: "fix the failing test\nand push"))
+        #expect(conversation.title == "fix the failing test")
+    }
+
+    @Test("A transcript with nothing to show for itself is not listed")
+    func skipsUnnameable() {
+        // A row saying only "Claude" is a row nobody can choose between.
+        #expect(claude(nil, prompt: nil) == nil)
+    }
+
+    @Test("A detached HEAD is not a branch worth showing")
+    func ignoresDetachedHead() throws {
+        let conversation = try #require(claude("Something", prompt: nil, branch: "HEAD"))
+        #expect(conversation.branch == nil)
+    }
+
+    @Test("Resuming asks the agent to continue, rather than starting again")
+    func resumeCommands() {
+        let claude = Conversation(id: "s1", kind: .claude, title: "t", lastPrompt: nil, branch: nil, updatedAt: Date())
+        let codex = Conversation(id: "s2", kind: .codex, title: "t", lastPrompt: nil, branch: nil, updatedAt: Date())
+        #expect(claude.resumeCommand == ["claude", "--resume", "s1"])
+        #expect(codex.resumeCommand == ["codex", "resume", "s2"])
+    }
+
+    @Test("The most recent conversation is the one offered first")
+    func sortedByRecency() {
+        let older = Conversation(id: "a", kind: .claude, title: "a", lastPrompt: nil, branch: nil,
+                                 updatedAt: Date(timeIntervalSince1970: 100))
+        let newer = Conversation(id: "b", kind: .claude, title: "b", lastPrompt: nil, branch: nil,
+                                 updatedAt: Date(timeIntervalSince1970: 200))
+        #expect(ConversationSorting.byRecency([older, newer]).map(\.id) == ["b", "a"])
+    }
+
+    @Test("A long prompt is trimmed to its first line")
+    func summarises() {
+        #expect(ConversationSorting.summary(of: "  do the thing  \nthen another") == "do the thing")
+        #expect(ConversationSorting.summary(of: String(repeating: "x", count: 200)).hasSuffix("…"))
+    }
+
+    @Test("Codex is named by the first thing the person said")
+    func codexSkipsTheInjectedContext() throws {
+        // The desktop app injects a `developer` turn describing the environment;
+        // naming conversations after it would name them all the same.
+        let objects: [[String: Any]] = [
+            ["payload": ["type": "message", "role": "developer",
+                         "content": [["type": "input_text", "text": "<app-context>…"]]]],
+            ["payload": ["type": "message", "role": "user",
+                         "content": [["type": "input_text", "text": "add a status bar"]]]],
+        ]
+        #expect(CodexConversationReader.firstUserMessage(in: objects) == "add a status bar")
+    }
+}

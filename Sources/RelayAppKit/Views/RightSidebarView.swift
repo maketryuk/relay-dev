@@ -308,59 +308,71 @@ struct HistoryPane: View {
     let project: Project
 
     var body: some View {
-        let entries = model.history(for: project.id)
-
         VStack(alignment: .leading, spacing: 1) {
-            SectionHeader(relayLocalized("History"), trailing: {
-                if !entries.isEmpty {
-                    IconButton(systemImage: "trash", help: "", size: 24) {
-                        model.clearHistory(for: project.id)
-                    }
-                    .relayTooltip(relayLocalized("Clear history"))
+            SectionHeader(relayLocalized("Conversations"), trailing: {
+                IconButton(
+                    systemImage: "arrow.clockwise",
+                    help: "",
+                    size: 24,
+                    isBusy: model.isLoadingConversations
+                ) {
+                    model.loadConversations(for: project.id)
                 }
+                .relayTooltip(relayLocalized("Look again"))
             })
 
-            if entries.isEmpty {
-                Text(relayLocalized("Sessions you finish appear here, with what ran and how it ended."))
-                    .font(Theme.Typography.rowSecondary)
-                    .foregroundStyle(Theme.Palette.textTertiary)
-                    .padding(.horizontal, Theme.Spacing.small)
-                    .padding(.vertical, Theme.Spacing.xsmall)
-                    .fixedSize(horizontal: false, vertical: true)
+            if model.conversations.isEmpty {
+                // The list is the agents' own, so an empty one means there have
+                // been none here rather than that Relay has forgotten.
+                hint(relayLocalized(
+                    "Past conversations with Claude and Codex in this project appear here, wherever they were started."
+                ))
             } else {
-                ForEach(entries) { entry in
-                    row(entry)
+                ForEach(model.conversations) { conversation in
+                    row(conversation)
                 }
             }
         }
+        .onAppear { model.loadConversations(for: project.id) }
+        .onChange(of: project.id) { _, _ in model.loadConversations(for: project.id) }
     }
 
-    private func row(_ entry: SessionHistoryEntry) -> some View {
+    private func row(_ conversation: Conversation) -> some View {
         SidebarRow(
-            title: entry.name,
-            subtitle: subtitle(entry),
-            systemImage: entry.kind.symbolName,
-            iconTint: Color(hex: entry.kind.accentHex),
-            sessionKind: entry.kind,
-            status: entry.succeeded ? .finished : .error,
+            title: conversation.title,
+            subtitle: subtitle(conversation),
+            systemImage: conversation.kind.symbolName,
+            iconTint: Color(hex: conversation.kind.accentHex),
+            sessionKind: conversation.kind,
             isSelected: false,
-            action: { model.rerun(entry) },
+            action: { model.resume(conversation, in: project.id) },
             accessoryVisibility: .onHover
         ) {
-            IconButton(systemImage: "arrow.clockwise", help: "", size: 24) { model.rerun(entry) }
-                .relayTooltip(relayLocalized("Run again"))
+            IconButton(systemImage: "arrow.uturn.left", help: "", size: 24) {
+                model.resume(conversation, in: project.id)
+            }
+            .relayTooltip(relayLocalized("Resume"))
         }
         .contextMenu {
-            Button(relayLocalized("Run Again")) { model.rerun(entry) }
-            Text(entry.command.joined(separator: " "))
+            Button(relayLocalized("Resume")) { model.resume(conversation, in: project.id) }
+            Button(relayLocalized("Copy session ID")) { model.copyToClipboard(conversation.id) }
         }
     }
 
-    private func subtitle(_ entry: SessionHistoryEntry) -> String {
-        let outcome = entry.succeeded
-            ? relayLocalized("finished")
-            : String(format: relayLocalized("exited %@"), entry.exitCode.map(String.init) ?? "?")
-        return "\(Self.formatter.localizedString(for: entry.endedAt, relativeTo: Date())) · \(entry.durationText) · \(outcome)"
+    private func subtitle(_ conversation: Conversation) -> String {
+        var parts = [Self.formatter.localizedString(for: conversation.updatedAt, relativeTo: Date())]
+        if let branch = conversation.branch { parts.append(branch) }
+        if let prompt = conversation.lastPrompt, prompt != conversation.title { parts.append(prompt) }
+        return parts.joined(separator: " · ")
+    }
+
+    private func hint(_ text: String) -> some View {
+        Text(text)
+            .font(Theme.Typography.rowSecondary)
+            .foregroundStyle(Theme.Palette.textTertiary)
+            .padding(.horizontal, Theme.Spacing.small)
+            .padding(.vertical, Theme.Spacing.xsmall)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private static let formatter: RelativeDateTimeFormatter = {

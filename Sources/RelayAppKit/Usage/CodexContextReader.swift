@@ -51,11 +51,15 @@ enum CodexContextReader {
                 > (TranscriptTail.modificationDate(of: $1) ?? .distantPast) }
             .prefix(searchDepth)
 
+        // Codex records its own start time, so the match is on the session
+        // rather than on which file was touched last. No fallback: attributing
+        // another conversation's window to this pane is worse than admitting
+        // Relay cannot tell.
         let threshold = startedAt.addingTimeInterval(-60)
         return logs.first { log in
-            guard let meta = sessionMeta(of: log) else { return false }
-            guard meta.directory == path else { return false }
-            return meta.startedAt.map { $0 >= threshold } ?? true
+            guard let meta = sessionMeta(of: log), meta.directory == path else { return false }
+            guard let began = meta.startedAt else { return false }
+            return began >= threshold
         }
     }
 

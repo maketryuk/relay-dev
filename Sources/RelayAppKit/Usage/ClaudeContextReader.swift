@@ -36,10 +36,11 @@ enum ClaudeContextReader {
     /// The session's own transcript.
     ///
     /// Several conversations can share a directory, so the one Relay started is
-    /// identified by having begun after it did. Falling back to the most
-    /// recently touched keeps the panel useful when the match is not certain —
-    /// the alternative is showing nothing for a session plainly in front of the
-    /// user.
+    /// the one that began when it did. Deliberately no fallback: with nothing
+    /// that started alongside this session, the honest answer is that Relay does
+    /// not know — the alternative was picking the most recently written
+    /// transcript, which for a freshly opened pane meant showing a long-running
+    /// conversation's 93% as if it were its own.
     static func transcript(
         forDirectory path: String,
         startedAt: Date,
@@ -50,27 +51,31 @@ enum ClaudeContextReader {
             .map(projects.appendingPathComponent)
             .filter { manager.fileExists(atPath: $0.path) }
 
-        let keys: [URLResourceKey] = [.contentModificationDateKey, .creationDateKey]
+        let keys: [URLResourceKey] = [.creationDateKey]
         let candidates = folders.flatMap { folder in
             (try? manager.contentsOfDirectory(at: folder, includingPropertiesForKeys: keys)) ?? []
-        }.filter { $0.pathExtension == "jsonl" }
-
-        // A minute of slack: the transcript is created once the CLI is up, which
-        // is a moment after Relay spawned it.
-        let threshold = startedAt.addingTimeInterval(-60)
-        let started = candidates.filter { url in
-            let created = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
-            return created >= threshold
+        }
+        .filter { $0.pathExtension == "jsonl" }
+        .map { url in
+            (url: url, createdAt: (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast)
         }
 
-        return newestByModification(in: started.isEmpty ? candidates : started)
+        return choose(from: candidates, startedAt: startedAt)
     }
 
-    private static func newestByModification(in urls: [URL]) -> URL? {
-        urls.max { left, right in
-            (TranscriptTail.modificationDate(of: left) ?? .distantPast)
-                < (TranscriptTail.modificationDate(of: right) ?? .distantPast)
-        }
+    /// The transcript that began alongside the session.
+    ///
+    /// `grace` covers the gap between Relay spawning the CLI and the CLI opening
+    /// its transcript, which is a moment rather than an instant.
+    static func choose(
+        from candidates: [(url: URL, createdAt: Date)],
+        startedAt: Date,
+        grace: TimeInterval = 60
+    ) -> URL? {
+        candidates
+            .filter { $0.createdAt >= startedAt.addingTimeInterval(-grace) }
+            .min { abs($0.createdAt.timeIntervalSince(startedAt)) < abs($1.createdAt.timeIntervalSince(startedAt)) }?
+            .url
     }
 
     /// The last assistant turn is the only one that matters: it records what was
