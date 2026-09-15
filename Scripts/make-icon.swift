@@ -52,10 +52,13 @@ struct IconTile: View {
         // Apple's grid: the tile occupies 824 of a 1024 canvas, leaving the
         // margin the system expects for shadows and alignment.
         let tileSide = side * 824 / 1024
-        // The source file is full-bleed on its own 1024 grid and already
-        // carries the margins the designer intended; adding more shrinks the
-        // mark inside its tile.
-        let artSide = tileSide
+        // The mark's visible bounds are 832 units tall on its 1024 grid and are
+        // not centred on it — the ring reaches 992 while the dot starts at 160 —
+        // so scaling the grid to the tile pushes the artwork against the edges
+        // and sits it low. The bounds are fitted instead, and re-centred.
+        let artHeightFraction: CGFloat = 0.62
+        let artSide = tileSide * artHeightFraction * 1024 / 832
+        let artOffset = artSide * 64 / 1024
 
         ZStack {
             Color.clear
@@ -99,6 +102,7 @@ struct IconTile: View {
                         }
                     }
                     .frame(width: artSide, height: artSide)
+                    .offset(y: -artOffset)
                 }
         }
         .frame(width: side, height: side)

@@ -38,14 +38,26 @@ public struct RelayMarkShape: Shape {
 }
 
 /// The mark, drawn at a given size.
+///
+/// The visible bounds are 832 units tall on the 1024 grid and sit low on it —
+/// the ring reaches 992 while the dot starts at 160 — so the shape is fitted by
+/// its bounds and re-centred rather than by the grid, which would leave it
+/// off-centre and touching the edges.
 public struct RelayMark: View {
     private let size: CGFloat
     private let tint: Color
+
+    /// Height of the visible artwork on the design grid.
+    private static let boundsHeight: CGFloat = 832
+    /// How far the artwork's centre sits below the grid's.
+    private static let boundsOffset: CGFloat = 64
 
     public init(size: CGFloat, tint: Color = Theme.Palette.textPrimary) {
         self.size = size
         self.tint = tint
     }
+
+    private var gridSide: CGFloat { size * 1024 / Self.boundsHeight }
 
     public var body: some View {
         ZStack {
@@ -53,16 +65,18 @@ public struct RelayMark: View {
                 .stroke(
                     tint,
                     style: StrokeStyle(
-                        lineWidth: RelayMarkShape.strokeWidth(forSide: size),
+                        lineWidth: RelayMarkShape.strokeWidth(forSide: gridSide),
                         lineCap: .round,
                         lineJoin: .round
                     )
                 )
             Circle()
                 .fill(tint)
-                .frame(width: RelayMarkShape.dotDiameter(forSide: size))
-                .position(RelayMarkShape.dotCentre(forSide: size))
+                .frame(width: RelayMarkShape.dotDiameter(forSide: gridSide))
+                .position(RelayMarkShape.dotCentre(forSide: gridSide))
         }
+        .frame(width: gridSide, height: gridSide)
+        .offset(y: -gridSide * Self.boundsOffset / 1024)
         .frame(width: size, height: size)
     }
 }
