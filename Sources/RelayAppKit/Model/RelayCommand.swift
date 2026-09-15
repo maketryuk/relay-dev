@@ -114,7 +114,12 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .splitRight: KeyBinding("d", .command)
         case .splitDown: KeyBinding("d", [.command, .shift])
         case .focusNextPane: KeyBinding("]", [.command, .option])
-        case .startDefaultService: KeyBinding("r", .command)
+        // Deliberately unbound. `⌘R` means reload everywhere else on this
+        // machine, and spending it on "start the dev service" would both
+        // surprise people and burn the key Relay will want for reloading
+        // something of its own. The command is still in the palette and the
+        // menu, and still rebindable.
+        case .startDefaultService: nil
         case .restartDefaultService: KeyBinding("r", [.command, .option])
         case .nextProject: KeyBinding("down", [.command, .option])
         case .previousProject: KeyBinding("up", [.command, .option])
