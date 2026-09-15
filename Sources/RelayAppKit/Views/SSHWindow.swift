@@ -11,7 +11,7 @@ import SwiftUI
 struct SSHPane: View {
     @Environment(AppModel.self) private var model
     @State private var query = ""
-    @State private var highlighted = 0
+    @State private var focus = ListFocus()
 
     /// The rows as the keyboard sees them: one list, in the order drawn.
     private var orderedHosts: [SSHHost] {
@@ -19,15 +19,51 @@ struct SSHPane: View {
         return groups.pinned.filter(matches) + groups.others.filter(matches)
     }
 
+    private var focusedHost: SSHHost? {
+        orderedHosts.indices.contains(focus.row) ? orderedHosts[focus.row] : nil
+    }
+
+    /// What a row offers, in the order left and right walk them.
+    private func actions(for host: SSHHost, isPinned: Bool) -> [RowAction] {
+        var actions = [
+            RowAction(
+                id: "connect",
+                systemImage: "arrow.right.circle",
+                label: relayLocalized("Connect")
+            ) { connect(host) },
+        ]
+        if model.selectedProjectID != nil {
+            actions.append(RowAction(
+                id: "pin",
+                systemImage: isPinned ? "pin.slash" : "pin",
+                label: isPinned ? relayLocalized("Unpin from Project") : relayLocalized("Pin to Project")
+            ) {
+                guard let projectID = model.selectedProjectID else { return }
+                model.togglePin(host, in: projectID)
+            })
+        }
+        return actions
+    }
+
+    private func isPinned(_ host: SSHHost) -> Bool {
+        model.sshHosts(for: model.selectedProjectID).pinned.contains(host)
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
+        let focusedActions = focusedHost.map { actions(for: $0, isPinned: isPinned($0)) } ?? []
+
+        return VStack(spacing: 0) {
             header
             RelayDivider()
             content
         }
-        .keyboardNavigableList(count: orderedHosts.count, highlighted: $highlighted) {
-            guard orderedHosts.indices.contains(highlighted) else { return }
-            connect(orderedHosts[highlighted])
+        .keyboardNavigableList(
+            rowCount: orderedHosts.count,
+            actionCount: focusedActions.count,
+            focus: $focus
+        ) {
+            guard focusedActions.indices.contains(focus.action) else { return }
+            focusedActions[focus.action].run()
         }
         .onAppear { model.loadSSHHosts() }
     }
@@ -87,7 +123,7 @@ struct SSHPane: View {
                     }
                     .padding(Theme.Spacing.small)
                 }
-                .onChange(of: highlighted) { _, index in
+                .onChange(of: focus.row) { _, index in
                     guard orderedHosts.indices.contains(index) else { return }
                     withAnimation(.easeOut(duration: 0.12)) {
                         scroller.scrollTo(orderedHosts[index].id, anchor: .center)
@@ -121,20 +157,14 @@ struct SSHPane: View {
             subtitle: host.identityFile.map { "\(host.displayTarget) · \($0)" } ?? host.displayTarget,
             systemImage: isPinned ? "pin.fill" : "network",
             iconTint: isPinned ? Theme.Palette.statusWaiting : nil,
-            isSelected: index == highlighted,
+            isSelected: index == focus.row,
             action: { connect(host) },
             accessoryVisibility: .always
         ) {
-            HStack(spacing: 0) {
-                IconButton(systemImage: isPinned ? "pin.slash" : "pin", help: "", size: 24) {
-                    guard let projectID = model.selectedProjectID else { return }
-                    model.togglePin(host, in: projectID)
-                }
-                .relayTooltip(isPinned ? "Unpin from project" : "Pin to current project")
-
-                IconButton(systemImage: "arrow.right.circle", help: "", size: 24) { connect(host) }
-                    .relayTooltip(relayLocalized("Connect"))
-            }
+            RowActionBar(
+                actions: actions(for: host, isPinned: isPinned),
+                focusedAction: index == focus.row ? focus.action : nil
+            )
         }
         .id(host.id)
         .contextMenu {

@@ -76,6 +76,12 @@ final class AppModel {
     private var gitRefreshTask: Task<Void, Never>?
     private var portRefreshTask: Task<Void, Never>?
     private var reconnectTask: Task<Void, Never>?
+    /// Sessions the user has closed but the daemon has not finished forgetting.
+    ///
+    /// Everything in flight about them — the reply that created them, the exit
+    /// their termination causes — arrives after the decision to close and would
+    /// otherwise put them back.
+    private var closingSessionIDs: Set<SessionID> = []
     private let notifier = AttentionNotifier()
 
     /// Cap on cached terminal renderers. Beyond this the least recently viewed
@@ -223,14 +229,14 @@ final class AppModel {
     private func handle(event: DaemonEvent) {
         switch event {
         case let .sessionCreated(snapshot):
-            SessionMerge.merging(snapshot, into: &sessions)
-            if !sessionOrder.contains(snapshot.id) {
+            SessionMerge.merging(snapshot, into: &sessions, closing: closingSessionIDs)
+            if sessions[snapshot.id] != nil, !sessionOrder.contains(snapshot.id) {
                 sessionOrder.append(snapshot.id)
             }
 
         case let .sessionUpdated(snapshot):
             let previous = sessions[snapshot.id]
-            SessionMerge.merging(snapshot, into: &sessions)
+            SessionMerge.merging(snapshot, into: &sessions, closing: closingSessionIDs)
             if let previous {
                 notifyIfNeeded(previous: previous.status, snapshot: snapshot)
                 if previous.exitCode == nil, snapshot.exitCode != nil {
@@ -442,7 +448,10 @@ final class AppModel {
                 let snapshot = try await self.client.createSession(spec)
                 // Events may already have moved this session on; the reply must
                 // not rewind it.
-                SessionMerge.merging(snapshot, into: &self.sessions)
+                SessionMerge.merging(snapshot, into: &self.sessions, closing: self.closingSessionIDs)
+                // Closed while the daemon was still answering: the session is
+                // already being forgotten, so it must not be listed or selected.
+                guard self.sessions[snapshot.id] != nil else { return }
                 if !self.sessionOrder.contains(snapshot.id) {
                     self.sessionOrder.append(snapshot.id)
                 }
@@ -500,10 +509,12 @@ final class AppModel {
         let isRunning = snapshot.exitCode == nil
 
         recordHistory(for: snapshot)
+        closingSessionIDs.insert(id)
         sessions.removeValue(forKey: id)
         sessionOrder.removeAll { $0 == id }
         releaseSurface(for: id)
         prunePaneLayouts()
+        persist()
         if selectedSessionID == id {
             selectedSessionID = interactiveSessions(in: snapshot.projectID).first?.id
             if let next = selectedSessionID { selectSession(next) }
@@ -515,6 +526,24 @@ final class AppModel {
                 _ = try? await self.client.send(.terminate(id))
             }
             _ = try? await self.client.send(.forget(id))
+            self.closingSessionIDs.remove(id)
+        }
+    }
+
+    /// Drops a session the daemon turns out not to know.
+    ///
+    /// Not an error worth showing: it means this client's list is stale, which
+    /// happens whenever a session ends while the window is closed or a daemon is
+    /// replaced. The answer is to forget it, not to interrupt the user with
+    /// something they cannot act on.
+    private func forgetLocally(_ id: SessionID) {
+        guard sessions[id] != nil else { return }
+        sessions.removeValue(forKey: id)
+        sessionOrder.removeAll { $0 == id }
+        releaseSurface(for: id)
+        prunePaneLayouts()
+        if selectedSessionID == id {
+            selectedSessionID = selectedProjectID.flatMap { interactiveSessions(in: $0).first?.id }
         }
     }
 
@@ -555,7 +584,8 @@ final class AppModel {
             guard let self else { return }
             do {
                 let snapshot = try await self.client.createSession(spec)
-                SessionMerge.merging(snapshot, into: &self.sessions)
+                SessionMerge.merging(snapshot, into: &self.sessions, closing: self.closingSessionIDs)
+                guard self.sessions[snapshot.id] != nil else { return }
                 if !self.sessionOrder.contains(snapshot.id) {
                     self.sessionOrder.append(snapshot.id)
                 }
@@ -672,6 +702,8 @@ final class AppModel {
             guard let self else { return }
             do {
                 _ = try await self.client.attach(sessionID, replayScrollback: true)
+            } catch let error as DaemonError where error.code == "unknown_session" {
+                self.forgetLocally(sessionID)
             } catch {
                 self.present(ToastContent(
                     kind: .error,

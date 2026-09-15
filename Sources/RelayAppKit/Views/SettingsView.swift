@@ -41,7 +41,26 @@ struct SettingsView: View {
             content
         }
         .background(Theme.Palette.base)
+        // Up and down change section. Everything inside a section is a standard
+        // control, so Tab reaches it once macOS keyboard navigation is on;
+        // arrows are for the one list that is ours.
+        .background {
+            KeyCaptureView(
+                onMoveDown: { moveSection(by: 1) },
+                onMoveUp: { moveSection(by: -1) }
+            )
+        }
         .tooltipRoot(tooltips)
+    }
+
+    private func moveSection(by offset: Int) {
+        let tabs = Tab.allCases
+        guard let current = tabs.firstIndex(of: selection) else { return }
+        selection = tabs[ListNavigation.movingRow(
+            ListFocus(row: current),
+            by: offset,
+            rowCount: tabs.count
+        ).row]
     }
 
     private var sidebar: some View {

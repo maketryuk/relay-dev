@@ -12,7 +12,7 @@ import SwiftUI
 struct PortsPane: View {
     @Environment(AppModel.self) private var model
     @State private var query = ""
-    @State private var highlighted = 0
+    @State private var focus = ListFocus()
 
     /// The rows as the keyboard sees them: one list, in the order drawn.
     private var orderedPorts: [ListeningPort] {
@@ -20,15 +20,59 @@ struct PortsPane: View {
         return groups.project + groups.other
     }
 
+    private var focusedPort: ListeningPort? {
+        orderedPorts.indices.contains(focus.row) ? orderedPorts[focus.row] : nil
+    }
+
+    /// What a row offers, in the order left and right walk them. The first is
+    /// the one Return runs on a row you have only just arrived at.
+    private func actions(for port: ListeningPort) -> [RowAction] {
+        var actions: [RowAction] = []
+        if port.url != nil {
+            actions.append(RowAction(
+                id: "open",
+                systemImage: "arrow.up.forward.app",
+                label: relayLocalized("Open in browser")
+            ) { model.openPort(port) })
+            actions.append(RowAction(
+                id: "copy",
+                systemImage: "doc.on.doc",
+                label: relayLocalized("Copy URL")
+            ) { model.copyPortURL(port) })
+        }
+        // Relay's own processes stop on the spot; anything else gets asked about
+        // first, because killing a stranger's process on one keystroke is not a
+        // thing an app should do.
+        actions.append(RowAction(
+            id: "stop",
+            systemImage: "stop.circle",
+            label: relayLocalized("Stop process"),
+            tint: Theme.Palette.statusError
+        ) {
+            if port.isManagedByRelay {
+                model.terminatePort(port)
+            } else {
+                model.portPendingTermination = port
+            }
+        })
+        return actions
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
+        let focusedActions = focusedPort.map(actions) ?? []
+
+        return VStack(spacing: 0) {
             header
             RelayDivider()
             content
         }
-        .keyboardNavigableList(count: orderedPorts.count, highlighted: $highlighted) {
-            guard orderedPorts.indices.contains(highlighted) else { return }
-            model.openPort(orderedPorts[highlighted])
+        .keyboardNavigableList(
+            rowCount: orderedPorts.count,
+            actionCount: focusedActions.count,
+            focus: $focus
+        ) {
+            guard focusedActions.indices.contains(focus.action) else { return }
+            focusedActions[focus.action].run()
         }
         .onAppear { model.refreshPorts() }
         .confirmationDialog(
@@ -128,7 +172,7 @@ struct PortsPane: View {
                     }
                     .padding(Theme.Spacing.small)
                 }
-                .onChange(of: highlighted) { _, index in
+                .onChange(of: focus.row) { _, index in
                     guard orderedPorts.indices.contains(index) else { return }
                     withAnimation(.easeOut(duration: 0.12)) {
                         scroller.scrollTo(orderedPorts[index].id, anchor: .center)
@@ -139,8 +183,12 @@ struct PortsPane: View {
     }
 
     private func row(_ port: ListeningPort, at index: Int) -> some View {
-        PortRow(port: port, isHighlighted: index == highlighted)
-            .id(port.id)
+        PortRow(
+            port: port,
+            actions: actions(for: port),
+            focusedAction: index == focus.row ? focus.action : nil
+        )
+        .id(port.id)
     }
 
     private func sectionHeader(_ title: String) -> some View {
@@ -158,10 +206,13 @@ struct PortsPane: View {
 struct PortRow: View {
     @Environment(AppModel.self) private var model
     let port: ListeningPort
-    /// Where the keyboard is, as opposed to where the pointer is.
-    var isHighlighted = false
+    let actions: [RowAction]
+    /// Which action the keyboard is on, or nil when it is on another row.
+    let focusedAction: Int?
 
     @State private var isHovering = false
+
+    private var isHighlighted: Bool { focusedAction != nil }
 
     var body: some View {
         HStack(spacing: Theme.Spacing.medium) {
@@ -190,25 +241,7 @@ struct PortRow: View {
             Spacer(minLength: Theme.Spacing.small)
 
             HoverReveal(isVisible: isHovering || isHighlighted) {
-                HStack(spacing: 0) {
-                    if port.url != nil {
-                        IconButton(systemImage: "arrow.up.forward.app", help: "") { model.openPort(port) }
-                            .relayTooltip(relayLocalized("Open in browser"))
-                        IconButton(systemImage: "doc.on.doc", help: "") { model.copyPortURL(port) }
-                            .relayTooltip(relayLocalized("Copy URL"))
-                    }
-                    // Relay's own processes stop on the spot; anything else gets
-                    // asked about first, because killing a stranger's process on
-                    // one click is not a thing an app should do.
-                    IconButton(systemImage: "stop.circle", help: "", tint: Theme.Palette.statusError) {
-                        if port.isManagedByRelay {
-                            model.terminatePort(port)
-                        } else {
-                            model.portPendingTermination = port
-                        }
-                    }
-                    .relayTooltip(relayLocalized("Stop process"))
-                }
+                RowActionBar(actions: actions, focusedAction: focusedAction)
             }
         }
         .padding(.horizontal, Theme.Spacing.small)

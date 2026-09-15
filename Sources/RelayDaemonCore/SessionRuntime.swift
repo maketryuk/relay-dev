@@ -5,8 +5,6 @@ import RelayProtocol
 ///
 /// Every method must be called on `DaemonQueue.shared`.
 public final class SessionRuntime: @unchecked Sendable {
-    /// How long output must be quiet before we re-classify the session.
-    private static let quietThreshold: TimeInterval = 0.7
     /// Grace period between SIGHUP and SIGKILL. Agents that trap SIGHUP to save
     /// state get a chance to do so; ones that ignore it still go away.
     private static let terminationGrace: TimeInterval = 3.0
@@ -26,7 +24,7 @@ public final class SessionRuntime: @unchecked Sendable {
     private let startedAt: Date
     private let adapter: any ActivityAdapter
     private var process: PTYProcess?
-    private var lastOutputAt: Date
+    private var activity: ActivityWindow
     private var lastActivityAt: Date
     private var needsReclassification = false
     private var bytesSinceUserInput = 0
@@ -50,7 +48,7 @@ public final class SessionRuntime: @unchecked Sendable {
         scrollback = ScrollbackBuffer(capacity: scrollbackCapacity)
         adapter = ActivityAdapters.adapter(for: spec.kind)
         startedAt = Date()
-        lastOutputAt = startedAt
+        activity = ActivityWindow(startedAt: startedAt)
         lastActivityAt = startedAt
         columns = spec.columns
         rows = spec.rows
@@ -115,12 +113,15 @@ public final class SessionRuntime: @unchecked Sendable {
         DaemonQueue.assertIsolated()
         guard let process else { return }
         process.write(data)
-        // A keystroke means the user handed control back to the process.
+        // A keystroke means the user handed control back to the process, and
+        // whatever comes next is judged on its own rather than as part of
+        // whatever the terminal happened to be redrawing.
+        let now = Date()
         hasReceivedUserInput = true
         bytesSinceUserInput = 0
         needsReclassification = true
-        lastOutputAt = Date()
-        lastActivityAt = lastOutputAt
+        activity.noteUserInput(at: now)
+        lastActivityAt = now
         if isAlive {
             status = .working
         }
@@ -171,14 +172,16 @@ public final class SessionRuntime: @unchecked Sendable {
     // MARK: - Status derivation
 
     private func ingest(output data: Data) {
+        let now = Date()
         scrollback.append(data)
         bytesSinceUserInput += data.count
-        lastOutputAt = Date()
-        lastActivityAt = lastOutputAt
+        activity.noteOutput(at: now)
+        lastActivityAt = now
         needsReclassification = true
-        if isAlive {
-            status = .working
-        }
+        // Deliberately does not declare the session busy. A terminal interface
+        // repaints while doing nothing at all, and calling every byte "working"
+        // made an idle agent flicker between Working and Idle forever. Whether
+        // this output is work is decided on the tick, by how long it lasts.
 
         if let title = titleParser.consume(data), title != reportedTitle {
             reportedTitle = title
@@ -201,11 +204,19 @@ public final class SessionRuntime: @unchecked Sendable {
 
     /// Called periodically while the session is alive. Returns `true` when the
     /// status changed and observers should be notified.
-    public func reclassifyIfQuiet(now: Date) -> Bool {
+    public func reclassify(now: Date) -> Bool {
         DaemonQueue.assertIsolated()
-        guard needsReclassification, isAlive else { return false }
-        guard now.timeIntervalSince(lastOutputAt) >= Self.quietThreshold else { return false }
+        guard isAlive else { return false }
 
+        // Still talking. Only a sustained run of output is work; anything
+        // shorter is the interface redrawing itself.
+        if activity.isProducingOutput(now: now) {
+            guard activity.isWorking(now: now), status != .working else { return false }
+            status = .working
+            return true
+        }
+
+        guard needsReclassification else { return false }
         needsReclassification = false
         // A banner printed by .zshrc on startup is not work the user asked for,
         // so a session that has never been typed into can only be idle.
