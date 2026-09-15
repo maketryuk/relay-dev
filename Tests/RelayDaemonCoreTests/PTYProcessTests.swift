@@ -21,8 +21,15 @@ struct PTYProcessTests {
         )
     }
 
+    /// Runs a plan and waits for the thing the test is about to assert.
+    ///
+    /// `expecting` matters: exit and output are separate events, and waiting
+    /// only for the exit asserts on whatever happened to have arrived by then.
+    /// That passes on a developer's machine and fails on a loaded CI runner,
+    /// which is not a useful way to find out.
     private func collect(
         _ plan: PTYProcess.LaunchPlan,
+        expecting marker: String? = nil,
         timeout: TimeInterval = 10
     ) throws -> (output: Data, exitCode: Int32?) {
         let process = try PTYProcess.launch(plan)
@@ -31,8 +38,14 @@ struct PTYProcessTests {
             onOutput: { box.append($0) },
             onExit: { box.finish(code: $0) }
         )
+
         let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline, box.exitCode == nil {
+        while Date() < deadline {
+            if let marker {
+                if box.text.contains(marker) { break }
+            } else if box.exitCode != nil {
+                break
+            }
             usleep(20_000)
         }
         process.close()
@@ -43,7 +56,7 @@ struct PTYProcessTests {
     func childHasControllingTerminal() throws {
         // `tty` prints the controlling terminal's path, or "not a tty" without
         // one. This is the exact regression that broke the first implementation.
-        let result = try collect(plan("tty"))
+        let result = try collect(plan("tty"), expecting: "/dev/ttys")
         let text = String(decoding: result.output, as: UTF8.self)
         #expect(text.contains("/dev/ttys"))
         #expect(!text.lowercased().contains("not a tty"))
@@ -51,13 +64,13 @@ struct PTYProcessTests {
 
     @Test("Standard output reaches the master side")
     func capturesStdout() throws {
-        let result = try collect(plan("echo RELAY_MARKER"))
+        let result = try collect(plan("echo RELAY_MARKER"), expecting: "RELAY_MARKER")
         #expect(String(decoding: result.output, as: UTF8.self).contains("RELAY_MARKER"))
     }
 
     @Test("Standard error is merged into the terminal stream")
     func capturesStderr() throws {
-        let result = try collect(plan("echo OOPS 1>&2"))
+        let result = try collect(plan("echo OOPS 1>&2"), expecting: "OOPS")
         #expect(String(decoding: result.output, as: UTF8.self).contains("OOPS"))
     }
 
@@ -119,23 +132,23 @@ struct PTYProcessTests {
     func honoursWorkingDirectory() throws {
         var directoryPlan = plan("pwd")
         directoryPlan.workingDirectory = "/usr"
-        let result = try collect(directoryPlan)
-        #expect(String(decoding: result.output, as: UTF8.self).contains("/usr"))
+        let result = try collect(directoryPlan, expecting: "/usr")
+        #expect(String(decoding: result.output, as: UTF8.self).contains("/usr"), "produced: \(result.output.count) bytes")
     }
 
     @Test("The environment passed in reaches the child")
     func passesEnvironment() throws {
         var environmentPlan = plan("echo \"[$RELAY_TEST_VAR]\"")
         environmentPlan.environment["RELAY_TEST_VAR"] = "carried-through"
-        let result = try collect(environmentPlan)
-        #expect(String(decoding: result.output, as: UTF8.self).contains("[carried-through]"))
+        let result = try collect(environmentPlan, expecting: "[carried-through]")
+        #expect(String(decoding: result.output, as: UTF8.self).contains("[carried-through]"), "produced: \(String(decoding: result.output, as: UTF8.self).debugDescription)")
     }
 
     @Test("The window size is visible to the child")
     func appliesWindowSize() throws {
-        let result = try collect(plan("stty size", rows: 40, columns: 132))
+        let result = try collect(plan("stty size", rows: 40, columns: 132), expecting: "40 132")
         // `stty size` prints "rows cols".
-        #expect(String(decoding: result.output, as: UTF8.self).contains("40 132"))
+        #expect(String(decoding: result.output, as: UTF8.self).contains("40 132"), "produced: \(String(decoding: result.output, as: UTF8.self).debugDescription)")
     }
 
     @Test("Resizing is visible to a command started after the resize")
@@ -149,11 +162,10 @@ struct PTYProcessTests {
         usleep(300_000)
         process.resize(columns: 100, rows: 50)
 
-        let deadline = Date().addingTimeInterval(8)
-        while Date() < deadline, box.exitCode == nil { usleep(20_000) }
-        let text = String(decoding: box.data, as: UTF8.self)
+        box.waitForOutput(containing: "50 100", timeout: 8)
+        let text = box.text
         process.close()
-        #expect(text.contains("50 100"))
+        #expect(text.contains("50 100"), "produced: \(text.debugDescription)")
     }
 
     @Test("Input written to the master is read by the child")
@@ -165,13 +177,10 @@ struct PTYProcessTests {
         usleep(300_000)
         process.write(Data("hello-relay\n".utf8))
 
-        let deadline = Date().addingTimeInterval(5)
-        while Date() < deadline, box.exitCode == nil {
-            usleep(20_000)
-        }
-        let text = String(decoding: box.data, as: UTF8.self)
+        box.waitForOutput(containing: "got:hello-relay", timeout: 5)
+        let text = box.text
         process.close()
-        #expect(text.contains("got:hello-relay"))
+        #expect(text.contains("got:hello-relay"), "produced: \(text.debugDescription)")
     }
 
     @Test("Terminating a running child stops it and the whole process group")
