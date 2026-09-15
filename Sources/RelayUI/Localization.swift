@@ -65,11 +65,21 @@ public func relayLocalized(_ key: String) -> String {
 
 /// Resolves the `.lproj` for an explicit language, falling back to the module
 /// bundle so the system language applies on its own.
+///
+/// Cached, because this is called for every label on every redraw, and locating
+/// an `.lproj` means a resource lookup and a bundle open each time — it showed
+/// up as one of the most expensive things the interface did.
 @MainActor
 private func Self_bundle(for language: AppLanguage) -> Bundle {
-    guard let code = language.code,
-          let path = Bundle.module.path(forResource: code, ofType: "lproj"),
+    guard let code = language.code else { return .module }
+    if let cached = resolvedBundles[code] { return cached }
+
+    guard let path = Bundle.module.path(forResource: code, ofType: "lproj"),
           let bundle = Bundle(path: path)
     else { return .module }
+    resolvedBundles[code] = bundle
     return bundle
 }
+
+@MainActor
+private var resolvedBundles: [String: Bundle] = [:]

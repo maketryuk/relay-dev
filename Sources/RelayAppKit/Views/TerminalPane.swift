@@ -11,6 +11,8 @@ import SwiftUI
 /// whichever surface is current.
 struct TerminalHostView: NSViewRepresentable {
     let surface: TerminalSurface
+    /// Whether this pane is the one the keyboard belongs to.
+    let isFocused: Bool
 
     func makeNSView(context: Context) -> NSView {
         let container = FlippedContainerView()
@@ -23,6 +25,10 @@ struct TerminalHostView: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {
         guard let container = nsView as? FlippedContainerView else { return }
         container.embed(surface.terminalView)
+        // Only the focused pane may claim the keyboard. Every pane taking it on
+        // every update means two of them trade it back and forth, and typing
+        // lands wherever the last redraw happened to leave it.
+        guard isFocused else { return }
         DispatchQueue.main.async {
             surface.focus()
         }
@@ -63,8 +69,18 @@ struct TerminalPane: View {
 
     /// Refreshed on a slow timer so the hint can appear without any event from
     /// the daemon — the whole point is that nothing is arriving.
+    ///
+    /// Only while the session is still starting: a timer that redraws a whole
+    /// terminal pane twice a second, forever, to say nothing is not free.
     @ViewBuilder
     private var startupHint: some View {
+        if session.status == .starting {
+            timedStartupHint
+        }
+    }
+
+    @ViewBuilder
+    private var timedStartupHint: some View {
         TimelineView(.periodic(from: .now, by: 2)) { context in
             if let hint = StartupDiagnostics.hint(for: session, now: context.date) {
                 Text(hint)
@@ -150,7 +166,7 @@ struct TerminalPane: View {
     @ViewBuilder
     private var terminal: some View {
         if let surface = model.surface(for: session.id) {
-            TerminalHostView(surface: surface)
+            TerminalHostView(surface: surface, isFocused: model.selectedSessionID == session.id)
                 .id(session.id)
                 .overlay(alignment: .top) { startupHint }
                 .onChange(of: model.focusTerminalRequest) { _, _ in surface.focus() }
