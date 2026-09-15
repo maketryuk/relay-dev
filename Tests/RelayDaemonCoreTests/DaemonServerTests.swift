@@ -407,6 +407,25 @@ final class DaemonServerTests {
 
     // MARK: - Upgrade path
 
+    @Test("A daemon that rejected the handshake can still be asked to stop")
+    func shutdownWorksAfterProtocolMismatch() throws {
+        // This is the whole upgrade path: a newer client meets an older daemon,
+        // the handshake is refused, and the only way forward is to retire it.
+        // If a rejected handshake also closed the door on `shutdownDaemon`, the
+        // client would reconnect to the same stale daemon for ever.
+        let rejected = try client.send(.handshake(protocolVersion: 1, clientName: "old"))
+        try client.wait(timeout: 30) { $0.failure(to: rejected) != nil }
+
+        let requestID = try client.send(.shutdownDaemon)
+        try client.wait(timeout: 30) { $0.reply(to: requestID) != nil }
+
+        let deadline = Date().addingTimeInterval(10)
+        while Date() < deadline, !harness.server.didRequestExit {
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+        #expect(harness.server.didRequestExit)
+    }
+
     @Test("Shutting the daemon down stops its sessions and asks the process to exit")
     func shutdownRequestStopsEverything() throws {
         // This is how a newly built GUI retires a daemon left over from the

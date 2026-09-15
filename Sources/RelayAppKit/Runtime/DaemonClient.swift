@@ -86,16 +86,24 @@ final class DaemonClient: @unchecked Sendable {
             )
             guard case let .pong(_, _, buildIdentity, _) = reply else { return nil }
             return buildIdentity
+        } catch let error as DaemonError where error.code == "protocol_mismatch" {
+            // Deliberately keeps the socket open: retiring the old daemon means
+            // sending it a message, and tearing the transport down here left
+            // `retireIncompatibleDaemon` with nothing to send over — so the
+            // stale daemon was never asked to stop and every reconnect hit the
+            // same mismatch. `disconnect()` still runs during retirement, so
+            // the dispatch sources are released either way.
+            throw error
         } catch {
-            // A rejected handshake must still tear the socket down; dropping it
-            // on the floor leaks the descriptor and its dispatch sources.
+            // Any other rejection must tear the socket down; dropping it on the
+            // floor leaks the descriptor and its dispatch sources.
             disconnect()
             throw error
         }
     }
 
     private func retireIncompatibleDaemon() async throws {
-        // `shutdownDaemon` predates the version bump, so an older daemon can
+        // `shutdownDaemon` predates every version bump, so an older daemon can
         // still decode it. Adding cases stays backwards compatible; reordering
         // or removing them would not.
         post(.shutdownDaemon)
