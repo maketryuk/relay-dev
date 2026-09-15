@@ -109,6 +109,7 @@
 "Gemini" = "Gemini";
 "General" = "Основные";
 "Git" = "Git";
+"GitHub is rate-limiting the update check. It will try again later." = "GitHub ограничивает частоту проверки обновлений. Попробуем позже.";
 "History" = "История";
 "Icon" = "Иконка";
 "Idle" = "Простаивает";
@@ -189,6 +190,7 @@
 "Refresh usage" = "Обновить лимиты";
 "Relay" = "Relay";
 "Relay cannot replace itself at %@." = "Relay не может заменить себя по пути %@.";
+"Relay cannot see the releases. A private repository needs to be public for updates to work." = "Relay не видит релизы. Для обновлений репозиторий должен быть публичным.";
 "Relay did not start this process" = "Relay не запускал этот процесс";
 "Relay has not looked yet" = "Relay ещё не проверял";
 "Relay reads the git branch, package manager and dev command it finds." = "Relay определит git-ветку, пакетный менеджер и dev-команду.";
@@ -280,6 +282,7 @@
 "The downloaded archive could not be opened." = "Не удалось открыть загруженный архив.";
 "The downloaded copy was rejected: %@" = "Загруженная копия отклонена: %@";
 "The only notification that plays a sound" = "Единственное уведомление со звуком";
+"The update check failed: HTTP %d" = "Проверка обновлений не удалась: HTTP %d";
 "This is the newest release" = "Это самый свежий релиз";
 "This project" = "Этот проект";
 "This session is no longer known to the daemon." = "Демон больше не знает об этой сессии.";

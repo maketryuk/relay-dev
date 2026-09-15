@@ -202,3 +202,27 @@ struct UpdateDecisionTests {
         ))
     }
 }
+
+@Suite("Update check refusals")
+@MainActor
+struct UpdateRefusalTests {
+    @Test("A repository Relay cannot see is named as such")
+    func namesTheInvisibleRepository() {
+        // 404 is what a private repository returns to an unauthenticated
+        // request, and it is indistinguishable from one that does not exist.
+        // Reporting either as "nothing published" hides a setting the user can
+        // change.
+        #expect(UpdateDecision.message(forStatus: 404).contains("private"))
+    }
+
+    @Test("Being rate-limited says so, and says it will retry")
+    func namesRateLimiting() {
+        #expect(UpdateDecision.message(forStatus: 429).contains("rate-limiting"))
+        #expect(UpdateDecision.message(forStatus: 403).contains("rate-limiting"))
+    }
+
+    @Test("Anything else carries its status, rather than a shrug")
+    func reportsOtherStatuses() {
+        #expect(UpdateDecision.message(forStatus: 500).contains("500"))
+    }
+}
