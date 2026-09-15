@@ -106,7 +106,9 @@ private struct AgentUsageChip: View {
             let reset = window.resetsAt
                 .flatMap { UsageFormatting.countdown(to: $0, from: now) }
                 .map { " · " + String(format: relayLocalized("resets in %@"), $0) } ?? ""
-            return "\(window.label) \(window.percent)%\(reset)"
+            // Spelled out here, where there is room: `wk` is fine in the bar and
+            // means nothing on its own.
+            return "\(window.name) \(window.percent)%\(reset)"
         }
         if let fetched = usage.fetchedAt {
             let formatter = DateFormatter()

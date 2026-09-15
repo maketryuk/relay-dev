@@ -88,6 +88,9 @@
 "Elsewhere on this Mac" = "Остальное на этом Mac";
 "Enabled" = "Включено";
 "Error" = "Ошибка";
+"Every %d days" = "Каждые %d дней";
+"Every %d hours" = "Каждые %d часов";
+"Every %d minutes" = "Каждые %d минут";
 "Everything listening on this Mac" = "Всё, что слушает на этом Mac";
 "Exited" = "Завершилась";
 "Exited with an error" = "Завершилась с ошибкой";
@@ -288,6 +291,7 @@
 "Updates" = "Обновления";
 "Version" = "Версия";
 "Waiting for you" = "Ждёт вас";
+"Weekly" = "Еженедельно";
 "When to interrupt" = "Когда прерывать";
 "Work finished" = "Работа завершена";
 "Working" = "Работает";

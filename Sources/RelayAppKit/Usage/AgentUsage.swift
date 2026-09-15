@@ -1,11 +1,20 @@
 import Foundation
 import RelayProtocol
+import RelayUI
 
 /// One rate-limit window an agent reports against.
 struct UsageWindow: Equatable, Identifiable, Sendable {
-    /// Short label for the bar: `5h`, `wk`, or a model's name when the limit is
-    /// scoped to one.
-    var label: String
+    /// What kind of window this is, kept apart from how it is written so the bar
+    /// can be terse and the tooltip can be plain. `wk` is fine in a strip four
+    /// pixels from the bottom of the screen and means nothing on its own.
+    enum Span: Equatable, Sendable {
+        case rolling(minutes: Int)
+        case weekly
+        /// Capped for one model, which names itself.
+        case model(String)
+    }
+
+    var span: Span
     /// 0…1. The providers report whole percents; the fraction is what a meter
     /// wants.
     var fraction: Double
@@ -15,6 +24,35 @@ struct UsageWindow: Equatable, Identifiable, Sendable {
     var id: String { label }
 
     var percent: Int { Int((fraction * 100).rounded()) }
+
+    /// For the bar, where there is room for two or three characters.
+    var label: String {
+        switch span {
+        case let .rolling(minutes):
+            if minutes >= 1_440, minutes % 1_440 == 0 { return "\(minutes / 1_440)d" }
+            if minutes >= 60 { return "\(minutes / 60)h" }
+            return "\(minutes)m"
+        case .weekly: return "wk"
+        case let .model(name): return name
+        }
+    }
+
+    /// For the tooltip, where the question is what the window actually is.
+    @MainActor
+    var name: String {
+        switch span {
+        case let .rolling(minutes):
+            if minutes >= 1_440, minutes % 1_440 == 0 {
+                return String(format: relayLocalized("Every %d days"), minutes / 1_440)
+            }
+            if minutes >= 60 {
+                return String(format: relayLocalized("Every %d hours"), minutes / 60)
+            }
+            return String(format: relayLocalized("Every %d minutes"), minutes)
+        case .weekly: return relayLocalized("Weekly")
+        case let .model(name): return name
+        }
+    }
 }
 
 /// What one agent's limits look like right now.

@@ -39,18 +39,16 @@ enum CodexUsageReader {
         guard let used = limit["used_percent"] as? Double else { return nil }
         let resets = (limit["resets_at"] as? Double).map { Date(timeIntervalSince1970: $0) }
         return UsageWindow(
-            label: label(forWindowMinutes: limit["window_minutes"] as? Double),
+            span: span(forWindowMinutes: limit["window_minutes"] as? Double),
             fraction: used / 100,
             resetsAt: resets
         )
     }
 
     /// Codex describes a window by its length rather than by name.
-    static func label(forWindowMinutes minutes: Double?) -> String {
-        guard let minutes, minutes > 0 else { return "?" }
-        if minutes >= 10_080 { return "wk" }
-        if minutes >= 1_440 { return "\(Int(minutes / 1_440))d" }
-        return "\(Int(minutes / 60))h"
+    static func span(forWindowMinutes minutes: Double?) -> UsageWindow.Span {
+        guard let minutes, minutes > 0 else { return .rolling(minutes: 0) }
+        return minutes >= 10_080 ? .weekly : .rolling(minutes: Int(minutes))
     }
 
     /// The last `rate_limits` object in the text, decoded on its own.
