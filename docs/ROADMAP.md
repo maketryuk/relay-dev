@@ -64,9 +64,9 @@ workspace is usually a git worktree.
 - **libghostty terminal engine.** GPU-rasterised text instead of CoreText.
   Contained to `TerminalSurface.swift` by design. Worth doing when heavy
   full-screen redraw starts to matter, not before.
-- **Kill an external process from the Ports window.** Currently Relay only acts
-  on processes it started. Killing anything else needs an explicit confirmation
-  step, per the spec.
+- **Project icons taken from the project.** Rail tiles are initials over a tint
+  derived from the path. A project that already carries a favicon or an app icon
+  could supply its own, with a way to set one by hand when it does not.
 - **Per-project environment variables.** Set once, applied to every session.
 - **Proper app signing.** See below — it gates the update mechanism too.
 
