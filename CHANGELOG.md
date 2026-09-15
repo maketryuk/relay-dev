@@ -8,6 +8,9 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
+- **A control under the keyboard looks like a control under the pointer**, and
+  carries an accent ring on top: one shade of grey away from near-black is not
+  an answer to "where am I".
 - **Left and right walk a row's actions.** Up and down pick the port or host,
   left and right move along what that row can do, Return runs it. Arriving on a
   row always starts from its first action, so Return is never a keystroke away

@@ -157,6 +157,7 @@ public struct IconButton: View {
     private let size: CGFloat
     private let prominence: Prominence
     private let isSelected: Bool
+    private let isKeyboardFocused: Bool
     private let isEnabled: Bool
     private let respondsWhenDisabled: Bool
     private let isBusy: Bool
@@ -171,6 +172,11 @@ public struct IconButton: View {
         size: CGFloat = 24,
         prominence: Prominence = .standard,
         isSelected: Bool = false,
+        /// The keyboard is on this control. Drawn as the pointer would draw it,
+        /// because hover already teaches what "this is the one that will act"
+        /// looks like — plus a ring, since a shade of grey on a near-black
+        /// background is not an answer to "where am I".
+        isKeyboardFocused: Bool = false,
         isEnabled: Bool = true,
         /// Keeps a dimmed control clickable. For one that is off because
         /// something was not found, where clicking is how you ask again.
@@ -185,6 +191,7 @@ public struct IconButton: View {
         self.size = size
         self.prominence = prominence
         self.isSelected = isSelected
+        self.isKeyboardFocused = isKeyboardFocused
         self.isEnabled = isEnabled
         self.respondsWhenDisabled = respondsWhenDisabled
         self.isBusy = isBusy
@@ -210,6 +217,10 @@ public struct IconButton: View {
             .background(background)
             .foregroundStyle(foreground)
             .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
+                    .strokeBorder(isKeyboardFocused ? Theme.Palette.accent : .clear, lineWidth: 1)
+            )
             // Without this the glyph itself is the target and the padding
             // around it does nothing, which makes small buttons feel broken.
             .contentShape(Rectangle())
@@ -219,20 +230,25 @@ public struct IconButton: View {
         .onHover { isHovering = respondsToClicks && $0 }
         .animation(.easeOut(duration: 0.1), value: isHovering)
         .animation(.easeOut(duration: 0.1), value: isSelected)
+        .animation(.easeOut(duration: 0.1), value: isKeyboardFocused)
         .help(help)
     }
 
+    /// The keyboard counts as the pointer being here: one appearance for "this
+    /// control is the one that will act", however you arrived at it.
+    private var isPointedAt: Bool { isHovering || isKeyboardFocused }
+
     private var background: Color {
         guard isEnabled || respondsWhenDisabled else { return .clear }
-        if isSelected { return isHovering ? Theme.Palette.surfaceHover : Theme.Palette.surfaceActive }
-        return isHovering ? Theme.Palette.surfaceHover : .clear
+        if isSelected { return isPointedAt ? Theme.Palette.surfaceHover : Theme.Palette.surfaceActive }
+        return isPointedAt ? Theme.Palette.surfaceHover : .clear
     }
 
     private var foreground: Color {
         guard isEnabled else { return Theme.Palette.textTertiary.opacity(0.4) }
-        if let tint { return isHovering ? tint : tint.opacity(0.85) }
+        if let tint { return isPointedAt ? tint : tint.opacity(0.85) }
         if isSelected { return Theme.Palette.textPrimary }
-        return isHovering ? Theme.Palette.textPrimary : Theme.Palette.textSecondary
+        return isPointedAt ? Theme.Palette.textPrimary : Theme.Palette.textSecondary
     }
 }
 

@@ -110,8 +110,7 @@ struct RowActionBar: View {
                 IconButton(
                     systemImage: action.systemImage,
                     help: "",
-                    prominence: .selectable,
-                    isSelected: index == focusedAction,
+                    isKeyboardFocused: index == focusedAction,
                     tint: action.tint,
                     action: action.run
                 )
