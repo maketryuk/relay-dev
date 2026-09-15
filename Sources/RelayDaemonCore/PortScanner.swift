@@ -145,6 +145,26 @@ public enum PortScanner {
         return parseListeningPorts(lsof.standardOutput)
     }
 
+    /// The directory a process was started from.
+    ///
+    /// Read straight from the kernel rather than by shelling out: it is one
+    /// syscall per process, and the ports window asks about all of them at
+    /// once. Fails quietly for processes owned by another user, which is
+    /// correct — their working directory is none of our business.
+    public static func workingDirectory(of pid: Int32) -> String? {
+        var info = proc_vnodepathinfo()
+        let size = MemoryLayout<proc_vnodepathinfo>.size
+        let result = withUnsafeMutablePointer(to: &info) { pointer in
+            proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, pointer, Int32(size))
+        }
+        guard result == Int32(size) else { return nil }
+
+        let path = withUnsafePointer(to: &info.pvi_cdir.vip_path) { pointer in
+            pointer.withMemoryRebound(to: CChar.self, capacity: Int(MAXPATHLEN)) { String(cString: $0) }
+        }
+        return path.isEmpty ? nil : path
+    }
+
     /// Reads the process ancestry once, for attributing ports to sessions.
     public static func processParents(runner: some CommandRunning = SystemCommandRunner()) -> [Int32: Int32] {
         guard let ps = runner.run("/bin/ps", arguments: ["-axo", "pid=,ppid="], timeout: 4), ps.succeeded else {

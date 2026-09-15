@@ -11,6 +11,9 @@ public struct ListeningPort: Codable, Sendable, Hashable, Identifiable {
     public var ownerName: String?
     /// The project that owns the session, when the port belongs to one.
     public var ownerProjectID: ProjectID?
+    /// Where the process was started from. Two `node` servers on 3000 and 3001
+    /// are indistinguishable without it.
+    public var workingDirectory: String?
 
     public var id: String { "\(pid)-\(address)-\(port)" }
 
@@ -21,7 +24,8 @@ public struct ListeningPort: Codable, Sendable, Hashable, Identifiable {
         processName: String,
         ownerSessionID: SessionID? = nil,
         ownerName: String? = nil,
-        ownerProjectID: ProjectID? = nil
+        ownerProjectID: ProjectID? = nil,
+        workingDirectory: String? = nil
     ) {
         self.port = port
         self.address = address
@@ -30,6 +34,25 @@ public struct ListeningPort: Codable, Sendable, Hashable, Identifiable {
         self.ownerSessionID = ownerSessionID
         self.ownerName = ownerName
         self.ownerProjectID = ownerProjectID
+        self.workingDirectory = workingDirectory
+    }
+
+    /// The working directory with the home prefix collapsed.
+    ///
+    /// Root is treated as unknown: a system daemon reporting `/` says nothing
+    /// about where it came from, and showing it only adds a column of slashes.
+    public var displayDirectory: String? {
+        guard let workingDirectory, !workingDirectory.isEmpty, workingDirectory != "/" else { return nil }
+        let home = NSHomeDirectory()
+        return workingDirectory.hasPrefix(home)
+            ? "~" + workingDirectory.dropFirst(home.count)
+            : workingDirectory
+    }
+
+    /// Last path component, which is usually the project folder.
+    public var directoryName: String? {
+        guard let workingDirectory, !workingDirectory.isEmpty, workingDirectory != "/" else { return nil }
+        return URL(fileURLWithPath: workingDirectory).lastPathComponent
     }
 
     /// True when Relay started the process, which is the only case where it may
