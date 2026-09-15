@@ -15,10 +15,25 @@ struct StatusBar: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        @Bindable var model = model
+
         if !model.usage.agents.isEmpty {
-            HStack(spacing: Theme.Spacing.large) {
-                ForEach(model.usage.agents) { usage in
-                    AgentUsageChip(usage: usage)
+            HStack(spacing: 0) {
+                Button {
+                    model.isUsagePopoverOpen.toggle()
+                } label: {
+                    HStack(spacing: Theme.Spacing.large) {
+                        ForEach(model.usage.agents) { usage in
+                            AgentUsageChip(usage: usage, detail: model.usageDetail)
+                        }
+                    }
+                    .padding(.horizontal, Theme.Spacing.small)
+                    .padding(.vertical, 2)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .popover(isPresented: $model.isUsagePopoverOpen, arrowEdge: .top) {
+                    UsagePopover()
                 }
 
                 Spacer(minLength: Theme.Spacing.small)
@@ -33,7 +48,7 @@ struct StatusBar: View {
                 }
                 .relayTooltip(relayLocalized("Refresh usage"), edge: .top)
             }
-            .padding(.horizontal, Theme.Spacing.medium)
+            .padding(.horizontal, Theme.Spacing.small)
             .frame(height: Theme.Metrics.statusBarHeight)
             .background(Theme.Palette.rail)
             .overlay(alignment: .top) { RelayDivider() }
@@ -45,6 +60,14 @@ struct StatusBar: View {
 /// nearest one rolls over.
 private struct AgentUsageChip: View {
     let usage: AgentUsage
+    let detail: UsageDetail
+
+    /// Compact keeps only the window nearest to running out. The tooltip still
+    /// lists every one, so the short form loses nothing but width.
+    private var shown: [UsageWindow] {
+        guard detail == .compact else { return usage.windows }
+        return usage.mostUsedWindow.map { [$0] } ?? usage.windows
+    }
 
     var body: some View {
         // Redrawn on a slow timer so the countdown moves without anything
@@ -53,7 +76,7 @@ private struct AgentUsageChip: View {
             HStack(spacing: Theme.Spacing.small) {
                 SessionGlyph(kind: usage.kind, size: 11, tint: Color(hex: usage.kind.accentHex))
 
-                ForEach(usage.windows) { window in
+                ForEach(shown) { window in
                     meter(window)
                 }
 
@@ -75,29 +98,12 @@ private struct AgentUsageChip: View {
                 .font(Theme.Typography.caption)
                 .foregroundStyle(Theme.Palette.textTertiary)
 
-            Capsule()
-                .fill(Theme.Palette.surfaceRaised)
-                .frame(width: 26, height: 4)
-                .overlay(alignment: .leading) {
-                    Capsule()
-                        .fill(tint(for: window))
-                        .frame(width: 26 * min(max(window.fraction, 0), 1))
-                }
+            UsageMeter(window: window)
 
             Text(verbatim: "\(window.percent)%")
                 .font(Theme.Typography.caption)
                 .foregroundStyle(Theme.Palette.textSecondary)
                 .monospacedDigit()
-        }
-    }
-
-    /// Quiet until it matters. A bar that is red at 40% teaches people to ignore
-    /// it by the time it means something.
-    private func tint(for window: UsageWindow) -> Color {
-        switch window.fraction {
-        case 0.9...: Theme.Palette.statusError
-        case 0.75...: Theme.Palette.statusWaiting
-        default: Theme.Palette.accent
         }
     }
 

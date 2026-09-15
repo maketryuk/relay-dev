@@ -53,6 +53,7 @@
 "Command Palette" = "Command Palette";
 "Command Palette (⌘K)" = "Command Palette (⌘K)";
 "Commits, branch switching and diffs will live here." = "Commits, branch switching and diffs will live here.";
+"Compact" = "Compact";
 "Connect" = "Connect";
 "Connect SSH: %@" = "Connect SSH: %@";
 "Connected — sessions keep running when Relay is closed" = "Connected — sessions keep running when Relay is closed";
@@ -66,6 +67,7 @@
 "Custom command…" = "Custom command…";
 "Default agent" = "Default agent";
 "Default dev service" = "Default dev service";
+"Detailed" = "Detailed";
 "Dev command" = "Dev command";
 "Disconnected" = "Disconnected";
 "Dismiss" = "Dismiss";
@@ -202,6 +204,7 @@
 "Reset" = "Reset";
 "Reset All" = "Reset All";
 "Reset to defaults" = "Reset to defaults";
+"Resets in %@" = "Resets in %@";
 "Restart" = "Restart";
 "Restart %@" = "Restart %@";
 "Restart Dev Service" = "Restart Dev Service";
@@ -289,6 +292,7 @@
 "Up" = "Up";
 "Update failed" = "Update failed";
 "Updates" = "Updates";
+"Usage" = "Usage";
 "Version" = "Version";
 "Waiting for you" = "Waiting for you";
 "Weekly" = "Weekly";

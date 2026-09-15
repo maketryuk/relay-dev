@@ -53,6 +53,7 @@
 "Command Palette" = "Палитра команд";
 "Command Palette (⌘K)" = "Палитра команд (⌘K)";
 "Commits, branch switching and diffs will live here." = "Здесь появятся коммиты, переключение веток и diff.";
+"Compact" = "Компактно";
 "Connect" = "Подключиться";
 "Connect SSH: %@" = "Подключиться по SSH: %@";
 "Connected — sessions keep running when Relay is closed" = "Подключено — сессии работают и при закрытом Relay";
@@ -66,6 +67,7 @@
 "Custom command…" = "Своя команда…";
 "Default agent" = "Агент по умолчанию";
 "Default dev service" = "Сервис по умолчанию";
+"Detailed" = "Подробно";
 "Dev command" = "Dev-команда";
 "Disconnected" = "Отключено";
 "Dismiss" = "Закрыть";
@@ -202,6 +204,7 @@
 "Reset" = "Сбросить";
 "Reset All" = "Сбросить всё";
 "Reset to defaults" = "Вернуть по умолчанию";
+"Resets in %@" = "Сброс через %@";
 "Restart" = "Перезапустить";
 "Restart %@" = "Перезапустить %@";
 "Restart Dev Service" = "Перезапустить dev-сервис";
@@ -289,6 +292,7 @@
 "Up" = "Запустить";
 "Update failed" = "Обновление не удалось";
 "Updates" = "Обновления";
+"Usage" = "Лимиты";
 "Version" = "Версия";
 "Waiting for you" = "Ждёт вас";
 "Weekly" = "Еженедельно";
