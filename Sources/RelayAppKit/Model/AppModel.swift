@@ -55,7 +55,7 @@ final class AppModel {
     private(set) var language: AppLanguage = .system
     private(set) var checksForUpdates = true
     private(set) var showsStatusBar = true
-    private(set) var usageDetail: UsageDetail = .detailed
+    private(set) var usageBarDetail: UsageDetail = .compact
     var isUsagePopoverOpen = false
     private(set) var paneLayouts: [ProjectID: PaneNode] = [:]
     var rightSidebarTab: RightSidebarTab = .services
@@ -125,7 +125,7 @@ final class AppModel {
         language = state.language
         checksForUpdates = state.checksForUpdates
         showsStatusBar = state.showsStatusBar
-        usageDetail = state.usageDetail
+        usageBarDetail = state.usageBarDetail
         paneLayouts = Dictionary(uniqueKeysWithValues: state.paneLayouts.map {
             (ProjectID(rawValue: $0.key), $0.value)
         })
@@ -831,8 +831,8 @@ final class AppModel {
         if visible { usage.start() } else { usage.stop() }
     }
 
-    func setUsageDetail(_ detail: UsageDetail) {
-        usageDetail = detail
+    func setUsageBarDetail(_ detail: UsageDetail) {
+        usageBarDetail = detail
         persist()
     }
 
@@ -1548,7 +1548,7 @@ final class AppModel {
             language: language,
             checksForUpdates: checksForUpdates,
             showsStatusBar: showsStatusBar,
-            usageDetail: usageDetail,
+            usageBarDetail: usageBarDetail,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
         store.scheduleSave(state)
@@ -1572,7 +1572,7 @@ final class AppModel {
             language: language,
             checksForUpdates: checksForUpdates,
             showsStatusBar: showsStatusBar,
-            usageDetail: usageDetail,
+            usageBarDetail: usageBarDetail,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
         store.saveNow(state)

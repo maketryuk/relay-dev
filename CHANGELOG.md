@@ -8,10 +8,11 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
-- **Clicking the usage opens it properly**, with a Detailed/Compact switch.
-  Compact keeps one line per agent — the window nearest to running out, rather
-  than the shortest one, because that is the limit that will actually stop you —
-  and hovering brings the rest back. The status bar follows the same setting.
+- **Clicking the usage opens it properly.** The popover always shows every
+  window — it is where you go to look properly — and its Detailed/Compact switch
+  governs the bar alone. The bar starts compact, keeping one line per agent: the
+  window nearest to running out rather than the shortest one, because that is
+  the limit that will actually stop you. Hovering the bar still lists them all.
 - **A status bar along the bottom** showing what each agent has left of its rate
   limits: a meter per window, the percentage, and how long until the nearest one
   rolls over. The figures come from the CLIs' own caches on disk, so they cannot

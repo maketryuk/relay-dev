@@ -82,11 +82,15 @@ struct AgentUsage: Equatable, Identifiable, Sendable {
     }
 }
 
-/// How much of the usage figures to show at a glance.
+/// How much of the usage figures the status bar shows.
+///
+/// Only the bar: the popover is where you go to look properly, and a panel that
+/// hid half of what it was opened for would be answering a question nobody
+/// asked.
 enum UsageDetail: String, Codable, CaseIterable, Identifiable, Sendable {
     /// Every window, for each agent.
     case detailed
-    /// Only the window closest to running out; the rest are a hover away.
+    /// Only the window closest to running out.
     case compact
 
     var id: String { rawValue }
