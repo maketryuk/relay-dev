@@ -9,6 +9,9 @@ struct Release: Equatable, Sendable {
     var downloadURL: URL
     var pageURL: URL
     var notes: String
+    /// Marked as a pre-release on GitHub. Offered only to a build that is
+    /// itself one.
+    var isPreRelease: Bool
 }
 
 /// Reads GitHub's releases API.
@@ -19,10 +22,11 @@ struct Release: Equatable, Sendable {
 enum ReleaseFeed {
     static let endpoint = URL(string: "https://api.github.com/repos/maketryuk/relay-dev/releases?per_page=10")!
 
-    /// The newest release worth offering, or nil when there is none.
+    /// The newest published release, or nil when there is none.
     ///
-    /// Drafts and pre-releases are skipped: a draft is not published, and a
-    /// pre-release is something the author is still deciding about.
+    /// Drafts are skipped — a draft is not published. Pre-releases are kept and
+    /// flagged: whether one is worth offering depends on what is running, and
+    /// that is not this function's question.
     static func latest(from data: Data) -> Release? {
         guard let entries = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
             return nil
@@ -31,7 +35,7 @@ enum ReleaseFeed {
     }
 
     static func release(from entry: [String: Any]) -> Release? {
-        guard entry["draft"] as? Bool != true, entry["prerelease"] as? Bool != true else { return nil }
+        guard entry["draft"] as? Bool != true else { return nil }
         guard let tag = entry["tag_name"] as? String, let version = SemanticVersion(tag) else { return nil }
         guard let page = (entry["html_url"] as? String).flatMap(URL.init(string:)) else { return nil }
 
@@ -44,7 +48,8 @@ enum ReleaseFeed {
             name: (entry["name"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? tag,
             downloadURL: download,
             pageURL: page,
-            notes: entry["body"] as? String ?? ""
+            notes: entry["body"] as? String ?? "",
+            isPreRelease: entry["prerelease"] as? Bool == true
         )
     }
 

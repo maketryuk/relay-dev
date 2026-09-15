@@ -73,12 +73,19 @@ struct ReleaseFeedTests {
         #expect(release.notes == "Notes")
     }
 
-    @Test("Drafts and pre-releases are left alone")
-    func skipsUnpublished() {
+    @Test("A draft is not a release")
+    func skipsDrafts() {
         let draft = published.replacingOccurrences(of: "\"draft\": false", with: "\"draft\": true")
-        let early = published.replacingOccurrences(of: "\"prerelease\": false", with: "\"prerelease\": true")
         #expect(ReleaseFeed.latest(from: feed(draft)) == nil)
-        #expect(ReleaseFeed.latest(from: feed(early)) == nil)
+    }
+
+    @Test("A pre-release is read and flagged rather than discarded")
+    func keepsPreReleases() throws {
+        // Whether one is worth offering depends on what is running, which is a
+        // different question from what was published.
+        let early = published.replacingOccurrences(of: "\"prerelease\": false", with: "\"prerelease\": true")
+        let release = try #require(ReleaseFeed.latest(from: feed(early)))
+        #expect(release.isPreRelease)
     }
 
     @Test("A release with nothing to install is an announcement, not an update")
@@ -131,13 +138,14 @@ struct ReleaseFeedTests {
 
 @Suite("Update decision")
 struct UpdateDecisionTests {
-    private func release(_ version: String) -> Release {
+    private func release(_ version: String, isPreRelease: Bool = false) -> Release {
         Release(
             version: SemanticVersion(version)!,
             name: version,
             downloadURL: URL(string: "https://example.invalid/Relay.app.zip")!,
             pageURL: URL(string: "https://example.invalid")!,
-            notes: ""
+            notes: "",
+            isPreRelease: isPreRelease
         )
     }
 
@@ -171,6 +179,26 @@ struct UpdateDecisionTests {
         #expect(UpdateDecision.shouldCheckNow(
             lastCheckedAt: now.addingTimeInterval(-UpdateDecision.checkInterval - 1),
             now: now
+        ))
+    }
+
+    @Test("A development build is offered a pre-release")
+    func preReleasesReachDevelopmentBuilds() {
+        // Which is the only way to exercise the update path before there is a
+        // release anyone would want to cut.
+        #expect(UpdateDecision.isWorthOffering(
+            release("0.1.0-rc1", isPreRelease: true),
+            running: SemanticVersion("0.1.0-dev")!
+        ))
+    }
+
+    @Test("A released build is left on released builds")
+    func preReleasesDoNotReachReleases() {
+        // Running 0.1.0 is not consent to be moved onto whatever is being tried
+        // out next.
+        #expect(!UpdateDecision.isWorthOffering(
+            release("0.2.0-rc1", isPreRelease: true),
+            running: SemanticVersion("0.1.0")!
         ))
     }
 }

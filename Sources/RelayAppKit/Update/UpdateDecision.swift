@@ -9,7 +9,12 @@ enum UpdateDecision {
     /// ahead of the newest tag, and offering to "update" it backwards would be
     /// a downgrade dressed as progress.
     static func isWorthOffering(_ release: Release, running: SemanticVersion) -> Bool {
-        running < release.version
+        // A pre-release is offered only to a build that is one itself. Somebody
+        // running a cut release did not ask to be moved onto something the
+        // author is still deciding about; somebody running `0.1.0-dev` plainly
+        // did.
+        if release.isPreRelease, running.preRelease.isEmpty { return false }
+        return running < release.version
     }
 
     /// How long to leave between automatic checks.
