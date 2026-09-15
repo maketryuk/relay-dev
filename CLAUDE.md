@@ -27,8 +27,6 @@ to decide whether a day's work "deserves" a version. Before it, the question
 "is this enough for a release?" had to be answered every time, which is a
 question about nothing.
 
-Nothing has been released yet. The first release will be `0.1.0`.
-
 ### Cutting one
 
 1. **Bump the version** with `./Scripts/bump-version.sh`: `build` by default,
