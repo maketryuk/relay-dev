@@ -505,7 +505,7 @@ public final class DaemonServer: @unchecked Sendable {
         let now = Date()
         for identifier in sessionOrder {
             guard let session = sessions[identifier] else { continue }
-            if session.reclassifyIfQuiet(now: now) {
+            if session.reclassify(now: now) {
                 broadcast(.sessionUpdated(session.snapshot()))
             }
         }

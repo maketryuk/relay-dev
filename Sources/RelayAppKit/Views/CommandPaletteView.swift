@@ -276,6 +276,8 @@ struct KeyCaptureView: NSViewRepresentable {
     /// A key with no handler is passed on untouched.
     var onMoveDown: (() -> Void)?
     var onMoveUp: (() -> Void)?
+    var onMoveRight: (() -> Void)?
+    var onMoveLeft: (() -> Void)?
     var onReturn: (() -> Void)?
     var onEscape: (() -> Void)?
 
@@ -293,6 +295,8 @@ struct KeyCaptureView: NSViewRepresentable {
     private func apply(to view: MonitorView) {
         view.onMoveDown = onMoveDown
         view.onMoveUp = onMoveUp
+        view.onMoveRight = onMoveRight
+        view.onMoveLeft = onMoveLeft
         view.onReturn = onReturn
         view.onEscape = onEscape
     }
@@ -300,6 +304,8 @@ struct KeyCaptureView: NSViewRepresentable {
     final class MonitorView: NSView {
         var onMoveDown: (() -> Void)?
         var onMoveUp: (() -> Void)?
+        var onMoveRight: (() -> Void)?
+        var onMoveLeft: (() -> Void)?
         var onReturn: (() -> Void)?
         var onEscape: (() -> Void)?
         nonisolated(unsafe) private var monitor: Any?
@@ -318,6 +324,8 @@ struct KeyCaptureView: NSViewRepresentable {
                 switch event.keyCode {
                 case 125: handler = self.onMoveDown
                 case 126: handler = self.onMoveUp
+                case 124: handler = self.onMoveRight
+                case 123: handler = self.onMoveLeft
                 // Return and the keypad's enter, which are different keys.
                 case 36, 76: handler = self.onReturn
                 case 53: handler = self.onEscape

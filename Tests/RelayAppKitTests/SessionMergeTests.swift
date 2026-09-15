@@ -85,4 +85,46 @@ struct SessionMergeTests {
         SessionMerge.merging(snapshot(status: .starting, activity: 0), into: &sessions)
         #expect(sessions[identifier]?.status == .working)
     }
+
+    @Test("A session the user has closed does not come back")
+    func closingSessionIsNotResurrected() {
+        // Closing a pane while the daemon is still answering the request that
+        // created it used to put the session back: the reply arrived after the
+        // decision, reinstated it, and selecting it attached to a session the
+        // daemon had already forgotten — which is what produced "Session … is
+        // not known to the daemon" out of nowhere.
+        var sessions: [SessionID: SessionSnapshot] = [:]
+        SessionMerge.merging(
+            snapshot(status: .starting, activity: 0),
+            into: &sessions,
+            closing: [identifier]
+        )
+        #expect(sessions.isEmpty)
+    }
+
+    @Test("Its own exit event does not bring it back either")
+    func closingSessionIgnoresItsExit() {
+        // Terminating a session produces an exit event; by then the user has
+        // already asked for it to go away.
+        var sessions: [SessionID: SessionSnapshot] = [identifier: snapshot(status: .working, activity: 1)]
+        sessions.removeValue(forKey: identifier)
+
+        SessionMerge.merging(
+            snapshot(status: .finished, activity: 5, exitCode: 0),
+            into: &sessions,
+            closing: [identifier]
+        )
+        #expect(sessions.isEmpty)
+    }
+
+    @Test("Other sessions are unaffected by one being closed")
+    func closingOneDoesNotBlockAnother() {
+        var sessions: [SessionID: SessionSnapshot] = [:]
+        SessionMerge.merging(
+            snapshot(status: .working, activity: 2),
+            into: &sessions,
+            closing: [SessionID(rawValue: "someone-else")]
+        )
+        #expect(sessions[identifier]?.status == .working)
+    }
 }

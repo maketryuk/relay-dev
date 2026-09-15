@@ -8,6 +8,11 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
+- **Left and right walk a row's actions.** Up and down pick the port or host,
+  left and right move along what that row can do, Return runs it. Arriving on a
+  row always starts from its first action, so Return is never a keystroke away
+  from killing a process you had not looked at. Settings changes section with
+  the same keys.
 - **The panels take the keyboard.** Arrows move through the ports and hosts,
   Return acts on the highlighted row, Escape closes. The highlight stops at the
   ends rather than wrapping, and follows the list when filtering shortens it.
@@ -118,6 +123,15 @@ than when a day of work ends. Until then everything lands here.
 
 ### Fixed
 
+- **"Session … is not known to the daemon" appeared out of nowhere.** Closing a
+  pane while the daemon was still answering the request that created it put the
+  session back: the reply arrived after the decision, reinstated it, and
+  attaching then failed. A closed session now stays closed, whatever is still in
+  flight about it — and an attach that finds no session quietly drops it instead
+  of raising an error nobody can act on.
+- **An idle agent flickered between Working and Idle.** Every byte of output
+  counted as work, and a terminal interface repaints while doing nothing at all.
+  Work is sustained output now; a repaint is a blip.
 - **Dragging a divider oscillated instead of resizing.** The drag was measured
   against the handle, which is the thing that moves: each event moved the
   divider to the pointer, the pointer then appeared not to have moved, and the
