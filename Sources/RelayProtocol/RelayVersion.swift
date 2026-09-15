@@ -10,5 +10,5 @@ public enum RelayVersion {
     ///
     /// `rc1` exists to exercise the update path end to end, not to freeze what
     /// goes into 0.1.0 — which is why the changelog still says Unreleased.
-    public static let current = "0.1.0-rc1"
+    public static let current = "0.1.0-rc2"
 }
