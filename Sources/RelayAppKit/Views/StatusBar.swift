@@ -32,9 +32,6 @@ struct StatusBar: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .popover(isPresented: $model.isUsagePopoverOpen, arrowEdge: .top) {
-                    UsagePopover()
-                }
 
                 // Beside the figures it refreshes, not at the other end of the
                 // window from them.
@@ -54,6 +51,17 @@ struct StatusBar: View {
             .frame(height: Theme.Metrics.statusBarHeight)
             .background(Theme.Palette.rail)
             .overlay(alignment: .top) { RelayDivider() }
+            // Anchored to the bar's left edge rather than to the figures.
+            // Switching Compact and Detailed changes how wide those are, and a
+            // popover tied to them slid across the screen every time — the one
+            // thing a panel you are reading must not do.
+            .overlay(alignment: .bottomLeading) {
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .popover(isPresented: $model.isUsagePopoverOpen, arrowEdge: .top) {
+                        UsagePopover()
+                    }
+            }
         }
     }
 }
