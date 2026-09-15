@@ -24,6 +24,7 @@
 "CUSTOM COMMAND" = "CUSTOM COMMAND";
 "Cancel" = "Cancel";
 "Choose Folder…" = "Choose Folder…";
+"Choose…" = "Choose…";
 "Claude" = "Claude";
 "Claude · ask first" = "Claude · ask first";
 "Clear all" = "Clear all";
@@ -59,6 +60,7 @@
 "Done" = "Done";
 "Down" = "Down";
 "Drag a folder here" = "Drag a folder here";
+"Drop an image here, or choose one" = "Drop an image here, or choose one";
 "Drop to add" = "Drop to add";
 "Edit Preset" = "Edit Preset";
 "Edit Service" = "Edit Service";
@@ -77,10 +79,12 @@
 "Focus Next Pane" = "Focus Next Pane";
 "Focus Terminal" = "Focus Terminal";
 "Force quit" = "Force quit";
+"From the project" = "From the project";
 "Gemini" = "Gemini";
 "General" = "General";
 "Git" = "Git";
 "History" = "History";
+"Icon" = "Icon";
 "Idle" = "Idle";
 "Jump by number" = "Jump by number";
 "Language" = "Language";
@@ -126,6 +130,8 @@
 "Pin to current project" = "Pin to current project";
 "Ports" = "Ports";
 "Preferred editor command" = "Preferred editor command";
+"Press %@ for a terminal, or + to choose" = "Press %@ for a terminal, or + to choose";
+"Press + to start one" = "Press + to start one";
 "Previous Project" = "Previous Project";
 "Previous Session" = "Previous Session";
 "Project Settings" = "Project Settings";

@@ -70,7 +70,8 @@ struct ProjectRailView: View {
                 initials: ProjectAppearance.initials(for: project.name),
                 tint: ProjectAppearance.tint(for: project.rootPath),
                 status: model.aggregatedStatus(for: project.id),
-                isSelected: isSelected
+                isSelected: isSelected,
+                image: model.projectIcons[project.id]
             )
             .onTapGesture { model.selectProject(project.id) }
             .relayTooltip(

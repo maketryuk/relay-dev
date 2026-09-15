@@ -1,3 +1,4 @@
+import AppKit
 import RelayProtocol
 import RelayUI
 import SwiftUI
@@ -14,6 +15,8 @@ struct ProjectSettingsView: View {
     @State private var editor = ""
     @State private var notificationsEnabled = true
     @State private var projectMuted = false
+    @State private var iconPath: String?
+    @State private var isDropTargeted = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -29,6 +32,8 @@ struct ProjectSettingsView: View {
             RelayDivider()
 
             VStack(alignment: .leading, spacing: Theme.Spacing.large) {
+                field("Icon") { iconField }
+
                 field("Display name") {
                     RelayTextField(relayLocalized("Project name"), text: $name)
                 }
@@ -96,6 +101,7 @@ struct ProjectSettingsView: View {
                     updated.defaultAgent = defaultAgent
                     updated.defaultServiceCommand = devCommand.isEmpty ? nil : devCommand
                     updated.preferredEditor = editor.isEmpty ? nil : editor
+                    updated.iconPath = iconPath
                     model.updateProject(updated)
 
                     var settings = model.notificationSettings
@@ -116,9 +122,78 @@ struct ProjectSettingsView: View {
             defaultAgent = project.defaultAgent
             devCommand = project.defaultServiceCommand ?? ""
             editor = project.preferredEditor ?? ""
+            iconPath = project.iconPath
             notificationsEnabled = model.notificationSettings.isEnabled
             projectMuted = model.notificationSettings.isMuted(project.id)
         }
+    }
+
+    /// Almost no project needs this: the tile already shows whatever favicon or
+    /// app icon the repository carries. It exists for the ones that carry
+    /// nothing, or carry the wrong thing.
+    private var iconField: some View {
+        HStack(spacing: Theme.Spacing.medium) {
+            ProjectIcon(
+                initials: ProjectAppearance.initials(for: name.isEmpty ? project.name : name),
+                tint: ProjectAppearance.tint(for: project.rootPath),
+                status: .offline,
+                isSelected: true,
+                size: 48,
+                image: previewImage
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(isDropTargeted ? Theme.Palette.accent : .clear, lineWidth: 2)
+            )
+
+            VStack(alignment: .leading, spacing: Theme.Spacing.small) {
+                HStack(spacing: Theme.Spacing.small) {
+                    RelayButton(relayLocalized("Choose…"), systemImage: "photo") { chooseIcon() }
+                    if iconPath != nil {
+                        RelayButton(relayLocalized("Reset"), kind: .ghost) { iconPath = nil }
+                    }
+                }
+                Text(iconHint)
+                    .font(Theme.Typography.caption)
+                    .foregroundStyle(Theme.Palette.textTertiary)
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+            }
+        }
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+            for provider in providers {
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                    guard let url, ProjectIconLocator.isReadable(url.path) else { return }
+                    Task { @MainActor in iconPath = url.path }
+                }
+            }
+            return true
+        }
+    }
+
+    private var previewImage: NSImage? {
+        guard let path = iconPath else { return model.projectIcons[project.id] }
+        return ProjectIconLoader.read(path).flatMap(NSImage.init(data:))
+    }
+
+    private var iconHint: String {
+        if let iconPath { return (iconPath as NSString).abbreviatingWithTildeInPath }
+        var candidate = project
+        candidate.iconPath = nil
+        if let discovered = ProjectIconLoader.path(for: candidate) {
+            return relayLocalized("From the project") + " · " + (discovered as NSString).lastPathComponent
+        }
+        return relayLocalized("Drop an image here, or choose one")
+    }
+
+    private func chooseIcon() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.image]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        iconPath = url.path
     }
 
     private func field(_ label: String, @ViewBuilder content: () -> some View) -> some View {

@@ -24,6 +24,7 @@
 "CUSTOM COMMAND" = "СВОЯ КОМАНДА";
 "Cancel" = "Отмена";
 "Choose Folder…" = "Выбрать папку…";
+"Choose…" = "Выбрать…";
 "Claude" = "Claude";
 "Claude · ask first" = "Claude · спрашивать";
 "Clear all" = "Очистить всё";
@@ -59,6 +60,7 @@
 "Done" = "Готово";
 "Down" = "Остановить";
 "Drag a folder here" = "Перетащите папку сюда";
+"Drop an image here, or choose one" = "Перетащите изображение или выберите файл";
 "Drop to add" = "Отпустите, чтобы добавить";
 "Edit Preset" = "Изменить пресет";
 "Edit Service" = "Изменить сервис";
@@ -77,10 +79,12 @@
 "Focus Next Pane" = "Следующая панель";
 "Focus Terminal" = "Фокус в терминал";
 "Force quit" = "Завершить принудительно";
+"From the project" = "Из проекта";
 "Gemini" = "Gemini";
 "General" = "Основные";
 "Git" = "Git";
 "History" = "История";
+"Icon" = "Иконка";
 "Idle" = "Простаивает";
 "Jump by number" = "Переход по номеру";
 "Language" = "Язык";
@@ -126,6 +130,8 @@
 "Pin to current project" = "Закрепить за текущим проектом";
 "Ports" = "Порты";
 "Preferred editor command" = "Команда редактора";
+"Press %@ for a terminal, or + to choose" = "%@ — терминал, или + для выбора";
+"Press + to start one" = "Нажмите +, чтобы начать";
 "Previous Project" = "Предыдущий проект";
 "Previous Session" = "Предыдущая сессия";
 "Project Settings" = "Настройки проекта";

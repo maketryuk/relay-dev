@@ -29,6 +29,11 @@ final class AppModel {
     private(set) var connectionState: ConnectionState = .connecting
     private(set) var gitStatuses: [ProjectID: GitStatus] = [:]
     private(set) var projectFacts: [ProjectID: ProjectFacts] = [:]
+    /// The image each project is drawn with, once it has been read.
+    ///
+    /// Observed, because a tile has to redraw when its icon arrives, and written
+    /// only from a task — never while a view is drawing.
+    private(set) var projectIcons: [ProjectID: NSImage] = [:]
     private(set) var sshHosts: [SSHHost] = []
     private(set) var ports: [ListeningPort] = []
     private(set) var isRefreshingPorts = false
@@ -306,6 +311,7 @@ final class AppModel {
         persist()
         selectProject(project.id)
         refreshGit(for: project.id)
+        refreshProjectIcons()
     }
 
     func removeProject(_ id: ProjectID) {
@@ -325,8 +331,10 @@ final class AppModel {
 
     func updateProject(_ project: Project) {
         guard let index = projects.firstIndex(where: { $0.id == project.id }) else { return }
+        let iconChanged = projects[index].iconPath != project.iconPath
         projects[index] = project
         persist()
+        if iconChanged { refreshProjectIcons() }
     }
 
     func selectProject(_ id: ProjectID) {
@@ -751,6 +759,35 @@ final class AppModel {
                 return result
             }.value
             self?.projectFacts = facts
+        }
+        refreshProjectIcons()
+    }
+
+    /// Reads whatever image each project is drawn with.
+    ///
+    /// The bytes are fetched away from the main actor and turned into an image
+    /// on it: `NSImage` cannot cross actors, and decoding a favicon is cheap
+    /// enough that the crossing is not worth engineering around.
+    func refreshProjectIcons() {
+        let targets = projects.map { (id: $0.id, path: ProjectIconLoader.path(for: $0)) }
+        Task { [weak self] in
+            let payloads = await Task.detached(priority: .utility) { () -> [(ProjectID, Data)] in
+                targets.compactMap { target in
+                    guard let path = target.path, let data = ProjectIconLoader.read(path) else { return nil }
+                    return (target.id, data)
+                }
+            }.value
+
+            guard let self else { return }
+            var icons: [ProjectID: NSImage] = [:]
+            for (identifier, data) in payloads {
+                // A file that claims to be an image and is not simply leaves the
+                // project with its initials, which is a perfectly good tile.
+                if let image = NSImage(data: data), image.isValid {
+                    icons[identifier] = image
+                }
+            }
+            self.projectIcons = icons
         }
     }
 

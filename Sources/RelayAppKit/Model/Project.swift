@@ -13,6 +13,9 @@ struct Project: Codable, Identifiable, Hashable {
     var defaultAgent: SessionKind
     var defaultServiceCommand: String?
     var preferredEditor: String?
+    /// An image the user picked. Nil means "whatever the project itself
+    /// carries", which is right for almost every project and needs no setting.
+    var iconPath: String?
     /// SSH aliases the user pinned to this project; shown above the rest.
     var pinnedSSHHosts: [String]
     /// Long-running processes this project knows how to start.
@@ -26,6 +29,7 @@ struct Project: Codable, Identifiable, Hashable {
         defaultAgent: SessionKind = .claude,
         defaultServiceCommand: String? = nil,
         preferredEditor: String? = nil,
+        iconPath: String? = nil,
         pinnedSSHHosts: [String] = [],
         services: [ServiceDefinition] = []
     ) {
@@ -36,6 +40,7 @@ struct Project: Codable, Identifiable, Hashable {
         self.defaultAgent = defaultAgent
         self.defaultServiceCommand = defaultServiceCommand
         self.preferredEditor = preferredEditor
+        self.iconPath = iconPath
         self.pinnedSSHHosts = pinnedSSHHosts
         self.services = services
     }
@@ -51,6 +56,7 @@ struct Project: Codable, Identifiable, Hashable {
         defaultAgent = try container.decodeIfPresent(SessionKind.self, forKey: .defaultAgent) ?? .claude
         defaultServiceCommand = try container.decodeIfPresent(String.self, forKey: .defaultServiceCommand)
         preferredEditor = try container.decodeIfPresent(String.self, forKey: .preferredEditor)
+        iconPath = try container.decodeIfPresent(String.self, forKey: .iconPath)
         pinnedSSHHosts = try container.decodeIfPresent([String].self, forKey: .pinnedSSHHosts) ?? []
         services = try container.decodeIfPresent([ServiceDefinition].self, forKey: .services) ?? []
     }
