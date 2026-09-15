@@ -1,0 +1,131 @@
+import Foundation
+import RelayProtocol
+
+/// A one-click way to start a session: a name, an agent, and the arguments it
+/// should run with.
+///
+/// Presets exist because "start Claude" is not one action. Starting it with
+/// approvals on and starting it in automatic mode are different enough to
+/// deserve separate rows, and burying that behind a settings toggle would mean
+/// the user cannot have both.
+struct SessionPreset: Codable, Hashable, Identifiable, Sendable {
+    var id: String
+    var name: String
+    var kind: SessionKind
+    /// Appended to the kind's own command.
+    var arguments: [String]
+    /// Built-ins live in code so improvements reach everyone; only user presets
+    /// are persisted.
+    var isBuiltIn: Bool
+    /// Overrides the whole command for a custom preset.
+    var customCommand: String?
+
+    init(
+        id: String = UUID().uuidString,
+        name: String,
+        kind: SessionKind,
+        arguments: [String] = [],
+        isBuiltIn: Bool = false,
+        customCommand: String? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.kind = kind
+        self.arguments = arguments
+        self.isBuiltIn = isBuiltIn
+        self.customCommand = customCommand
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        kind = try container.decodeIfPresent(SessionKind.self, forKey: .kind) ?? .custom
+        arguments = try container.decodeIfPresent([String].self, forKey: .arguments) ?? []
+        isBuiltIn = try container.decodeIfPresent(Bool.self, forKey: .isBuiltIn) ?? false
+        customCommand = try container.decodeIfPresent(String.self, forKey: .customCommand)
+    }
+
+    /// The argv handed to the daemon.
+    var command: [String] {
+        if let customCommand, !customCommand.isEmpty {
+            return ["/bin/sh", "-c", customCommand]
+        }
+        return kind.defaultCommand + arguments
+    }
+
+    /// Shown under the name in the menu, so it is never a mystery what a preset
+    /// will actually run.
+    var subtitle: String {
+        if let customCommand, !customCommand.isEmpty { return customCommand }
+        return command.joined(separator: " ")
+    }
+}
+
+enum SessionPresets {
+    /// Shipped presets.
+    ///
+    /// Agents default to their automatic-approval mode: the flags differ per CLI
+    /// and are easy to get wrong by hand, which is exactly what a preset is for.
+    /// The supervised variant sits directly underneath, because handing an agent
+    /// unattended write access is a choice that should stay one click away in
+    /// both directions.
+    static let builtIn: [SessionPreset] = [
+        SessionPreset(
+            id: "builtin.terminal",
+            name: "Terminal",
+            kind: .shell,
+            isBuiltIn: true
+        ),
+        SessionPreset(
+            id: "builtin.claude.auto",
+            name: "Claude",
+            kind: .claude,
+            arguments: ["--permission-mode", "auto"],
+            isBuiltIn: true
+        ),
+        SessionPreset(
+            id: "builtin.claude",
+            name: "Claude · ask first",
+            kind: .claude,
+            isBuiltIn: true
+        ),
+        SessionPreset(
+            id: "builtin.codex.auto",
+            name: "Codex",
+            kind: .codex,
+            arguments: ["--approve-for-me"],
+            isBuiltIn: true
+        ),
+        SessionPreset(
+            id: "builtin.codex",
+            name: "Codex · ask first",
+            kind: .codex,
+            isBuiltIn: true
+        ),
+        SessionPreset(
+            id: "builtin.gemini.auto",
+            name: "Gemini",
+            kind: .gemini,
+            arguments: ["--approval-mode", "auto_edit"],
+            isBuiltIn: true
+        ),
+        SessionPreset(
+            id: "builtin.opencode",
+            name: "OpenCode",
+            kind: .opencode,
+            isBuiltIn: true
+        ),
+    ]
+
+    static func all(custom: [SessionPreset]) -> [SessionPreset] {
+        builtIn + custom
+    }
+
+    /// The preset a keyboard shortcut for a kind should launch: the first one
+    /// that targets it, which is the automatic variant for agents.
+    static func preferred(for kind: SessionKind, custom: [SessionPreset] = []) -> SessionPreset {
+        all(custom: custom).first { $0.kind == kind }
+            ?? SessionPreset(name: kind.displayName, kind: kind)
+    }
+}
