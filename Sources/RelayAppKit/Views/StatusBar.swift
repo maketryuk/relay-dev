@@ -24,7 +24,7 @@ struct StatusBar: View {
                 } label: {
                     HStack(spacing: Theme.Spacing.large) {
                         ForEach(model.usage.agents) { usage in
-                            AgentUsageChip(usage: usage, detail: model.usageDetail)
+                            AgentUsageChip(usage: usage, detail: model.usageBarDetail)
                         }
                     }
                     .padding(.horizontal, Theme.Spacing.small)
@@ -36,8 +36,8 @@ struct StatusBar: View {
                     UsagePopover()
                 }
 
-                Spacer(minLength: Theme.Spacing.small)
-
+                // Beside the figures it refreshes, not at the other end of the
+                // window from them.
                 IconButton(
                     systemImage: "arrow.clockwise",
                     help: "",
@@ -47,6 +47,8 @@ struct StatusBar: View {
                     Task { await model.usage.refresh() }
                 }
                 .relayTooltip(relayLocalized("Refresh usage"), edge: .top)
+
+                Spacer(minLength: 0)
             }
             .padding(.horizontal, Theme.Spacing.small)
             .frame(height: Theme.Metrics.statusBarHeight)

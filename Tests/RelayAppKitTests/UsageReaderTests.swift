@@ -242,3 +242,31 @@ struct MostUsedWindowTests {
         #expect(agent.mostUsedWindow?.span == .weekly)
     }
 }
+
+@Suite("Usage preferences")
+@MainActor
+struct UsageBarDetailTests {
+    @Test("The bar starts brief")
+    func defaultsToCompact() {
+        // A strip along the bottom of every window earns its place by being
+        // glanceable; the full picture is one click away.
+        #expect(WorkspaceState().usageBarDetail == .compact)
+    }
+
+    @Test("A value written when the setting meant something else is not honoured")
+    func ignoresThePreviousKey() throws {
+        // It used to govern the popover as well, so a stored preference from
+        // then is an answer to a different question.
+        let stored = Data(#"{"usageDetail": "detailed"}"#.utf8)
+        let state = try JSONDecoder().decode(WorkspaceState.self, from: stored)
+        #expect(state.usageBarDetail == .compact)
+    }
+
+    @Test("A deliberate choice survives a round trip")
+    func roundTripsAChoice() throws {
+        var state = WorkspaceState()
+        state.usageBarDetail = .detailed
+        let data = try JSONEncoder().encode(state)
+        #expect(try JSONDecoder().decode(WorkspaceState.self, from: data).usageBarDetail == .detailed)
+    }
+}

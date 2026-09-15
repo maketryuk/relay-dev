@@ -110,7 +110,10 @@ struct WorkspaceState: Codable {
     var checksForUpdates: Bool
     /// The strip along the bottom showing what the agents have left.
     var showsStatusBar: Bool
-    var usageDetail: UsageDetail
+    /// Named for the bar because that is all it governs. The key it is
+    /// stored under changed with the meaning, so a value written when it
+    /// meant something else is ignored rather than honoured.
+    var usageBarDetail: UsageDetail
     /// Terminal arrangement per project, so a split survives a relaunch the
     /// way the sessions in it do.
     var paneLayouts: [String: PaneNode]
@@ -135,7 +138,7 @@ struct WorkspaceState: Codable {
         language: AppLanguage = .system,
         checksForUpdates: Bool = true,
         showsStatusBar: Bool = true,
-        usageDetail: UsageDetail = .detailed,
+        usageBarDetail: UsageDetail = .compact,
         paneLayouts: [String: PaneNode] = [:]
     ) {
         self.version = version
@@ -157,7 +160,7 @@ struct WorkspaceState: Codable {
         self.language = language
         self.checksForUpdates = checksForUpdates
         self.showsStatusBar = showsStatusBar
-        self.usageDetail = usageDetail
+        self.usageBarDetail = usageBarDetail
         self.paneLayouts = paneLayouts
     }
 
@@ -184,7 +187,7 @@ struct WorkspaceState: Codable {
         language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .system
         checksForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checksForUpdates) ?? true
         showsStatusBar = try container.decodeIfPresent(Bool.self, forKey: .showsStatusBar) ?? true
-        usageDetail = try container.decodeIfPresent(UsageDetail.self, forKey: .usageDetail) ?? .detailed
+        usageBarDetail = try container.decodeIfPresent(UsageDetail.self, forKey: .usageBarDetail) ?? .compact
         paneLayouts = try container.decodeIfPresent([String: PaneNode].self, forKey: .paneLayouts) ?? [:]
     }
 }

@@ -16,9 +16,11 @@ struct UsagePopover: View {
             RelayDivider()
 
             VStack(alignment: .leading, spacing: Theme.Spacing.small) {
+                // Governs the bar, not this panel. You opened this to see
+                // everything, so everything is what it shows.
                 Picker("", selection: Binding(
-                    get: { model.usageDetail },
-                    set: { model.setUsageDetail($0) }
+                    get: { model.usageBarDetail },
+                    set: { model.setUsageBarDetail($0) }
                 )) {
                     ForEach(UsageDetail.allCases) { detail in
                         Text(detail.title).tag(detail)
@@ -26,9 +28,10 @@ struct UsagePopover: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                .frame(maxWidth: .infinity)
 
                 ForEach(model.usage.agents) { usage in
-                    AgentUsageRow(usage: usage, detail: model.usageDetail)
+                    AgentUsageRow(usage: usage)
                 }
             }
             .padding(Theme.Spacing.medium)
@@ -58,20 +61,11 @@ struct UsagePopover: View {
     }
 }
 
-/// One agent in the popover.
-///
-/// Compact shows only the window closest to running out; hovering the row brings
-/// the rest back, so the short form costs nothing to look past.
+/// One agent in the popover, with every window it reports.
 private struct AgentUsageRow: View {
     let usage: AgentUsage
-    let detail: UsageDetail
 
     @State private var isHovering = false
-
-    private var shown: [UsageWindow] {
-        guard detail == .compact, !isHovering else { return usage.windows }
-        return usage.mostUsedWindow.map { [$0] } ?? usage.windows
-    }
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { context in
@@ -92,7 +86,7 @@ private struct AgentUsageRow: View {
                     Spacer(minLength: 0)
                 }
 
-                ForEach(shown) { window in
+                ForEach(usage.windows) { window in
                     row(window)
                 }
             }
@@ -101,7 +95,6 @@ private struct AgentUsageRow: View {
             .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
             .contentShape(Rectangle())
             .onHover { isHovering = $0 }
-            .animation(.easeOut(duration: 0.12), value: shown.count)
         }
     }
 
