@@ -43,6 +43,7 @@ struct RootView: View {
         .animation(.easeOut(duration: 0.16), value: model.isRightSidebarVisible)
         .animation(.easeOut(duration: 0.16), value: model.isLeftSidebarVisible)
         .background(Theme.Palette.base)
+        .overlay { usageOverlay }
         .overlay { modalOverlay }
         .overlay { commandPaletteOverlay }
         .overlay {
@@ -79,6 +80,33 @@ struct RootView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.Palette.base)
+    }
+
+    /// Sits above the status bar, anchored to the same corner it was opened
+    /// from.
+    ///
+    /// Drawn here rather than as a `popover` because AppKit gives those a tail,
+    /// and a tail pointing into a strip of numbers is decoration arguing with
+    /// the thing it points at. Closing on a click anywhere else is what the
+    /// invisible layer beneath it is for.
+    @ViewBuilder
+    private var usageOverlay: some View {
+        @Bindable var model = model
+
+        if model.isUsagePopoverOpen {
+            ZStack(alignment: .bottomLeading) {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture { model.isUsagePopoverOpen = false }
+
+                UsagePopover()
+                    .modalPlate()
+                    .padding(.leading, Theme.Spacing.small)
+                    .padding(.bottom, Theme.Metrics.statusBarHeight + Theme.Spacing.xsmall)
+            }
+            .background { KeyCaptureView(onEscape: { model.isUsagePopoverOpen = false }) }
+            .transition(.opacity)
+        }
     }
 
     /// The whole stack, not just the top: a panel opened from inside another
@@ -157,10 +185,19 @@ struct ProjectOverviewPane: View {
 
     private static let presetsPerRow = 4
 
-    /// Only the very first preset is the prominent one; a wall of accent-filled
-    /// buttons would make none of them the obvious start.
-    private func isLeading(_ preset: SessionPreset, inFirstRow: Bool) -> Bool {
-        inFirstRow && preset.id == model.presets.first?.id
+    /// Exactly one preset is the prominent one; a wall of accent-filled buttons
+    /// would make none of them the obvious start.
+    ///
+    /// Which one is the project's own answer: the first preset for its default
+    /// agent, falling back to the first preset of all when the project has none
+    /// for that agent. That setting had been written down and never read, which
+    /// is a control that pretends.
+    private var prominentPreset: SessionPreset? {
+        model.presets.first { $0.kind == project.defaultAgent } ?? model.presets.first
+    }
+
+    private func isLeading(_ preset: SessionPreset) -> Bool {
+        preset.id == prominentPreset?.id
     }
 
     var body: some View {
@@ -185,10 +222,10 @@ struct ProjectOverviewPane: View {
             // The same presets the sidebar's + offers, because there is no
             // second answer to "how do I start something here".
             VStack(spacing: Theme.Spacing.small) {
-                ForEach(Array(presetRows.enumerated()), id: \.offset) { rowIndex, row in
+                ForEach(Array(presetRows.enumerated()), id: \.offset) { _, row in
                     HStack(spacing: Theme.Spacing.small) {
                         ForEach(row) { preset in
-                            let isPrimary = isLeading(preset, inFirstRow: rowIndex == 0)
+                            let isPrimary = isLeading(preset)
                             RelayButton(preset.name, kind: isPrimary ? .primary : .secondary) {
                                 SessionGlyph(
                                     kind: preset.kind,

@@ -15,8 +15,6 @@ struct StatusBar: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        @Bindable var model = model
-
         if !model.usage.agents.isEmpty {
             HStack(spacing: 0) {
                 Button {
@@ -51,18 +49,7 @@ struct StatusBar: View {
             .frame(height: Theme.Metrics.statusBarHeight)
             .background(Theme.Palette.rail)
             .overlay(alignment: .top) { RelayDivider() }
-            // Anchored to the bar's top-left corner. Left, because switching
-            // Compact and Detailed changes how wide the figures are and a
-            // popover tied to them slid across the screen every time; top,
-            // because a popover hung off the bottom edge opens upward *over*
-            // the bar and hides the very numbers it was opened from.
-            .overlay(alignment: .topLeading) {
-                Color.clear
-                    .frame(width: 1, height: 1)
-                    .popover(isPresented: $model.isUsagePopoverOpen, arrowEdge: .top) {
-                        UsagePopover()
-                    }
-            }
+
         }
     }
 }

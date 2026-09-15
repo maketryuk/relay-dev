@@ -233,6 +233,21 @@ final class OutputBox: @unchecked Sendable {
             usleep(20_000)
         }
     }
+
+    /// True once the descriptor test's child has said which branch it took.
+    ///
+    /// Either answer means it ran, which is all the test needs from the
+    /// terminal — the file is what decides whether the descriptor leaked.
+    var ranToACompletion: Bool {
+        text.contains("wrote") || text.contains("blocked")
+    }
+
+    func waitForEitherOutcome(timeout: TimeInterval = 10) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline, !ranToACompletion {
+            usleep(20_000)
+        }
+    }
 }
 
 @Suite("Trailing output")

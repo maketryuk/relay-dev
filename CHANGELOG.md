@@ -162,6 +162,9 @@ than when a day of work ends. Until then everything lands here.
 
 ### Fixed
 
+- **The project's default agent now does something.** It was written down and
+  read back by its own settings row and by nothing else — a control that
+  pretends. It decides which start on the project screen is the prominent one.
 - **Russian windows still spoke English in places.** Around forty phrases never
   reached the translation table at all — section headings like "All hosts", the
   empty states, every field label in the dialogs, the command palette's entries,
