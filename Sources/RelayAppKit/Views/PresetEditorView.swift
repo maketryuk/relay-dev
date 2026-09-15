@@ -179,9 +179,12 @@ struct PresetEditorView: View {
         model.dismissModal()
     }
 
+    /// Localises here rather than at every call site: a field label is always
+    /// a phrase shown to the user, and spelling that out fifteen times invites
+    /// the one that gets forgotten.
     private func field(_ label: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
-            Text(label.uppercased())
+            Text(relayLocalized(label).uppercased())
                 .font(Theme.Typography.sectionHeader)
                 .tracking(0.7)
                 .foregroundStyle(Theme.Palette.textTertiary)

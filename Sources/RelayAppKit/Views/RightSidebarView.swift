@@ -125,7 +125,7 @@ struct ServicesPane: View {
                     IconButton(systemImage: "arrow.up.forward.app", help: "", size: 24) {
                         model.openService(service, in: project.id)
                     }
-                    .relayTooltip("Open \(url?.absoluteString ?? "")")
+                    .relayTooltip(String(format: relayLocalized("Open %@"), url?.absoluteString ?? ""))
                 }
 
                 if state.isActive {
@@ -133,7 +133,7 @@ struct ServicesPane: View {
                         model.restartService(service, in: project.id)
                     }
                     .relayTooltip(
-                        "Restart",
+                        relayLocalized("Restart"),
                         shortcut: service.isDefault ? model.binding(for: .restartDefaultService) : nil
                     )
                     IconButton(systemImage: "stop.fill", help: "", size: 24) {
@@ -145,7 +145,7 @@ struct ServicesPane: View {
                         model.startService(service, in: project.id)
                     }
                     .relayTooltip(
-                        "Start",
+                        relayLocalized("Start"),
                         shortcut: service.isDefault ? model.binding(for: .startDefaultService) : nil
                     )
                 }
@@ -197,7 +197,7 @@ struct DockerPane: View {
         let snapshot = model.dockerSnapshot(for: project.id)
 
         VStack(alignment: .leading, spacing: 1) {
-            SectionHeader(snapshot?.composeProjectName.map { "Docker · \($0)" } ?? "Docker", trailing: {
+            SectionHeader(snapshot?.composeProjectName.map { "Docker · \($0)" } ?? relayLocalized("Docker"), trailing: {
                 IconButton(systemImage: "arrow.clockwise", help: "", size: 24) {
                     model.refreshDocker(for: project.id)
                 }
@@ -205,16 +205,16 @@ struct DockerPane: View {
             })
 
             if let snapshot, !snapshot.isAvailable {
-                hint(snapshot.message ?? "Docker is unavailable.")
+                hint(snapshot.message ?? relayLocalized("Docker is unavailable."))
             } else {
                 composeActions
                 ForEach(snapshot?.containers ?? []) { container in
                     row(container)
                 }
                 if snapshot == nil {
-                    hint("Looking for containers…")
+                    hint(relayLocalized("Looking for containers…"))
                 } else if snapshot?.containers.isEmpty == true {
-                    hint("No containers for this project. Press Up to start the stack.")
+                    hint(relayLocalized("No containers for this project. Press Up to start the stack."))
                 }
             }
         }
@@ -252,7 +252,7 @@ struct DockerPane: View {
                     IconButton(systemImage: "arrow.up.forward.app", help: "", size: 24) {
                         model.openContainerPort(port)
                     }
-                    .relayTooltip("Open localhost:\(port.published)")
+                    .relayTooltip(String(format: relayLocalized("Open localhost:%d"), port.published))
                 }
 
                 if isRunning {
@@ -357,7 +357,9 @@ struct HistoryPane: View {
     }
 
     private func subtitle(_ entry: SessionHistoryEntry) -> String {
-        let outcome = entry.succeeded ? "finished" : "exited \(entry.exitCode.map(String.init) ?? "?")"
+        let outcome = entry.succeeded
+            ? relayLocalized("finished")
+            : String(format: relayLocalized("exited %@"), entry.exitCode.map(String.init) ?? "?")
         return "\(Self.formatter.localizedString(for: entry.endedAt, relativeTo: Date())) · \(entry.durationText) · \(outcome)"
     }
 

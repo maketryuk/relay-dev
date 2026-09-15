@@ -48,7 +48,7 @@ struct CommandPaletteView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.Palette.textTertiary)
-            TextField("Run a command…", text: $query)
+            TextField(relayLocalized("Run a command…"), text: $query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 14))
                 .foregroundStyle(Theme.Palette.textPrimary)
@@ -140,7 +140,7 @@ struct CommandPaletteView: View {
             for preset in model.sessionPresets {
                 commands.append(PaletteCommand(
                     id: "new-\(preset.id)",
-                    title: "New \(preset.name) Session",
+                    title: String(format: relayLocalized("New %@ Session"), preset.name),
                     subtitle: preset.subtitle,
                     systemImage: preset.kind.symbolName
                 ) {
@@ -183,20 +183,20 @@ struct CommandPaletteView: View {
                 if state.isActive {
                     commands.append(PaletteCommand(
                         id: "stop-\(service.id)",
-                        title: "Stop \(service.name)",
+                        title: String(format: relayLocalized("Stop %@"), service.name),
                         subtitle: service.command,
                         systemImage: "stop.fill"
                     ) { model.stopService(service, in: project.id) })
                     commands.append(PaletteCommand(
                         id: "restart-\(service.id)",
-                        title: "Restart \(service.name)",
+                        title: String(format: relayLocalized("Restart %@"), service.name),
                         subtitle: service.command,
                         systemImage: "arrow.clockwise"
                     ) { model.restartService(service, in: project.id) })
                 } else {
                     commands.append(PaletteCommand(
                         id: "start-\(service.id)",
-                        title: "Start \(service.name)",
+                        title: String(format: relayLocalized("Start %@"), service.name),
                         subtitle: service.command,
                         systemImage: "play.fill"
                     ) { model.startService(service, in: project.id) })
@@ -204,7 +204,7 @@ struct CommandPaletteView: View {
                 if model.url(of: service, in: project.id) != nil {
                     commands.append(PaletteCommand(
                         id: "open-\(service.id)",
-                        title: "Open \(service.name) URL",
+                        title: String(format: relayLocalized("Open %@ URL"), service.name),
                         subtitle: model.url(of: service, in: project.id)?.absoluteString ?? "",
                         systemImage: "arrow.up.forward.app"
                     ) { model.openService(service, in: project.id) })
@@ -214,7 +214,7 @@ struct CommandPaletteView: View {
             for port in model.ports where port.url != nil {
                 commands.append(PaletteCommand(
                     id: "port-\(port.id)",
-                    title: "Open port \(port.port)",
+                    title: String(format: relayLocalized("Open port %d"), port.port),
                     subtitle: port.ownerName ?? port.processName,
                     systemImage: "point.3.filled.connected.trianglepath.dotted"
                 ) { model.openPort(port) })
@@ -226,7 +226,7 @@ struct CommandPaletteView: View {
             for host in hosts.pinned + hosts.others {
                 commands.append(PaletteCommand(
                     id: "ssh-\(host.alias)",
-                    title: "Connect SSH: \(host.alias)",
+                    title: String(format: relayLocalized("Connect SSH: %@"), host.alias),
                     subtitle: host.displayTarget,
                     systemImage: "network"
                 ) { model.connectSSH(host, in: project.id) })
@@ -236,7 +236,7 @@ struct CommandPaletteView: View {
         for project in model.projects {
             commands.append(PaletteCommand(
                 id: "switch-\(project.id.rawValue)",
-                title: "Switch to \(project.name)",
+                title: String(format: relayLocalized("Switch to %@"), project.name),
                 subtitle: project.displayPath,
                 systemImage: "square.stack.3d.up"
             ) { model.selectProject(project.id) })
@@ -246,7 +246,7 @@ struct CommandPaletteView: View {
             for session in model.sessions(in: projectID) {
                 commands.append(PaletteCommand(
                     id: "focus-\(session.id.rawValue)",
-                    title: "Focus \(session.displayName)",
+                    title: String(format: relayLocalized("Focus %@"), session.displayName),
                     subtitle: session.status.displayName,
                     systemImage: session.kind.symbolName
                 ) { model.selectSession(session.id) })

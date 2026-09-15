@@ -94,8 +94,10 @@ struct TitleBar: View {
     }
 
     private var placeholder: String {
-        model.selectedProject.map { "Search \($0.name) — sessions, services, hosts…" }
-            ?? "Search sessions, services, hosts…"
+        guard let project = model.selectedProject else {
+            return relayLocalized("Search sessions, services, hosts…")
+        }
+        return String(format: relayLocalized("Search %@ — sessions, services, hosts…"), project.name)
     }
 
     private var trailingControls: some View {
@@ -140,7 +142,9 @@ struct TitleBar: View {
                     .allowsHitTesting(false)
             }
         }
-        .relayTooltip(unread > 0 ? "\(unread) unread" : "Notifications")
+        .relayTooltip(unread > 0
+            ? String(format: relayLocalized("%d unread"), unread)
+            : relayLocalized("Notifications"))
         .popover(isPresented: $model.isInboxOpen, arrowEdge: .bottom) {
             InboxPopover()
         }

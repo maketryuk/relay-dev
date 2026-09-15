@@ -174,7 +174,7 @@ struct TerminalPane: View {
                 // Beats the status text to the remaining room: which terminal
                 // this is matters more than what it is doing.
                 .layoutPriority(1)
-                .help("Double-click the session in the sidebar to rename it")
+                .help(relayLocalized("Double-click the session in the sidebar to rename it"))
 
             StatusDot(status: session.status)
             if detail.showsStatusText {

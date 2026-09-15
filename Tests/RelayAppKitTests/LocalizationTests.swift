@@ -75,4 +75,99 @@ struct LocalizationTests {
         #expect(!english.isEmpty)
         #expect(english == russian, "tables differ: \(english.symmetricDifference(russian))")
     }
+
+    @Test("Every phrase the app looks up has a translation")
+    func everyLookupIsTranslated() throws {
+        // The two tables agreeing with each other is not enough. A phrase that
+        // was never added to either is invisible to that check and simply shows
+        // English in a Russian window — which is exactly how "All hosts"
+        // survived being localised twice over.
+        let sources = Self.repositoryRoot.appendingPathComponent("Sources")
+        let english = try Self.tableKeys("en")
+
+        var missing = Set<String>()
+        for file in Self.swiftFiles(under: sources) {
+            let contents = try String(contentsOf: file, encoding: .utf8)
+            for phrase in Self.localizedPhrases(in: contents) where !english.contains(phrase) {
+                missing.insert(phrase)
+            }
+        }
+        #expect(missing.isEmpty, "no entry for: \(missing.sorted())")
+    }
+
+    // MARK: - Reading the source
+
+    /// The checkout, found from this file rather than from the working
+    /// directory, which a test runner does not promise anything about.
+    private static var repositoryRoot: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
+    private static func swiftFiles(under directory: URL) -> [URL] {
+        let enumerator = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil)
+        return (enumerator?.allObjects as? [URL] ?? []).filter { $0.pathExtension == "swift" }
+    }
+
+    private static func tableKeys(_ language: String) throws -> Set<String> {
+        let path = try #require(RelayUIResources.bundle.path(forResource: language, ofType: "lproj"))
+        let bundle = try #require(Bundle(path: path))
+        let url = try #require(bundle.url(forResource: "Localizable", withExtension: "strings"))
+        let contents = try String(contentsOf: url, encoding: .utf8)
+        var keys = Set<String>()
+        for line in contents.split(separator: "\n") where line.hasPrefix("\"") {
+            guard let key = line.split(separator: "\" = \"").first else { continue }
+            keys.insert(String(key.dropFirst()))
+        }
+        return keys
+    }
+
+    /// Every literal handed to the table, including the two arms of a ternary —
+    /// the form that hides a phrase from a naive search.
+    ///
+    /// `localized(` as well as `relayLocalized(`, because the notification
+    /// policy takes its lookup as a parameter to stay off the main actor, and a
+    /// format string it never registered would reach the user as English.
+    static func localizedPhrases(in source: String) -> [String] {
+        ["relayLocalized(", "localized("].flatMap { phrases(in: source, calledWith: $0) }
+    }
+
+    private static func phrases(in source: String, calledWith name: String) -> [String] {
+        var phrases: [String] = []
+        let characters = Array(source)
+        var index = 0
+        let call = Array(name)
+
+        while index + call.count < characters.count {
+            guard Array(characters[index ..< index + call.count]) == call else {
+                index += 1
+                continue
+            }
+            var cursor = index + call.count
+            var depth = 1
+
+            while cursor < characters.count, depth > 0 {
+                switch characters[cursor] {
+                case "(": depth += 1
+                case ")": depth -= 1
+                case "\"":
+                    var text = ""
+                    cursor += 1
+                    while cursor < characters.count, characters[cursor] != "\"" {
+                        // A literal carrying an interpolation is not a key.
+                        if characters[cursor] == "\\" { cursor += 1 }
+                        text.append(characters[cursor])
+                        cursor += 1
+                    }
+                    phrases.append(text)
+                default: break
+                }
+                cursor += 1
+            }
+            index = cursor
+        }
+        return phrases
+    }
 }

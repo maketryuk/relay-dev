@@ -205,7 +205,12 @@ struct ProjectOverviewPane: View {
             if let git = model.gitStatuses[project.id] {
                 HStack(spacing: Theme.Spacing.small) {
                     Badge(git.branch, systemImage: "arrow.triangle.branch", tint: Theme.Palette.textSecondary)
-                    if git.isDirty { Badge("\(git.changedFiles) changed", tint: Theme.Palette.statusWaiting) }
+                    if git.isDirty {
+                        Badge(
+                            String(format: relayLocalized("%d changed"), git.changedFiles),
+                            tint: Theme.Palette.statusWaiting
+                        )
+                    }
                     if git.ahead > 0 { Badge("↑\(git.ahead)", tint: Theme.Palette.statusFinished) }
                     if git.behind > 0 { Badge("↓\(git.behind)", tint: Theme.Palette.statusWorking) }
                 }

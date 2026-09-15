@@ -1050,10 +1050,10 @@ final class AppModel {
         )
         // The inbox records everything worth knowing about; only what the user
         // is not already looking at earns a banner.
-        if let event = NotificationPolicy.attentionEvent(for: context) {
+        if let event = NotificationPolicy.attentionEvent(for: context, localized: relayLocalized) {
             inbox = Inbox.appending(InboxItem(event: event, projectID: snapshot.projectID), to: inbox)
         }
-        guard let event = NotificationPolicy.event(for: context) else { return }
+        guard let event = NotificationPolicy.event(for: context, localized: relayLocalized) else { return }
         notifier.present(event)
     }
 

@@ -119,7 +119,7 @@ struct GeneralSettingsPane: View {
             SettingsGroup(relayLocalized("Workspace")) {
                 SettingsRow(
                     title: relayLocalized("Projects"),
-                    detail: "\(model.projects.count) in this workspace"
+                    detail: String(format: relayLocalized("Projects: %d"), model.projects.count)
                 ) {
                     RelayButton(relayLocalized("Add Project…")) { model.presentModal(.addProject) }
                 }
@@ -163,8 +163,8 @@ struct GeneralSettingsPane: View {
                 SettingsRow(
                     title: relayLocalized("Status"),
                     detail: model.connectionState.isConnected
-                        ? "Connected — sessions keep running when Relay is closed"
-                        : "Disconnected"
+                        ? relayLocalized("Connected — sessions keep running when Relay is closed")
+                        : relayLocalized("Disconnected")
                 ) {
                     if !model.connectionState.isConnected {
                         RelayButton(relayLocalized("Reconnect"), kind: .primary) { model.retryConnection() }
@@ -262,7 +262,7 @@ struct ShortcutSettingsPane: View {
 
         return SettingsRow(
             title: command.localizedTitle,
-            detail: conflicts.isEmpty ? nil : "Also used by \(conflicts.map(\.title).joined(separator: ", "))",
+            detail: conflicts.isEmpty ? nil : String(format: relayLocalized("Also used by %@"), conflicts.map(\.localizedTitle).joined(separator: ", ")),
             detailTint: conflicts.isEmpty ? nil : Theme.Palette.statusWaiting
         ) {
             KeyRecorderField(
@@ -382,9 +382,10 @@ struct AboutPane: View {
 }
 
 enum AppInfo {
+    @MainActor
     static var version: String {
         let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-        return short ?? "development build"
+        return short ?? relayLocalized("development build")
     }
 }
 

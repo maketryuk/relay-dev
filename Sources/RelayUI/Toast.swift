@@ -151,7 +151,7 @@ struct ToastView: View {
                 .contentShape(Rectangle())
             }
 
-            IconButton(systemImage: "xmark", help: "Dismiss", size: 16, action: onDismiss)
+            IconButton(systemImage: "xmark", help: relayLocalized("Dismiss"), size: 16, action: onDismiss)
                 .opacity(isHovering ? 1 : 0.4)
         }
         .padding(.horizontal, Theme.Spacing.medium)
