@@ -31,7 +31,7 @@ struct PTYProcessTests {
         _ plan: PTYProcess.LaunchPlan,
         expecting marker: String? = nil,
         timeout: TimeInterval = 10
-    ) throws -> (output: Data, exitCode: Int32?) {
+    ) throws -> (output: Data, exitCode: Int32?, wasAlive: Bool) {
         let process = try PTYProcess.launch(plan)
         let box = OutputBox()
         process.startStreaming(
@@ -49,8 +49,20 @@ struct PTYProcessTests {
             }
             usleep(20_000)
         }
+        // Whether the child was still alive when we gave up is the difference
+        // between "it never ran" and "it ran and we lost what it said", and a
+        // failure that cannot tell those apart is a failure nobody can act on.
+        let alive = process.isRunning
         process.close()
-        return (box.data, box.exitCode)
+        return (box.data, box.exitCode, alive)
+    }
+
+    /// Describes a collection that did not produce what was expected.
+    private func diagnosis(_ result: (output: Data, exitCode: Int32?, wasAlive: Bool)) -> String {
+        let text = String(decoding: result.output, as: UTF8.self)
+        return """
+        produced \(text.debugDescription),         exit \(result.exitCode.map(String.init) ?? "none"),         \(result.wasAlive ? "still running" : "already gone")
+        """
     }
 
     @Test("The child runs on a real controlling terminal")
@@ -134,7 +146,7 @@ struct PTYProcessTests {
         var directoryPlan = plan("pwd")
         directoryPlan.workingDirectory = "/usr"
         let result = try collect(directoryPlan, expecting: "/usr")
-        #expect(String(decoding: result.output, as: UTF8.self).contains("/usr"), "produced: \(result.output.count) bytes")
+        #expect(String(decoding: result.output, as: UTF8.self).contains("/usr"), "\(diagnosis(result))")
     }
 
     @Test("The environment passed in reaches the child")
@@ -142,14 +154,14 @@ struct PTYProcessTests {
         var environmentPlan = plan("echo \"[$RELAY_TEST_VAR]\"")
         environmentPlan.environment["RELAY_TEST_VAR"] = "carried-through"
         let result = try collect(environmentPlan, expecting: "[carried-through]")
-        #expect(String(decoding: result.output, as: UTF8.self).contains("[carried-through]"), "produced: \(String(decoding: result.output, as: UTF8.self).debugDescription)")
+        #expect(String(decoding: result.output, as: UTF8.self).contains("[carried-through]"), "\(diagnosis(result))")
     }
 
     @Test("The window size is visible to the child")
     func appliesWindowSize() throws {
         let result = try collect(plan("stty size", rows: 40, columns: 132), expecting: "40 132")
         // `stty size` prints "rows cols".
-        #expect(String(decoding: result.output, as: UTF8.self).contains("40 132"), "produced: \(String(decoding: result.output, as: UTF8.self).debugDescription)")
+        #expect(String(decoding: result.output, as: UTF8.self).contains("40 132"), "\(diagnosis(result))")
     }
 
     @Test("Resizing is visible to a command started after the resize")
