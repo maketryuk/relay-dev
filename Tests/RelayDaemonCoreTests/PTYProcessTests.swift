@@ -35,6 +35,7 @@ struct PTYProcessTests {
         let process = try PTYProcess.launch(plan)
         let box = OutputBox()
         process.startStreaming(
+            on: .testStream,
             onOutput: { box.append($0) },
             onExit: { box.finish(code: $0) }
         )
@@ -92,7 +93,7 @@ struct PTYProcessTests {
         // by signal" wait status rather than a shell's own exit handling.
         let process = try PTYProcess.launch(plan("exec sleep 30"))
         let box = OutputBox()
-        process.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
+        process.startStreaming(on: .testStream, onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
 
         usleep(300_000)
         process.forceKill()
@@ -114,7 +115,7 @@ struct PTYProcessTests {
 
         let process = try PTYProcess.launch(plan("exec sleep 30"))
         let box = OutputBox()
-        process.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
+        process.startStreaming(on: .testStream, onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
 
         usleep(300_000)
         process.terminate()
@@ -157,7 +158,7 @@ struct PTYProcessTests {
         // TIOCSWINSZ round trip rather than a shell's trap-dispatch timing.
         let process = try PTYProcess.launch(plan("sleep 1; stty size", rows: 24, columns: 80))
         let box = OutputBox()
-        process.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
+        process.startStreaming(on: .testStream, onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
 
         usleep(300_000)
         process.resize(columns: 100, rows: 50)
@@ -172,7 +173,7 @@ struct PTYProcessTests {
     func writesInput() throws {
         let process = try PTYProcess.launch(plan("read line; echo \"got:$line\""))
         let box = OutputBox()
-        process.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
+        process.startStreaming(on: .testStream, onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
 
         usleep(300_000)
         process.write(Data("hello-relay\n".utf8))
@@ -189,7 +190,7 @@ struct PTYProcessTests {
         // nothing is left orphaned.
         let process = try PTYProcess.launch(plan("sleep 30"))
         let box = OutputBox()
-        process.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
+        process.startStreaming(on: .testStream, onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
 
         usleep(300_000)
         process.terminate()
@@ -275,9 +276,19 @@ struct TrailingOutputTests {
         Thread.sleep(forTimeInterval: 0.4)
 
         let box = OutputBox()
-        process.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
+        process.startStreaming(on: .testStream, onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
         box.waitForOutput(containing: "RELAY_TRAILING_MARKER", timeout: 5)
 
         #expect(box.text.contains("RELAY_TRAILING_MARKER"), "the child produced: \(box.text.debugDescription)")
     }
+}
+
+extension DispatchQueue {
+    /// A queue of this suite's own.
+    ///
+    /// These tests are about one process on one pseudo-terminal. Delivering on
+    /// the daemon's shared queue makes them hostage to whatever else is using
+    /// it — which is the daemon's correct design and a unit test's bad day. The
+    /// integration suite still exercises the real thing.
+    static let testStream = DispatchQueue(label: "studio.lince.relay.tests.pty")
 }

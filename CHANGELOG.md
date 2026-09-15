@@ -8,6 +8,11 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
+- **How full each agent's context window is**, under the terminal it belongs to:
+  a meter, the percentage and the token count, with the breakdown behind a
+  click — what is cached, what was sent fresh, what the reply and its reasoning
+  cost. Read from the transcripts the CLIs write as they go, so nothing is asked
+  of anyone and the figure cannot disagree with the agent's own.
 - **Clicking the usage opens it properly.** The popover always shows every
   window — it is where you go to look properly — and its Detailed/Compact switch
   governs the bar alone. The bar starts compact, keeping one line per agent: the
@@ -162,6 +167,10 @@ than when a day of work ends. Until then everything lands here.
 
 ### Fixed
 
+- **Closing sessions froze every other one.** Tearing a session down waited for
+  its process to be reaped, on the same queue that carries terminal output — so
+  closing a project with ten sessions could hold every pane for five seconds.
+  The wait now happens where it cannot be felt.
 - **The project's default agent now does something.** It was written down and
   read back by its own settings row and by nothing else — a control that
   pretends. It decides which start on the project screen is the prominent one.

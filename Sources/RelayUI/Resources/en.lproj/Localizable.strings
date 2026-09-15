@@ -33,6 +33,7 @@
 "Back" = "Back";
 "Built-in" = "Built-in";
 "CUSTOM COMMAND" = "CUSTOM COMMAND";
+"Cached" = "Cached";
 "Cancel" = "Cancel";
 "Check automatically" = "Check automatically";
 "Check for updates" = "Check for updates";
@@ -57,6 +58,7 @@
 "Connect" = "Connect";
 "Connect SSH: %@" = "Connect SSH: %@";
 "Connected — sessions keep running when Relay is closed" = "Connected — sessions keep running when Relay is closed";
+"Context" = "Context";
 "Copy Container Name" = "Copy Container Name";
 "Copy URL" = "Copy URL";
 "Could not attach to the session" = "Could not attach to the session";
@@ -105,6 +107,7 @@
 "Focus Next Pane" = "Focus Next Pane";
 "Focus Terminal" = "Focus Terminal";
 "Force quit" = "Force quit";
+"Fresh" = "Fresh";
 "From the project" = "From the project";
 "Gemini" = "Gemini";
 "General" = "General";
@@ -113,6 +116,7 @@
 "History" = "History";
 "Icon" = "Icon";
 "Idle" = "Idle";
+"In the window" = "In the window";
 "Install %@" = "Install %@";
 "Installing…" = "Installing…";
 "Jump by number" = "Jump by number";
@@ -123,6 +127,7 @@
 "Looking for containers…" = "Looking for containers…";
 "Looking…" = "Looking…";
 "Mark all read" = "Mark all read";
+"Model" = "Model";
 "Mute this project" = "Mute this project";
 "Muted projects" = "Muted projects";
 "NEW SESSION" = "NEW SESSION";
@@ -135,6 +140,7 @@
 "New Service" = "New Service";
 "New Shell" = "New Shell";
 "New session" = "New session";
+"Newly cached" = "Newly cached";
 "Next Project" = "Next Project";
 "Next Session" = "Next Session";
 "No containers for this project. Press Up to start the stack." = "No containers for this project. Press Up to start the stack.";
@@ -166,6 +172,7 @@
 "Open port %d" = "Open port %d";
 "OpenCode" = "OpenCode";
 "Other hosts" = "Other hosts";
+"Output" = "Output";
 "Pin to Project" = "Pin to Project";
 "Pin to current project" = "Pin to current project";
 "Pinned to %@" = "Pinned to %@";
@@ -185,6 +192,7 @@
 "Projects: %d" = "Projects: %d";
 "Protocol" = "Protocol";
 "Quick switching" = "Quick switching";
+"Reasoning" = "Reasoning";
 "Reconnect" = "Reconnect";
 "Refresh containers" = "Refresh containers";
 "Refresh usage" = "Refresh usage";
@@ -299,7 +307,10 @@
 "Version" = "Version";
 "Waiting for you" = "Waiting for you";
 "Weekly" = "Weekly";
+"What is in the context window" = "What is in the context window";
 "When to interrupt" = "When to interrupt";
+"Window" = "Window";
+"Window (inferred)" = "Window (inferred)";
 "Work finished" = "Work finished";
 "Working" = "Working";
 "Workspace" = "Workspace";

@@ -118,12 +118,18 @@ public final class PTYProcess: @unchecked Sendable {
 
     // MARK: - Streaming
 
-    /// Starts delivering PTY output on `DaemonQueue.shared`.
+    /// Starts delivering PTY output, by default on `DaemonQueue.shared`.
+    ///
+    /// The queue is a parameter so a test can exercise one process in isolation.
+    /// Sharing the daemon's queue is what gives terminal output its ordering,
+    /// and it also means anything else using that queue can delay delivery —
+    /// which is correct for the daemon and merely noise for a unit test.
     public func startStreaming(
+        on queue: DispatchQueue = DaemonQueue.shared,
         onOutput: @escaping @Sendable (Data) -> Void,
         onExit: @escaping @Sendable (Int32) -> Void
     ) {
-        let read = DispatchSource.makeReadSource(fileDescriptor: masterFD, queue: DaemonQueue.shared)
+        let read = DispatchSource.makeReadSource(fileDescriptor: masterFD, queue: queue)
         read.setEventHandler { [weak self] in
             guard let self else { return }
             self.drainAvailableOutput(into: onOutput)
@@ -131,7 +137,7 @@ public final class PTYProcess: @unchecked Sendable {
         readSource = read
         read.resume()
 
-        let exit = DispatchSource.makeProcessSource(identifier: pid, eventMask: .exit, queue: DaemonQueue.shared)
+        let exit = DispatchSource.makeProcessSource(identifier: pid, eventMask: .exit, queue: queue)
         exit.setEventHandler { [weak self] in
             guard let self else { return }
             // Drained *before* the child is reaped, and the order is the whole
@@ -217,6 +223,13 @@ public final class PTYProcess: @unchecked Sendable {
         kill(pid, SIGKILL)
     }
 
+    /// Where reaping waits, so that nothing else has to.
+    private static let reaping = DispatchQueue(
+        label: "studio.lince.relay.daemon.reaping",
+        qos: .utility,
+        attributes: .concurrent
+    )
+
     /// Waits briefly for an already-signalled child to be reaped.
     ///
     /// Without this the daemon leaves zombies behind whenever it tears sessions
@@ -229,6 +242,26 @@ public final class PTYProcess: @unchecked Sendable {
             let result = waitpid(pid, &status, WNOHANG)
             if result == pid || (result == -1 && errno == ECHILD) { return }
             usleep(5_000)
+        }
+    }
+
+    /// The same wait, somewhere it cannot be felt.
+    ///
+    /// A reap is a wait, and waits have no business on the queue that carries
+    /// terminal output: tearing down ten sessions held it for up to five
+    /// seconds, during which no pane drew a character and no keystroke landed.
+    /// The child has already been signalled, and nothing upstream needs the
+    /// answer — the point is only that the zombie goes away.
+    public func reapDetached(timeout: TimeInterval = 2) {
+        let identifier = pid
+        Self.reaping.async {
+            let deadline = Date().addingTimeInterval(timeout)
+            while Date() < deadline {
+                var status: Int32 = 0
+                let result = waitpid(identifier, &status, WNOHANG)
+                if result == identifier || (result == -1 && errno == ECHILD) { return }
+                usleep(5_000)
+            }
         }
     }
 

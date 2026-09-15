@@ -89,8 +89,24 @@ struct TerminalPane: View {
             header
             RelayDivider()
             terminal
+            ContextBar(session: session)
         }
         .background(Theme.Palette.base)
+        .overlay(alignment: .bottomLeading) { contextDetail }
+    }
+
+    /// Opened from the bar beneath it, and anchored there rather than to the
+    /// pointer: the numbers it explains are the ones it sits above.
+    @ViewBuilder
+    private var contextDetail: some View {
+        if model.sessionShowingContextDetail == session.id,
+           let context = model.context.context(for: session.id) {
+            ContextDetail(session: session, context: context)
+                .modalPlate()
+                .padding(.leading, Theme.Spacing.small)
+                .padding(.bottom, Theme.Metrics.contextBarHeight + Theme.Spacing.xsmall)
+                .transition(.opacity)
+        }
     }
 
     /// Refreshed on a slow timer so the hint can appear without any event from

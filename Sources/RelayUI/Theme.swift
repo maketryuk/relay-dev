@@ -54,6 +54,7 @@ public enum Theme {
     public enum Metrics {
         public static let titleBarHeight: CGFloat = 38
         public static let statusBarHeight: CGFloat = 26
+        public static let contextBarHeight: CGFloat = 22
         public static let railWidth: CGFloat = 60
         public static let sidebarWidth: CGFloat = 248
         public static let sidebarMinWidth: CGFloat = 200

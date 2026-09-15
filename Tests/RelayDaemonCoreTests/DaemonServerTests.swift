@@ -442,7 +442,16 @@ final class DaemonServerTests {
             Thread.sleep(forTimeInterval: 0.1)
         }
         #expect(harness.server.didRequestExit)
-        // The supervised process must not be left orphaned.
+
+        // The supervised process must not be left orphaned. Given a moment,
+        // because reaping happens away from the daemon's queue — waiting for it
+        // there held every other session's output up for as long as it took.
+        // A zombie still answers `kill(pid, 0)`, so the wait is for it to be
+        // reaped rather than merely killed.
+        let gone = Date().addingTimeInterval(5)
+        while Date() < gone, kill(pid, 0) == 0 {
+            Thread.sleep(forTimeInterval: 0.05)
+        }
         #expect(kill(pid, 0) != 0)
     }
 
