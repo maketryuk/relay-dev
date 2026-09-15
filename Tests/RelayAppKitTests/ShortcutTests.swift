@@ -231,4 +231,23 @@ struct SessionDisplayNameTests {
         #expect(SessionKind.shell.displayName == "Terminal")
         #expect(SessionNaming.nextName(for: .shell, existing: []) == "Terminal")
     }
+
+    @Test("⌘R is left alone")
+    func plainCommandRIsReserved() {
+        // It means reload everywhere else on the machine. Spending it on "start
+        // the dev service" surprised people and used up the key Relay will want
+        // for reloading something of its own.
+        let taken = ShortcutResolver.allBindings(settings: ShortcutSettings())
+        #expect(!taken.values.contains(KeyBinding("r", .command)))
+        #expect(RelayCommand.startDefaultService.defaultBinding == nil)
+    }
+
+    @Test("A command with no default is simply unbound, not broken")
+    func unboundByDefaultResolvesToNothing() {
+        let settings = ShortcutSettings()
+        #expect(ShortcutResolver.binding(for: .startDefaultService, settings: settings) == nil)
+        // And it can still be given one.
+        let bound = ShortcutResolver.rebind(.startDefaultService, to: KeyBinding("g", .command), in: settings)
+        #expect(ShortcutResolver.binding(for: .startDefaultService, settings: bound) == KeyBinding("g", .command))
+    }
 }

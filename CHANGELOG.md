@@ -100,6 +100,10 @@ than when a day of work ends. Until then everything lands here.
 
 ### Changed
 
+- **`⌘R` no longer starts the dev service.** It means reload everywhere else on
+  the machine, and Relay will want it for reloading something of its own. The
+  command keeps its place in the menu and the palette, and can still be given a
+  key by hand; restarting stays on `⌥⌘R`.
 - **One mechanism for every panel and dialog,** not just one frame. The project
   settings, the add-project dialog and the two editors were SwiftUI sheets: they
   opened differently, and a click outside did nothing. They are all panels now,
