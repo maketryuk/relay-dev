@@ -69,7 +69,7 @@ final class DaemonClient: @unchecked Sendable {
     @discardableResult
     private func openConnection() async throws -> String? {
         // Blocking probe plus process launch: keep it off the caller's actor.
-        try await Task.detached(priority: .userInitiated) {
+        _ = try await Task.detached(priority: .userInitiated) {
             try DaemonLauncher.startIfNeeded()
         }.value
 

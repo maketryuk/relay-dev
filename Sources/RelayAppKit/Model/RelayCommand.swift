@@ -26,6 +26,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     case togglePorts
     case openSSHHosts
     case toggleRightSidebar
+    case toggleLeftSidebar
 
     case newShell
     case newClaude
@@ -53,7 +54,8 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .openSettings: "Settings"
         case .togglePorts: "Ports"
         case .openSSHHosts: "SSH Hosts"
-        case .toggleRightSidebar: "Toggle Right Sidebar"
+        case .toggleRightSidebar: "Toggle Project Panel"
+        case .toggleLeftSidebar: "Toggle Sessions Sidebar"
         case .newShell: "New Shell"
         case .newClaude: "New Claude Session"
         case .newCodex: "New Codex Session"
@@ -74,7 +76,8 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
 
     var category: ShortcutCategory {
         switch self {
-        case .commandPalette, .openSettings, .togglePorts, .openSSHHosts, .toggleRightSidebar: .application
+        case .commandPalette, .openSettings, .togglePorts, .openSSHHosts,
+             .toggleRightSidebar, .toggleLeftSidebar: .application
         case .newShell, .newClaude, .newCodex, .closeSession, .renameSession,
              .nextSession, .previousSession, .focusTerminal: .sessions
         case .startDefaultService, .restartDefaultService: .services
@@ -92,6 +95,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .togglePorts: KeyBinding("\\", .command)
         case .openSSHHosts: KeyBinding("s", [.command, .shift])
         case .toggleRightSidebar: KeyBinding("b", [.command, .option])
+        case .toggleLeftSidebar: KeyBinding("b", .command)
         case .newShell: KeyBinding("t", .command)
         case .newClaude: KeyBinding("c", [.command, .shift])
         case .newCodex: KeyBinding("x", [.command, .shift])

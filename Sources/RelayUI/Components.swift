@@ -143,6 +143,9 @@ public struct IconButton: View {
                 .background(isHovering ? Theme.Palette.surfaceHover : .clear)
                 .foregroundStyle(isHovering ? Theme.Palette.textPrimary : Theme.Palette.textSecondary)
                 .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+                // Without this the glyph itself is the target and the padding
+                // around it does nothing, which makes small buttons feel broken.
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }

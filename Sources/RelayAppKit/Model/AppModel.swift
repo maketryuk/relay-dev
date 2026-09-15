@@ -36,7 +36,9 @@ final class AppModel {
     private(set) var shortcutSettings = ShortcutSettings()
     private(set) var customPresets: [SessionPreset] = []
     private(set) var sessionHistory: [SessionHistoryEntry] = []
+    private(set) var inbox: [InboxItem] = []
     var isRightSidebarVisible = true
+    var isLeftSidebarVisible = true
     var rightSidebarTab: RightSidebarTab = .services
 
     // MARK: - Selection and UI
@@ -46,6 +48,7 @@ final class AppModel {
     var isCommandPaletteOpen = false
     var isProjectSettingsOpen = false
     var isAddingProject = false
+    var isInboxOpen = false
     /// Set by the rename shortcut and consumed by the sidebar row.
     var renamingSessionID: SessionID?
     /// Bumped to ask the visible terminal to take focus.
@@ -79,6 +82,7 @@ final class AppModel {
         customPresets = state.customPresets
         sessionHistory = state.sessionHistory
         isRightSidebarVisible = state.isRightSidebarVisible
+        isLeftSidebarVisible = state.isLeftSidebarVisible
         rightSidebarTab = state.rightSidebarTab.flatMap(RightSidebarTab.init(rawValue:)) ?? .services
         lastActiveSessionByProject = state.lastActiveSessionByProject
         selectedProjectID = state.lastActiveProjectID.map { ProjectID(rawValue: $0) }
@@ -394,13 +398,28 @@ final class AppModel {
     }
 
     /// Stops the process if needed and drops the session from the workspace.
+    ///
+    /// The row disappears immediately rather than after the daemon has finished
+    /// signalling the process. Closing a tab should feel instant; a shell that
+    /// takes a moment to die is the daemon's problem, not the user's. Should the
+    /// daemon disagree, the next reconcile puts the session back.
     func closeSession(_ id: SessionID) {
-        let isRunning = sessions[id]?.exitCode == nil
+        guard let snapshot = sessions[id] else { return }
+        let isRunning = snapshot.exitCode == nil
+
+        recordHistory(for: snapshot)
+        sessions.removeValue(forKey: id)
+        sessionOrder.removeAll { $0 == id }
+        releaseSurface(for: id)
+        if selectedSessionID == id {
+            selectedSessionID = interactiveSessions(in: snapshot.projectID).first?.id
+            if let next = selectedSessionID { selectSession(next) }
+        }
+
         Task { [weak self] in
             guard let self else { return }
             if isRunning {
                 _ = try? await self.client.send(.terminate(id))
-                try? await Task.sleep(for: .milliseconds(250))
             }
             _ = try? await self.client.send(.forget(id))
         }
@@ -596,6 +615,11 @@ final class AppModel {
 
     // MARK: - Right sidebar
 
+    func toggleLeftSidebar() {
+        isLeftSidebarVisible.toggle()
+        persist()
+    }
+
     func toggleRightSidebar() {
         isRightSidebarVisible.toggle()
         persist()
@@ -626,8 +650,33 @@ final class AppModel {
             isVisibleToUser: isVisible,
             settings: notificationSettings
         )
+        // The inbox records everything worth knowing about; only what the user
+        // is not already looking at earns a banner.
+        if let event = NotificationPolicy.attentionEvent(for: context) {
+            inbox = Inbox.appending(InboxItem(event: event, projectID: snapshot.projectID), to: inbox)
+        }
         guard let event = NotificationPolicy.event(for: context) else { return }
         notifier.present(event)
+    }
+
+    var unreadNotificationCount: Int {
+        Inbox.unreadCount(inbox)
+    }
+
+    func openNotification(_ item: InboxItem) {
+        inbox = Inbox.marking(item.id, readIn: inbox)
+        if let session = sessions[item.event.sessionID] {
+            selectProject(session.projectID)
+            selectSession(session.id)
+        }
+    }
+
+    func markAllNotificationsRead() {
+        inbox = Inbox.markingAllRead(inbox)
+    }
+
+    func clearNotifications() {
+        inbox.removeAll()
     }
 
     func updateNotificationSettings(_ settings: NotificationSettings) {
@@ -989,6 +1038,7 @@ final class AppModel {
             customPresets: customPresets,
             sessionHistory: sessionHistory,
             isRightSidebarVisible: isRightSidebarVisible,
+            isLeftSidebarVisible: isLeftSidebarVisible,
             rightSidebarTab: rightSidebarTab.rawValue
         )
         store.scheduleSave(state)
@@ -1006,6 +1056,7 @@ final class AppModel {
             customPresets: customPresets,
             sessionHistory: sessionHistory,
             isRightSidebarVisible: isRightSidebarVisible,
+            isLeftSidebarVisible: isLeftSidebarVisible,
             rightSidebarTab: rightSidebarTab.rawValue
         )
         store.saveNow(state)

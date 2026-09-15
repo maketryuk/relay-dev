@@ -17,11 +17,6 @@ struct ProjectRailView: View {
         @Bindable var model = model
 
         return VStack(spacing: Theme.Spacing.small) {
-            // Leaves room for the traffic lights, which float over the rail
-            // once the title bar is hidden, and doubles as a title-bar region.
-            WindowDragArea()
-                .frame(height: 22)
-
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: Theme.Spacing.small) {
                     ForEach(model.projects) { project in

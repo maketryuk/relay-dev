@@ -308,8 +308,10 @@ final class DaemonServerTests {
         #expect(match?.isManagedByRelay == true)
         #expect(match?.isLocallyReachable == true)
 
-        // Ports Relay did not start are listed but never claimed.
-        #expect(discovered.contains { !$0.isManagedByRelay })
+        // Anything Relay did not start must not be claimed. Asserting that such
+        // a port *exists* would be testing the machine rather than the code —
+        // a clean CI runner has nothing else listening.
+        #expect(discovered.allSatisfy { $0.isManagedByRelay == ($0.ownerSessionID != nil) })
 
         try client.send(.terminate(session.id))
     }

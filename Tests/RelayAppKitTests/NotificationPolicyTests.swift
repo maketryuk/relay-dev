@@ -182,3 +182,137 @@ struct NotificationPolicyTests {
         #expect(WorkspaceStore(url: url).load().notifications.isEnabled)
     }
 }
+
+@Suite("Notification inbox")
+struct InboxTests {
+    private let projectID = ProjectID(rawValue: "p1")
+
+    private func item(
+        kind: NotificationKind = .waitingForInput,
+        session: String = "s1",
+        title: String = "Claude needs you"
+    ) -> InboxItem {
+        InboxItem(
+            event: AttentionEvent(
+                kind: kind,
+                sessionID: SessionID(rawValue: session),
+                title: title,
+                body: "body"
+            ),
+            projectID: projectID
+        )
+    }
+
+    @Test("Newest first")
+    func ordering() {
+        var items = Inbox.appending(item(title: "first"), to: [])
+        items = Inbox.appending(item(session: "s2", title: "second"), to: items)
+        #expect(items.map(\.event.title) == ["second", "first"])
+    }
+
+    @Test("A repeated notice for the same session replaces the unread one")
+    func replacesUnreadDuplicates() {
+        // An agent that asks, is answered, then asks again should show one
+        // outstanding notice rather than a growing pile.
+        var items = Inbox.appending(item(title: "asking"), to: [])
+        items = Inbox.appending(item(title: "asking again"), to: items)
+        #expect(items.count == 1)
+        #expect(items[0].event.title == "asking again")
+    }
+
+    @Test("A read notice is kept as history when a new one arrives")
+    func keepsReadHistory() {
+        var items = Inbox.appending(item(title: "first"), to: [])
+        items = Inbox.markingAllRead(items)
+        items = Inbox.appending(item(title: "second"), to: items)
+        #expect(items.count == 2)
+    }
+
+    @Test("Different kinds for the same session coexist")
+    func differentKindsCoexist() {
+        var items = Inbox.appending(item(kind: .waitingForInput), to: [])
+        items = Inbox.appending(item(kind: .failed), to: items)
+        #expect(items.count == 2)
+    }
+
+    @Test("Unread counting and marking")
+    func unreadCounting() {
+        var items = Inbox.appending(item(session: "s1"), to: [])
+        items = Inbox.appending(item(session: "s2"), to: items)
+        #expect(Inbox.unreadCount(items) == 2)
+
+        items = Inbox.marking(items[0].id, readIn: items)
+        #expect(Inbox.unreadCount(items) == 1)
+
+        items = Inbox.markingAllRead(items)
+        #expect(Inbox.unreadCount(items) == 0)
+    }
+
+    @Test("The list is bounded")
+    func respectsTheLimit() {
+        var items: [InboxItem] = []
+        for index in 0 ..< (Inbox.limit + 25) {
+            items = Inbox.appending(item(session: "s\(index)"), to: items)
+        }
+        #expect(items.count == Inbox.limit)
+    }
+
+    @Test("The inbox records what a banner would skip")
+    func inboxRecordsWhatBannersSuppress() {
+        // The banner should not interrupt you about the terminal you are
+        // looking at; the inbox must still record it, or it is not a record.
+        let context = NotificationPolicy.Context(
+            previous: .working,
+            current: .waiting,
+            session: SessionSnapshot(
+                id: SessionID(rawValue: "s1"),
+                projectID: projectID,
+                kind: .claude,
+                name: "Claude",
+                workingDirectory: "/tmp",
+                command: ["claude"],
+                status: .waiting,
+                pid: 1,
+                exitCode: nil,
+                startedAt: Date(),
+                lastActivityAt: Date(),
+                columns: 80,
+                rows: 24
+            ),
+            projectName: "Storefront",
+            isVisibleToUser: true,
+            settings: NotificationSettings()
+        )
+        #expect(NotificationPolicy.event(for: context) == nil)
+        #expect(NotificationPolicy.attentionEvent(for: context) != nil)
+    }
+
+    @Test("Opting out silences the inbox as well as the banner")
+    func optOutSilencesBoth() {
+        var settings = NotificationSettings()
+        settings.isEnabled = false
+        let context = NotificationPolicy.Context(
+            previous: .working,
+            current: .waiting,
+            session: SessionSnapshot(
+                id: SessionID(rawValue: "s1"),
+                projectID: projectID,
+                kind: .claude,
+                name: "Claude",
+                workingDirectory: "/tmp",
+                command: ["claude"],
+                status: .waiting,
+                pid: 1,
+                exitCode: nil,
+                startedAt: Date(),
+                lastActivityAt: Date(),
+                columns: 80,
+                rows: 24
+            ),
+            projectName: "Storefront",
+            isVisibleToUser: false,
+            settings: settings
+        )
+        #expect(NotificationPolicy.attentionEvent(for: context) == nil)
+    }
+}

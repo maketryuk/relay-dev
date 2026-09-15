@@ -47,7 +47,7 @@ struct PortsWindowView: View {
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
                 WindowDragArea()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: 22, maxHeight: 22)
                 IconButton(systemImage: "arrow.clockwise", help: "") { model.refreshPorts() }
                     .relayTooltip("Rescan now")
             }
