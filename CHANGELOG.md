@@ -4,6 +4,20 @@ Versions follow [semantic versioning](https://semver.org): a breaking change to
 stored data or the daemon protocol bumps the major, a feature bumps the minor, a
 fix bumps the patch.
 
+## 0.5.0
+
+### Added
+
+- **Toasts** in the bottom-right corner for things that happen rather than
+  things you asked for: the daemon dropping, a session that would not start, a
+  failing `docker` command. Repeats of the same condition replace each other
+  instead of stacking, and anything the user has to act on stays until it is
+  dismissed rather than expiring quietly.
+
+### Changed
+
+- The connection banner is gone; its job belongs to the toast stack.
+
 ## 0.4.0
 
 ### Added
@@ -107,4 +121,4 @@ The rest of the v0.1 scope from the spec, plus the workflow around it.
 ## 0.1.0
 
 First working milestone: the session daemon, projects, sessions, the terminal,
-status detection and the dark UI.
+status detection and the dark UI. Predates this repository, so it has no tag.
