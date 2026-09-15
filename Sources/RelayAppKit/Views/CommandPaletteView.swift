@@ -271,30 +271,36 @@ struct CommandPaletteView: View {
 /// Minimal AppKit bridge for arrow/escape handling, which SwiftUI does not
 /// expose while a `TextField` holds focus.
 struct KeyCaptureView: NSViewRepresentable {
-    /// Optional, because a panel that only needs Escape must leave the arrow
-    /// keys to whatever list is inside it.
+    /// All optional: a panel that only needs Escape must leave the arrow keys to
+    /// whatever list is inside it, and a list must leave Escape to the panel.
+    /// A key with no handler is passed on untouched.
     var onMoveDown: (() -> Void)?
     var onMoveUp: (() -> Void)?
-    let onEscape: () -> Void
+    var onReturn: (() -> Void)?
+    var onEscape: (() -> Void)?
 
     func makeNSView(context: Context) -> NSView {
         let view = MonitorView()
-        view.onMoveDown = onMoveDown
-        view.onMoveUp = onMoveUp
-        view.onEscape = onEscape
+        apply(to: view)
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
         guard let view = nsView as? MonitorView else { return }
+        apply(to: view)
+    }
+
+    private func apply(to view: MonitorView) {
         view.onMoveDown = onMoveDown
         view.onMoveUp = onMoveUp
+        view.onReturn = onReturn
         view.onEscape = onEscape
     }
 
     final class MonitorView: NSView {
         var onMoveDown: (() -> Void)?
         var onMoveUp: (() -> Void)?
+        var onReturn: (() -> Void)?
         var onEscape: (() -> Void)?
         nonisolated(unsafe) private var monitor: Any?
 
@@ -308,21 +314,18 @@ struct KeyCaptureView: NSViewRepresentable {
             guard monitor == nil else { return }
             monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
                 guard let self else { return event }
+                let handler: (() -> Void)?
                 switch event.keyCode {
-                case 125:
-                    guard let handler = self.onMoveDown else { return event }
-                    handler()
-                    return nil
-                case 126:
-                    guard let handler = self.onMoveUp else { return event }
-                    handler()
-                    return nil
-                case 53:
-                    self.onEscape?()
-                    return nil
-                default:
-                    return event
+                case 125: handler = self.onMoveDown
+                case 126: handler = self.onMoveUp
+                // Return and the keypad's enter, which are different keys.
+                case 36, 76: handler = self.onReturn
+                case 53: handler = self.onEscape
+                default: handler = nil
                 }
+                guard let handler else { return event }
+                handler()
+                return nil
             }
         }
 

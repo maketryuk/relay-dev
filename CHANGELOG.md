@@ -8,6 +8,9 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
+- **The panels take the keyboard.** Arrows move through the ports and hosts,
+  Return acts on the highlighted row, Escape closes. The highlight stops at the
+  ends rather than wrapping, and follows the list when filtering shortens it.
 - **Ports, SSH hosts and Settings open over the window** instead of as separate
   windows with their own traffic lights. Escape or a click outside puts them
   away, and the shortcut that opened one closes it.
@@ -115,6 +118,20 @@ than when a day of work ends. Until then everything lands here.
 
 ### Fixed
 
+- **Dragging a divider oscillated instead of resizing.** The drag was measured
+  against the handle, which is the thing that moves: each event moved the
+  divider to the pointer, the pointer then appeared not to have moved, and the
+  divider was put back. Drags are measured against the window now, and land on
+  whole points.
+- **A split pane's header fell apart.** Written for the full window, it wrapped
+  the session name down the pane and grew tall enough to push the terminal off
+  screen. It now drops what will not fit — the pid, then the status text — and
+  keeps its height.
+- **Clicking a terminal did not focus its pane**, because the terminal is an
+  AppKit view and consumes its own mouse events, so `⌘D` always split whichever
+  pane the sidebar had last selected.
+- **Splitting could flatten an existing layout** when the pane it was aimed at
+  had gone.
 - **Splitting a pane froze the window.** Drawing a pane asked the model for its
   terminal renderer, and that call recorded the session as recently used — a
   write that invalidated the very view which had just read it, so every draw
