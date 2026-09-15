@@ -1,5 +1,11 @@
 # Relay — logo brief
 
+> **Resolved.** The mark is direction 3 below: an open ring with a dot resting
+> in its gap. The source is `Resources/relay-logo.svg`; `Scripts/make-icon.swift`
+> traces it into the app icon, and `RelayUI/RelayMark.swift` draws the same
+> geometry inside the app. This brief is kept for the reasoning behind it.
+
+
 ## What the product is
 
 Relay is a native macOS workspace manager for developers. It puts projects,

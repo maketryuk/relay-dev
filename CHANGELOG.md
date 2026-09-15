@@ -8,6 +8,11 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
+- **The app's own icon and mark.** An open ring with a dot resting in its gap:
+  the ring is the app, which you can close, and the dot is the process, which
+  stays. Traced once from the source SVG and shared by the icon generator and
+  the interface, so they cannot drift.
+
 - **Localisation.** English and Russian, switched in Settings and applied
   immediately without a restart. The English text is the lookup key, so a gap in
   a translation shows readable English rather than a raw identifier, and a test

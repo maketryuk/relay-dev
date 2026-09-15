@@ -64,12 +64,18 @@ struct RootView: View {
     }
 
     private var welcomePane: some View {
-        VStack(spacing: Theme.Spacing.large) {
-            EmptyStateView(
-                systemImage: "square.stack.3d.up",
-                title: relayLocalized("No projects yet"),
-                message: relayLocalized("Add a local directory to start running agents, shells and dev servers in one place.")
-            )
+        VStack(spacing: Theme.Spacing.xlarge) {
+            RelayMark(size: 72, tint: Theme.Palette.textSecondary)
+            VStack(spacing: Theme.Spacing.xsmall) {
+                Text(relayLocalized("No projects yet"))
+                    .font(Theme.Typography.title)
+                    .foregroundStyle(Theme.Palette.textSecondary)
+                Text(relayLocalized("Add a local directory to start running agents, shells and dev servers in one place."))
+                    .font(Theme.Typography.rowSecondary)
+                    .foregroundStyle(Theme.Palette.textTertiary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 340)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.Palette.base)
