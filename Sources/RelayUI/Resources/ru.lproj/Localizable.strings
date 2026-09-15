@@ -1,6 +1,7 @@
 /* Relay — Russian */
 
 "A project file tree and an editor with linting will live here." = "Здесь появится дерево файлов проекта и редактор с линтером.";
+"A session, service or container exited with an error" = "Сессия, сервис или контейнер завершились с ошибкой";
 "About" = "О программе";
 "Add Project" = "Добавить проект";
 "Add Project…" = "Добавить проект…";
@@ -8,6 +9,7 @@
 "Add project" = "Добавить проект";
 "Add service" = "Добавить сервис";
 "Agent is waiting for you" = "Агент ждёт вас";
+"Agents and services only — a shell returning to its prompt is not an event" = "Только агенты и сервисы — возврат шелла к приглашению событием не считается";
 "Appearance" = "Оформление";
 "Application" = "Приложение";
 "Applies immediately, no restart needed" = "Применяется сразу, перезапуск не нужен";
@@ -26,7 +28,7 @@
 "Command Palette (⌘K)" = "Палитра команд (⌘K)";
 "Commits, branch switching and diffs will live here." = "Здесь появятся коммиты, переключение веток и diff.";
 "Connect" = "Подключиться";
-"Connected — sessions keep running when Relay is closed" = "Подключено — сессии продолжают работать при закрытом Relay";
+"Connected — sessions keep running when Relay is closed" = "Подключено — сессии работают и при закрытом Relay";
 "Copy Container Name" = "Скопировать имя контейнера";
 "Copy URL" = "Скопировать URL";
 "Could not attach to the session" = "Не удалось подключиться к сессии";
@@ -97,6 +99,7 @@
 "Quick switching" = "Быстрое переключение";
 "Reconnect" = "Переподключиться";
 "Refresh containers" = "Обновить контейнеры";
+"Relay" = "Relay";
 "Reload config" = "Перечитать конфиг";
 "Remove" = "Удалить";
 "Remove Project" = "Удалить проект";
@@ -133,6 +136,7 @@
 "Session unavailable" = "Сессия недоступна";
 "Sessions" = "Сессии";
 "Sessions it was supervising have ended." = "Сессии, которыми он управлял, завершены.";
+"Sessions live in a background daemon and survive quitting the app" = "Сессии живут в фоновом демоне и переживают выход из приложения";
 "Sessions sidebar" = "Панель сессий";
 "Sessions you finish appear here, with what ran and how it ended." = "Завершённые сессии появятся здесь — что запускалось и чем закончилось.";
 "Settings" = "Настройки";
@@ -150,9 +154,11 @@
 "Stopped" = "Остановлен";
 "Stopping" = "Останавливается";
 "Terminate" = "Завершить";
+"The only notification that plays a sound" = "Единственное уведомление со звуком";
 "This session is no longer known to the daemon." = "Демон больше не знает об этой сессии.";
 "Toggle Project Panel" = "Показать панель проекта";
 "Toggle Sessions Sidebar" = "Показать панель сессий";
+"Turn everything off without losing your other choices" = "Выключить всё, не теряя остальные настройки";
 "Up" = "Запустить";
 "Version" = "Версия";
 "Waiting for you" = "Ждёт вас";
@@ -160,3 +166,7 @@
 "Work finished" = "Работа завершена";
 "Working" = "Работает";
 "Workspace" = "Рабочее пространство";
+"\\(Int(model.sidebarWidth)) pt" = "\\(Int(model.sidebarWidth)) pt";
+"\\(model.projects.count) in this workspace" = "\\(model.projects.count) in this workspace";
+"v\\(RelayProtocolVersion.current)" = "v\\(RelayProtocolVersion.current)";
+"⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 выбирает сессию, ⌥⌘1…⌥⌘9 — проект";

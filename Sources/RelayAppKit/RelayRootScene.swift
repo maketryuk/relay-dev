@@ -61,10 +61,12 @@ struct RelayMainApp: App {
         .windowResizability(.contentMinSize)
         .defaultSize(width: 520, height: 480)
 
-        Settings {
+        Window(relayLocalized("Settings"), id: SettingsWindow.id) {
             SettingsView()
                 .environment(model)
         }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
     }
 }
 
@@ -97,14 +99,13 @@ extension View {
 struct RelayCommands: Commands {
     let model: AppModel
     @Environment(\.openWindow) private var openWindow
-    @Environment(\.openSettings) private var openSettings
 
     var body: some Commands {
         // SwiftUI's Settings scene installs its own ⌘, on the standard menu
         // item. Replacing it keeps the shortcut editor honest: rebinding
         // "Settings" in the app has to actually change the shortcut.
         CommandGroup(replacing: .appSettings) {
-            Button(RelayCommand.openSettings.localizedTitle + "…") { openSettings() }
+            Button(RelayCommand.openSettings.localizedTitle + "…") { openWindow(id: SettingsWindow.id) }
                 .relayShortcut(model.binding(for: .openSettings))
         }
 
@@ -215,11 +216,7 @@ struct RelayCommands: Commands {
     private func newSession(_ kind: SessionKind) {
         guard let projectID = model.selectedProjectID else { return }
         model.createSession(
-            from: SessionPresets.preferred(
-                for: kind,
-                custom: model.customPresets,
-                enabledIDs: model.enabledPresetIDs
-            ),
+            from: SessionPresets.preferred(for: kind, in: model.presets),
             in: projectID
         )
     }

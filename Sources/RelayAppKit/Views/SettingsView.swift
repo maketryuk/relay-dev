@@ -2,6 +2,10 @@ import RelayProtocol
 import RelayUI
 import SwiftUI
 
+enum SettingsWindow {
+    static let id = "relay.settings"
+}
+
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var selection: Tab = .general
@@ -78,19 +82,39 @@ struct SettingsView: View {
 
 struct GeneralSettingsPane: View {
     @Environment(AppModel.self) private var model
+    @State private var editingPreset: SessionPreset?
+    @State private var isAddingPreset = false
 
     var body: some View {
         SettingsScroll(title: relayLocalized("General")) {
-            SettingsGroup("Workspace") {
+            SettingsGroup(relayLocalized("Appearance")) {
+                SettingsRow(
+                    title: relayLocalized("Language"),
+                    detail: relayLocalized("Applies immediately, no restart needed")
+                ) {
+                    Picker("", selection: Binding(
+                        get: { model.language },
+                        set: { model.setLanguage($0) }
+                    )) {
+                        ForEach(AppLanguage.allCases) { language in
+                            Text(language.displayName).tag(language)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 160)
+                }
+            }
+
+            SettingsGroup(relayLocalized("Workspace")) {
                 SettingsRow(
                     title: relayLocalized("Projects"),
-                    detail: "\(model.projects.count) in this workspace"
+                    detail: relayLocalized("\(model.projects.count) in this workspace")
                 ) {
                     RelayButton(relayLocalized("Add Project…")) { model.isAddingProject = true }
                 }
                 SettingsRow(
                     title: relayLocalized("Sidebar width"),
-                    detail: "\(Int(model.sidebarWidth)) pt"
+                    detail: relayLocalized("\(Int(model.sidebarWidth)) pt")
                 ) {
                     RelayButton(relayLocalized("Reset")) {
                         model.sidebarWidth = Theme.Metrics.sidebarWidth
@@ -99,19 +123,32 @@ struct GeneralSettingsPane: View {
                 }
             }
 
-            SettingsGroup("Session presets") {
-                ForEach(model.sessionPresets) { preset in
+            SettingsGroup(relayLocalized("Session presets")) {
+                ForEach(model.presets) { preset in
                     SettingsRow(title: preset.name, detail: preset.subtitle) {
-                        if preset.isBuiltIn {
-                            Badge(relayLocalized("Built-in"))
-                        } else {
-                            RelayButton(relayLocalized("Remove"), kind: .destructive) { model.removePreset(preset) }
+                        HStack(spacing: Theme.Spacing.xsmall) {
+                            RelayButton(relayLocalized("Edit…")) { editingPreset = preset }
+                            if !preset.isProtected {
+                                IconButton(systemImage: "trash", help: relayLocalized("Remove")) {
+                                    model.removePreset(preset)
+                                }
+                            }
                         }
+                    }
+                }
+
+                SettingsRow(
+                    title: relayLocalized("Add a preset"),
+                    detail: relayLocalized("Start from a template or write your own command")
+                ) {
+                    HStack(spacing: Theme.Spacing.xsmall) {
+                        RelayButton(relayLocalized("Reset to defaults")) { model.resetPresets() }
+                        RelayButton(relayLocalized("Add…"), kind: .primary) { isAddingPreset = true }
                     }
                 }
             }
 
-            SettingsGroup("Session daemon") {
+            SettingsGroup(relayLocalized("Session daemon")) {
                 SettingsRow(
                     title: relayLocalized("Status"),
                     detail: model.connectionState.isConnected
@@ -134,6 +171,12 @@ struct GeneralSettingsPane: View {
                     }
                 }
             }
+        }
+        .sheet(item: $editingPreset) { preset in
+            PresetEditorView(preset: preset)
+        }
+        .sheet(isPresented: $isAddingPreset) {
+            PresetEditorView(preset: nil)
         }
     }
 }
@@ -176,10 +219,10 @@ struct ShortcutSettingsPane: View {
                         }
                     }
 
-                    SettingsGroup("Quick switching") {
+                    SettingsGroup(relayLocalized("Quick switching")) {
                         SettingsRow(
                             title: relayLocalized("Jump by number"),
-                            detail: "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project"
+                            detail: relayLocalized("⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project")
                         ) {
                             Toggle("", isOn: Binding(
                                 get: { model.shortcutSettings.indexShortcutsEnabled },
@@ -235,33 +278,33 @@ struct NotificationSettingsPane: View {
 
     var body: some View {
         SettingsScroll(title: relayLocalized("Notifications")) {
-            SettingsGroup("When to interrupt") {
+            SettingsGroup(relayLocalized("When to interrupt")) {
                 toggleRow(
-                    "Enabled",
-                    detail: "Turn everything off without losing your other choices",
+                    relayLocalized("Enabled"),
+                    detail: relayLocalized("Turn everything off without losing your other choices"),
                     value: \.isEnabled
                 ) { settings, value in settings.isEnabled = value }
 
                 toggleRow(
-                    "Agent is waiting for you",
-                    detail: "The only notification that plays a sound",
+                    relayLocalized("Agent is waiting for you"),
+                    detail: relayLocalized("The only notification that plays a sound"),
                     value: \.waitingForInput
                 ) { settings, value in settings.waitingForInput = value }
 
                 toggleRow(
-                    "Something failed",
-                    detail: "A session, service or container exited with an error",
+                    relayLocalized("Something failed"),
+                    detail: relayLocalized("A session, service or container exited with an error"),
                     value: \.failures
                 ) { settings, value in settings.failures = value }
 
                 toggleRow(
-                    "Work finished",
-                    detail: "Agents and services only — a shell returning to its prompt is not an event",
+                    relayLocalized("Work finished"),
+                    detail: relayLocalized("Agents and services only — a shell returning to its prompt is not an event"),
                     value: \.completions
                 ) { settings, value in settings.completions = value }
             }
 
-            SettingsGroup("Muted projects") {
+            SettingsGroup(relayLocalized("Muted projects")) {
                 if model.projects.isEmpty {
                     SettingsRow(title: relayLocalized("No projects yet"), detail: nil) { EmptyView() }
                 } else {
@@ -307,12 +350,12 @@ struct NotificationSettingsPane: View {
 struct AboutPane: View {
     var body: some View {
         SettingsScroll(title: relayLocalized("About")) {
-            SettingsGroup("Relay") {
+            SettingsGroup(relayLocalized("Relay")) {
                 SettingsRow(title: relayLocalized("Version"), detail: AppInfo.version) { EmptyView() }
-                SettingsRow(title: relayLocalized("Protocol"), detail: "v\(RelayProtocolVersion.current)") { EmptyView() }
+                SettingsRow(title: relayLocalized("Protocol"), detail: relayLocalized("v\(RelayProtocolVersion.current)")) { EmptyView() }
                 SettingsRow(
                     title: relayLocalized("Runtime"),
-                    detail: "Sessions live in a background daemon and survive quitting the app"
+                    detail: relayLocalized("Sessions live in a background daemon and survive quitting the app")
                 ) { EmptyView() }
             }
         }

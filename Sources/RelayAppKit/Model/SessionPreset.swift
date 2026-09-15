@@ -6,34 +6,38 @@ import RelayProtocol
 ///
 /// Presets exist because "start Claude" is not one action. Starting it with
 /// approvals on and starting it in automatic mode are different enough to
-/// deserve separate rows, and burying that behind a settings toggle would mean
-/// the user cannot have both.
+/// deserve separate rows, and each CLI spells its automatic mode differently —
+/// exactly the sort of thing nobody should be typing from memory.
+///
+/// Every preset is editable. The defaults are seeded into the user's list on
+/// first run rather than living in code as an untouchable catalogue: a set of
+/// starting points someone cannot rename or adjust is not a set of presets.
 struct SessionPreset: Codable, Hashable, Identifiable, Sendable {
     var id: String
     var name: String
     var kind: SessionKind
     /// Appended to the kind's own command.
     var arguments: [String]
-    /// Built-ins live in code so improvements reach everyone; only user presets
-    /// are persisted.
-    var isBuiltIn: Bool
-    /// Overrides the whole command for a custom preset.
+    /// Overrides the whole command.
     var customCommand: String?
+    /// There has to be a way to open a plain terminal, so that one preset
+    /// cannot be deleted. It can still be renamed and adjusted.
+    var isProtected: Bool
 
     init(
         id: String = UUID().uuidString,
         name: String,
         kind: SessionKind,
         arguments: [String] = [],
-        isBuiltIn: Bool = false,
-        customCommand: String? = nil
+        customCommand: String? = nil,
+        isProtected: Bool = false
     ) {
         self.id = id
         self.name = name
         self.kind = kind
         self.arguments = arguments
-        self.isBuiltIn = isBuiltIn
         self.customCommand = customCommand
+        self.isProtected = isProtected
     }
 
     init(from decoder: Decoder) throws {
@@ -42,8 +46,8 @@ struct SessionPreset: Codable, Hashable, Identifiable, Sendable {
         name = try container.decode(String.self, forKey: .name)
         kind = try container.decodeIfPresent(SessionKind.self, forKey: .kind) ?? .custom
         arguments = try container.decodeIfPresent([String].self, forKey: .arguments) ?? []
-        isBuiltIn = try container.decodeIfPresent(Bool.self, forKey: .isBuiltIn) ?? false
         customCommand = try container.decodeIfPresent(String.self, forKey: .customCommand)
+        isProtected = try container.decodeIfPresent(Bool.self, forKey: .isProtected) ?? false
     }
 
     /// The argv handed to the daemon.
@@ -54,112 +58,80 @@ struct SessionPreset: Codable, Hashable, Identifiable, Sendable {
         return kind.defaultCommand + arguments
     }
 
-    /// Shown under the name in the menu, so it is never a mystery what a preset
-    /// will actually run.
+    /// Shown under the name, so it is never a mystery what a preset will run.
     var subtitle: String {
         if let customCommand, !customCommand.isEmpty { return customCommand }
-        return command.joined(separator: " ")
+        let text = command.joined(separator: " ")
+        return text.isEmpty ? "login shell" : text
+    }
+
+    /// Arguments as the user would type them, for the editor.
+    var argumentText: String {
+        get { arguments.joined(separator: " ") }
+        set { arguments = newValue.split(whereSeparator: { $0 == " " }).map(String.init) }
     }
 }
 
 enum SessionPresets {
-    /// Shipped presets.
-    ///
-    /// Agents default to their automatic-approval mode: the flags differ per CLI
-    /// and are easy to get wrong by hand, which is exactly what a preset is for.
-    /// The supervised variant sits directly underneath, because handing an agent
-    /// unattended write access is a choice that should stay one click away in
-    /// both directions.
-    static let builtIn: [SessionPreset] = [
-        SessionPreset(
-            id: "builtin.terminal",
-            name: "Terminal",
-            kind: .shell,
-            isBuiltIn: true
-        ),
-        SessionPreset(
-            id: "builtin.claude.auto",
-            name: "Claude",
-            kind: .claude,
-            arguments: ["--permission-mode", "auto"],
-            isBuiltIn: true
-        ),
-        SessionPreset(
-            id: "builtin.claude",
-            name: "Claude · ask first",
-            kind: .claude,
-            isBuiltIn: true
-        ),
-        SessionPreset(
-            id: "builtin.codex.auto",
-            name: "Codex",
-            kind: .codex,
-            arguments: ["--approve-for-me"],
-            isBuiltIn: true
-        ),
-        SessionPreset(
-            id: "builtin.codex",
-            name: "Codex · ask first",
-            kind: .codex,
-            isBuiltIn: true
-        ),
-        SessionPreset(
-            id: "builtin.gemini.auto",
-            name: "Gemini",
-            kind: .gemini,
-            arguments: ["--approval-mode", "auto_edit"],
-            isBuiltIn: true
-        ),
-        SessionPreset(
-            id: "builtin.opencode",
-            name: "OpenCode",
-            kind: .opencode,
-            isBuiltIn: true
-        ),
-    ]
-
-    /// Shown in the new-session menu out of the box.
-    ///
-    /// The catalogue is deliberately larger than this: a menu that lists every
-    /// agent anyone might use is a menu nobody reads. The rest are one toggle
-    /// away in settings.
-    static let defaultEnabledIDs: [String] = [
-        "builtin.terminal",
-        "builtin.claude.auto",
-        "builtin.codex.auto",
-    ]
-
-    /// Every preset, whether or not it is currently offered.
-    static func catalogue(custom: [SessionPreset]) -> [SessionPreset] {
-        builtIn + custom
+    /// Seeded on first run. Deliberately short: a menu listing every agent
+    /// anyone might use is a menu nobody reads, and the rest are one click away
+    /// in settings.
+    static var defaultSet: [SessionPreset] {
+        [
+            SessionPreset(
+                id: "preset.terminal",
+                name: "Terminal",
+                kind: .shell,
+                isProtected: true
+            ),
+            SessionPreset(id: "preset.claude", name: "Claude", kind: .claude, arguments: autoArguments(for: .claude)),
+            SessionPreset(id: "preset.codex", name: "Codex", kind: .codex, arguments: autoArguments(for: .codex)),
+        ]
     }
 
-    /// The presets the menu offers, in catalogue order.
-    static func enabled(custom: [SessionPreset], enabledIDs: [String]?) -> [SessionPreset] {
-        let allowed = Set(enabledIDs ?? defaultEnabledIDs)
-        return catalogue(custom: custom).filter { preset in
-            // A preset the user created is offered by virtue of existing;
-            // hiding it would mean it could only be reached from settings.
-            !preset.isBuiltIn || allowed.contains(preset.id)
+    /// Each CLI's automatic-approval flag. They differ, and getting one wrong
+    /// silently gives an agent either no autonomy or too much.
+    static func autoArguments(for kind: SessionKind) -> [String] {
+        switch kind {
+        case .claude: ["--permission-mode", "auto"]
+        case .codex: ["--approve-for-me"]
+        case .gemini: ["--approval-mode", "auto_edit"]
+        case .opencode, .shell, .ssh, .custom: []
         }
     }
 
-    static func all(custom: [SessionPreset]) -> [SessionPreset] {
-        catalogue(custom: custom)
+    /// Offered when adding a preset, so the common ones need no typing.
+    static var templates: [SessionPreset] {
+        [
+            SessionPreset(name: "Claude", kind: .claude, arguments: autoArguments(for: .claude)),
+            SessionPreset(name: "Claude · ask first", kind: .claude),
+            SessionPreset(name: "Codex", kind: .codex, arguments: autoArguments(for: .codex)),
+            SessionPreset(name: "Codex · ask first", kind: .codex),
+            SessionPreset(name: "Gemini", kind: .gemini, arguments: autoArguments(for: .gemini)),
+            SessionPreset(name: "OpenCode", kind: .opencode),
+            SessionPreset(name: "Terminal", kind: .shell),
+            SessionPreset(name: "Custom command", kind: .custom, customCommand: ""),
+        ]
     }
 
-    /// The preset a keyboard shortcut for a kind should launch: the first one
-    /// that targets it, which is the automatic variant for agents.
-    /// What a keyboard shortcut for a kind should launch: the first enabled
-    /// preset for it, falling back to the catalogue so a shortcut still works
-    /// for an agent the user has hidden from the menu.
-    static func preferred(
-        for kind: SessionKind,
-        custom: [SessionPreset] = [],
-        enabledIDs: [String]? = nil
-    ) -> SessionPreset {
-        enabled(custom: custom, enabledIDs: enabledIDs).first { $0.kind == kind }
-            ?? catalogue(custom: custom).first { $0.kind == kind }
-            ?? SessionPreset(name: kind.displayName, kind: kind)
+    /// What a keyboard shortcut for a kind should launch.
+    static func preferred(for kind: SessionKind, in presets: [SessionPreset]) -> SessionPreset {
+        presets.first { $0.kind == kind } ?? SessionPreset(name: kind.displayName, kind: kind)
+    }
+
+    /// Migrates a workspace written before presets were editable.
+    static func migrate(custom: [SessionPreset], enabledIDs: [String]?) -> [SessionPreset] {
+        let legacyDefaults: [String: String] = [
+            "builtin.terminal": "preset.terminal",
+            "builtin.claude.auto": "preset.claude",
+            "builtin.codex.auto": "preset.codex",
+        ]
+        let enabled = Set(enabledIDs ?? Array(legacyDefaults.keys))
+        var result = defaultSet.filter { preset in
+            guard let legacy = legacyDefaults.first(where: { $0.value == preset.id })?.key else { return true }
+            return enabled.contains(legacy) || preset.isProtected
+        }
+        result.append(contentsOf: custom)
+        return result
     }
 }

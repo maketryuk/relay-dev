@@ -16,7 +16,6 @@ struct PaletteCommand: Identifiable {
 struct CommandPaletteView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
-    @Environment(\.openSettings) private var openSettings
     @State private var query = ""
     @State private var highlightedIndex = 0
     @FocusState private var isFieldFocused: Bool
@@ -177,7 +176,7 @@ struct CommandPaletteView: View {
                 title: relayLocalized("Settings"),
                 subtitle: relayLocalized("Shortcuts, notifications and more"),
                 systemImage: "slider.horizontal.3"
-            ) { openSettings() })
+            ) { openWindow(id: SettingsWindow.id) })
 
             for service in project.services {
                 let state = model.state(of: service, in: project.id)

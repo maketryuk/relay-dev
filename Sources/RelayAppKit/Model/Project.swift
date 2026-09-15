@@ -87,8 +87,11 @@ struct WorkspaceState: Codable {
     var notifications: NotificationSettings
     var shortcuts: ShortcutSettings
     /// Presets the user added; the built-in ones live in code.
+    /// Nil means a workspace written before presets were editable, which is
+    /// migrated on load.
+    var presets: [SessionPreset]?
+    /// Read only to migrate; no longer written.
     var customPresets: [SessionPreset]
-    /// Nil means the shipped default set.
     var enabledPresetIDs: [String]?
     var sessionHistory: [SessionHistoryEntry]
     var isRightSidebarVisible: Bool
@@ -105,6 +108,7 @@ struct WorkspaceState: Codable {
         collapsedSections: [String] = [],
         notifications: NotificationSettings = NotificationSettings(),
         shortcuts: ShortcutSettings = ShortcutSettings(),
+        presets: [SessionPreset]? = nil,
         customPresets: [SessionPreset] = [],
         enabledPresetIDs: [String]? = nil,
         sessionHistory: [SessionHistoryEntry] = [],
@@ -121,6 +125,7 @@ struct WorkspaceState: Codable {
         self.collapsedSections = collapsedSections
         self.notifications = notifications
         self.shortcuts = shortcuts
+        self.presets = presets
         self.customPresets = customPresets
         self.enabledPresetIDs = enabledPresetIDs
         self.sessionHistory = sessionHistory
@@ -142,6 +147,7 @@ struct WorkspaceState: Codable {
         notifications = try container
             .decodeIfPresent(NotificationSettings.self, forKey: .notifications) ?? NotificationSettings()
         shortcuts = try container.decodeIfPresent(ShortcutSettings.self, forKey: .shortcuts) ?? ShortcutSettings()
+        presets = try container.decodeIfPresent([SessionPreset].self, forKey: .presets)
         customPresets = try container.decodeIfPresent([SessionPreset].self, forKey: .customPresets) ?? []
         enabledPresetIDs = try container.decodeIfPresent([String].self, forKey: .enabledPresetIDs)
         sessionHistory = try container.decodeIfPresent([SessionHistoryEntry].self, forKey: .sessionHistory) ?? []

@@ -45,6 +45,48 @@ struct DescriptorInheritanceTests {
         #expect(String(decoding: box.data, as: UTF8.self).contains("blocked"))
     }
 
+    @Test("A descriptor above the child's closing range is still not inherited")
+    func highNumberedDescriptorIsNotInherited() {
+        // `getdtablesize()` is tens of thousands on macOS, so the child cannot
+        // loop the whole table and `closefrom` does not exist. A descriptor
+        // beyond whatever cap the child uses has to be handled in the parent,
+        // and this is the case that caught it.
+        let temporary = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("relay-fd-high-\(UUID().uuidString)")
+        FileManager.default.createFile(atPath: temporary.path, contents: nil)
+        defer { try? FileManager.default.removeItem(at: temporary) }
+
+        let low = open(temporary.path, O_WRONLY)
+        #expect(low >= 3)
+        defer { close(low) }
+
+        // Force a high descriptor number, past any plausible child-side cap.
+        let high = fcntl(low, F_DUPFD, 5000)
+        #expect(high >= 5000)
+        defer { close(high) }
+
+        let plan = PTYProcess.LaunchPlan(
+            executable: "/bin/sh",
+            arguments: ["-c", "echo LEAKED >&\(high) && echo wrote || echo blocked"],
+            workingDirectory: "/tmp",
+            environment: ["PATH": "/usr/bin:/bin"],
+            columns: 80,
+            rows: 24
+        )
+        let process = try? PTYProcess.launch(plan)
+        let child = try? #require(process)
+        let box = OutputBox()
+        child?.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
+
+        let deadline = Date().addingTimeInterval(10)
+        while Date() < deadline, box.exitCode == nil { usleep(20_000) }
+        child?.close()
+
+        let contents = (try? String(contentsOf: temporary, encoding: .utf8)) ?? ""
+        #expect(!contents.contains("LEAKED"))
+        #expect(String(decoding: box.data, as: UTF8.self).contains("blocked"))
+    }
+
     @Test("The pty master is close-on-exec so a grandchild cannot hold the session open")
     func masterIsCloseOnExec() throws {
         let plan = PTYProcess.LaunchPlan(
