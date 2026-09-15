@@ -33,6 +33,7 @@
 "Back" = "Назад";
 "Built-in" = "Встроенный";
 "CUSTOM COMMAND" = "СВОЯ КОМАНДА";
+"Cached" = "Из кэша";
 "Cancel" = "Отмена";
 "Check automatically" = "Проверять автоматически";
 "Check for updates" = "Проверка обновлений";
@@ -57,6 +58,7 @@
 "Connect" = "Подключиться";
 "Connect SSH: %@" = "Подключиться по SSH: %@";
 "Connected — sessions keep running when Relay is closed" = "Подключено — сессии работают и при закрытом Relay";
+"Context" = "Контекст";
 "Copy Container Name" = "Скопировать имя контейнера";
 "Copy URL" = "Скопировать URL";
 "Could not attach to the session" = "Не удалось подключиться к сессии";
@@ -105,6 +107,7 @@
 "Focus Next Pane" = "Следующая панель";
 "Focus Terminal" = "Фокус в терминал";
 "Force quit" = "Завершить принудительно";
+"Fresh" = "Свежее";
 "From the project" = "Из проекта";
 "Gemini" = "Gemini";
 "General" = "Основные";
@@ -113,6 +116,7 @@
 "History" = "История";
 "Icon" = "Иконка";
 "Idle" = "Простаивает";
+"In the window" = "В окне";
 "Install %@" = "Установить %@";
 "Installing…" = "Устанавливаем…";
 "Jump by number" = "Переход по номеру";
@@ -123,6 +127,7 @@
 "Looking for containers…" = "Ищем контейнеры…";
 "Looking…" = "Проверяем…";
 "Mark all read" = "Отметить всё прочитанным";
+"Model" = "Модель";
 "Mute this project" = "Отключить для этого проекта";
 "Muted projects" = "Отключённые проекты";
 "NEW SESSION" = "НОВАЯ СЕССИЯ";
@@ -135,6 +140,7 @@
 "New Service" = "Новый сервис";
 "New Shell" = "Новый терминал";
 "New session" = "Новая сессия";
+"Newly cached" = "Записано в кэш";
 "Next Project" = "Следующий проект";
 "Next Session" = "Следующая сессия";
 "No containers for this project. Press Up to start the stack." = "Для этого проекта нет контейнеров. Нажмите «Запустить», чтобы поднять стек.";
@@ -166,6 +172,7 @@
 "Open port %d" = "Открыть порт %d";
 "OpenCode" = "OpenCode";
 "Other hosts" = "Другие хосты";
+"Output" = "Ответ";
 "Pin to Project" = "Закрепить за проектом";
 "Pin to current project" = "Закрепить за текущим проектом";
 "Pinned to %@" = "Закреплено в проекте %@";
@@ -185,6 +192,7 @@
 "Projects: %d" = "Проектов: %d";
 "Protocol" = "Протокол";
 "Quick switching" = "Быстрое переключение";
+"Reasoning" = "Рассуждение";
 "Reconnect" = "Переподключиться";
 "Refresh containers" = "Обновить контейнеры";
 "Refresh usage" = "Обновить лимиты";
@@ -299,7 +307,10 @@
 "Version" = "Версия";
 "Waiting for you" = "Ждёт вас";
 "Weekly" = "Еженедельно";
+"What is in the context window" = "Что лежит в контекстном окне";
 "When to interrupt" = "Когда прерывать";
+"Window" = "Окно";
+"Window (inferred)" = "Окно (вычислено)";
 "Work finished" = "Работа завершена";
 "Working" = "Работает";
 "Workspace" = "Рабочее пространство";

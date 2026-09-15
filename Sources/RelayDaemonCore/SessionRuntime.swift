@@ -162,9 +162,11 @@ public final class SessionRuntime: @unchecked Sendable {
     public func tearDown() {
         DaemonQueue.assertIsolated()
         process?.forceKill()
-        // Reap before dropping the exit source, otherwise the child lingers as a
-        // zombie for as long as the daemon lives.
-        process?.reap()
+        // Reaped, because cancelling the exit source removes the only place
+        // `waitpid` was being called and the child would linger as a zombie for
+        // as long as the daemon lives — but reaped elsewhere, because waiting
+        // for it here holds up every other session's output.
+        process?.reapDetached()
         process?.close()
         process = nil
     }

@@ -34,7 +34,7 @@ struct DescriptorInheritanceTests {
         )
         let process = try PTYProcess.launch(plan)
         let box = OutputBox()
-        process.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
+        process.startStreaming(on: .testStream, onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
         box.waitForEitherOutcome()
         process.close()
 
@@ -82,7 +82,7 @@ struct DescriptorInheritanceTests {
         )
         let child = try PTYProcess.launch(plan)
         let box = OutputBox()
-        child.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
+        child.startStreaming(on: .testStream, onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
         box.waitForEitherOutcome()
         child.close()
 

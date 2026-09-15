@@ -101,6 +101,9 @@ final class AppModel {
     /// What the agents have left of their rate limits, read from their own
     /// caches on disk.
     let usage = UsageMonitor()
+    /// How full each visible agent session's context window is.
+    let context = ContextMonitor()
+    var sessionShowingContextDetail: SessionID?
     private var updateTask: Task<Void, Never>?
 
     /// Cap on cached terminal renderers. Beyond this the least recently viewed
@@ -498,6 +501,7 @@ final class AppModel {
     func selectSession(_ id: SessionID) {
         selectedSessionID = id
         surfaceCache.touch(id)
+        watchContextForVisiblePanes()
         if let projectID = sessions[id]?.projectID {
             showInFocusedPane(id, projectID: projectID)
             lastActiveSessionByProject[projectID.rawValue] = id.rawValue
@@ -699,6 +703,15 @@ final class AppModel {
               let next = PaneLayout.session(after: current, in: layout)
         else { return }
         selectSession(next)
+    }
+
+    /// Keeps the context readers pointed at what is actually on screen.
+    private func watchContextForVisiblePanes() {
+        guard let projectID = selectedProjectID, let layout = paneLayouts[projectID] else {
+            context.watch([])
+            return
+        }
+        context.watch(PaneLayout.sessions(in: layout).compactMap { sessions[$0] })
     }
 
     /// Drops panes whose session has gone.
