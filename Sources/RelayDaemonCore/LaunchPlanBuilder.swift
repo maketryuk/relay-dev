@@ -51,8 +51,42 @@ public enum LaunchPlanBuilder {
         return FileManager.default.homeDirectoryForCurrentUser.path
     }
 
-    private static func makeEnvironment(extra: [String: String]) -> [String: String] {
-        var environment = ProcessInfo.processInfo.environment
+    /// Variables that describe *the agent session Relay was launched from*.
+    ///
+    /// A session Relay starts must look like one started from a fresh login
+    /// shell, not like a child of whatever happened to launch Relay. Left in
+    /// place, a Claude session spawned here inherits another one's markers,
+    /// decides it is that session's child and turns its own transcript saving
+    /// off — which is exactly what happened, with the warning to prove it.
+    static let inheritedSessionMarkers: [String] = [
+        "CLAUDECODE",
+        "CLAUDE_PID",
+        "CLAUDE_EFFORT",
+        "CODEX_SANDBOX",
+        "CODEX_SANDBOX_NETWORK_DISABLED",
+    ]
+
+    /// Whole families of them, for the same reason.
+    static let inheritedSessionPrefixes: [String] = [
+        "CLAUDE_CODE_",
+        "CODEX_SESSION",
+        "CODEX_THREAD",
+    ]
+
+    /// Inherited from the GUI process and meaningless in a child.
+    static let launcherNoise: [String] = ["XPC_SERVICE_NAME", "XPC_FLAGS"]
+
+    static func isInherited(_ key: String) -> Bool {
+        inheritedSessionMarkers.contains(key)
+            || launcherNoise.contains(key)
+            || inheritedSessionPrefixes.contains { key.hasPrefix($0) }
+    }
+
+    static func makeEnvironment(
+        extra: [String: String],
+        base: [String: String] = ProcessInfo.processInfo.environment
+    ) -> [String: String] {
+        var environment = base.filter { !isInherited($0.key) }
         environment["TERM"] = "xterm-256color"
         environment["COLORTERM"] = "truecolor"
         environment["TERM_PROGRAM"] = "Relay"
@@ -60,9 +94,6 @@ public enum LaunchPlanBuilder {
         if environment["LANG"] == nil {
             environment["LANG"] = "en_US.UTF-8"
         }
-        // Inherited from the GUI process; meaningless and confusing in a child.
-        environment.removeValue(forKey: "XPC_SERVICE_NAME")
-        environment.removeValue(forKey: "XPC_FLAGS")
         for (key, value) in extra {
             environment[key] = value
         }

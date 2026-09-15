@@ -99,3 +99,60 @@ struct LaunchPlanBuilderTests {
         #expect(plan.rows == 43)
     }
 }
+
+@Suite("Inherited session markers")
+struct InheritedEnvironmentTests {
+    private let launched: [String: String] = [
+        "PATH": "/usr/bin",
+        "HOME": "/Users/me",
+        "CLAUDECODE": "1",
+        "CLAUDE_CODE_CHILD_SESSION": "1",
+        "CLAUDE_CODE_SESSION_ID": "abc",
+        "CLAUDE_PID": "4242",
+        "XPC_SERVICE_NAME": "0",
+        "MY_OWN_VAR": "keep me",
+    ]
+
+    @Test("A session does not inherit the agent session Relay was launched from")
+    func stripsAgentMarkers() {
+        // Left in place, a Claude session spawned here decides it is a child of
+        // the one that launched Relay and turns its own transcript saving off.
+        let environment = LaunchPlanBuilder.makeEnvironment(extra: [:], base: launched)
+        #expect(environment["CLAUDECODE"] == nil)
+        #expect(environment["CLAUDE_CODE_CHILD_SESSION"] == nil)
+        #expect(environment["CLAUDE_CODE_SESSION_ID"] == nil)
+        #expect(environment["CLAUDE_PID"] == nil)
+    }
+
+    @Test("Everything else the user set is passed through untouched")
+    func keepsTheRest() {
+        // Stripping widely would break the shell setup people actually rely on.
+        let environment = LaunchPlanBuilder.makeEnvironment(extra: [:], base: launched)
+        #expect(environment["PATH"] == "/usr/bin")
+        #expect(environment["HOME"] == "/Users/me")
+        #expect(environment["MY_OWN_VAR"] == "keep me")
+    }
+
+    @Test("The launcher's own noise is dropped too")
+    func stripsLauncherNoise() {
+        #expect(LaunchPlanBuilder.makeEnvironment(extra: [:], base: launched)["XPC_SERVICE_NAME"] == nil)
+    }
+
+    @Test("A caller may still set anything it likes, including a stripped name")
+    func callerWins() {
+        // The filter is about what was inherited, not about what Relay is asked
+        // to pass on purpose.
+        let environment = LaunchPlanBuilder.makeEnvironment(
+            extra: ["CLAUDE_CODE_SESSION_ID": "deliberate"],
+            base: launched
+        )
+        #expect(environment["CLAUDE_CODE_SESSION_ID"] == "deliberate")
+    }
+
+    @Test("Relay still says which terminal this is")
+    func setsItsOwnMarkers() {
+        let environment = LaunchPlanBuilder.makeEnvironment(extra: [:], base: launched)
+        #expect(environment["TERM_PROGRAM"] == "Relay")
+        #expect(environment["RELAY_SESSION"] == "1")
+    }
+}

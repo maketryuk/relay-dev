@@ -6,18 +6,39 @@ asked for twice.
 ## Releases
 
 **Never tag or publish a release without being asked to.** Work lands on `main`
-and accumulates under `## Unreleased` in `CHANGELOG.md`; whether it is ready to
-be a version is a judgement about the product, not about whether a batch of work
-is finished. A stream of versions nobody decided to cut is noise.
+and accumulates under `## Unreleased` in `CHANGELOG.md`.
 
-Nothing has been released yet. The first release will be `0.1.0`, and until then
-`RelayVersion.current` stays `0.1.0-dev`.
+### What the numbers mean
 
-When a release is asked for:
+`MAJOR.MINOR.BUILD`, and the last one is a **build counter, not a bug count**.
+It goes up by one for every build that is published and resets to zero when the
+minor moves. `0.2.47` is the forty-seventh build of the 0.2 line, and says
+nothing about how many things were fixed in it.
 
-1. **Bump the version** in `Sources/RelayProtocol/RelayVersion.swift`. It is the
-   single source of truth — the build script reads it, so the bundle, the daemon
-   and the About pane cannot disagree.
+- **Build** — every published build. No judgement required: if it ships, the
+  number goes up. Gaps are fine and expected, since a build that is never
+  published still consumed its number.
+- **Minor** — a milestone worth telling someone about. Rare and deliberate.
+- **Major** — breaking changes to stored data.
+
+This is how a continuously updated app is normally numbered: the user never
+reads the number, the updater only needs to order two of them, and nobody has
+to decide whether a day's work "deserves" a version. Before it, the question
+"is this enough for a release?" had to be answered every time, which is a
+question about nothing.
+
+Nothing has been released yet. The first release will be `0.1.0`.
+
+### Cutting one
+
+1. **Bump the version** with `./Scripts/bump-version.sh`: `build` by default,
+   `minor` for a milestone, `release` to turn a candidate into the version it
+   was a candidate for. A `build` bump while a candidate is current moves the
+   candidate on instead, so a version that has not shipped is never stepped
+   over. It edits
+   `Sources/RelayProtocol/RelayVersion.swift`, which is the single source of
+   truth: the build script reads it, so the bundle, the daemon and the About
+   pane cannot disagree.
 2. **Rename the `Unreleased` heading** to the version, keeping the Added /
    Changed / Fixed grouping. Describe what changed for the person using the app,
    not which files moved. A fix entry says what was broken.
@@ -32,9 +53,6 @@ When a release is asked for:
    and a release with no archive is invisible to the in-app updater: it looks
    for an asset whose name starts with `Relay` and ends in `.zip`, and a release
    without one is treated as an announcement rather than an update.
-
-After 0.1.0: a minor version is a milestone worth telling someone about, a patch
-is everything else, and a major is reserved for breaking changes to stored data.
 
 ## Daemon protocol
 
