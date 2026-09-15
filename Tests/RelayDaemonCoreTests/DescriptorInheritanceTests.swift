@@ -35,12 +35,18 @@ struct DescriptorInheritanceTests {
         let process = try PTYProcess.launch(plan)
         let box = OutputBox()
         process.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
-        box.waitForOutput(containing: "blocked")
+        box.waitForEitherOutcome()
         process.close()
 
+        // The file settles it. Which branch the shell took does not: once the
+        // descriptor is closed its *number* is free, and `sh` is entitled to
+        // put one of its own there — so `>&N` can succeed, write to the
+        // terminal, and prove nothing. Seen failing exactly that way.
         let contents = (try? String(contentsOf: temporary, encoding: .utf8)) ?? ""
         #expect(!contents.contains("LEAKED"))
-        #expect(box.text.contains("blocked"), "the child produced: \(box.text.debugDescription)")
+        // And the child did run, so the empty file is a refusal rather than a
+        // command that never happened.
+        #expect(box.ranToACompletion, "the child produced: \(box.text.debugDescription)")
     }
 
     @Test("A descriptor above the child's closing range is still not inherited")
@@ -77,12 +83,12 @@ struct DescriptorInheritanceTests {
         let child = try PTYProcess.launch(plan)
         let box = OutputBox()
         child.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
-        box.waitForOutput(containing: "blocked")
+        box.waitForEitherOutcome()
         child.close()
 
         let contents = (try? String(contentsOf: temporary, encoding: .utf8)) ?? ""
         #expect(!contents.contains("LEAKED"))
-        #expect(box.text.contains("blocked"), "the child produced: \(box.text.debugDescription)")
+        #expect(box.ranToACompletion, "the child produced: \(box.text.debugDescription)")
     }
 
     @Test("The pty master is close-on-exec so a grandchild cannot hold the session open")
