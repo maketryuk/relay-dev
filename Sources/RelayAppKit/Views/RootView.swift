@@ -54,8 +54,8 @@ struct RootView: View {
 
     @ViewBuilder
     private func mainContent(for project: Project) -> some View {
-        if let sessionID = model.selectedSessionID, let session = model.sessions[sessionID] {
-            TerminalPane(session: session)
+        if let layout = model.paneLayout(for: project.id) {
+            PaneTreeView(node: layout, projectID: project.id)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ProjectOverviewPane(project: project)

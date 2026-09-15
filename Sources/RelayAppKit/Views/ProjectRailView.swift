@@ -10,6 +10,7 @@ import SwiftUI
 struct ProjectRailView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.dismissWindow) private var dismissWindow
     @State private var isDropTargeted = false
 
     var body: some View {
@@ -119,16 +120,25 @@ struct ProjectRailView: View {
         .relayTooltip(relayLocalized("Add project"), shortcut: model.binding(for: .addProject), edge: .trailing)
     }
 
+    private func toggle(_ id: String) {
+        WindowToggle.toggle(
+            id: id,
+            isOpen: model.isWindowOpen(id),
+            openWindow: openWindow,
+            dismissWindow: dismissWindow
+        )
+    }
+
     private var portsButton: some View {
         IconButton(systemImage: "point.3.filled.connected.trianglepath.dotted", help: "", size: 28) {
-            openWindow(id: PortsWindow.id)
+            toggle(PortsWindow.id)
         }
         .relayTooltip(relayLocalized("Ports"), shortcut: model.binding(for: .togglePorts), edge: .trailing)
     }
 
     private var sshButton: some View {
         IconButton(systemImage: "network", help: "", size: 28) {
-            openWindow(id: SSHWindow.id)
+            toggle(SSHWindow.id)
         }
         .relayTooltip(relayLocalized("SSH hosts"), shortcut: model.binding(for: .openSSHHosts), edge: .trailing)
     }

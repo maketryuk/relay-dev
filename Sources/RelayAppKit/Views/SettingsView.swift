@@ -48,6 +48,7 @@ struct SettingsView: View {
         .background(Theme.Palette.base)
         .tooltipRoot(tooltips)
         .preferredColorScheme(.dark)
+        .reportsWindowPresence(SettingsWindow.id)
     }
 
     private var sidebar: some View {

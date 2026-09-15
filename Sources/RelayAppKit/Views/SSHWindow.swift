@@ -25,6 +25,7 @@ struct SSHWindowView: View {
         .frame(minWidth: 420, minHeight: 320)
         .background(Theme.Palette.base)
         .preferredColorScheme(.dark)
+        .reportsWindowPresence(SSHWindow.id)
         .onAppear { model.loadSSHHosts() }
     }
 

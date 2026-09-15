@@ -44,6 +44,7 @@
 "Copy URL" = "Copy URL";
 "Could not attach to the session" = "Could not attach to the session";
 "Could not reach the session daemon" = "Could not reach the session daemon";
+"Could not start" = "Could not start";
 "Could not stop the process" = "Could not stop the process";
 "Custom command" = "Custom command";
 "Custom command…" = "Custom command…";
@@ -71,6 +72,7 @@
 "Filter by alias or host" = "Filter by alias or host";
 "Filter by port, process or session" = "Filter by port, process or session";
 "Finished" = "Finished";
+"Focus Next Pane" = "Focus Next Pane";
 "Focus Terminal" = "Focus Terminal";
 "Force quit" = "Force quit";
 "Gemini" = "Gemini";
@@ -190,6 +192,8 @@
 "Showing every port" = "Showing every port";
 "Sidebar width" = "Sidebar width";
 "Something failed" = "Something failed";
+"Split Down" = "Split Down";
+"Split Right" = "Split Right";
 "Start" = "Start";
 "Start Dev Service" = "Start Dev Service";
 "Start container" = "Start container";
@@ -223,6 +227,12 @@
 "Work finished" = "Work finished";
 "Working" = "Working";
 "Workspace" = "Workspace";
+"folder" = "folder";
 "in ~/.ssh/config" = "in ~/.ssh/config";
 "listening" = "listening";
+"logs" = "logs";
+"restart" = "restart";
+"shippingbox" = "shippingbox";
+"start" = "start";
+"stop" = "stop";
 "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project";

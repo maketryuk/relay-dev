@@ -98,6 +98,9 @@ struct WorkspaceState: Codable {
     var isLeftSidebarVisible: Bool
     var rightSidebarTab: String?
     var language: AppLanguage
+    /// Terminal arrangement per project, so a split survives a relaunch the
+    /// way the sessions in it do.
+    var paneLayouts: [String: PaneNode]
 
     init(
         version: Int = 1,
@@ -115,7 +118,8 @@ struct WorkspaceState: Codable {
         isRightSidebarVisible: Bool = true,
         isLeftSidebarVisible: Bool = true,
         rightSidebarTab: String? = nil,
-        language: AppLanguage = .system
+        language: AppLanguage = .system,
+        paneLayouts: [String: PaneNode] = [:]
     ) {
         self.version = version
         self.projects = projects
@@ -133,6 +137,7 @@ struct WorkspaceState: Codable {
         self.isLeftSidebarVisible = isLeftSidebarVisible
         self.rightSidebarTab = rightSidebarTab
         self.language = language
+        self.paneLayouts = paneLayouts
     }
 
     init(from decoder: Decoder) throws {
@@ -155,5 +160,6 @@ struct WorkspaceState: Codable {
         isLeftSidebarVisible = try container.decodeIfPresent(Bool.self, forKey: .isLeftSidebarVisible) ?? true
         rightSidebarTab = try container.decodeIfPresent(String.self, forKey: .rightSidebarTab)
         language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .system
+        paneLayouts = try container.decodeIfPresent([String: PaneNode].self, forKey: .paneLayouts) ?? [:]
     }
 }
