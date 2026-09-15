@@ -35,6 +35,9 @@ final class AppModel {
     private(set) var notificationSettings = NotificationSettings()
     private(set) var shortcutSettings = ShortcutSettings()
     private(set) var customPresets: [SessionPreset] = []
+    private(set) var sessionHistory: [SessionHistoryEntry] = []
+    var isRightSidebarVisible = true
+    var rightSidebarTab: RightSidebarTab = .services
 
     // MARK: - Selection and UI
 
@@ -74,6 +77,9 @@ final class AppModel {
         notificationSettings = state.notifications
         shortcutSettings = state.shortcuts
         customPresets = state.customPresets
+        sessionHistory = state.sessionHistory
+        isRightSidebarVisible = state.isRightSidebarVisible
+        rightSidebarTab = state.rightSidebarTab.flatMap(RightSidebarTab.init(rawValue:)) ?? .services
         lastActiveSessionByProject = state.lastActiveSessionByProject
         selectedProjectID = state.lastActiveProjectID.map { ProjectID(rawValue: $0) }
             ?? projects.first?.id
@@ -159,13 +165,19 @@ final class AppModel {
             }
 
         case let .sessionUpdated(snapshot):
-            let previous = sessions[snapshot.id]?.status
+            let previous = sessions[snapshot.id]
             sessions[snapshot.id] = snapshot
             if let previous {
-                notifyIfNeeded(previous: previous, snapshot: snapshot)
+                notifyIfNeeded(previous: previous.status, snapshot: snapshot)
+                if previous.exitCode == nil, snapshot.exitCode != nil {
+                    recordHistory(for: snapshot)
+                }
             }
 
         case let .sessionRemoved(sessionID):
+            if let ending = sessions[sessionID] {
+                recordHistory(for: ending)
+            }
             sessions.removeValue(forKey: sessionID)
             sessionOrder.removeAll { $0 == sessionID }
             releaseSurface(for: sessionID)
@@ -549,6 +561,56 @@ final class AppModel {
         selectProject(projects[index].id)
     }
 
+    // MARK: - History
+
+    private func recordHistory(for snapshot: SessionSnapshot) {
+        // Services come and go on their own schedule and would drown the list.
+        guard !snapshot.role.isService else { return }
+        sessionHistory = SessionHistory.appending(SessionHistoryEntry(from: snapshot), to: sessionHistory)
+        persist()
+    }
+
+    func history(for projectID: ProjectID) -> [SessionHistoryEntry] {
+        SessionHistory.entries(in: sessionHistory, for: projectID)
+    }
+
+    func clearHistory(for projectID: ProjectID) {
+        sessionHistory.removeAll { $0.projectID == projectID }
+        persist()
+    }
+
+    /// Runs a past session again with the same command.
+    func rerun(_ entry: SessionHistoryEntry) {
+        guard let project = project(entry.projectID) else { return }
+        launch(SessionSpec(
+            projectID: entry.projectID,
+            kind: entry.kind,
+            name: SessionNaming.nextName(
+                base: entry.name,
+                existing: sessions(in: entry.projectID).map(\.name)
+            ),
+            workingDirectory: project.rootPath,
+            command: entry.command
+        ))
+    }
+
+    // MARK: - Right sidebar
+
+    func toggleRightSidebar() {
+        isRightSidebarVisible.toggle()
+        persist()
+    }
+
+    func selectRightSidebarTab(_ tab: RightSidebarTab) {
+        if rightSidebarTab == tab, isRightSidebarVisible {
+            isRightSidebarVisible = false
+        } else {
+            rightSidebarTab = tab
+            isRightSidebarVisible = true
+        }
+        persist()
+    }
+
     // MARK: - Notifications
 
     private func notifyIfNeeded(previous: RuntimeStatus, snapshot: SessionSnapshot) {
@@ -924,7 +986,10 @@ final class AppModel {
             collapsedSections: Array(collapsedSections),
             notifications: notificationSettings,
             shortcuts: shortcutSettings,
-            customPresets: customPresets
+            customPresets: customPresets,
+            sessionHistory: sessionHistory,
+            isRightSidebarVisible: isRightSidebarVisible,
+            rightSidebarTab: rightSidebarTab.rawValue
         )
         store.scheduleSave(state)
     }
@@ -938,7 +1003,10 @@ final class AppModel {
             collapsedSections: Array(collapsedSections),
             notifications: notificationSettings,
             shortcuts: shortcutSettings,
-            customPresets: customPresets
+            customPresets: customPresets,
+            sessionHistory: sessionHistory,
+            isRightSidebarVisible: isRightSidebarVisible,
+            rightSidebarTab: rightSidebarTab.rawValue
         )
         store.saveNow(state)
     }

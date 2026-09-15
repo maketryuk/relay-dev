@@ -18,11 +18,16 @@ struct RootView: View {
                 ProjectSidebarView(project: project)
                 SidebarResizeHandle()
                 mainContent(for: project)
+                if model.isRightSidebarVisible {
+                    RightSidebarView(project: project)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                }
             } else {
                 welcomePane
             }
         }
-        .frame(minWidth: 900, minHeight: 560)
+        .frame(minWidth: 1_040, minHeight: 560)
+        .animation(.easeOut(duration: 0.16), value: model.isRightSidebarVisible)
         .background(Theme.Palette.base)
         .overlay(alignment: .top) { connectionBanner }
         .overlay { commandPaletteOverlay }

@@ -198,6 +198,9 @@ struct RelayCommands: Commands {
 
             Button(RelayCommand.openSSHHosts.title) { openWindow(id: SSHWindow.id) }
                 .relayShortcut(model.binding(for: .openSSHHosts))
+
+            Button(RelayCommand.toggleRightSidebar.title) { model.toggleRightSidebar() }
+                .relayShortcut(model.binding(for: .toggleRightSidebar))
         }
     }
 

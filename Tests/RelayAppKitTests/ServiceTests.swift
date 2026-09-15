@@ -205,3 +205,138 @@ struct PortGroupingTests {
         #expect(PortFiltering.matches(port(5432, process: "Postgres"), query: "POSTGRES"))
     }
 }
+
+@Suite("Session history")
+struct SessionHistoryTests {
+    private let projectID = ProjectID(rawValue: "p1")
+
+    private func entry(id: String, ended: Date = Date(), exitCode: Int32? = 0) -> SessionHistoryEntry {
+        var snapshot = SessionSnapshot(
+            id: SessionID(rawValue: id),
+            projectID: projectID,
+            kind: .claude,
+            name: "Claude",
+            workingDirectory: "/tmp",
+            command: ["claude"],
+            status: .finished,
+            pid: 1,
+            exitCode: exitCode,
+            startedAt: ended.addingTimeInterval(-90),
+            lastActivityAt: ended,
+            columns: 80,
+            rows: 24
+        )
+        snapshot.title = "refactoring"
+        return SessionHistoryEntry(from: snapshot, endedAt: ended)
+    }
+
+    @Test("A finished run keeps what it was and how it ended")
+    func capturesTheRun() {
+        let record = entry(id: "s1", exitCode: 3)
+        #expect(record.name == "refactoring")
+        #expect(record.kind == .claude)
+        #expect(record.command == ["claude"])
+        #expect(!record.succeeded)
+        #expect(record.duration == 90)
+    }
+
+    @Test("Newest runs come first")
+    func newestFirst() {
+        var history: [SessionHistoryEntry] = []
+        history = SessionHistory.appending(entry(id: "old"), to: history)
+        history = SessionHistory.appending(entry(id: "new"), to: history)
+        #expect(history.map(\.id) == ["new", "old"])
+    }
+
+    @Test("A run reported twice is recorded once")
+    func deduplicatesByIdentity() {
+        // A session can end with an exit event and then be forgotten, which
+        // would otherwise leave two identical rows.
+        var history = SessionHistory.appending(entry(id: "s1"), to: [])
+        history = SessionHistory.appending(entry(id: "s1"), to: history)
+        #expect(history.count == 1)
+    }
+
+    @Test("History is capped so the workspace file cannot grow without end")
+    func respectsTheLimit() {
+        var history: [SessionHistoryEntry] = []
+        for index in 0 ..< (SessionHistory.limit + 40) {
+            history = SessionHistory.appending(entry(id: "s\(index)"), to: history)
+        }
+        #expect(history.count == SessionHistory.limit)
+        // The oldest entries are the ones dropped.
+        #expect(history.first?.id == "s\(SessionHistory.limit + 39)")
+    }
+
+    @Test("Entries are filtered by project")
+    func filtersByProject() {
+        var other = entry(id: "s2")
+        other.projectID = ProjectID(rawValue: "p2")
+        let history = [entry(id: "s1"), other]
+        #expect(SessionHistory.entries(in: history, for: projectID).map(\.id) == ["s1"])
+    }
+
+    @Test("Durations read as a person would say them")
+    func formatsDuration() {
+        let now = Date()
+        var short = entry(id: "a", ended: now)
+        short.startedAt = now.addingTimeInterval(-45)
+        #expect(short.durationText == "45s")
+
+        var medium = entry(id: "b", ended: now)
+        medium.startedAt = now.addingTimeInterval(-125)
+        #expect(medium.durationText == "2m 5s")
+
+        var long = entry(id: "c", ended: now)
+        long.startedAt = now.addingTimeInterval(-7_500)
+        #expect(long.durationText == "2h 5m")
+    }
+
+    @Test("History survives persistence and is absent from older files")
+    func persists() throws {
+        let directory = try TemporaryDirectory()
+        let url = directory.url.appendingPathComponent("workspace.json")
+        WorkspaceStore(url: url).saveNow(WorkspaceState(sessionHistory: [entry(id: "s1")]))
+
+        let loaded = WorkspaceStore(url: url).load()
+        #expect(loaded.sessionHistory.count == 1)
+        #expect(loaded.sessionHistory[0].name == "refactoring")
+
+        try #"{"projects":[]}"#.write(to: url, atomically: true, encoding: .utf8)
+        let legacy = WorkspaceStore(url: url).load()
+        #expect(legacy.sessionHistory.isEmpty)
+        #expect(legacy.isRightSidebarVisible)
+    }
+}
+
+@Suite("Right sidebar tabs")
+struct RightSidebarTabTests {
+    @Test("Every tab has a title and an icon")
+    func metadata() {
+        for tab in RightSidebarTab.allCases {
+            #expect(!tab.title.isEmpty)
+            #expect(!tab.symbolName.isEmpty)
+        }
+    }
+
+    @Test("Planned tabs are shown but disabled rather than hidden")
+    func plannedTabsAreDisabled() {
+        // Hiding them would misrepresent where the app is going; half-working
+        // ones would be worse.
+        #expect(RightSidebarTab.services.isAvailable)
+        #expect(RightSidebarTab.docker.isAvailable)
+        #expect(RightSidebarTab.history.isAvailable)
+        #expect(!RightSidebarTab.git.isAvailable)
+        #expect(!RightSidebarTab.files.isAvailable)
+        #expect(!RightSidebarTab.git.comingSoonDescription.isEmpty)
+        #expect(!RightSidebarTab.files.comingSoonDescription.isEmpty)
+    }
+
+    @Test("Tabs round-trip through their stored identifier")
+    func codable() {
+        for tab in RightSidebarTab.allCases {
+            #expect(RightSidebarTab(rawValue: tab.rawValue) == tab)
+        }
+        #expect(RightSidebarTab(rawValue: "removed-tab") == nil)
+    }
+}

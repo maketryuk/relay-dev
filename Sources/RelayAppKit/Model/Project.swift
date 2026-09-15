@@ -87,6 +87,9 @@ struct WorkspaceState: Codable {
     var shortcuts: ShortcutSettings
     /// Presets the user added; the built-in ones live in code.
     var customPresets: [SessionPreset]
+    var sessionHistory: [SessionHistoryEntry]
+    var isRightSidebarVisible: Bool
+    var rightSidebarTab: String?
 
     init(
         version: Int = 1,
@@ -97,7 +100,10 @@ struct WorkspaceState: Codable {
         collapsedSections: [String] = [],
         notifications: NotificationSettings = NotificationSettings(),
         shortcuts: ShortcutSettings = ShortcutSettings(),
-        customPresets: [SessionPreset] = []
+        customPresets: [SessionPreset] = [],
+        sessionHistory: [SessionHistoryEntry] = [],
+        isRightSidebarVisible: Bool = true,
+        rightSidebarTab: String? = nil
     ) {
         self.version = version
         self.projects = projects
@@ -108,6 +114,9 @@ struct WorkspaceState: Codable {
         self.notifications = notifications
         self.shortcuts = shortcuts
         self.customPresets = customPresets
+        self.sessionHistory = sessionHistory
+        self.isRightSidebarVisible = isRightSidebarVisible
+        self.rightSidebarTab = rightSidebarTab
     }
 
     init(from decoder: Decoder) throws {
@@ -123,5 +132,8 @@ struct WorkspaceState: Codable {
             .decodeIfPresent(NotificationSettings.self, forKey: .notifications) ?? NotificationSettings()
         shortcuts = try container.decodeIfPresent(ShortcutSettings.self, forKey: .shortcuts) ?? ShortcutSettings()
         customPresets = try container.decodeIfPresent([SessionPreset].self, forKey: .customPresets) ?? []
+        sessionHistory = try container.decodeIfPresent([SessionHistoryEntry].self, forKey: .sessionHistory) ?? []
+        isRightSidebarVisible = try container.decodeIfPresent(Bool.self, forKey: .isRightSidebarVisible) ?? true
+        rightSidebarTab = try container.decodeIfPresent(String.self, forKey: .rightSidebarTab)
     }
 }
