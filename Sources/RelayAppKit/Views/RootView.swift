@@ -163,14 +163,14 @@ struct ProjectOverviewPane: View {
                 ForEach(Array(presetRows.enumerated()), id: \.offset) { rowIndex, row in
                     HStack(spacing: Theme.Spacing.small) {
                         ForEach(row) { preset in
-                            RelayButton(
-                                preset.name,
-                                kind: isLeading(preset, inFirstRow: rowIndex == 0) ? .primary : .secondary
-                            ) {
+                            let isPrimary = isLeading(preset, inFirstRow: rowIndex == 0)
+                            RelayButton(preset.name, kind: isPrimary ? .primary : .secondary) {
                                 SessionGlyph(
                                     kind: preset.kind,
                                     size: 12,
-                                    tint: Color(hex: preset.kind.accentHex)
+                                    // On the filled button the mark sits on the
+                                    // accent, where its own colour disappears.
+                                    tint: isPrimary ? .white : Color(hex: preset.kind.accentHex)
                                 )
                             } action: {
                                 model.createSession(from: preset, in: project.id)
