@@ -140,6 +140,13 @@ than when a day of work ends. Until then everything lands here.
 
 ### Fixed
 
+- **Russian windows still spoke English in places.** Around forty phrases never
+  reached the translation table at all — section headings like "All hosts", the
+  empty states, every field label in the dialogs, the command palette's entries,
+  the keyboard recorder, and every notification Relay sends. A test now reads the
+  source and fails on any phrase the app looks up and the table does not have,
+  which the previous check — the two tables agreeing with each other — could
+  never catch.
 - **"Session … is not known to the daemon" appeared out of nowhere.** Closing a
   pane while the daemon was still answering the request that created it put the
   session back: the reply arrived after the decision, reinstated it, and

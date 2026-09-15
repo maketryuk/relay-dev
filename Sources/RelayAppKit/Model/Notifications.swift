@@ -83,7 +83,14 @@ enum NotificationPolicy {
     /// notification want different things: the banner should not interrupt you
     /// about the terminal you are staring at, but the inbox is a record of what
     /// happened and omitting entries from it would make it untrustworthy.
-    static func attentionEvent(for context: Context) -> AttentionEvent? {
+    /// `localized` is a parameter rather than a call to the shared table so the
+    /// policy stays free of the main actor and the tests keep reading in
+    /// English. Passing it through is the app's job; deciding what happened is
+    /// this function's.
+    static func attentionEvent(
+        for context: Context,
+        localized: (String) -> String = { $0 }
+    ) -> AttentionEvent? {
         guard context.settings.isEnabled else { return nil }
         guard !context.settings.isMuted(context.session.projectID) else { return nil }
         // Only transitions are interesting; a repeated status is not news.
@@ -98,17 +105,19 @@ enum NotificationPolicy {
             return AttentionEvent(
                 kind: .waitingForInput,
                 sessionID: session.id,
-                title: "\(session.name) needs you",
-                body: "\(label) is waiting for input."
+                title: String(format: localized("%@ needs you"), session.name),
+                body: String(format: localized("%@ is waiting for input."), label)
             )
 
         case .error:
             guard context.settings.failures else { return nil }
-            let detail = session.exitCode.map { "exited with code \($0)" } ?? "reported an error"
+            let detail = session.exitCode
+                .map { String(format: localized("exited with code %@"), String($0)) }
+                ?? localized("reported an error")
             return AttentionEvent(
                 kind: .failed,
                 sessionID: session.id,
-                title: "\(session.name) failed",
+                title: String(format: localized("%@ failed"), session.name),
                 body: "\(label) \(detail)."
             )
 
@@ -121,8 +130,8 @@ enum NotificationPolicy {
             return AttentionEvent(
                 kind: .finished,
                 sessionID: session.id,
-                title: "\(session.name) finished",
-                body: "\(label) completed its work."
+                title: String(format: localized("%@ finished"), session.name),
+                body: String(format: localized("%@ completed its work."), label)
             )
 
         default:
@@ -131,9 +140,12 @@ enum NotificationPolicy {
     }
 
     /// The event worth interrupting the user with.
-    static func event(for context: Context) -> AttentionEvent? {
+    static func event(
+        for context: Context,
+        localized: (String) -> String = { $0 }
+    ) -> AttentionEvent? {
         guard !context.isVisibleToUser else { return nil }
-        return attentionEvent(for: context)
+        return attentionEvent(for: context, localized: localized)
     }
 
     private static func announcesCompletion(_ session: SessionSnapshot) -> Bool {

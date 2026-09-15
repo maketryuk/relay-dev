@@ -142,10 +142,10 @@ struct PortsPane: View {
         if groups.project.isEmpty, groups.other.isEmpty {
             EmptyStateView(
                 systemImage: "point.3.filled.connected.trianglepath.dotted",
-                title: query.isEmpty ? "Nothing is listening" : "No match",
+                title: relayLocalized(query.isEmpty ? "Nothing is listening" : "No match"),
                 message: query.isEmpty
-                    ? "No process on this Mac is accepting TCP connections right now."
-                    : "No port matches “\(query)”."
+                    ? relayLocalized("No process on this Mac is accepting TCP connections right now.")
+                    : String(format: relayLocalized("No port matches “%@”."), query)
             )
         } else {
             ScrollViewReader { scroller in
@@ -157,7 +157,7 @@ struct PortsPane: View {
                                     row(port, at: index)
                                 }
                             } header: {
-                                sectionHeader(model.selectedProject?.name ?? "This project")
+                                sectionHeader(model.selectedProject?.name ?? relayLocalized("This project"))
                             }
                         }
                         if !groups.other.isEmpty {
@@ -166,7 +166,7 @@ struct PortsPane: View {
                                     row(port, at: groups.project.count + index)
                                 }
                             } header: {
-                                sectionHeader("Elsewhere on this Mac")
+                                sectionHeader(relayLocalized("Elsewhere on this Mac"))
                             }
                         }
                     }

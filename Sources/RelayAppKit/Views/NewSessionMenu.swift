@@ -153,7 +153,7 @@ private struct PresetRow: View {
             Spacer(minLength: Theme.Spacing.xsmall)
 
             HoverReveal(isVisible: isHovering && !preset.isProtected) {
-                IconButton(systemImage: "trash", help: "Remove preset", size: 16, action: onDelete)
+                IconButton(systemImage: "trash", help: relayLocalized("Remove preset"), size: 16, action: onDelete)
             }
         }
         .padding(.horizontal, Theme.Spacing.small)

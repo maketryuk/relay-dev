@@ -38,10 +38,10 @@ struct AddProjectSheet: View {
                 .foregroundStyle(isTargeted ? Theme.Palette.accent : Theme.Palette.textTertiary)
 
             VStack(spacing: Theme.Spacing.xsmall) {
-                Text(isTargeted ? "Drop to add" : "Drag a folder here")
+                Text(relayLocalized(isTargeted ? "Drop to add" : "Drag a folder here"))
                     .font(Theme.Typography.title)
                     .foregroundStyle(Theme.Palette.textSecondary)
-                Text(rejected ?? "Relay reads the git branch, package manager and dev command it finds.")
+                Text(rejected ?? relayLocalized("Relay reads the git branch, package manager and dev command it finds."))
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(rejected == nil ? Theme.Palette.textTertiary : Theme.Palette.statusError)
                     .multilineTextAlignment(.center)
@@ -72,7 +72,7 @@ struct AddProjectSheet: View {
 
     private var footer: some View {
         HStack {
-            Text("\(model.projects.count) project\(model.projects.count == 1 ? "" : "s") in this workspace")
+            Text(verbatim: String(format: relayLocalized("Projects: %d"), model.projects.count))
                 .font(Theme.Typography.rowSecondary)
                 .foregroundStyle(Theme.Palette.textTertiary)
             Spacer()
@@ -116,7 +116,7 @@ struct AddProjectSheet: View {
         }
 
         guard !directories.isEmpty else {
-            rejected = sawFile ? "That is a file. Drop the folder that contains it." : nil
+            rejected = sawFile ? relayLocalized("That is a file. Drop the folder that contains it.") : nil
             return
         }
 

@@ -38,7 +38,7 @@ struct ProjectSettingsView: View {
                 field("Default agent") {
                     Picker("", selection: $defaultAgent) {
                         ForEach(SessionKind.allCases.filter { $0 != .ssh && $0 != .shell }, id: \.self) { kind in
-                            Text(kind.displayName).tag(kind)
+                            Text(relayLocalized(kind.displayName)).tag(kind)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -181,9 +181,12 @@ struct ProjectSettingsView: View {
         iconPath = url.path
     }
 
+    /// Localises here rather than at every call site: a field label is always
+    /// a phrase shown to the user, and spelling that out fifteen times invites
+    /// the one that gets forgotten.
     private func field(_ label: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
-            Text(label.uppercased())
+            Text(relayLocalized(label).uppercased())
                 .font(Theme.Typography.sectionHeader)
                 .tracking(0.7)
                 .foregroundStyle(Theme.Palette.textTertiary)

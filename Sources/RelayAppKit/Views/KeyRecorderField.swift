@@ -17,7 +17,7 @@ struct KeyRecorderField: View {
         HStack(spacing: Theme.Spacing.xsmall) {
             recorder
             if !isDefault {
-                IconButton(systemImage: "arrow.uturn.backward", help: "Restore default", size: 18) {
+                IconButton(systemImage: "arrow.uturn.backward", help: relayLocalized("Restore default"), size: 18) {
                     isRecording = false
                     onReset()
                 }
@@ -55,8 +55,8 @@ struct KeyRecorderField: View {
     }
 
     private var labelText: String {
-        if isRecording { return "Press keys…" }
-        return binding?.displayString ?? "Not set"
+        if isRecording { return relayLocalized("Press keys…") }
+        return binding?.displayString ?? relayLocalized("Not set")
     }
 
     private var labelColor: Color {

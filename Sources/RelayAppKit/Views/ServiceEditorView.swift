@@ -26,7 +26,7 @@ struct ServiceEditorView: View {
                 field("Command") {
                     VStack(alignment: .leading, spacing: 4) {
                         RelayTextField("pnpm run dev", text: $command)
-                        Text("Runs in \(project.displayPath) through your shell.")
+                        Text(verbatim: String(format: relayLocalized("Runs in %@ through your shell."), project.displayPath))
                             .font(Theme.Typography.caption)
                             .foregroundStyle(Theme.Palette.textTertiary)
                     }
@@ -90,9 +90,12 @@ struct ServiceEditorView: View {
         model.dismissModal()
     }
 
+    /// Localises here rather than at every call site: a field label is always
+    /// a phrase shown to the user, and spelling that out fifteen times invites
+    /// the one that gets forgotten.
     private func field(_ label: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
-            Text(label.uppercased())
+            Text(relayLocalized(label).uppercased())
                 .font(Theme.Typography.sectionHeader)
                 .tracking(0.7)
                 .foregroundStyle(Theme.Palette.textTertiary)
