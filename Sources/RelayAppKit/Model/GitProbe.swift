@@ -1,0 +1,103 @@
+import Foundation
+
+struct GitStatus: Equatable, Sendable {
+    var branch: String
+    var isDirty: Bool
+    var changedFiles: Int
+    var ahead: Int
+    var behind: Int
+    var upstream: String?
+}
+
+/// Reads repository state through the system `git`.
+///
+/// One `status --porcelain=v2 --branch` call yields branch, dirtiness and
+/// ahead/behind together, so refreshing a project costs a single process spawn
+/// rather than three.
+enum GitProbe {
+    static func isRepository(at path: String) -> Bool {
+        var isDirectory: ObjCBool = false
+        let gitPath = (path as NSString).appendingPathComponent(".git")
+        return FileManager.default.fileExists(atPath: gitPath, isDirectory: &isDirectory)
+    }
+
+    static func status(at path: String) -> GitStatus? {
+        guard isRepository(at: path) else { return nil }
+        guard let output = Shell.run(
+            "/usr/bin/git",
+            arguments: ["-C", path, "status", "--porcelain=v2", "--branch"],
+            timeout: 4
+        ) else { return nil }
+        return parse(porcelainV2: output)
+    }
+
+    /// Pure parser for `git status --porcelain=v2 --branch`, kept separate from
+    /// process invocation so it can be tested against captured fixtures.
+    static func parse(porcelainV2 output: String) -> GitStatus {
+        var branch = "HEAD"
+        var upstream: String?
+        var ahead = 0
+        var behind = 0
+        var changed = 0
+
+        for line in output.split(separator: "\n", omittingEmptySubsequences: true) {
+            if line.hasPrefix("# branch.head ") {
+                branch = String(line.dropFirst("# branch.head ".count))
+            } else if line.hasPrefix("# branch.upstream ") {
+                upstream = String(line.dropFirst("# branch.upstream ".count))
+            } else if line.hasPrefix("# branch.ab ") {
+                let parts = line.dropFirst("# branch.ab ".count).split(separator: " ")
+                if parts.count == 2 {
+                    ahead = Int(parts[0].dropFirst()) ?? 0
+                    behind = Int(parts[1].dropFirst()) ?? 0
+                }
+            } else if !line.hasPrefix("#") {
+                changed += 1
+            }
+        }
+
+        return GitStatus(
+            branch: branch,
+            isDirty: changed > 0,
+            changedFiles: changed,
+            ahead: ahead,
+            behind: behind,
+            upstream: upstream
+        )
+    }
+}
+
+/// Blocking helper for short-lived CLI calls. Never call from the main thread.
+enum Shell {
+    @discardableResult
+    static func run(_ executable: String, arguments: [String], timeout: TimeInterval = 5) -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+
+        do {
+            try process.run()
+        } catch {
+            return nil
+        }
+
+        // Read before waiting: a full pipe buffer would otherwise deadlock a
+        // child that produces more than 64 KB.
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+
+        let deadline = Date().addingTimeInterval(timeout)
+        while process.isRunning, Date() < deadline {
+            usleep(20_000)
+        }
+        if process.isRunning {
+            process.terminate()
+            return nil
+        }
+        guard process.terminationStatus == 0 else { return nil }
+        return String(decoding: data, as: UTF8.self)
+    }
+}
