@@ -1,10 +1,15 @@
 # Changelog
 
-Versions follow [semantic versioning](https://semver.org). Nothing has been
-released yet: 0.1.0 will be the first release, cut when the app is ready rather
-than when a day of work ends. Until then everything lands here.
+`MAJOR.MINOR.BUILD`, where the last number counts published builds rather than
+bug fixes: it goes up for every build that ships and resets when the minor
+moves. A minor is a milestone worth telling someone about; a major is a
+breaking change to stored data.
 
 ## Unreleased
+
+## 0.1.0 — 2026-09-15
+
+The first release.
 
 ### Added
 
