@@ -36,8 +36,10 @@ struct RootView: View {
         .animation(.easeOut(duration: 0.16), value: model.isRightSidebarVisible)
         .animation(.easeOut(duration: 0.16), value: model.isLeftSidebarVisible)
         .background(Theme.Palette.base)
-        .overlay(alignment: .top) { connectionBanner }
         .overlay { commandPaletteOverlay }
+        .overlay {
+            ToastStack(toasts: model.toasts) { model.dismissToast($0) }
+        }
         .sheet(isPresented: $model.isProjectSettingsOpen) {
             if let project = model.selectedProject {
                 ProjectSettingsView(project: project)
@@ -68,37 +70,6 @@ struct RootView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.Palette.base)
-    }
-
-    @ViewBuilder
-    private var connectionBanner: some View {
-        switch model.connectionState {
-        case .connected:
-            EmptyView()
-        case .connecting:
-            banner(text: "Connecting to session daemon…", tint: Theme.Palette.statusWorking, showsRetry: false)
-        case let .disconnected(message):
-            banner(text: message, tint: Theme.Palette.statusError, showsRetry: true)
-        }
-    }
-
-    private func banner(text: String, tint: Color, showsRetry: Bool) -> some View {
-        HStack(spacing: Theme.Spacing.small) {
-            Circle().fill(tint).frame(width: 6, height: 6)
-            Text(text)
-                .font(Theme.Typography.rowSecondary)
-                .foregroundStyle(Theme.Palette.textSecondary)
-            if showsRetry {
-                RelayButton("Retry", kind: .ghost) { model.retryConnection() }
-            }
-        }
-        .padding(.horizontal, Theme.Spacing.medium)
-        .padding(.vertical, 6)
-        .background(Theme.Palette.surfaceRaised)
-        .clipShape(Capsule())
-        .overlay(Capsule().strokeBorder(Theme.Palette.border, lineWidth: 1))
-        .padding(.top, Theme.Spacing.small)
-        .shadow(color: .black.opacity(0.4), radius: 12, y: 4)
     }
 
     @ViewBuilder

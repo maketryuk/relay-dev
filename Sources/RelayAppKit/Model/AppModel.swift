@@ -37,6 +37,7 @@ final class AppModel {
     private(set) var customPresets: [SessionPreset] = []
     private(set) var sessionHistory: [SessionHistoryEntry] = []
     private(set) var inbox: [InboxItem] = []
+    private(set) var toasts: [ToastContent] = []
     var isRightSidebarVisible = true
     var isLeftSidebarVisible = true
     var rightSidebarTab: RightSidebarTab = .services
@@ -53,7 +54,6 @@ final class AppModel {
     var renamingSessionID: SessionID?
     /// Bumped to ask the visible terminal to take focus.
     private(set) var focusTerminalRequest = 0
-    var lastErrorMessage: String?
 
     private let client = DaemonClient()
     private let store = WorkspaceStore()
@@ -103,11 +103,19 @@ final class AppModel {
         do {
             try await client.connect()
             connectionState = .connected
+            dismissToasts(key: "daemon")
             startEventLoop()
             try await reconcileSessions()
             restoreSelection()
         } catch {
             connectionState = .disconnected(error.localizedDescription)
+            present(ToastContent(
+                kind: .error,
+                title: "Could not reach the session daemon",
+                message: error.localizedDescription,
+                duration: nil,
+                key: "daemon"
+            ))
         }
     }
 
@@ -117,6 +125,13 @@ final class AppModel {
 
     private func handleDisconnect() {
         connectionState = .disconnected("Daemon connection lost")
+        present(ToastContent(
+            kind: .error,
+            title: "Session daemon disconnected",
+            message: "Running sessions are unaffected. Reconnecting restores them.",
+            duration: nil,
+            key: "daemon"
+        ))
         eventTask?.cancel()
         eventTask = nil
         // Surfaces are stale once the stream is gone; drop them so a reconnect
@@ -195,6 +210,13 @@ final class AppModel {
 
         case .daemonStopping:
             connectionState = .disconnected("Daemon is shutting down")
+            present(ToastContent(
+                kind: .warning,
+                title: "Session daemon is shutting down",
+                message: "Sessions it was supervising have ended.",
+                duration: nil,
+                key: "daemon"
+            ))
         }
     }
 
@@ -364,7 +386,11 @@ final class AppModel {
                 // terminal they are working in.
                 if selecting { self.selectSession(snapshot.id) }
             } catch {
-                self.lastErrorMessage = error.localizedDescription
+                self.present(ToastContent(
+                    kind: .error,
+                    title: "Could not start \(spec.name)",
+                    message: error.localizedDescription
+                ))
             }
         }
     }
@@ -446,7 +472,11 @@ final class AppModel {
             do {
                 _ = try await self.client.attach(sessionID, replayScrollback: true)
             } catch {
-                self.lastErrorMessage = error.localizedDescription
+                self.present(ToastContent(
+                    kind: .error,
+                    title: "Could not attach to the session",
+                    message: error.localizedDescription
+                ))
             }
         }
         return surface
@@ -578,6 +608,25 @@ final class AppModel {
     func selectProject(atIndex index: Int) {
         guard projects.indices.contains(index) else { return }
         selectProject(projects[index].id)
+    }
+
+    // MARK: - Toasts
+
+    func present(_ toast: ToastContent) {
+        toasts = ToastCenter.appending(toast, to: toasts)
+        guard let duration = toast.duration else { return }
+        Task { [weak self] in
+            try? await Task.sleep(for: duration)
+            self?.dismissToast(toast.id)
+        }
+    }
+
+    func dismissToast(_ id: UUID) {
+        toasts = ToastCenter.removing(id, from: toasts)
+    }
+
+    private func dismissToasts(key: String) {
+        toasts = ToastCenter.removing(key: key, from: toasts)
     }
 
     // MARK: - History
@@ -876,7 +925,12 @@ final class AppModel {
                 arguments: action.arguments(for: container)
             ))
             if case let .commandOutput(status, output)? = reply, status != 0, !output.isEmpty {
-                self.lastErrorMessage = output
+                self.present(ToastContent(
+                    kind: .error,
+                    title: "docker \(action.rawValue) failed",
+                    message: output,
+                    duration: .seconds(8)
+                ))
             }
             self.dockerSnapshots.removeValue(forKey: projectID)
             self.refreshDocker(for: projectID)
