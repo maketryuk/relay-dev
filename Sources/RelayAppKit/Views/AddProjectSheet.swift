@@ -9,20 +9,17 @@ import UniformTypeIdentifiers
 /// than navigating to it again.
 struct AddProjectSheet: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.dismiss) private var dismiss
 
     @State private var isTargeted = false
     @State private var isImporting = false
     @State private var rejected: String?
 
     var body: some View {
-        ModalSurface(relayLocalized("Add Project"), onDismiss: { dismiss() }) {
+        ModalSurface(relayLocalized("Add Project"), onDismiss: { model.dismissModal() }) {
             dropZone
         } footer: {
             footer
         }
-        .frame(width: 480, height: 460)
-        .modalPlate()
         .fileImporter(
             isPresented: $isImporting,
             allowedContentTypes: [.folder],
@@ -79,7 +76,7 @@ struct AddProjectSheet: View {
                 .font(Theme.Typography.rowSecondary)
                 .foregroundStyle(Theme.Palette.textTertiary)
             Spacer()
-            RelayButton(relayLocalized("Done"), kind: .primary) { dismiss() }
+            RelayButton(relayLocalized("Done"), kind: .primary) { model.dismissModal() }
         }
     }
 
@@ -127,7 +124,7 @@ struct AddProjectSheet: View {
         for directory in directories {
             model.addProject(at: directory)
         }
-        dismiss()
+        model.dismissModal()
     }
 }
 

@@ -95,8 +95,6 @@ struct SettingsView: View {
 
 struct GeneralSettingsPane: View {
     @Environment(AppModel.self) private var model
-    @State private var editingPreset: SessionPreset?
-    @State private var isAddingPreset = false
 
     var body: some View {
         SettingsScroll(title: relayLocalized("General")) {
@@ -123,7 +121,7 @@ struct GeneralSettingsPane: View {
                     title: relayLocalized("Projects"),
                     detail: "\(model.projects.count) in this workspace"
                 ) {
-                    RelayButton(relayLocalized("Add Project…")) { model.isAddingProject = true }
+                    RelayButton(relayLocalized("Add Project…")) { model.presentModal(.addProject) }
                 }
                 SettingsRow(
                     title: relayLocalized("Sidebar width"),
@@ -140,7 +138,7 @@ struct GeneralSettingsPane: View {
                 ForEach(model.presets) { preset in
                     SettingsRow(title: preset.name, detail: preset.subtitle) {
                         HStack(spacing: Theme.Spacing.xsmall) {
-                            RelayButton(relayLocalized("Edit…")) { editingPreset = preset }
+                            RelayButton(relayLocalized("Edit…")) { model.presentModal(.presetEditor(presetID: preset.id)) }
                             if !preset.isProtected {
                                 IconButton(systemImage: "trash", help: relayLocalized("Remove")) {
                                     model.removePreset(preset)
@@ -156,7 +154,7 @@ struct GeneralSettingsPane: View {
                 ) {
                     HStack(spacing: Theme.Spacing.xsmall) {
                         RelayButton(relayLocalized("Reset to defaults")) { model.resetPresets() }
-                        RelayButton(relayLocalized("Add…"), kind: .primary) { isAddingPreset = true }
+                        RelayButton(relayLocalized("Add…"), kind: .primary) { model.presentModal(.presetEditor(presetID: nil)) }
                     }
                 }
             }
@@ -184,12 +182,6 @@ struct GeneralSettingsPane: View {
                     }
                 }
             }
-        }
-        .sheet(item: $editingPreset) { preset in
-            PresetEditorView(preset: preset)
-        }
-        .sheet(isPresented: $isAddingPreset) {
-            PresetEditorView(preset: nil)
         }
     }
 }

@@ -3,7 +3,6 @@ import SwiftUI
 
 struct ServiceEditorView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.dismiss) private var dismiss
 
     let project: Project
     let service: ServiceDefinition?
@@ -18,7 +17,7 @@ struct ServiceEditorView: View {
     var body: some View {
         ModalSurface(
             relayLocalized(isEditing ? "Edit Service" : "New Service"),
-            onDismiss: { dismiss() }
+            onDismiss: { model.dismissModal() }
         ) {
             VStack(alignment: .leading, spacing: Theme.Spacing.large) {
                 field("Name") {
@@ -52,12 +51,10 @@ struct ServiceEditorView: View {
         } footer: {
             HStack {
                 Spacer()
-                RelayButton(relayLocalized("Cancel"), kind: .ghost) { dismiss() }
+                RelayButton(relayLocalized("Cancel"), kind: .ghost) { model.dismissModal() }
                 RelayButton(relayLocalized(isEditing ? "Save" : "Add"), kind: .primary) { save() }
             }
         }
-        .frame(width: 480, height: 500)
-        .modalPlate()
         .onAppear {
             name = service?.name ?? "Dev"
             command = service?.command ?? (project.defaultServiceCommand ?? "")
@@ -90,7 +87,7 @@ struct ServiceEditorView: View {
             }
             model.updateProject(owner)
         }
-        dismiss()
+        model.dismissModal()
     }
 
     private func field(_ label: String, @ViewBuilder content: () -> some View) -> some View {

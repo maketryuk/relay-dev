@@ -93,7 +93,7 @@ struct RelayCommands: Commands {
             Button(RelayCommand.newCodex.localizedTitle) { newSession(.codex) }
                 .relayShortcut(model.binding(for: .newCodex))
             Divider()
-            Button(RelayCommand.addProject.localizedTitle) { model.isAddingProject = true }
+            Button(RelayCommand.addProject.localizedTitle) { model.toggleModal(.addProject) }
                 .relayShortcut(model.binding(for: .addProject))
         }
 
@@ -164,7 +164,7 @@ struct RelayCommands: Commands {
             }
             .relayShortcut(model.binding(for: .revealProject))
 
-            Button(RelayCommand.projectSettings.localizedTitle) { model.isProjectSettingsOpen = true }
+            Button(RelayCommand.projectSettings.localizedTitle) { model.openProjectSettings() }
                 .relayShortcut(model.binding(for: .projectSettings))
 
             if model.shortcutSettings.indexShortcutsEnabled {

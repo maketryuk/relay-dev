@@ -44,11 +44,6 @@ struct RootView: View {
         .overlay {
             ToastStack(toasts: model.toasts) { model.dismissToast($0) }
         }
-        .sheet(isPresented: $model.isProjectSettingsOpen) {
-            if let project = model.selectedProject {
-                ProjectSettingsView(project: project)
-            }
-        }
         .tooltipRoot(tooltips)
         .preferredColorScheme(.dark)
     }
@@ -82,9 +77,10 @@ struct RootView: View {
         .background(Theme.Palette.base)
     }
 
-    @ViewBuilder
+    /// The whole stack, not just the top: a panel opened from inside another
+    /// stays visible behind it, so closing returns to where it came from.
     private var modalOverlay: some View {
-        if let modal = model.activeModal {
+        ForEach(model.modalStack) { modal in
             ModalHost(modal: modal)
                 .transition(.opacity)
         }

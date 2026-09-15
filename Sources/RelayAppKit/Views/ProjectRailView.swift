@@ -51,9 +51,6 @@ struct ProjectRailView: View {
             }
             return true
         }
-        .sheet(isPresented: $model.isAddingProject) {
-            AddProjectSheet()
-        }
     }
 
     private func projectTile(_ project: Project) -> some View {
@@ -95,14 +92,14 @@ struct ProjectRailView: View {
         Divider()
         Button(relayLocalized("Project Settings…")) {
             model.selectProject(project.id)
-            model.isProjectSettingsOpen = true
+            model.openProjectSettings()
         }
         Button(relayLocalized("Remove from Workspace")) { model.removeProject(project.id) }
     }
 
     private var addButton: some View {
         Button {
-            model.isAddingProject = true
+            model.toggleModal(.addProject)
         } label: {
             Image(systemName: "plus")
                 .font(.system(size: 14, weight: .medium))

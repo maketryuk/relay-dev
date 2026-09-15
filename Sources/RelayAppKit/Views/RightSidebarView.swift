@@ -90,13 +90,10 @@ struct ServicesPane: View {
     @Environment(AppModel.self) private var model
     let project: Project
 
-    @State private var isAddingService = false
-    @State private var editingService: ServiceDefinition?
-
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             SectionHeader(relayLocalized("Services"), trailing: {
-                IconButton(systemImage: "plus", help: "", size: 24) { isAddingService = true }
+                IconButton(systemImage: "plus", help: "", size: 24) { model.toggleModal(.serviceEditor(projectID: project.id, serviceID: nil)) }
                     .relayTooltip(relayLocalized("Add service"))
             })
 
@@ -107,12 +104,6 @@ struct ServicesPane: View {
                     row(service)
                 }
             }
-        }
-        .sheet(isPresented: $isAddingService) {
-            ServiceEditorView(project: project, service: nil)
-        }
-        .sheet(item: $editingService) { service in
-            ServiceEditorView(project: project, service: service)
         }
     }
 
@@ -174,7 +165,7 @@ struct ServicesPane: View {
                 Button(relayLocalized("Copy URL")) { model.copyServiceURL(service, in: project.id) }
             }
             Divider()
-            Button(relayLocalized("Edit…")) { editingService = service }
+            Button(relayLocalized("Edit…")) { model.toggleModal(.serviceEditor(projectID: project.id, serviceID: service.id)) }
             Button(relayLocalized("Remove")) { model.removeService(service, from: project.id) }
         }
     }
