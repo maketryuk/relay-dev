@@ -81,7 +81,8 @@ final class TerminalSurface: NSObject, @preconcurrency TerminalViewDelegate {
     }
 
     func focus() {
-        terminalView.window?.makeFirstResponder(terminalView)
+        guard let window = terminalView.window, window.firstResponder !== terminalView else { return }
+        window.makeFirstResponder(terminalView)
     }
 
     // MARK: - TerminalViewDelegate

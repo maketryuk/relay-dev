@@ -64,7 +64,7 @@ final class AppModel {
     private let client = DaemonClient()
     private let store = WorkspaceStore()
     private var lastActiveSessionByProject: [String: String] = [:]
-    private var surfaces: [SessionID: TerminalSurface] = [:]
+    @ObservationIgnored private let surfaceCache = TerminalSurfaceCache(limit: maxCachedSurfaces)
     private var eventTask: Task<Void, Never>?
     private var gitRefreshTask: Task<Void, Never>?
     private var portRefreshTask: Task<Void, Never>?
@@ -75,7 +75,6 @@ final class AppModel {
     /// surface is released; its session keeps running in the daemon and is
     /// re-attached with full scrollback when the user comes back.
     private static let maxCachedSurfaces = 8
-    private var surfaceUseOrder: [SessionID] = []
 
     // MARK: - Lifecycle
 
@@ -169,8 +168,7 @@ final class AppModel {
         eventTask = nil
         // Surfaces are stale once the stream is gone; drop them so a reconnect
         // rebuilds each terminal from the daemon's scrollback.
-        surfaces.removeAll()
-        surfaceUseOrder.removeAll()
+        surfaceCache.removeAll()
     }
 
     private func startEventLoop() {
@@ -246,7 +244,7 @@ final class AppModel {
             }
 
         case let .output(sessionID, data):
-            surfaces[sessionID]?.feed(data)
+            surfaceCache.existing(sessionID)?.feed(data)
 
         case .daemonStopping:
             connectionState = .disconnected("Daemon is shutting down")
@@ -455,6 +453,7 @@ final class AppModel {
 
     func selectSession(_ id: SessionID) {
         selectedSessionID = id
+        surfaceCache.touch(id)
         if let projectID = sessions[id]?.projectID {
             showInFocusedPane(id, projectID: projectID)
             lastActiveSessionByProject[projectID.rawValue] = id.rawValue
@@ -643,17 +642,17 @@ final class AppModel {
 
     // MARK: - Terminal surfaces
 
+    /// Called from a view body, so it touches nothing the interface observes.
     func surface(for sessionID: SessionID) -> TerminalSurface? {
         guard sessions[sessionID] != nil else { return nil }
-        touchSurface(sessionID)
-
-        if let existing = surfaces[sessionID] {
+        if let existing = surfaceCache.existing(sessionID) {
             return existing
         }
 
         let surface = TerminalSurface(sessionID: sessionID, client: client)
-        surfaces[sessionID] = surface
-        evictSurfacesIfNeeded()
+        for evicted in surfaceCache.store(surface, for: sessionID, keeping: selectedSessionID) {
+            client.post(.detach(evicted))
+        }
 
         // Replaying scrollback on attach is what makes a restarted GUI feel like
         // it never went away.
@@ -672,25 +671,9 @@ final class AppModel {
         return surface
     }
 
-    private func touchSurface(_ sessionID: SessionID) {
-        surfaceUseOrder.removeAll { $0 == sessionID }
-        surfaceUseOrder.append(sessionID)
-    }
-
-    private func evictSurfacesIfNeeded() {
-        while surfaceUseOrder.count > Self.maxCachedSurfaces {
-            let victim = surfaceUseOrder.removeFirst()
-            guard victim != selectedSessionID else {
-                surfaceUseOrder.append(victim)
-                return
-            }
-            releaseSurface(for: victim)
-        }
-    }
 
     private func releaseSurface(for sessionID: SessionID) {
-        guard surfaces.removeValue(forKey: sessionID) != nil else { return }
-        surfaceUseOrder.removeAll { $0 == sessionID }
+        guard surfaceCache.remove(sessionID) else { return }
         client.post(.detach(sessionID))
     }
 
