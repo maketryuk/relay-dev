@@ -51,11 +51,12 @@ struct StatusBar: View {
             .frame(height: Theme.Metrics.statusBarHeight)
             .background(Theme.Palette.rail)
             .overlay(alignment: .top) { RelayDivider() }
-            // Anchored to the bar's left edge rather than to the figures.
-            // Switching Compact and Detailed changes how wide those are, and a
-            // popover tied to them slid across the screen every time — the one
-            // thing a panel you are reading must not do.
-            .overlay(alignment: .bottomLeading) {
+            // Anchored to the bar's top-left corner. Left, because switching
+            // Compact and Detailed changes how wide the figures are and a
+            // popover tied to them slid across the screen every time; top,
+            // because a popover hung off the bottom edge opens upward *over*
+            // the bar and hides the very numbers it was opened from.
+            .overlay(alignment: .topLeading) {
                 Color.clear
                     .frame(width: 1, height: 1)
                     .popover(isPresented: $model.isUsagePopoverOpen, arrowEdge: .top) {
