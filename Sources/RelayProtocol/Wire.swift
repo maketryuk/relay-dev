@@ -7,7 +7,7 @@ public enum RelayProtocolVersion {
     /// outlives the GUI, so a freshly built app routinely meets a daemon from
     /// the previous build. The mismatch is detected at handshake and the GUI
     /// restarts the daemon rather than misbehaving.
-    public static let current = 4
+    public static let current = 5
 }
 
 /// Requests the GUI sends to the daemon.
@@ -20,6 +20,8 @@ public enum DaemonRequest: Codable, Sendable {
     case dockerStatus(projectDirectory: String)
     /// One-shot docker invocation: start, stop or restart a container.
     case dockerCommand(projectDirectory: String, arguments: [String])
+    /// Stops a process found in the ports list. `force` skips straight to SIGKILL.
+    case terminateProcess(pid: Int32, force: Bool)
     case createSession(SessionSpec)
     /// Subscribe to a session's output. `replayScrollback` re-sends the stored
     /// buffer so a freshly launched GUI can reconstruct the terminal view.

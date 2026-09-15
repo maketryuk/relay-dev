@@ -27,6 +27,26 @@ struct PortsWindowView: View {
         .background(Theme.Palette.base)
         .preferredColorScheme(.dark)
         .onAppear { model.refreshPorts() }
+        .confirmationDialog(
+            relayLocalized("Stop this process?"),
+            isPresented: Binding(
+                get: { model.portPendingTermination != nil },
+                set: { if !$0 { model.portPendingTermination = nil } }
+            ),
+            presenting: model.portPendingTermination
+        ) { port in
+            Button(relayLocalized("Stop process"), role: .destructive) {
+                model.terminatePort(port)
+                model.portPendingTermination = nil
+            }
+            Button(relayLocalized("Force quit"), role: .destructive) {
+                model.terminatePort(port, force: true)
+                model.portPendingTermination = nil
+            }
+            Button(relayLocalized("Cancel"), role: .cancel) { model.portPendingTermination = nil }
+        } message: { port in
+            Text(verbatim: "\(port.processName) · pid \(String(port.pid)) · \(relayLocalized("Relay did not start this process"))")
+        }
         // The window is usually opened to check something that just started, so
         // it refreshes itself while visible rather than waiting to be told.
         .task {
@@ -48,6 +68,20 @@ struct PortsWindowView: View {
                     .foregroundStyle(Theme.Palette.textTertiary)
                 WindowDragArea()
                     .frame(maxWidth: .infinity, minHeight: 22, maxHeight: 22)
+                IconButton(
+                    systemImage: model.showsAllPorts ? "line.3.horizontal.decrease.circle.fill"
+                                                     : "line.3.horizontal.decrease.circle",
+                    help: "",
+                    isSelected: !model.showsAllPorts
+                ) {
+                    model.showsAllPorts.toggle()
+                }
+                .relayTooltip(
+                    model.showsAllPorts
+                        ? relayLocalized("Showing every port")
+                        : relayLocalized("Showing development ports only")
+                )
+
                 IconButton(systemImage: "arrow.clockwise", help: "") { model.refreshPorts() }
                     .relayTooltip(relayLocalized("Rescan now"))
             }
@@ -159,6 +193,15 @@ struct PortRow: View {
                 Divider()
                 Button(relayLocalized("Reveal Owner Session")) { model.revealPortOwner(port) }
             }
+            Divider()
+            Button(relayLocalized("Stop process")) {
+                if port.isManagedByRelay {
+                    model.terminatePort(port)
+                } else {
+                    model.portPendingTermination = port
+                }
+            }
+            Button(relayLocalized("Force quit")) { model.portPendingTermination = port }
         }
     }
 }

@@ -359,6 +359,52 @@ final class DaemonServerTests {
         try client.send(.terminate(session.id))
     }
 
+    @Test("A process can be stopped from the ports list")
+    func terminateProcessByPID() throws {
+        let session = try createSession(makeSpec(kind: .custom, command: ["sh", "-c", "exec sleep 60"]))
+        let pid = try #require(session.pid)
+        #expect(kill(pid, 0) == 0)
+
+        let requestID = try client.send(.terminateProcess(pid: pid, force: false))
+        let messages = try client.wait(timeout: 30) { $0.reply(to: requestID) != nil }
+        guard case let .commandOutput(status, _)? = messages.reply(to: requestID) else {
+            Issue.record("Expected a command result")
+            return
+        }
+        #expect(status == 0)
+
+        try client.wait(timeout: 30) {
+            $0.snapshots(for: session.id).contains { $0.exitCode != nil }
+        }
+    }
+
+    @Test("Stopping a process that is not there is reported, not ignored")
+    func terminateMissingProcess() throws {
+        let requestID = try client.send(.terminateProcess(pid: 999_999, force: false))
+        let messages = try client.wait(timeout: 30) { $0.reply(to: requestID) != nil }
+        guard case let .commandOutput(status, output)? = messages.reply(to: requestID) else {
+            Issue.record("Expected a command result")
+            return
+        }
+        #expect(status != 0)
+        #expect(output.contains("999999"))
+    }
+
+    @Test("Signalling init is refused")
+    func refusesToSignalInit() throws {
+        // A mistyped pid should not be able to ask the daemon to shoot the
+        // system in the foot.
+        for pid in [Int32(0), 1, -1] {
+            let requestID = try client.send(.terminateProcess(pid: pid, force: true))
+            let messages = try client.wait(timeout: 30) { $0.reply(to: requestID) != nil }
+            guard case let .commandOutput(status, _)? = messages.reply(to: requestID) else {
+                Issue.record("Expected a command result")
+                return
+            }
+            #expect(status != 0)
+        }
+    }
+
     // MARK: - Upgrade path
 
     @Test("Shutting the daemon down stops its sessions and asks the process to exit")

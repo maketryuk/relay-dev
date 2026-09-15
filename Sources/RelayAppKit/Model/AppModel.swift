@@ -31,6 +31,9 @@ final class AppModel {
     private(set) var sshHosts: [SSHHost] = []
     private(set) var ports: [ListeningPort] = []
     private(set) var isRefreshingPorts = false
+    /// Development ports only, by default: an unfiltered list is mostly macOS.
+    var showsAllPorts = false
+    var portPendingTermination: ListeningPort?
     private(set) var dockerSnapshots: [ProjectID: DockerSnapshot] = [:]
     private(set) var notificationSettings = NotificationSettings()
     private(set) var shortcutSettings = ShortcutSettings()
@@ -1060,7 +1063,9 @@ final class AppModel {
         project: [ListeningPort],
         other: [ListeningPort]
     ) {
-        let filtered = ports.filter { PortFiltering.matches($0, query: query) }
+        let filtered = ports
+            .filter { showsAllPorts || PortClassification.isDevelopment($0) }
+            .filter { PortFiltering.matches($0, query: query) }
         guard let projectID else { return ([], filtered) }
         return (
             filtered.filter { $0.ownerProjectID == projectID },
@@ -1074,6 +1079,29 @@ final class AppModel {
         guard let projectID = port.ownerProjectID, projectID != selectedProjectID else { return owner }
         guard let projectName = project(projectID)?.name else { return owner }
         return "\(projectName) · \(owner)"
+    }
+
+    /// Asks a process to stop, escalating only when told to.
+    func terminatePort(_ port: ListeningPort, force: Bool = false) {
+        Task { [weak self] in
+            guard let self else { return }
+            let reply = try? await self.client.send(.terminateProcess(pid: port.pid, force: force))
+            if case let .commandOutput(status, output)? = reply, status != 0 {
+                self.present(ToastContent(
+                    kind: .error,
+                    title: relayLocalized("Could not stop the process"),
+                    message: output.isEmpty ? nil : output
+                ))
+            } else {
+                self.present(ToastContent(
+                    kind: .success,
+                    title: relayLocalized("Stopped") + " \(port.processName) (\(port.port))",
+                    duration: .seconds(4)
+                ))
+            }
+            try? await Task.sleep(for: .milliseconds(600))
+            self.refreshPorts()
+        }
     }
 
     func revealPortOwner(_ port: ListeningPort) {

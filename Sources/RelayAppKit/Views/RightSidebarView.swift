@@ -224,11 +224,13 @@ struct DockerPane: View {
     private var composeActions: some View {
         HStack(spacing: Theme.Spacing.xsmall) {
             ForEach(ComposeAction.allCases) { action in
-                PillButton(action.localizedTitle, systemImage: action.symbolName) {
+                IconButton(systemImage: action.symbolName, help: "", size: 28) {
                     model.runCompose(action, in: project.id)
                 }
+                .relayTooltip(action.localizedTitle)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, Theme.Spacing.small)
         .padding(.vertical, Theme.Spacing.xsmall)
     }

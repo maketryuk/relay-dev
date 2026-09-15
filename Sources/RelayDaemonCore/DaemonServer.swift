@@ -172,6 +172,9 @@ public final class DaemonServer: @unchecked Sendable {
         case let .dockerCommand(projectDirectory, arguments):
             return runDockerCommand(projectDirectory: projectDirectory, arguments: arguments)
 
+        case let .terminateProcess(pid, force):
+            return terminateProcess(pid: pid, force: force)
+
         case let .createSession(spec):
             let session = try createSession(spec: spec)
             return .session(session)
@@ -318,6 +321,32 @@ public final class DaemonServer: @unchecked Sendable {
 
         portCache[projectID] = (Date(), ports)
         return ports
+    }
+
+    /// Stops a process the ports list is showing.
+    ///
+    /// Polite first: a dev server asked to stop usually wants to clean up after
+    /// itself. The caller decides whether to escalate, because killing outright
+    /// is a different act from asking.
+    private func terminateProcess(pid: Int32, force: Bool) -> DaemonReply {
+        DaemonQueue.assertIsolated()
+        guard pid > 1 else {
+            return .commandOutput(status: 1, output: "Refusing to signal pid \(pid)")
+        }
+        guard kill(pid, 0) == 0 else {
+            return .commandOutput(status: 1, output: "No process with pid \(pid)")
+        }
+
+        let signalNumber = force ? SIGKILL : SIGTERM
+        // The whole group, so a shell wrapper does not leave its child behind.
+        _ = killpg(getpgid(pid), signalNumber)
+        let result = kill(pid, signalNumber)
+        portCache.removeAll()
+
+        guard result == 0 else {
+            return .commandOutput(status: 1, output: String(cString: strerror(errno)))
+        }
+        return .commandOutput(status: 0, output: "")
     }
 
     // MARK: - Docker
