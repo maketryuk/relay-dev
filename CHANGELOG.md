@@ -128,6 +128,11 @@ than when a day of work ends. Until then everything lands here.
 
 ### Changed
 
+- **Versions are numbered the way a continuously updated app is.** The last
+  component is a build counter, not a bug count: it goes up for every published
+  build and resets when the minor moves. `0.2.47` is the forty-seventh build of
+  the 0.2 line. `Scripts/bump-version.sh` moves it on, so "is this enough for a
+  release?" — a question about nothing — never has to be answered again.
 - **`⌘R` no longer starts the dev service.** It means reload everywhere else on
   the machine, and Relay will want it for reloading something of its own. The
   command keeps its place in the menu and the palette, and can still be given a
@@ -172,6 +177,11 @@ than when a day of work ends. Until then everything lands here.
 
 ### Fixed
 
+- **A resumed conversation refused to save its transcript.** Relay handed every
+  session its own environment, markers and all — so an agent started from Relay
+  inherited the identity of whatever agent session had launched Relay, decided
+  it was that session's child, and turned its own transcript saving off. A
+  session now starts as though from a fresh login shell.
 - **A new session showed another conversation's context.** Relay matched a
   session to the most recently written transcript in its directory, which for a
   freshly opened pane was whichever long conversation was busy — so an empty
