@@ -155,7 +155,7 @@ struct PortRow: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: Theme.Spacing.xsmall) {
-                    Text(model.ownerLabel(for: port) ?? port.processName)
+                    Text(model.ownerLabel(for: port))
                         .font(Theme.Typography.row)
                         .foregroundStyle(Theme.Palette.textPrimary)
                         .lineLimit(1)
@@ -163,10 +163,11 @@ struct PortRow: View {
                         Badge("Relay", tint: Theme.Palette.statusWorking)
                     }
                 }
-                Text("\(port.processName) · pid \(port.pid) · \(port.address)")
+                Text(verbatim: model.detailLabel(for: port))
                     .font(Theme.Typography.caption)
                     .foregroundStyle(Theme.Palette.textTertiary)
                     .lineLimit(1)
+                    .truncationMode(.middle)
             }
 
             Spacer(minLength: Theme.Spacing.small)

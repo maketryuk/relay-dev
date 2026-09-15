@@ -340,3 +340,46 @@ struct RightSidebarTabTests {
         #expect(RightSidebarTab(rawValue: "removed-tab") == nil)
     }
 }
+
+@Suite("Port labelling")
+struct PortLabelTests {
+    @Test("A sibling folder is not inside its neighbour")
+    func containment() {
+        #expect(DirectoryContainment.contains("/Users/me/shop/docker", in: "/Users/me/shop"))
+        #expect(DirectoryContainment.contains("/Users/me/shop", in: "/Users/me/shop"))
+        #expect(!DirectoryContainment.contains("/Users/me/shop-staging", in: "/Users/me/shop"))
+        #expect(!DirectoryContainment.contains("/Users/me", in: "/Users/me/shop"))
+        // Matching everything against root would claim every process on the Mac.
+        #expect(!DirectoryContainment.contains("/Users/me/shop", in: "/"))
+    }
+
+    @Test("Relative segments are resolved before comparing")
+    func normalisesPaths() {
+        #expect(DirectoryContainment.contains("/Users/me/shop/./src", in: "/Users/me/shop"))
+        #expect(DirectoryContainment.contains("/Users/me/shop/src/../lib", in: "/Users/me/shop"))
+    }
+
+    @Test("The home prefix is collapsed for display")
+    func abbreviatesHome() {
+        var port = ListeningPort(port: 3_000, address: "*", pid: 1, processName: "node")
+        port.workingDirectory = NSHomeDirectory() + "/Documents/code/shop"
+        #expect(port.displayDirectory == "~/Documents/code/shop")
+        #expect(port.directoryName == "shop")
+
+        port.workingDirectory = "/opt/services/api"
+        #expect(port.displayDirectory == "/opt/services/api")
+    }
+
+    @Test("A process with no readable directory degrades quietly")
+    func missingDirectory() {
+        var port = ListeningPort(port: 3_000, address: "*", pid: 1, processName: "node")
+        #expect(port.displayDirectory == nil)
+        #expect(port.directoryName == nil)
+
+        // System daemons report root, which says nothing about where they came
+        // from and would only add a column of slashes.
+        port.workingDirectory = "/"
+        #expect(port.displayDirectory == nil)
+        #expect(port.directoryName == nil)
+    }
+}

@@ -1073,12 +1073,32 @@ final class AppModel {
         )
     }
 
-    /// Name of the project a port belongs to, when it is not the current one.
-    func ownerLabel(for port: ListeningPort) -> String? {
-        guard let owner = port.ownerName else { return nil }
-        guard let projectID = port.ownerProjectID, projectID != selectedProjectID else { return owner }
-        guard let projectName = project(projectID)?.name else { return owner }
-        return "\(projectName) · \(owner)"
+    /// What to call a port's owner.
+    ///
+    /// A list of rows all saying "node" is no use. In order of usefulness: the
+    /// session Relay started it from, the project its working directory sits
+    /// in, the folder it was started from, and only then the process name.
+    func ownerLabel(for port: ListeningPort) -> String {
+        if let owner = port.ownerName {
+            guard let projectID = port.ownerProjectID, projectID != selectedProjectID,
+                  let projectName = project(projectID)?.name
+            else { return owner }
+            return "\(projectName) · \(owner)"
+        }
+        if let directory = port.workingDirectory,
+           let match = projects.first(where: { DirectoryContainment.contains(directory, in: $0.rootPath) }) {
+            return match.name
+        }
+        return port.directoryName ?? port.processName
+    }
+
+    /// The line under the name: what it is and where it came from.
+    func detailLabel(for port: ListeningPort) -> String {
+        var parts = [port.processName, "pid \(String(port.pid))", port.address]
+        if let directory = port.displayDirectory {
+            parts.append(directory)
+        }
+        return parts.joined(separator: " · ")
     }
 
     /// Asks a process to stop, escalating only when told to.

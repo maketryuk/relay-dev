@@ -12,5 +12,7 @@ enum PortFiltering {
         return String(port.port).contains(trimmed)
             || port.processName.lowercased().contains(trimmed)
             || (port.ownerName?.lowercased().contains(trimmed) ?? false)
+            // Searching by folder is the whole point of showing it.
+            || (port.workingDirectory?.lowercased().contains(trimmed) ?? false)
     }
 }

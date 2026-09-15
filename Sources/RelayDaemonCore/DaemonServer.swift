@@ -306,7 +306,17 @@ public final class DaemonServer: @unchecked Sendable {
         }
         let candidates = Set(sessionByPID.keys)
 
+        // One syscall per port; the answer is what tells two `node` servers
+        // apart.
+        var directories: [Int32: String] = [:]
+        for port in ports where directories[port.pid] == nil {
+            directories[port.pid] = PortScanner.workingDirectory(of: port.pid) ?? ""
+        }
+
         for index in ports.indices {
+            let directory = directories[ports[index].pid]
+            ports[index].workingDirectory = directory?.isEmpty == true ? nil : directory
+
             guard let ancestor = PortScanner.nearestAncestor(
                 of: ports[index].pid,
                 among: candidates,
