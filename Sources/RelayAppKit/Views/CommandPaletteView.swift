@@ -170,13 +170,13 @@ struct CommandPaletteView: View {
                 title: relayLocalized("Ports"),
                 subtitle: relayLocalized("Everything listening on this Mac"),
                 systemImage: "point.3.filled.connected.trianglepath.dotted"
-            ) { openWindow(id: PortsWindow.id) })
+            ) { model.activeModal = .ports })
             commands.append(PaletteCommand(
                 id: "app-settings",
                 title: relayLocalized("Settings"),
                 subtitle: relayLocalized("Shortcuts, notifications and more"),
                 systemImage: "slider.horizontal.3"
-            ) { openWindow(id: SettingsWindow.id) })
+            ) { model.activeModal = .settings })
 
             for service in project.services {
                 let state = model.state(of: service, in: project.id)
@@ -271,8 +271,10 @@ struct CommandPaletteView: View {
 /// Minimal AppKit bridge for arrow/escape handling, which SwiftUI does not
 /// expose while a `TextField` holds focus.
 struct KeyCaptureView: NSViewRepresentable {
-    let onMoveDown: () -> Void
-    let onMoveUp: () -> Void
+    /// Optional, because a panel that only needs Escape must leave the arrow
+    /// keys to whatever list is inside it.
+    var onMoveDown: (() -> Void)?
+    var onMoveUp: (() -> Void)?
     let onEscape: () -> Void
 
     func makeNSView(context: Context) -> NSView {
@@ -307,10 +309,19 @@ struct KeyCaptureView: NSViewRepresentable {
             monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
                 guard let self else { return event }
                 switch event.keyCode {
-                case 125: self.onMoveDown?(); return nil
-                case 126: self.onMoveUp?(); return nil
-                case 53: self.onEscape?(); return nil
-                default: return event
+                case 125:
+                    guard let handler = self.onMoveDown else { return event }
+                    handler()
+                    return nil
+                case 126:
+                    guard let handler = self.onMoveUp else { return event }
+                    handler()
+                    return nil
+                case 53:
+                    self.onEscape?()
+                    return nil
+                default:
+                    return event
                 }
             }
         }

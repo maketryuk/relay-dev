@@ -2,18 +2,14 @@ import RelayProtocol
 import RelayUI
 import SwiftUI
 
-enum PortsWindow {
-    static let id = "relay.ports"
-}
-
-/// Standalone window listing every TCP port the machine is listening on.
+/// Every TCP port the machine is listening on.
 ///
-/// It is deliberately not scoped to the selected project: the question this
-/// answers is "what is on 3000", and the answer is just as often a server
-/// started in another terminal, a container, or an app that is not Relay's
-/// business at all. Ports Relay owns are marked and can be acted on; the rest
-/// are reported and left alone.
-struct PortsWindowView: View {
+/// Deliberately not scoped to the selected project: the question this answers is
+/// "what is on 3000", and the answer is just as often a server started in
+/// another terminal, a container, or an app that is not Relay's business at all.
+/// Ports Relay owns are marked and can be acted on; the rest are reported and
+/// left alone.
+struct PortsPane: View {
     @Environment(AppModel.self) private var model
     @State private var query = ""
 
@@ -23,10 +19,6 @@ struct PortsWindowView: View {
             RelayDivider()
             content
         }
-        .frame(minWidth: 460, minHeight: 320)
-        .background(Theme.Palette.base)
-        .preferredColorScheme(.dark)
-        .reportsWindowPresence(PortsWindow.id)
         .onAppear { model.refreshPorts() }
         .confirmationDialog(
             relayLocalized("Stop this process?"),
@@ -61,14 +53,10 @@ struct PortsWindowView: View {
     private var header: some View {
         VStack(spacing: Theme.Spacing.small) {
             HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.small) {
-                Text(relayLocalized("Ports"))
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.Palette.textPrimary)
                 Text(verbatim: "\(model.ports.count) \(relayLocalized("listening"))")
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
-                WindowDragArea()
-                    .frame(maxWidth: .infinity, minHeight: 22, maxHeight: 22)
+                Spacer(minLength: Theme.Spacing.small)
                 IconButton(
                     systemImage: model.showsAllPorts ? "line.3.horizontal.decrease.circle.fill"
                                                      : "line.3.horizontal.decrease.circle",
@@ -89,9 +77,7 @@ struct PortsWindowView: View {
             RelayTextField(relayLocalized("Filter by port, process or session"), text: $query, systemImage: "magnifyingglass")
         }
         .padding(.horizontal, Theme.Spacing.large)
-        .padding(.top, Theme.Spacing.large + Theme.Spacing.small)
         .padding(.bottom, Theme.Spacing.medium)
-        .background(Theme.Palette.base)
     }
 
     @ViewBuilder
@@ -173,11 +159,26 @@ struct PortRow: View {
 
             Spacer(minLength: Theme.Spacing.small)
 
-            if port.url != nil {
-                IconButton(systemImage: "arrow.up.forward.app", help: "") { model.openPort(port) }
-                    .relayTooltip(relayLocalized("Open in browser"))
-                IconButton(systemImage: "doc.on.doc", help: "") { model.copyPortURL(port) }
-                    .relayTooltip(relayLocalized("Copy URL"))
+            HoverReveal(isVisible: isHovering) {
+                HStack(spacing: 0) {
+                    if port.url != nil {
+                        IconButton(systemImage: "arrow.up.forward.app", help: "") { model.openPort(port) }
+                            .relayTooltip(relayLocalized("Open in browser"))
+                        IconButton(systemImage: "doc.on.doc", help: "") { model.copyPortURL(port) }
+                            .relayTooltip(relayLocalized("Copy URL"))
+                    }
+                    // Relay's own processes stop on the spot; anything else gets
+                    // asked about first, because killing a stranger's process on
+                    // one click is not a thing an app should do.
+                    IconButton(systemImage: "stop.circle", help: "", tint: Theme.Palette.statusError) {
+                        if port.isManagedByRelay {
+                            model.terminatePort(port)
+                        } else {
+                            model.portPendingTermination = port
+                        }
+                    }
+                    .relayTooltip(relayLocalized("Stop process"))
+                }
             }
         }
         .padding(.horizontal, Theme.Spacing.small)

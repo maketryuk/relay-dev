@@ -54,6 +54,8 @@
 "Disconnected" = "Disconnected";
 "Display name" = "Display name";
 "Docker" = "Docker";
+"Docker — checking…" = "Docker — checking…";
+"Docker — nothing found. Click to check again." = "Docker — nothing found. Click to check again.";
 "Done" = "Done";
 "Down" = "Down";
 "Drag a folder here" = "Drag a folder here";
@@ -227,6 +229,7 @@
 "Work finished" = "Work finished";
 "Working" = "Working";
 "Workspace" = "Workspace";
+"coming soon" = "coming soon";
 "folder" = "folder";
 "in ~/.ssh/config" = "in ~/.ssh/config";
 "listening" = "listening";

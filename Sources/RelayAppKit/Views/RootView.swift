@@ -39,6 +39,7 @@ struct RootView: View {
         .animation(.easeOut(duration: 0.16), value: model.isRightSidebarVisible)
         .animation(.easeOut(duration: 0.16), value: model.isLeftSidebarVisible)
         .background(Theme.Palette.base)
+        .overlay { modalOverlay }
         .overlay { commandPaletteOverlay }
         .overlay {
             ToastStack(toasts: model.toasts) { model.dismissToast($0) }
@@ -82,6 +83,14 @@ struct RootView: View {
     }
 
     @ViewBuilder
+    private var modalOverlay: some View {
+        if let modal = model.activeModal {
+            ModalHost(modal: modal)
+                .transition(.opacity)
+        }
+    }
+
+    @ViewBuilder
     private var commandPaletteOverlay: some View {
         if model.isCommandPaletteOpen {
             CommandPaletteView()
@@ -90,31 +99,44 @@ struct RootView: View {
     }
 }
 
-/// Drag handle between sidebar and content.
+/// Drag handle between the session sidebar and the content.
 struct SidebarResizeHandle: View {
     @Environment(AppModel.self) private var model
-    @State private var isHovering = false
+    @State private var startWidth: Double = 0
 
     var body: some View {
-        Rectangle()
-            .fill(isHovering ? Theme.Palette.accent.opacity(0.5) : Color.clear)
-            .frame(width: 3)
-            .contentShape(Rectangle())
-            .onHover { hovering in
-                isHovering = hovering
-                if hovering { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
-            }
-            .gesture(
-                DragGesture(minimumDistance: 1)
-                    .onChanged { value in
-                        let proposed = model.sidebarWidth + value.translation.width
-                        model.sidebarWidth = min(
-                            max(proposed, Theme.Metrics.sidebarMinWidth),
-                            Theme.Metrics.sidebarMaxWidth
-                        )
-                    }
-                    .onEnded { _ in model.persist() }
+        ResizeHandle(orientation: .vertical) {
+            startWidth = model.sidebarWidth
+        } onDrag: { translation in
+            model.sidebarWidth = min(
+                max(startWidth + translation, Theme.Metrics.sidebarMinWidth),
+                Theme.Metrics.sidebarMaxWidth
             )
+        } onEnd: {
+            model.persist()
+        }
+    }
+}
+
+/// Drag handle on the inner edge of the right-hand panel.
+///
+/// Dragging left widens it, which is why the translation is subtracted: the
+/// handle is on the panel's leading edge, not its trailing one.
+struct RightSidebarResizeHandle: View {
+    @Environment(AppModel.self) private var model
+    @State private var startWidth: Double = 0
+
+    var body: some View {
+        ResizeHandle(orientation: .vertical) {
+            startWidth = model.rightSidebarWidth
+        } onDrag: { translation in
+            model.rightSidebarWidth = min(
+                max(startWidth - translation, Theme.Metrics.rightSidebarMinWidth),
+                Theme.Metrics.rightSidebarMaxWidth
+            )
+        } onEnd: {
+            model.persist()
+        }
     }
 }
 

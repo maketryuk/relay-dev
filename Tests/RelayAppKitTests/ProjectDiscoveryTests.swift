@@ -85,7 +85,7 @@ struct ProjectDiscoveryTests {
         let directory = try TemporaryDirectory()
         try directory.write("services: {}", to: filename)
         let facts = ProjectDiscovery.inspect(path: directory.url.path)
-        #expect(facts.composeFile == filename)
+        #expect(facts.composeFile == directory.url.appendingPathComponent(filename).path)
         #expect(facts.hasDocker)
     }
 

@@ -9,7 +9,7 @@ struct RightSidebarView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            RelayDivider(axis: .vertical)
+            RightSidebarResizeHandle()
 
             VStack(spacing: 0) {
                 tabStrip
@@ -17,7 +17,7 @@ struct RightSidebarView: View {
                 content
                 Spacer(minLength: 0)
             }
-            .frame(width: 300)
+            .frame(width: model.rightSidebarWidth)
             .background(Theme.Palette.sidebar)
         }
     }
@@ -36,15 +36,24 @@ struct RightSidebarView: View {
     private func tabButton(_ tab: RightSidebarTab) -> some View {
         let isAvailable = model.isTabAvailable(tab, for: project)
         let isSelected = model.rightSidebarTab == tab && model.isRightSidebarVisible
+        // A Docker tab that found nothing is off, not finished: containers get
+        // started after the project is opened, and clicking is how you ask.
+        let isRetryable = tab == .docker && !isAvailable
 
         return IconButton(
             systemImage: tab.symbolName,
             size: 28,
             prominence: .selectable,
             isSelected: isSelected,
-            isEnabled: isAvailable
+            isEnabled: isAvailable,
+            respondsWhenDisabled: isRetryable,
+            isBusy: tab == .docker && model.isCheckingDocker(project.id)
         ) {
-            model.selectRightSidebarTab(tab)
+            if isAvailable {
+                model.selectRightSidebarTab(tab)
+            } else if isRetryable {
+                model.recheckDocker(for: project.id)
+            }
         }
         .relayTooltip(model.tabTooltip(tab, for: project))
     }

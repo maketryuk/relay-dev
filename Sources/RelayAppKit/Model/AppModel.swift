@@ -19,6 +19,7 @@ final class AppModel {
 
     private(set) var projects: [Project] = []
     var sidebarWidth: Double = Theme.Metrics.sidebarWidth
+    var rightSidebarWidth: Double = Theme.Metrics.rightSidebarWidth
     private(set) var collapsedSections: Set<String> = []
 
     // MARK: - Runtime
@@ -35,6 +36,9 @@ final class AppModel {
     var showsAllPorts = false
     var portPendingTermination: ListeningPort?
     private(set) var dockerSnapshots: [ProjectID: DockerSnapshot] = [:]
+    /// Projects whose Docker state is being looked up right now, so the tab can
+    /// say it is checking rather than appearing to ignore the click.
+    private(set) var projectsCheckingDocker: Set<ProjectID> = []
     private(set) var notificationSettings = NotificationSettings()
     private(set) var shortcutSettings = ShortcutSettings()
     private(set) var presets: [SessionPreset] = SessionPresets.defaultSet
@@ -55,7 +59,10 @@ final class AppModel {
     var isProjectSettingsOpen = false
     var isAddingProject = false
     var isInboxOpen = false
-    private(set) var openWindowIDs: Set<String> = []
+    /// The panel shown over the window, if any. One at a time by design: these
+    /// are things you consult, and stacking them is how the separate windows
+    /// became tiresome in the first place.
+    var activeModal: RelayModal?
     /// Set by the rename shortcut and consumed by the sidebar row.
     var renamingSessionID: SessionID?
     /// Bumped to ask the visible terminal to take focus.
@@ -82,6 +89,7 @@ final class AppModel {
         let state = store.load()
         projects = state.projects
         sidebarWidth = state.sidebarWidth
+        rightSidebarWidth = state.rightSidebarWidth
         collapsedSections = Set(state.collapsedSections)
         notificationSettings = state.notifications
         shortcutSettings = state.shortcuts
@@ -849,8 +857,44 @@ final class AppModel {
     func tabTooltip(_ tab: RightSidebarTab, for project: Project) -> String {
         guard !isTabAvailable(tab, for: project) else { return tab.title }
         switch tab {
-        case .docker: return "Docker — no containers or compose file in this project"
-        default: return "\(tab.title) — coming soon"
+        case .docker:
+            return projectsCheckingDocker.contains(project.id)
+                ? relayLocalized("Docker — checking…")
+                : relayLocalized("Docker — nothing found. Click to check again.")
+        default:
+            return "\(tab.title) — " + relayLocalized("coming soon")
+        }
+    }
+
+    func isCheckingDocker(_ projectID: ProjectID) -> Bool {
+        projectsCheckingDocker.contains(projectID)
+    }
+
+    /// Asks Docker again for a project whose tab came up empty.
+    ///
+    /// A stack that was not running when the project was opened is the normal
+    /// case, and leaving the tab off with no way to ask again means restarting
+    /// the app to see containers that are already up.
+    func recheckDocker(for projectID: ProjectID) {
+        guard let project = project(projectID),
+              !projectsCheckingDocker.contains(projectID)
+        else { return }
+
+        projectsCheckingDocker.insert(projectID)
+        refreshAllProjectFacts()
+
+        Task { [weak self] in
+            guard let self else { return }
+            let reply = try? await self.client.send(.dockerStatus(projectDirectory: project.rootPath))
+            if case let .docker(snapshot)? = reply {
+                self.dockerSnapshots[projectID] = snapshot
+            }
+            self.projectsCheckingDocker.remove(projectID)
+            if self.isTabAvailable(.docker, for: project) {
+                self.rightSidebarTab = .docker
+                self.isRightSidebarVisible = true
+                self.persist()
+            }
         }
     }
 
@@ -862,17 +906,16 @@ final class AppModel {
         persist()
     }
 
-    func windowOpened(_ id: String) {
-        openWindowIDs.insert(id)
+    /// Showing a panel that is already up puts it away, the way every toggle in
+    /// the app behaves.
+    func toggleModal(_ modal: RelayModal) {
+        activeModal = activeModal == modal ? nil : modal
     }
 
-    func windowClosed(_ id: String) {
-        openWindowIDs.remove(id)
+    func dismissModal() {
+        activeModal = nil
     }
 
-    func isWindowOpen(_ id: String) -> Bool {
-        openWindowIDs.contains(id)
-    }
 
     func toggleLeftSidebar() {
         isLeftSidebarVisible.toggle()
@@ -1095,12 +1138,15 @@ final class AppModel {
     /// interruptible, instead of disappearing into a background process.
     func runCompose(_ action: ComposeAction, in projectID: ProjectID) {
         guard let index = projects.firstIndex(where: { $0.id == projectID }) else { return }
-        let rootPath = projects[index].rootPath
+        // Where the compose file is, not where the project starts: a stack kept
+        // in `docker/` is common, and running from the root is exactly how
+        // "no configuration file provided" happens.
+        let directory = ComposeLocator.directory(forProjectAt: projects[index].rootPath)
         launch(SessionSpec(
             projectID: projectID,
             kind: .custom,
             name: action.sessionName,
-            workingDirectory: rootPath,
+            workingDirectory: directory,
             command: ["docker", "compose"] + action.arguments
         ))
         // Give compose a moment to change state before asking about it.
@@ -1342,6 +1388,7 @@ final class AppModel {
             lastActiveProjectID: selectedProjectID?.rawValue,
             lastActiveSessionByProject: lastActiveSessionByProject,
             sidebarWidth: sidebarWidth,
+            rightSidebarWidth: rightSidebarWidth,
             collapsedSections: Array(collapsedSections),
             notifications: notificationSettings,
             shortcuts: shortcutSettings,
@@ -1362,6 +1409,7 @@ final class AppModel {
             lastActiveProjectID: selectedProjectID?.rawValue,
             lastActiveSessionByProject: lastActiveSessionByProject,
             sidebarWidth: sidebarWidth,
+            rightSidebarWidth: rightSidebarWidth,
             collapsedSections: Array(collapsedSections),
             notifications: notificationSettings,
             shortcuts: shortcutSettings,

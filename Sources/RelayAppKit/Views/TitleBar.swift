@@ -108,12 +108,7 @@ struct TitleBar: View {
             }
 
             IconButton(systemImage: "gearshape", help: "", size: 24) {
-                WindowToggle.toggle(
-                    id: SettingsWindow.id,
-                    isOpen: model.isWindowOpen(SettingsWindow.id),
-                    openWindow: openWindow,
-                    dismissWindow: dismissWindow
-                )
+                model.toggleModal(.settings)
             }
             .relayTooltip(relayLocalized("Settings"), shortcut: model.binding(for: .openSettings))
 

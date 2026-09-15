@@ -9,8 +9,6 @@ import SwiftUI
 /// something happening" at a glance, and a column of text would bury that.
 struct ProjectRailView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.openWindow) private var openWindow
-    @Environment(\.dismissWindow) private var dismissWindow
     @State private var isDropTargeted = false
 
     var body: some View {
@@ -120,25 +118,28 @@ struct ProjectRailView: View {
         .relayTooltip(relayLocalized("Add project"), shortcut: model.binding(for: .addProject), edge: .trailing)
     }
 
-    private func toggle(_ id: String) {
-        WindowToggle.toggle(
-            id: id,
-            isOpen: model.isWindowOpen(id),
-            openWindow: openWindow,
-            dismissWindow: dismissWindow
-        )
-    }
-
     private var portsButton: some View {
-        IconButton(systemImage: "point.3.filled.connected.trianglepath.dotted", help: "", size: 28) {
-            toggle(PortsWindow.id)
+        IconButton(
+            systemImage: "point.3.filled.connected.trianglepath.dotted",
+            help: "",
+            size: 28,
+            prominence: .selectable,
+            isSelected: model.activeModal == .ports
+        ) {
+            model.toggleModal(.ports)
         }
         .relayTooltip(relayLocalized("Ports"), shortcut: model.binding(for: .togglePorts), edge: .trailing)
     }
 
     private var sshButton: some View {
-        IconButton(systemImage: "network", help: "", size: 28) {
-            toggle(SSHWindow.id)
+        IconButton(
+            systemImage: "network",
+            help: "",
+            size: 28,
+            prominence: .selectable,
+            isSelected: model.activeModal == .sshHosts
+        ) {
+            model.toggleModal(.sshHosts)
         }
         .relayTooltip(relayLocalized("SSH hosts"), shortcut: model.binding(for: .openSSHHosts), edge: .trailing)
     }

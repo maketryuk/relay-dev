@@ -83,6 +83,7 @@ struct WorkspaceState: Codable {
     /// projectID → sessionID, so switching projects restores the last terminal.
     var lastActiveSessionByProject: [String: String]
     var sidebarWidth: Double
+    var rightSidebarWidth: Double
     var collapsedSections: [String]
     var notifications: NotificationSettings
     var shortcuts: ShortcutSettings
@@ -108,6 +109,7 @@ struct WorkspaceState: Codable {
         lastActiveProjectID: String? = nil,
         lastActiveSessionByProject: [String: String] = [:],
         sidebarWidth: Double = 248,
+        rightSidebarWidth: Double = 300,
         collapsedSections: [String] = [],
         notifications: NotificationSettings = NotificationSettings(),
         shortcuts: ShortcutSettings = ShortcutSettings(),
@@ -126,6 +128,7 @@ struct WorkspaceState: Codable {
         self.lastActiveProjectID = lastActiveProjectID
         self.lastActiveSessionByProject = lastActiveSessionByProject
         self.sidebarWidth = sidebarWidth
+        self.rightSidebarWidth = rightSidebarWidth
         self.collapsedSections = collapsedSections
         self.notifications = notifications
         self.shortcuts = shortcuts
@@ -148,6 +151,7 @@ struct WorkspaceState: Codable {
         lastActiveSessionByProject = try container
             .decodeIfPresent([String: String].self, forKey: .lastActiveSessionByProject) ?? [:]
         sidebarWidth = try container.decodeIfPresent(Double.self, forKey: .sidebarWidth) ?? 248
+        rightSidebarWidth = try container.decodeIfPresent(Double.self, forKey: .rightSidebarWidth) ?? 300
         collapsedSections = try container.decodeIfPresent([String].self, forKey: .collapsedSections) ?? []
         notifications = try container
             .decodeIfPresent(NotificationSettings.self, forKey: .notifications) ?? NotificationSettings()

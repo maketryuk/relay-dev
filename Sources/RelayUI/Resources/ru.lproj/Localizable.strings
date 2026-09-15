@@ -54,6 +54,8 @@
 "Disconnected" = "Отключено";
 "Display name" = "Отображаемое имя";
 "Docker" = "Docker";
+"Docker — checking…" = "Docker — проверяем…";
+"Docker — nothing found. Click to check again." = "Docker — ничего не найдено. Нажмите, чтобы проверить снова.";
 "Done" = "Готово";
 "Down" = "Остановить";
 "Drag a folder here" = "Перетащите папку сюда";
@@ -227,6 +229,7 @@
 "Work finished" = "Работа завершена";
 "Working" = "Работает";
 "Workspace" = "Рабочее пространство";
+"coming soon" = "скоро";
 "folder" = "folder";
 "in ~/.ssh/config" = "в ~/.ssh/config";
 "listening" = "слушает";

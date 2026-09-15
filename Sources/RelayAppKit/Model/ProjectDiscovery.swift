@@ -8,16 +8,14 @@ struct ProjectFacts: Equatable, Sendable {
     var packageManager: String?
     var devCommand: String?
     var hasDockerfile: Bool
+    /// Full path, because where the stack is defined decides where Compose
+    /// has to be run from.
     var composeFile: String?
 
     var hasDocker: Bool { hasDockerfile || composeFile != nil }
 }
 
 enum ProjectDiscovery {
-    private static let composeCandidates = [
-        "compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml",
-    ]
-
     /// Ordered by how likely the script is to be "the dev server".
     private static let devScriptCandidates = ["dev", "start", "serve", "develop"]
 
@@ -31,8 +29,10 @@ enum ProjectDiscovery {
             packageManager: nil,
             devCommand: nil,
             hasDockerfile: manager.fileExists(atPath: directory.appendingPathComponent("Dockerfile").path),
-            composeFile: composeCandidates.first {
-                manager.fileExists(atPath: directory.appendingPathComponent($0).path)
+            // Through the shared locator, so a stack kept in `docker/` counts as
+            // this project having one — which is what the Docker tab asks.
+            composeFile: ComposeLocator.file(forProjectAt: path) {
+                manager.fileExists(atPath: $0)
             }
         )
 
