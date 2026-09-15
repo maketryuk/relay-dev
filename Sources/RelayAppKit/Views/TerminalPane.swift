@@ -105,10 +105,7 @@ struct TerminalPane: View {
                 .font(Theme.Typography.rowSecondary)
                 .foregroundStyle(Theme.Palette.textTertiary)
 
-            // An expanding drag region rather than a plain spacer, so the
-            // empty middle of the header behaves like a title bar.
-            WindowDragArea()
-                .frame(minWidth: Theme.Spacing.medium, maxWidth: .infinity, maxHeight: .infinity)
+            Spacer(minLength: Theme.Spacing.medium)
 
             if let pid = session.pid, session.exitCode == nil {
                 Text("pid \(pid)")
@@ -130,8 +127,7 @@ struct TerminalPane: View {
             .relayTooltip("Close session", shortcut: model.binding(for: .closeSession))
         }
         .padding(.horizontal, Theme.Spacing.medium)
-        .padding(.top, Theme.Spacing.large + 2)
-        .padding(.bottom, Theme.Spacing.small)
+        .padding(.vertical, Theme.Spacing.small)
         .background(Theme.Palette.sidebar)
     }
 

@@ -76,12 +76,18 @@ enum NotificationPolicy {
         var settings: NotificationSettings
     }
 
-    static func event(for context: Context) -> AttentionEvent? {
+    /// The event a transition deserves, ignoring whether the user is looking at
+    /// it.
+    ///
+    /// Separated from `event(for:)` because the in-app inbox and a system
+    /// notification want different things: the banner should not interrupt you
+    /// about the terminal you are staring at, but the inbox is a record of what
+    /// happened and omitting entries from it would make it untrustworthy.
+    static func attentionEvent(for context: Context) -> AttentionEvent? {
         guard context.settings.isEnabled else { return nil }
         guard !context.settings.isMuted(context.session.projectID) else { return nil }
         // Only transitions are interesting; a repeated status is not news.
         guard context.previous != context.current else { return nil }
-        guard !context.isVisibleToUser else { return nil }
 
         let session = context.session
         let label = "\(context.projectName) · \(session.name)"
@@ -122,6 +128,12 @@ enum NotificationPolicy {
         default:
             return nil
         }
+    }
+
+    /// The event worth interrupting the user with.
+    static func event(for context: Context) -> AttentionEvent? {
+        guard !context.isVisibleToUser else { return nil }
+        return attentionEvent(for: context)
     }
 
     private static func announcesCompletion(_ session: SessionSnapshot) -> Bool {

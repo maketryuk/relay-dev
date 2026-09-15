@@ -43,8 +43,7 @@ struct ProjectSidebarView: View {
 
             // Fixed height: an expanding drag area would stretch the header to
             // fill the sidebar, which is exactly what it did.
-            WindowDragArea()
-                .frame(minWidth: Theme.Spacing.small, maxWidth: .infinity, minHeight: 30, maxHeight: 30)
+            Spacer(minLength: Theme.Spacing.small)
 
             IconButton(systemImage: "plus", help: "", size: 22) {
                 isShowingNewSessionMenu.toggle()
@@ -62,8 +61,7 @@ struct ProjectSidebarView: View {
             .relayTooltip("Project settings", shortcut: model.binding(for: .projectSettings))
         }
         .padding(.horizontal, Theme.Spacing.medium)
-        .padding(.top, Theme.Spacing.large + Theme.Spacing.small)
-        .padding(.bottom, Theme.Spacing.medium)
+        .padding(.vertical, Theme.Spacing.medium)
         .background(Theme.Palette.sidebar)
     }
 
@@ -80,7 +78,7 @@ struct ProjectSidebarView: View {
                     Text("No sessions yet")
                         .font(Theme.Typography.row)
                         .foregroundStyle(Theme.Palette.textSecondary)
-                    Text("Press + to start one")
+                    Text(startHint)
                         .font(Theme.Typography.rowSecondary)
                         .foregroundStyle(Theme.Palette.textTertiary)
                 }
@@ -98,6 +96,15 @@ struct ProjectSidebarView: View {
                 }
             }
         }
+    }
+
+    /// Names the actual shortcut rather than pointing at a button, and stays
+    /// correct if the user rebinds it.
+    private var startHint: String {
+        if let shortcut = model.binding(for: .newShell)?.displayString {
+            return "Press \(shortcut) for a terminal, or + to choose"
+        }
+        return "Press + to start one"
     }
 
     @ViewBuilder

@@ -11,23 +11,30 @@ struct RootView: View {
     var body: some View {
         @Bindable var model = model
 
-        HStack(spacing: 0) {
-            ProjectRailView()
+        VStack(spacing: 0) {
+            TitleBar()
 
-            if let project = model.selectedProject {
-                ProjectSidebarView(project: project)
-                SidebarResizeHandle()
-                mainContent(for: project)
-                if model.isRightSidebarVisible {
-                    RightSidebarView(project: project)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
+            HStack(spacing: 0) {
+                ProjectRailView()
+
+                if let project = model.selectedProject {
+                    if model.isLeftSidebarVisible {
+                        ProjectSidebarView(project: project)
+                        SidebarResizeHandle()
+                    }
+                    mainContent(for: project)
+                    if model.isRightSidebarVisible {
+                        RightSidebarView(project: project)
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                    }
+                } else {
+                    welcomePane
                 }
-            } else {
-                welcomePane
             }
         }
         .frame(minWidth: 1_040, minHeight: 560)
         .animation(.easeOut(duration: 0.16), value: model.isRightSidebarVisible)
+        .animation(.easeOut(duration: 0.16), value: model.isLeftSidebarVisible)
         .background(Theme.Palette.base)
         .overlay(alignment: .top) { connectionBanner }
         .overlay { commandPaletteOverlay }
@@ -53,7 +60,6 @@ struct RootView: View {
 
     private var welcomePane: some View {
         VStack(spacing: Theme.Spacing.large) {
-            WindowDragArea().frame(height: 22)
             EmptyStateView(
                 systemImage: "square.stack.3d.up",
                 title: "No projects yet",
@@ -145,8 +151,6 @@ struct ProjectOverviewPane: View {
 
     var body: some View {
         VStack(spacing: Theme.Spacing.xlarge) {
-            WindowDragArea().frame(height: 22)
-
             VStack(spacing: Theme.Spacing.small) {
                 ProjectIcon(
                     initials: ProjectAppearance.initials(for: project.name),

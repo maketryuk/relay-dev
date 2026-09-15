@@ -4,6 +4,34 @@ Versions follow [semantic versioning](https://semver.org): a breaking change to
 stored data or the daemon protocol bumps the major, a feature bumps the minor, a
 fix bumps the patch.
 
+## 0.4.0
+
+### Added
+
+- **A real title bar** spanning the window, with a command-palette search field
+  in the middle, sidebar toggles on the left and project controls on the right.
+  It also owns dragging and double-click-to-zoom, which is why those never
+  worked reliably before: the behaviour was scattered across three panel
+  headers that each also held buttons.
+- **Notification inbox** in the title bar. Agents waiting on you, failures and
+  finished work collect there with an unread badge, so a banner missed is not a
+  notice lost. Clicking one jumps to its session.
+- **Add Project sheet** with a drop target, and the project rail accepts a
+  dropped folder directly.
+- `⌘B` toggles the sessions sidebar; `⌥⌘B` toggles the project panel.
+
+### Fixed
+
+- An expanding drag region stretched the sidebar, the project panel and the
+  terminal header, pushing their contents down the window.
+- Only the glyph inside an icon button was clickable, not the button.
+- A bare trailing closure on a section header bound to the wrong parameter, so
+  the header's button was silently dropped.
+- Closing a session waited on the daemon before the row disappeared.
+- The build failed on Swift 6.1, which is what CI runs.
+- A test asserted that the machine had unrelated listening ports, which is not
+  true on a clean runner.
+
 ## 0.3.0
 
 Interface restructuring, and the fixes that came out of using it.

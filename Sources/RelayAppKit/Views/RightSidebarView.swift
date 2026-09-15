@@ -27,14 +27,10 @@ struct RightSidebarView: View {
             ForEach(RightSidebarTab.allCases) { tab in
                 tabButton(tab)
             }
-            // Fixed height: an expanding drag area stretches the strip to fill
-            // the whole panel.
-            WindowDragArea()
-                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 24, maxHeight: 24)
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, Theme.Spacing.small)
-        .padding(.top, Theme.Spacing.large + Theme.Spacing.small)
-        .padding(.bottom, Theme.Spacing.small)
+        .padding(.vertical, Theme.Spacing.small)
     }
 
     private func tabButton(_ tab: RightSidebarTab) -> some View {
@@ -45,10 +41,12 @@ struct RightSidebarView: View {
         } label: {
             Image(systemName: tab.symbolName)
                 .font(.system(size: 12, weight: .medium))
-                .frame(width: 28, height: 24)
+                .frame(width: 30, height: 26)
                 .background(isSelected ? Theme.Palette.surfaceActive : .clear)
                 .foregroundStyle(tabTint(tab, isSelected: isSelected))
                 .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+                // The whole tab is the target, not just the glyph inside it.
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!tab.isAvailable)
@@ -97,10 +95,10 @@ struct ServicesPane: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            SectionHeader("Services") {
+            SectionHeader("Services", trailing: {
                 IconButton(systemImage: "plus", help: "", size: 16) { isAddingService = true }
                     .relayTooltip("Add service")
-            }
+            })
 
             if project.services.isEmpty {
                 hint("No services yet. Add one, or let Relay detect a dev command.")
@@ -208,12 +206,12 @@ struct DockerPane: View {
         let snapshot = model.dockerSnapshot(for: project.id)
 
         VStack(alignment: .leading, spacing: 1) {
-            SectionHeader(snapshot?.composeProjectName.map { "Docker · \($0)" } ?? "Docker") {
+            SectionHeader(snapshot?.composeProjectName.map { "Docker · \($0)" } ?? "Docker", trailing: {
                 IconButton(systemImage: "arrow.clockwise", help: "", size: 16) {
                     model.refreshDocker(for: project.id)
                 }
                 .relayTooltip("Refresh containers")
-            }
+            })
 
             if let snapshot, !snapshot.isAvailable {
                 hint(snapshot.message ?? "Docker is unavailable.")
@@ -332,14 +330,14 @@ struct HistoryPane: View {
         let entries = model.history(for: project.id)
 
         VStack(alignment: .leading, spacing: 1) {
-            SectionHeader("History") {
+            SectionHeader("History", trailing: {
                 if !entries.isEmpty {
                     IconButton(systemImage: "trash", help: "", size: 16) {
                         model.clearHistory(for: project.id)
                     }
                     .relayTooltip("Clear history")
                 }
-            }
+            })
 
             if entries.isEmpty {
                 Text("Sessions you finish appear here, with what ran and how it ended.")

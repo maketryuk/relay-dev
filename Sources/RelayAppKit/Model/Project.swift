@@ -89,6 +89,7 @@ struct WorkspaceState: Codable {
     var customPresets: [SessionPreset]
     var sessionHistory: [SessionHistoryEntry]
     var isRightSidebarVisible: Bool
+    var isLeftSidebarVisible: Bool
     var rightSidebarTab: String?
 
     init(
@@ -103,6 +104,7 @@ struct WorkspaceState: Codable {
         customPresets: [SessionPreset] = [],
         sessionHistory: [SessionHistoryEntry] = [],
         isRightSidebarVisible: Bool = true,
+        isLeftSidebarVisible: Bool = true,
         rightSidebarTab: String? = nil
     ) {
         self.version = version
@@ -116,6 +118,7 @@ struct WorkspaceState: Codable {
         self.customPresets = customPresets
         self.sessionHistory = sessionHistory
         self.isRightSidebarVisible = isRightSidebarVisible
+        self.isLeftSidebarVisible = isLeftSidebarVisible
         self.rightSidebarTab = rightSidebarTab
     }
 
@@ -134,6 +137,7 @@ struct WorkspaceState: Codable {
         customPresets = try container.decodeIfPresent([SessionPreset].self, forKey: .customPresets) ?? []
         sessionHistory = try container.decodeIfPresent([SessionHistoryEntry].self, forKey: .sessionHistory) ?? []
         isRightSidebarVisible = try container.decodeIfPresent(Bool.self, forKey: .isRightSidebarVisible) ?? true
+        isLeftSidebarVisible = try container.decodeIfPresent(Bool.self, forKey: .isLeftSidebarVisible) ?? true
         rightSidebarTab = try container.decodeIfPresent(String.self, forKey: .rightSidebarTab)
     }
 }
