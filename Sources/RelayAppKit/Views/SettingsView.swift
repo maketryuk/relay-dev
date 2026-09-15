@@ -108,13 +108,13 @@ struct GeneralSettingsPane: View {
             SettingsGroup(relayLocalized("Workspace")) {
                 SettingsRow(
                     title: relayLocalized("Projects"),
-                    detail: relayLocalized("\(model.projects.count) in this workspace")
+                    detail: "\(model.projects.count) in this workspace"
                 ) {
                     RelayButton(relayLocalized("Add Project…")) { model.isAddingProject = true }
                 }
                 SettingsRow(
                     title: relayLocalized("Sidebar width"),
-                    detail: relayLocalized("\(Int(model.sidebarWidth)) pt")
+                    detail: "\(Int(model.sidebarWidth)) pt"
                 ) {
                     RelayButton(relayLocalized("Reset")) {
                         model.sidebarWidth = Theme.Metrics.sidebarWidth
@@ -352,7 +352,7 @@ struct AboutPane: View {
         SettingsScroll(title: relayLocalized("About")) {
             SettingsGroup(relayLocalized("Relay")) {
                 SettingsRow(title: relayLocalized("Version"), detail: AppInfo.version) { EmptyView() }
-                SettingsRow(title: relayLocalized("Protocol"), detail: relayLocalized("v\(RelayProtocolVersion.current)")) { EmptyView() }
+                SettingsRow(title: relayLocalized("Protocol"), detail: "v\(RelayProtocolVersion.current)") { EmptyView() }
                 SettingsRow(
                     title: relayLocalized("Runtime"),
                     detail: relayLocalized("Sessions live in a background daemon and survive quitting the app")

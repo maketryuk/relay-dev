@@ -550,3 +550,88 @@ public struct EmptyStateView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+
+/// A row of selectable chips.
+///
+/// Stands in for `Picker` wherever the choice is short and visual. The native
+/// pop-up and segmented controls carry their own appearance, which reads as
+/// borrowed against a dark custom interface, and a menu hides the options
+/// behind a click when there are only a handful.
+public struct ChipPicker<Item: Hashable, Content: View>: View {
+    private let items: [Item]
+    @Binding private var selection: Item
+    private let content: (Item, Bool) -> Content
+
+    public init(
+        items: [Item],
+        selection: Binding<Item>,
+        @ViewBuilder content: @escaping (Item, Bool) -> Content
+    ) {
+        self.items = items
+        _selection = selection
+        self.content = content
+    }
+
+    public var body: some View {
+        LazyVGrid(
+            columns: [GridItem(.adaptive(minimum: 132), spacing: Theme.Spacing.small)],
+            alignment: .leading,
+            spacing: Theme.Spacing.small
+        ) {
+            ForEach(items, id: \.self) { item in
+                Chip(isSelected: item == selection) {
+                    selection = item
+                } content: {
+                    content(item, item == selection)
+                }
+            }
+        }
+    }
+}
+
+public struct Chip<Content: View>: View {
+    private let isSelected: Bool
+    private let action: () -> Void
+    private let content: Content
+
+    @State private var isHovering = false
+
+    public init(
+        isSelected: Bool = false,
+        action: @escaping () -> Void,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.isSelected = isSelected
+        self.action = action
+        self.content = content()
+    }
+
+    public var body: some View {
+        Button(action: action) {
+            content
+                .padding(.horizontal, Theme.Spacing.small)
+                .padding(.vertical, 7)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(background)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
+                        .strokeBorder(border, lineWidth: 1)
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .animation(.easeOut(duration: 0.1), value: isHovering)
+        .animation(.easeOut(duration: 0.1), value: isSelected)
+    }
+
+    private var background: Color {
+        if isSelected { return Theme.Palette.accentMuted }
+        return isHovering ? Theme.Palette.surfaceHover : Theme.Palette.surfaceRaised
+    }
+
+    private var border: Color {
+        isSelected ? Theme.Palette.accent.opacity(0.7) : .clear
+    }
+}

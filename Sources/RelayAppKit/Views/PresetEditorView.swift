@@ -56,39 +56,34 @@ struct PresetEditorView: View {
     /// remember which flag each CLI uses for automatic approvals.
     private var templates: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
-            Text(relayLocalized("Start from"))
+            Text(relayLocalized("Start from").uppercased())
                 .font(Theme.Typography.sectionHeader)
                 .tracking(0.7)
                 .foregroundStyle(Theme.Palette.textTertiary)
 
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: Theme.Spacing.small)],
-                      spacing: Theme.Spacing.small) {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 150), spacing: Theme.Spacing.small)],
+                alignment: .leading,
+                spacing: Theme.Spacing.small
+            ) {
                 ForEach(SessionPresets.templates) { template in
-                    Button {
-                        apply(template)
-                    } label: {
-                        HStack(spacing: Theme.Spacing.small) {
-                            SessionGlyph(
-                                kind: template.kind,
-                                size: 12,
-                                tint: Color(hex: template.kind.accentHex)
-                            )
-                            .frame(width: 16)
-                            Text(template.name)
-                                .font(Theme.Typography.rowSecondary)
-                                .foregroundStyle(Theme.Palette.textSecondary)
-                                .lineLimit(1)
-                            Spacer(minLength: 0)
-                        }
-                        .padding(.horizontal, Theme.Spacing.small)
-                        .padding(.vertical, 6)
-                        .background(Theme.Palette.surfaceRaised)
-                        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
-                        .contentShape(Rectangle())
+                    Chip { apply(template) } content: {
+                        agentLabel(template.kind, title: template.name)
                     }
-                    .buttonStyle(.plain)
                 }
             }
+        }
+    }
+
+    private func agentLabel(_ kind: SessionKind, title: String) -> some View {
+        HStack(spacing: Theme.Spacing.small) {
+            SessionGlyph(kind: kind, size: 12, tint: Color(hex: kind.accentHex))
+                .frame(width: 16)
+            Text(title)
+                .font(Theme.Typography.rowSecondary)
+                .foregroundStyle(Theme.Palette.textSecondary)
+                .lineLimit(1)
+            Spacer(minLength: 0)
         }
     }
 
@@ -99,22 +94,23 @@ struct PresetEditorView: View {
             }
 
             field(relayLocalized("Agent")) {
-                Picker("", selection: $kind) {
-                    ForEach(SessionKind.allCases.filter { $0 != .ssh }, id: \.self) { kind in
-                        Text(kind.displayName).tag(kind)
-                    }
+                ChipPicker(
+                    items: SessionKind.allCases.filter { $0 != .ssh },
+                    selection: $kind
+                ) { kind, _ in
+                    agentLabel(kind, title: kind.displayName)
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .frame(width: 200)
             }
 
-            Toggle(isOn: $usesCustomCommand) {
+            HStack {
                 Text(relayLocalized("Run my own command"))
                     .font(Theme.Typography.row)
                     .foregroundStyle(Theme.Palette.textSecondary)
+                Spacer()
+                Toggle("", isOn: $usesCustomCommand)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
             }
-            .toggleStyle(.switch)
 
             if usesCustomCommand {
                 field(relayLocalized("Command")) {
