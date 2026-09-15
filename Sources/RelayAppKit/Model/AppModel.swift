@@ -55,6 +55,8 @@ final class AppModel {
     private(set) var language: AppLanguage = .system
     private(set) var checksForUpdates = true
     private(set) var showsStatusBar = true
+    private(set) var usageDetail: UsageDetail = .detailed
+    var isUsagePopoverOpen = false
     private(set) var paneLayouts: [ProjectID: PaneNode] = [:]
     var rightSidebarTab: RightSidebarTab = .services
 
@@ -123,6 +125,7 @@ final class AppModel {
         language = state.language
         checksForUpdates = state.checksForUpdates
         showsStatusBar = state.showsStatusBar
+        usageDetail = state.usageDetail
         paneLayouts = Dictionary(uniqueKeysWithValues: state.paneLayouts.map {
             (ProjectID(rawValue: $0.key), $0.value)
         })
@@ -826,6 +829,11 @@ final class AppModel {
         showsStatusBar = visible
         persist()
         if visible { usage.start() } else { usage.stop() }
+    }
+
+    func setUsageDetail(_ detail: UsageDetail) {
+        usageDetail = detail
+        persist()
     }
 
     func setChecksForUpdates(_ enabled: Bool) {
@@ -1540,6 +1548,7 @@ final class AppModel {
             language: language,
             checksForUpdates: checksForUpdates,
             showsStatusBar: showsStatusBar,
+            usageDetail: usageDetail,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
         store.scheduleSave(state)
@@ -1563,6 +1572,7 @@ final class AppModel {
             language: language,
             checksForUpdates: checksForUpdates,
             showsStatusBar: showsStatusBar,
+            usageDetail: usageDetail,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
         store.saveNow(state)

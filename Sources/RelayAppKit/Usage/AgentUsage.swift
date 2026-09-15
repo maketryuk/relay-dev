@@ -70,6 +70,34 @@ struct AgentUsage: Equatable, Identifiable, Sendable {
     var nextReset: Date? {
         windows.compactMap(\.resetsAt).min()
     }
+
+    /// The window nearest to stopping you, which is the one a single line should
+    /// show.
+    ///
+    /// Not the shortest window: a five-hour bar at 5% matters less than a weekly
+    /// one at 90%, and the point of a one-line summary is to name the limit that
+    /// will bite first.
+    var mostUsedWindow: UsageWindow? {
+        windows.max { $0.fraction < $1.fraction }
+    }
+}
+
+/// How much of the usage figures to show at a glance.
+enum UsageDetail: String, Codable, CaseIterable, Identifiable, Sendable {
+    /// Every window, for each agent.
+    case detailed
+    /// Only the window closest to running out; the rest are a hover away.
+    case compact
+
+    var id: String { rawValue }
+
+    @MainActor
+    var title: String {
+        switch self {
+        case .detailed: relayLocalized("Detailed")
+        case .compact: relayLocalized("Compact")
+        }
+    }
 }
 
 /// Turns a duration into the shape both CLIs use: the two largest units that
