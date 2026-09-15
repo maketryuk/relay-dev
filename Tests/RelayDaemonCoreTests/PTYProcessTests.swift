@@ -210,5 +210,50 @@ final class OutputBox: @unchecked Sendable {
     }
 
     var data: Data { lock.withLock { buffer } }
+    var text: String { String(decoding: data, as: UTF8.self) }
     var exitCode: Int32? { lock.withLock { code } }
+
+    /// Waits for what the test is about to assert, rather than for the process
+    /// to exit. Output and exit are separate events, and stopping at the exit
+    /// asserts on whatever happened to have arrived by then — which is how this
+    /// passed for months and then failed once, on a machine fast enough to
+    /// notice the difference.
+    func waitForOutput(containing marker: String, timeout: TimeInterval = 10) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline, !text.contains(marker) {
+            usleep(20_000)
+        }
+    }
+}
+
+@Suite("Trailing output")
+struct TrailingOutputTests {
+    @Test("A command that prints and exits does not lose what it printed")
+    func trailingOutputSurvivesTheChildExiting() throws {
+        // Reaping a child is what tears its pty down on macOS, and anything
+        // still buffered in it goes with it — measured at 30 losses out of 30.
+        // The exit handler therefore drains before it reaps, and this is the
+        // outcome that depends on it: a command that prints why it failed and
+        // exits in the same breath still gets to say so.
+        let plan = PTYProcess.LaunchPlan(
+            executable: "/bin/sh",
+            arguments: ["-c", "echo RELAY_TRAILING_MARKER"],
+            workingDirectory: "/tmp",
+            environment: ["PATH": "/usr/bin:/bin"],
+            columns: 80,
+            rows: 24
+        )
+        let process = try PTYProcess.launch(plan)
+        defer { process.close() }
+
+        // Long enough for `echo` to have finished several times over, so the
+        // output is already sitting in the pty before anything reads it.
+        Thread.sleep(forTimeInterval: 0.4)
+
+        let box = OutputBox()
+        process.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
+        box.waitForOutput(containing: "RELAY_TRAILING_MARKER", timeout: 5)
+
+        #expect(box.text.contains("RELAY_TRAILING_MARKER"), "the child produced: \(box.text.debugDescription)")
+    }
 }

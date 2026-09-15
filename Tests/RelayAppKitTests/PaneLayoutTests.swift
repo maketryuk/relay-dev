@@ -59,12 +59,12 @@ struct PaneLayoutTests {
     }
 
     @Test("Removing the last pane leaves nothing, not an empty split")
-    func removingEverything() {
+    func removingEverything() throws {
         #expect(PaneLayout.removing(a, from: .session(a)) == nil)
 
         let layout = PaneLayout.split(.session(a), target: a, with: b, axis: .horizontal)
-        let afterFirst = try? #require(PaneLayout.removing(a, from: layout))
-        #expect(PaneLayout.removing(b, from: afterFirst ?? .session(b)) == nil)
+        let afterFirst = try #require(PaneLayout.removing(a, from: layout))
+        #expect(PaneLayout.removing(b, from: afterFirst) == nil)
     }
 
     @Test("Removing from a nested split keeps the rest intact")

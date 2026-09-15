@@ -35,18 +35,16 @@ struct DescriptorInheritanceTests {
         let process = try PTYProcess.launch(plan)
         let box = OutputBox()
         process.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
-
-        let deadline = Date().addingTimeInterval(10)
-        while Date() < deadline, box.exitCode == nil { usleep(20_000) }
+        box.waitForOutput(containing: "blocked")
         process.close()
 
         let contents = (try? String(contentsOf: temporary, encoding: .utf8)) ?? ""
         #expect(!contents.contains("LEAKED"))
-        #expect(String(decoding: box.data, as: UTF8.self).contains("blocked"))
+        #expect(box.text.contains("blocked"), "the child produced: \(box.text.debugDescription)")
     }
 
     @Test("A descriptor above the child's closing range is still not inherited")
-    func highNumberedDescriptorIsNotInherited() {
+    func highNumberedDescriptorIsNotInherited() throws {
         // `getdtablesize()` is tens of thousands on macOS, so the child cannot
         // loop the whole table and `closefrom` does not exist. A descriptor
         // beyond whatever cap the child uses has to be handled in the parent,
@@ -61,8 +59,11 @@ struct DescriptorInheritanceTests {
         defer { close(low) }
 
         // Force a high descriptor number, past any plausible child-side cap.
+        // A machine whose descriptor limit is below that — a CI runner often
+        // is — cannot make the point at all, and saying so is better than
+        // asserting something else by accident.
         let high = fcntl(low, F_DUPFD, 5000)
-        #expect(high >= 5000)
+        try #require(high >= 5000, "this machine's descriptor limit is too low to place one at 5000")
         defer { close(high) }
 
         let plan = PTYProcess.LaunchPlan(
@@ -73,18 +74,15 @@ struct DescriptorInheritanceTests {
             columns: 80,
             rows: 24
         )
-        let process = try? PTYProcess.launch(plan)
-        let child = try? #require(process)
+        let child = try PTYProcess.launch(plan)
         let box = OutputBox()
-        child?.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
-
-        let deadline = Date().addingTimeInterval(10)
-        while Date() < deadline, box.exitCode == nil { usleep(20_000) }
-        child?.close()
+        child.startStreaming(onOutput: { box.append($0) }, onExit: { box.finish(code: $0) })
+        box.waitForOutput(containing: "blocked")
+        child.close()
 
         let contents = (try? String(contentsOf: temporary, encoding: .utf8)) ?? ""
         #expect(!contents.contains("LEAKED"))
-        #expect(String(decoding: box.data, as: UTF8.self).contains("blocked"))
+        #expect(box.text.contains("blocked"), "the child produced: \(box.text.debugDescription)")
     }
 
     @Test("The pty master is close-on-exec so a grandchild cannot hold the session open")
