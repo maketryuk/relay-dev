@@ -18,7 +18,7 @@ struct ProjectSettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Project Settings")
+                Text(relayLocalized("Project Settings"))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Theme.Palette.textPrimary)
                 Spacer()
@@ -30,7 +30,7 @@ struct ProjectSettingsView: View {
 
             VStack(alignment: .leading, spacing: Theme.Spacing.large) {
                 field("Display name") {
-                    RelayTextField("Project name", text: $name)
+                    RelayTextField(relayLocalized("Project name"), text: $name)
                 }
 
                 field("Root path") {
@@ -62,12 +62,12 @@ struct ProjectSettingsView: View {
                 field("Notifications") {
                     VStack(alignment: .leading, spacing: Theme.Spacing.small) {
                         Toggle(isOn: $notificationsEnabled) {
-                            Text("Notify me about agents and services")
+                            Text(relayLocalized("Notify me about agents and services"))
                                 .font(Theme.Typography.row)
                                 .foregroundStyle(Theme.Palette.textSecondary)
                         }
                         Toggle(isOn: $projectMuted) {
-                            Text("Mute this project")
+                            Text(relayLocalized("Mute this project"))
                                 .font(Theme.Typography.row)
                                 .foregroundStyle(Theme.Palette.textSecondary)
                         }
@@ -82,13 +82,13 @@ struct ProjectSettingsView: View {
             RelayDivider()
 
             HStack(spacing: Theme.Spacing.small) {
-                RelayButton("Remove Project", kind: .destructive) {
+                RelayButton(relayLocalized("Remove Project"), kind: .destructive) {
                     model.removeProject(project.id)
                     dismiss()
                 }
                 Spacer()
-                RelayButton("Cancel", kind: .ghost) { dismiss() }
-                RelayButton("Save", kind: .primary) {
+                RelayButton(relayLocalized("Cancel"), kind: .ghost) { dismiss() }
+                RelayButton(relayLocalized("Save"), kind: .primary) {
                     var updated = project
                     updated.name = name.trimmingCharacters(in: .whitespaces).isEmpty
                         ? project.name

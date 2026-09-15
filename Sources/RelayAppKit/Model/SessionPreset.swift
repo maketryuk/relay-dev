@@ -118,14 +118,48 @@ enum SessionPresets {
         ),
     ]
 
-    static func all(custom: [SessionPreset]) -> [SessionPreset] {
+    /// Shown in the new-session menu out of the box.
+    ///
+    /// The catalogue is deliberately larger than this: a menu that lists every
+    /// agent anyone might use is a menu nobody reads. The rest are one toggle
+    /// away in settings.
+    static let defaultEnabledIDs: [String] = [
+        "builtin.terminal",
+        "builtin.claude.auto",
+        "builtin.codex.auto",
+    ]
+
+    /// Every preset, whether or not it is currently offered.
+    static func catalogue(custom: [SessionPreset]) -> [SessionPreset] {
         builtIn + custom
+    }
+
+    /// The presets the menu offers, in catalogue order.
+    static func enabled(custom: [SessionPreset], enabledIDs: [String]?) -> [SessionPreset] {
+        let allowed = Set(enabledIDs ?? defaultEnabledIDs)
+        return catalogue(custom: custom).filter { preset in
+            // A preset the user created is offered by virtue of existing;
+            // hiding it would mean it could only be reached from settings.
+            !preset.isBuiltIn || allowed.contains(preset.id)
+        }
+    }
+
+    static func all(custom: [SessionPreset]) -> [SessionPreset] {
+        catalogue(custom: custom)
     }
 
     /// The preset a keyboard shortcut for a kind should launch: the first one
     /// that targets it, which is the automatic variant for agents.
-    static func preferred(for kind: SessionKind, custom: [SessionPreset] = []) -> SessionPreset {
-        all(custom: custom).first { $0.kind == kind }
+    /// What a keyboard shortcut for a kind should launch: the first enabled
+    /// preset for it, falling back to the catalogue so a shortcut still works
+    /// for an agent the user has hidden from the menu.
+    static func preferred(
+        for kind: SessionKind,
+        custom: [SessionPreset] = [],
+        enabledIDs: [String]? = nil
+    ) -> SessionPreset {
+        enabled(custom: custom, enabledIDs: enabledIDs).first { $0.kind == kind }
+            ?? catalogue(custom: custom).first { $0.kind == kind }
             ?? SessionPreset(name: kind.displayName, kind: kind)
     }
 }

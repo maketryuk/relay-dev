@@ -34,28 +34,19 @@ struct RightSidebarView: View {
     }
 
     private func tabButton(_ tab: RightSidebarTab) -> some View {
+        let isAvailable = model.isTabAvailable(tab, for: project)
         let isSelected = model.rightSidebarTab == tab && model.isRightSidebarVisible
 
-        return Button {
+        return IconButton(
+            systemImage: tab.symbolName,
+            size: 28,
+            prominence: .selectable,
+            isSelected: isSelected,
+            isEnabled: isAvailable
+        ) {
             model.selectRightSidebarTab(tab)
-        } label: {
-            Image(systemName: tab.symbolName)
-                .font(.system(size: 12, weight: .medium))
-                .frame(width: 30, height: 26)
-                .background(isSelected ? Theme.Palette.surfaceActive : .clear)
-                .foregroundStyle(tabTint(tab, isSelected: isSelected))
-                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
-                // The whole tab is the target, not just the glyph inside it.
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .disabled(!tab.isAvailable)
-        .relayTooltip(tab.isAvailable ? tab.title : "\(tab.title) — coming soon")
-    }
-
-    private func tabTint(_ tab: RightSidebarTab, isSelected: Bool) -> Color {
-        guard tab.isAvailable else { return Theme.Palette.textTertiary.opacity(0.4) }
-        return isSelected ? Theme.Palette.textPrimary : Theme.Palette.textSecondary
+        .relayTooltip(model.tabTooltip(tab, for: project))
     }
 
     @ViewBuilder
@@ -77,8 +68,8 @@ struct RightSidebarView: View {
     private func comingSoon(_ tab: RightSidebarTab) -> some View {
         EmptyStateView(
             systemImage: tab.symbolName,
-            title: "\(tab.title) — coming soon",
-            message: tab.comingSoonDescription
+            title: relayLocalized("Coming soon"),
+            message: tab.localizedComingSoon
         )
         .frame(minHeight: 220)
     }
@@ -95,9 +86,9 @@ struct ServicesPane: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            SectionHeader("Services", trailing: {
-                IconButton(systemImage: "plus", help: "", size: 16) { isAddingService = true }
-                    .relayTooltip("Add service")
+            SectionHeader(relayLocalized("Services"), trailing: {
+                IconButton(systemImage: "plus", help: "", size: 24) { isAddingService = true }
+                    .relayTooltip(relayLocalized("Add service"))
             })
 
             if project.services.isEmpty {
@@ -129,28 +120,28 @@ struct ServicesPane: View {
             action: { model.showServiceLogs(service, in: project.id) },
             accessoryVisibility: .always
         ) {
-            HStack(spacing: 0) {
+            HStack(spacing: 1) {
                 if url != nil {
-                    IconButton(systemImage: "arrow.up.forward.app", help: "", size: 18) {
+                    IconButton(systemImage: "arrow.up.forward.app", help: "", size: 24) {
                         model.openService(service, in: project.id)
                     }
                     .relayTooltip("Open \(url?.absoluteString ?? "")")
                 }
 
                 if state.isActive {
-                    IconButton(systemImage: "arrow.clockwise", help: "", size: 18) {
+                    IconButton(systemImage: "arrow.clockwise", help: "", size: 24) {
                         model.restartService(service, in: project.id)
                     }
                     .relayTooltip(
                         "Restart",
                         shortcut: service.isDefault ? model.binding(for: .restartDefaultService) : nil
                     )
-                    IconButton(systemImage: "stop.fill", help: "", size: 18) {
+                    IconButton(systemImage: "stop.fill", help: "", size: 24) {
                         model.stopService(service, in: project.id)
                     }
-                    .relayTooltip("Stop")
+                    .relayTooltip(relayLocalized("Stop"))
                 } else {
-                    IconButton(systemImage: "play.fill", help: "", size: 18) {
+                    IconButton(systemImage: "play.fill", help: "", size: 24) {
                         model.startService(service, in: project.id)
                     }
                     .relayTooltip(
@@ -162,28 +153,28 @@ struct ServicesPane: View {
         }
         .contextMenu {
             if state.isActive {
-                Button("Stop") { model.stopService(service, in: project.id) }
-                Button("Restart") { model.restartService(service, in: project.id) }
+                Button(relayLocalized("Stop")) { model.stopService(service, in: project.id) }
+                Button(relayLocalized("Restart")) { model.restartService(service, in: project.id) }
             } else {
-                Button("Start") { model.startService(service, in: project.id) }
+                Button(relayLocalized("Start")) { model.startService(service, in: project.id) }
             }
-            Button("Logs") { model.showServiceLogs(service, in: project.id) }
+            Button(relayLocalized("Logs")) { model.showServiceLogs(service, in: project.id) }
             if url != nil {
                 Divider()
-                Button("Open URL") { model.openService(service, in: project.id) }
-                Button("Copy URL") { model.copyServiceURL(service, in: project.id) }
+                Button(relayLocalized("Open URL")) { model.openService(service, in: project.id) }
+                Button(relayLocalized("Copy URL")) { model.copyServiceURL(service, in: project.id) }
             }
             Divider()
-            Button("Edit…") { editingService = service }
-            Button("Remove") { model.removeService(service, from: project.id) }
+            Button(relayLocalized("Edit…")) { editingService = service }
+            Button(relayLocalized("Remove")) { model.removeService(service, from: project.id) }
         }
     }
 
     private func subtitle(state: ServiceState, url: URL?, command: String) -> String {
         if let url, state.isActive {
-            return "\(state.displayName) · \(url.host ?? "localhost"):\(url.port ?? 80)"
+            return "\(state.localizedName) · \(url.host ?? "localhost"):\(url.port ?? 80)"
         }
-        return state == .stopped ? command : state.displayName
+        return state == .stopped ? command : state.localizedName
     }
 
     private func hint(_ text: String) -> some View {
@@ -207,10 +198,10 @@ struct DockerPane: View {
 
         VStack(alignment: .leading, spacing: 1) {
             SectionHeader(snapshot?.composeProjectName.map { "Docker · \($0)" } ?? "Docker", trailing: {
-                IconButton(systemImage: "arrow.clockwise", help: "", size: 16) {
+                IconButton(systemImage: "arrow.clockwise", help: "", size: 24) {
                     model.refreshDocker(for: project.id)
                 }
-                .relayTooltip("Refresh containers")
+                .relayTooltip(relayLocalized("Refresh containers"))
             })
 
             if let snapshot, !snapshot.isAvailable {
@@ -233,21 +224,9 @@ struct DockerPane: View {
     private var composeActions: some View {
         HStack(spacing: Theme.Spacing.xsmall) {
             ForEach(ComposeAction.allCases) { action in
-                Button {
+                PillButton(action.localizedTitle, systemImage: action.symbolName) {
                     model.runCompose(action, in: project.id)
-                } label: {
-                    HStack(spacing: 3) {
-                        Image(systemName: action.symbolName).font(.system(size: 8, weight: .semibold))
-                        Text(action.title).font(Theme.Typography.caption)
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
-                    .frame(maxWidth: .infinity)
-                    .background(Theme.Palette.surfaceRaised)
-                    .foregroundStyle(Theme.Palette.textSecondary)
-                    .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
                 }
-                .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, Theme.Spacing.small)
@@ -266,39 +245,39 @@ struct DockerPane: View {
             action: { model.containerAction(.logs, container: container, in: project.id) },
             accessoryVisibility: .always
         ) {
-            HStack(spacing: 0) {
+            HStack(spacing: 1) {
                 if let port = container.publishedPorts.first, port.url != nil {
-                    IconButton(systemImage: "arrow.up.forward.app", help: "", size: 18) {
+                    IconButton(systemImage: "arrow.up.forward.app", help: "", size: 24) {
                         model.openContainerPort(port)
                     }
                     .relayTooltip("Open localhost:\(port.published)")
                 }
 
                 if isRunning {
-                    IconButton(systemImage: "arrow.clockwise", help: "", size: 18) {
+                    IconButton(systemImage: "arrow.clockwise", help: "", size: 24) {
                         model.containerAction(.restart, container: container, in: project.id)
                     }
-                    .relayTooltip("Restart container")
-                    IconButton(systemImage: "stop.fill", help: "", size: 18) {
+                    .relayTooltip(relayLocalized("Restart container"))
+                    IconButton(systemImage: "stop.fill", help: "", size: 24) {
                         model.containerAction(.stop, container: container, in: project.id)
                     }
-                    .relayTooltip("Stop container")
+                    .relayTooltip(relayLocalized("Stop container"))
                 } else {
-                    IconButton(systemImage: "play.fill", help: "", size: 18) {
+                    IconButton(systemImage: "play.fill", help: "", size: 24) {
                         model.containerAction(.start, container: container, in: project.id)
                     }
-                    .relayTooltip("Start container")
+                    .relayTooltip(relayLocalized("Start container"))
                 }
             }
         }
         .contextMenu {
             ForEach(ContainerAction.allCases) { action in
-                Button(action.title) {
+                Button(action.localizedTitle) {
                     model.containerAction(action, container: container, in: project.id)
                 }
             }
             Divider()
-            Button("Copy Container Name") { model.copyContainerIdentifier(container) }
+            Button(relayLocalized("Copy Container Name")) { model.copyContainerIdentifier(container) }
         }
     }
 
@@ -330,17 +309,17 @@ struct HistoryPane: View {
         let entries = model.history(for: project.id)
 
         VStack(alignment: .leading, spacing: 1) {
-            SectionHeader("History", trailing: {
+            SectionHeader(relayLocalized("History"), trailing: {
                 if !entries.isEmpty {
-                    IconButton(systemImage: "trash", help: "", size: 16) {
+                    IconButton(systemImage: "trash", help: "", size: 24) {
                         model.clearHistory(for: project.id)
                     }
-                    .relayTooltip("Clear history")
+                    .relayTooltip(relayLocalized("Clear history"))
                 }
             })
 
             if entries.isEmpty {
-                Text("Sessions you finish appear here, with what ran and how it ended.")
+                Text(relayLocalized("Sessions you finish appear here, with what ran and how it ended."))
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
                     .padding(.horizontal, Theme.Spacing.small)
@@ -366,11 +345,11 @@ struct HistoryPane: View {
             action: { model.rerun(entry) },
             accessoryVisibility: .onHover
         ) {
-            IconButton(systemImage: "arrow.clockwise", help: "", size: 16) { model.rerun(entry) }
-                .relayTooltip("Run again")
+            IconButton(systemImage: "arrow.clockwise", help: "", size: 24) { model.rerun(entry) }
+                .relayTooltip(relayLocalized("Run again"))
         }
         .contextMenu {
-            Button("Run Again") { model.rerun(entry) }
+            Button(relayLocalized("Run Again")) { model.rerun(entry) }
             Text(entry.command.joined(separator: " "))
         }
     }

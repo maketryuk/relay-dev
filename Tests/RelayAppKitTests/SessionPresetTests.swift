@@ -67,6 +67,54 @@ struct SessionPresetTests {
         #expect(SessionPresets.preferred(for: .shell).id == "builtin.terminal")
     }
 
+    @Test("Out of the box the menu offers only the three most-used presets")
+    func defaultMenuIsShort() {
+        // A menu listing every agent anyone might use is a menu nobody reads.
+        let offered = SessionPresets.enabled(custom: [], enabledIDs: nil)
+        #expect(offered.map(\.id) == ["builtin.terminal", "builtin.claude.auto", "builtin.codex.auto"])
+    }
+
+    @Test("Enabling a preset adds it to the menu in catalogue order")
+    func enablingKeepsOrder() {
+        let offered = SessionPresets.enabled(
+            custom: [],
+            enabledIDs: ["builtin.gemini.auto", "builtin.terminal"]
+        )
+        #expect(offered.map(\.id) == ["builtin.terminal", "builtin.gemini.auto"])
+    }
+
+    @Test("A preset the user created is always offered")
+    func customPresetsAreAlwaysOffered() {
+        // Hiding one would mean it could only be reached from settings, which is
+        // not where you start a session.
+        let custom = SessionPreset(name: "Storybook", kind: .custom, customCommand: "pnpm storybook")
+        let offered = SessionPresets.enabled(custom: [custom], enabledIDs: ["builtin.terminal"])
+        #expect(offered.map(\.id) == ["builtin.terminal", custom.id])
+    }
+
+    @Test("The catalogue keeps everything, offered or not")
+    func catalogueIsComplete() {
+        let custom = SessionPreset(name: "X", kind: .custom, customCommand: "x")
+        #expect(SessionPresets.catalogue(custom: [custom]).count == SessionPresets.builtIn.count + 1)
+    }
+
+    @Test("A shortcut still works for an agent hidden from the menu")
+    func shortcutFallsBackToTheCatalogue() {
+        let preferred = SessionPresets.preferred(for: .gemini, enabledIDs: ["builtin.terminal"])
+        #expect(preferred.id == "builtin.gemini.auto")
+    }
+
+    @Test("Enabled presets survive persistence; nil means the defaults")
+    func enabledPresetsPersist() throws {
+        let directory = try TemporaryDirectory()
+        let url = directory.url.appendingPathComponent("workspace.json")
+        WorkspaceStore(url: url).saveNow(WorkspaceState(enabledPresetIDs: ["builtin.terminal"]))
+        #expect(WorkspaceStore(url: url).load().enabledPresetIDs == ["builtin.terminal"])
+
+        try #"{"projects":[]}"#.write(to: url, atomically: true, encoding: .utf8)
+        #expect(WorkspaceStore(url: url).load().enabledPresetIDs == nil)
+    }
+
     @Test("A kind with no preset still yields something runnable")
     func preferredFallsBack() {
         let preset = SessionPresets.preferred(for: .ssh)

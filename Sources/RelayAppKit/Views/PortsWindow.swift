@@ -40,7 +40,7 @@ struct PortsWindowView: View {
     private var header: some View {
         VStack(spacing: Theme.Spacing.small) {
             HStack(spacing: Theme.Spacing.small) {
-                Text("Ports")
+                Text(relayLocalized("Ports"))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Theme.Palette.textPrimary)
                 Text("\(model.ports.count) listening")
@@ -49,9 +49,9 @@ struct PortsWindowView: View {
                 WindowDragArea()
                     .frame(maxWidth: .infinity, minHeight: 22, maxHeight: 22)
                 IconButton(systemImage: "arrow.clockwise", help: "") { model.refreshPorts() }
-                    .relayTooltip("Rescan now")
+                    .relayTooltip(relayLocalized("Rescan now"))
             }
-            RelayTextField("Filter by port, process or session", text: $query, systemImage: "magnifyingglass")
+            RelayTextField(relayLocalized("Filter by port, process or session"), text: $query, systemImage: "magnifyingglass")
         }
         .padding(.horizontal, Theme.Spacing.large)
         .padding(.top, Theme.Spacing.large + Theme.Spacing.small)
@@ -139,9 +139,9 @@ struct PortRow: View {
 
             if port.url != nil {
                 IconButton(systemImage: "arrow.up.forward.app", help: "") { model.openPort(port) }
-                    .relayTooltip("Open in browser")
+                    .relayTooltip(relayLocalized("Open in browser"))
                 IconButton(systemImage: "doc.on.doc", help: "") { model.copyPortURL(port) }
-                    .relayTooltip("Copy URL")
+                    .relayTooltip(relayLocalized("Copy URL"))
             }
         }
         .padding(.horizontal, Theme.Spacing.small)
@@ -152,12 +152,12 @@ struct PortRow: View {
         .onHover { isHovering = $0 }
         .contextMenu {
             if port.url != nil {
-                Button("Open in Browser") { model.openPort(port) }
-                Button("Copy URL") { model.copyPortURL(port) }
+                Button(relayLocalized("Open in Browser")) { model.openPort(port) }
+                Button(relayLocalized("Copy URL")) { model.copyPortURL(port) }
             }
             if port.ownerSessionID != nil {
                 Divider()
-                Button("Reveal Owner Session") { model.revealPortOwner(port) }
+                Button(relayLocalized("Reveal Owner Session")) { model.revealPortOwner(port) }
             }
         }
     }

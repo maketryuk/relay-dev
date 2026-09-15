@@ -83,7 +83,7 @@ struct SessionRow: View {
                 IconButton(systemImage: "xmark", help: "", size: 16) {
                     model.closeSession(session.id)
                 }
-                .relayTooltip("Close session", shortcut: model.binding(for: .closeSession))
+                .relayTooltip(relayLocalized("Close session"), shortcut: model.binding(for: .closeSession))
             }
         }
     }
@@ -112,14 +112,14 @@ struct SessionRow: View {
     /// The state line: what the session is doing, or how it ended.
     private var activity: String? {
         if let exitCode = session.exitCode {
-            return exitCode == 0 ? "Exited" : "Exited with code \(exitCode)"
+            return exitCode == 0 ? relayLocalized("Exited") : relayLocalized("Exited with an error")
         }
         switch session.status {
-        case .waiting: return "Waiting for you"
-        case .working: return "Working"
-        case .starting: return "Starting"
-        case .finished: return "Finished"
-        case .error: return "Error"
+        case .waiting: return relayLocalized("Waiting for you")
+        case .working: return relayLocalized("Working")
+        case .starting: return relayLocalized("Starting")
+        case .finished: return relayLocalized("Finished")
+        case .error: return relayLocalized("Error")
         case .idle, .offline: return nil
         }
     }

@@ -1,5 +1,6 @@
 import Foundation
 import RelayProtocol
+import RelayUI
 
 /// A local directory the user has adopted into their workspace.
 ///
@@ -87,10 +88,13 @@ struct WorkspaceState: Codable {
     var shortcuts: ShortcutSettings
     /// Presets the user added; the built-in ones live in code.
     var customPresets: [SessionPreset]
+    /// Nil means the shipped default set.
+    var enabledPresetIDs: [String]?
     var sessionHistory: [SessionHistoryEntry]
     var isRightSidebarVisible: Bool
     var isLeftSidebarVisible: Bool
     var rightSidebarTab: String?
+    var language: AppLanguage
 
     init(
         version: Int = 1,
@@ -102,10 +106,12 @@ struct WorkspaceState: Codable {
         notifications: NotificationSettings = NotificationSettings(),
         shortcuts: ShortcutSettings = ShortcutSettings(),
         customPresets: [SessionPreset] = [],
+        enabledPresetIDs: [String]? = nil,
         sessionHistory: [SessionHistoryEntry] = [],
         isRightSidebarVisible: Bool = true,
         isLeftSidebarVisible: Bool = true,
-        rightSidebarTab: String? = nil
+        rightSidebarTab: String? = nil,
+        language: AppLanguage = .system
     ) {
         self.version = version
         self.projects = projects
@@ -116,10 +122,12 @@ struct WorkspaceState: Codable {
         self.notifications = notifications
         self.shortcuts = shortcuts
         self.customPresets = customPresets
+        self.enabledPresetIDs = enabledPresetIDs
         self.sessionHistory = sessionHistory
         self.isRightSidebarVisible = isRightSidebarVisible
         self.isLeftSidebarVisible = isLeftSidebarVisible
         self.rightSidebarTab = rightSidebarTab
+        self.language = language
     }
 
     init(from decoder: Decoder) throws {
@@ -135,9 +143,11 @@ struct WorkspaceState: Codable {
             .decodeIfPresent(NotificationSettings.self, forKey: .notifications) ?? NotificationSettings()
         shortcuts = try container.decodeIfPresent(ShortcutSettings.self, forKey: .shortcuts) ?? ShortcutSettings()
         customPresets = try container.decodeIfPresent([SessionPreset].self, forKey: .customPresets) ?? []
+        enabledPresetIDs = try container.decodeIfPresent([String].self, forKey: .enabledPresetIDs)
         sessionHistory = try container.decodeIfPresent([SessionHistoryEntry].self, forKey: .sessionHistory) ?? []
         isRightSidebarVisible = try container.decodeIfPresent(Bool.self, forKey: .isRightSidebarVisible) ?? true
         isLeftSidebarVisible = try container.decodeIfPresent(Bool.self, forKey: .isLeftSidebarVisible) ?? true
         rightSidebarTab = try container.decodeIfPresent(String.self, forKey: .rightSidebarTab)
+        language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .system
     }
 }

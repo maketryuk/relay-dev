@@ -2,11 +2,12 @@ import Foundation
 
 /// Tabs of the right-hand panel.
 enum RightSidebarTab: String, CaseIterable, Identifiable, Sendable {
+    // Declaration order is the order in the strip.
+    case files
+    case git
+    case history
     case services
     case docker
-    case history
-    case git
-    case files
 
     var id: String { rawValue }
 

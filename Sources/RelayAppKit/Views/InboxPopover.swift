@@ -12,7 +12,7 @@ struct InboxPopover: View {
             RelayDivider()
 
             if model.inbox.isEmpty {
-                Text("Nothing yet. Agents waiting on you, failures and finished work land here.")
+                Text(relayLocalized("Nothing yet. Agents waiting on you, failures and finished work land here."))
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
                     .padding(Theme.Spacing.large)
@@ -36,20 +36,20 @@ struct InboxPopover: View {
 
     private var header: some View {
         HStack {
-            Text("NOTIFICATIONS")
+            Text(relayLocalized("NOTIFICATIONS"))
                 .font(Theme.Typography.sectionHeader)
                 .tracking(0.7)
                 .foregroundStyle(Theme.Palette.textTertiary)
             Spacer()
             if model.unreadNotificationCount > 0 {
-                Button("Mark all read") { model.markAllNotificationsRead() }
+                Button(relayLocalized("Mark all read")) { model.markAllNotificationsRead() }
                     .buttonStyle(.plain)
                     .font(Theme.Typography.caption)
                     .foregroundStyle(Theme.Palette.accent)
             }
             if !model.inbox.isEmpty {
-                IconButton(systemImage: "trash", help: "", size: 18) { model.clearNotifications() }
-                    .relayTooltip("Clear all")
+                IconButton(systemImage: "trash", help: "", size: 24) { model.clearNotifications() }
+                    .relayTooltip(relayLocalized("Clear all"))
             }
         }
         .padding(.horizontal, Theme.Spacing.medium)

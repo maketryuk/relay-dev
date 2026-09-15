@@ -48,7 +48,7 @@ struct ProjectSidebarView: View {
             IconButton(systemImage: "plus", help: "", size: 22) {
                 isShowingNewSessionMenu.toggle()
             }
-            .relayTooltip("New session", shortcut: model.binding(for: .newShell))
+            .relayTooltip(relayLocalized("New session"), shortcut: model.binding(for: .newShell))
             .popover(isPresented: $isShowingNewSessionMenu, arrowEdge: .bottom) {
                 NewSessionMenu(projectID: project.id) {
                     isShowingNewSessionMenu = false
@@ -58,7 +58,7 @@ struct ProjectSidebarView: View {
             IconButton(systemImage: "gearshape", help: "", size: 22) {
                 model.isProjectSettingsOpen = true
             }
-            .relayTooltip("Project settings", shortcut: model.binding(for: .projectSettings))
+            .relayTooltip(relayLocalized("Project settings"), shortcut: model.binding(for: .projectSettings))
         }
         .padding(.horizontal, Theme.Spacing.medium)
         .padding(.vertical, Theme.Spacing.medium)
@@ -75,7 +75,7 @@ struct ProjectSidebarView: View {
         return Group {
             if list.isEmpty {
                 VStack(spacing: Theme.Spacing.small) {
-                    Text("No sessions yet")
+                    Text(relayLocalized("No sessions yet"))
                         .font(Theme.Typography.row)
                         .foregroundStyle(Theme.Palette.textSecondary)
                     Text(startHint)
@@ -110,7 +110,7 @@ struct ProjectSidebarView: View {
     @ViewBuilder
     private func row(_ session: SessionSnapshot) -> some View {
         if model.renamingSessionID == session.id {
-            RelayTextField("Session name", text: $renameText) {
+            RelayTextField(relayLocalized("Session name"), text: $renameText) {
                 model.renameSession(session.id, to: renameText)
                 model.renamingSessionID = nil
             }
@@ -129,14 +129,14 @@ struct ProjectSidebarView: View {
                 }
             )
             .contextMenu {
-                Button("Rename…") {
+                Button(relayLocalized("Rename…")) {
                     renameText = session.displayName
                     model.renamingSessionID = session.id
                 }
                 if session.exitCode == nil {
-                    Button("Terminate") { model.terminateSession(session.id) }
+                    Button(relayLocalized("Terminate")) { model.terminateSession(session.id) }
                 }
-                Button("Close") { model.closeSession(session.id) }
+                Button(relayLocalized("Close")) { model.closeSession(session.id) }
             }
         }
     }
