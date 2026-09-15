@@ -16,16 +16,13 @@ struct AddProjectSheet: View {
     @State private var rejected: String?
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            RelayDivider()
+        ModalSurface(relayLocalized("Add Project"), onDismiss: { dismiss() }) {
             dropZone
-            RelayDivider()
+        } footer: {
             footer
         }
-        .frame(width: 460, height: 420)
-        .background(Theme.Palette.surface)
-        .preferredColorScheme(.dark)
+        .frame(width: 480, height: 460)
+        .modalPlate()
         .fileImporter(
             isPresented: $isImporting,
             allowedContentTypes: [.folder],
@@ -35,17 +32,6 @@ struct AddProjectSheet: View {
                 add(urls)
             }
         }
-    }
-
-    private var header: some View {
-        HStack {
-            Text(relayLocalized("Add Project"))
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Theme.Palette.textPrimary)
-            Spacer()
-            IconButton(systemImage: "xmark", help: "Close") { dismiss() }
-        }
-        .padding(Theme.Spacing.large)
     }
 
     private var dropZone: some View {
@@ -95,7 +81,6 @@ struct AddProjectSheet: View {
             Spacer()
             RelayButton(relayLocalized("Done"), kind: .primary) { dismiss() }
         }
-        .padding(Theme.Spacing.large)
     }
 
     // MARK: - Dropping

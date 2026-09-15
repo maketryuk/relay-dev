@@ -37,6 +37,7 @@ struct RelayMainApp: App {
                     // title bar strip, buttons included.
                     window.isMovable = false
                     window.isMovableByWindowBackground = false
+                    TrafficLightAligner.align(window, barHeight: Theme.Metrics.titleBarHeight)
                 }
         }
         .windowStyle(.hiddenTitleBar)

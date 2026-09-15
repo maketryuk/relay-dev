@@ -16,18 +16,10 @@ struct ServiceEditorView: View {
     private var isEditing: Bool { service != nil }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(isEditing ? "Edit Service" : "New Service")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.Palette.textPrimary)
-                Spacer()
-                IconButton(systemImage: "xmark", help: "Close") { dismiss() }
-            }
-            .padding(Theme.Spacing.large)
-
-            RelayDivider()
-
+        ModalSurface(
+            relayLocalized(isEditing ? "Edit Service" : "New Service"),
+            onDismiss: { dismiss() }
+        ) {
             VStack(alignment: .leading, spacing: Theme.Spacing.large) {
                 field("Name") {
                     RelayTextField("Dev", text: $name)
@@ -55,20 +47,17 @@ struct ServiceEditorView: View {
                 }
                 .toggleStyle(.switch)
             }
-            .padding(Theme.Spacing.large)
-
-            Spacer(minLength: 0)
-            RelayDivider()
-
+            .padding(.horizontal, ModalSurface<EmptyView, EmptyView>.horizontalInset)
+            .padding(.vertical, ModalSurface<EmptyView, EmptyView>.verticalInset)
+        } footer: {
             HStack {
                 Spacer()
                 RelayButton(relayLocalized("Cancel"), kind: .ghost) { dismiss() }
-                RelayButton(isEditing ? "Save" : "Add", kind: .primary) { save() }
+                RelayButton(relayLocalized(isEditing ? "Save" : "Add"), kind: .primary) { save() }
             }
-            .padding(Theme.Spacing.large)
         }
-        .frame(width: 460, height: 440)
-        .background(Theme.Palette.surface)
+        .frame(width: 480, height: 500)
+        .modalPlate()
         .onAppear {
             name = service?.name ?? "Dev"
             command = service?.command ?? (project.defaultServiceCommand ?? "")

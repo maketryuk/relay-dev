@@ -19,19 +19,9 @@ struct ProjectSettingsView: View {
     @State private var isDropTargeted = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(relayLocalized("Project Settings"))
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.Palette.textPrimary)
-                Spacer()
-                IconButton(systemImage: "xmark", help: "Close") { dismiss() }
-            }
-            .padding(Theme.Spacing.large)
-
-            RelayDivider()
-
-            VStack(alignment: .leading, spacing: Theme.Spacing.large) {
+        ModalSurface(relayLocalized("Project Settings"), onDismiss: { dismiss() }) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.Spacing.large) {
                 field("Icon") { iconField }
 
                 field("Display name") {
@@ -80,12 +70,11 @@ struct ProjectSettingsView: View {
                     }
                     .toggleStyle(.switch)
                 }
+                }
+                .padding(.horizontal, ModalSurface<EmptyView, EmptyView>.horizontalInset)
+                .padding(.vertical, ModalSurface<EmptyView, EmptyView>.verticalInset)
             }
-            .padding(Theme.Spacing.large)
-
-            Spacer(minLength: 0)
-            RelayDivider()
-
+        } footer: {
             HStack(spacing: Theme.Spacing.small) {
                 RelayButton(relayLocalized("Remove Project"), kind: .destructive) {
                     model.removeProject(project.id)
@@ -113,10 +102,9 @@ struct ProjectSettingsView: View {
                     dismiss()
                 }
             }
-            .padding(Theme.Spacing.large)
         }
-        .frame(width: 480, height: 520)
-        .background(Theme.Palette.surface)
+        .frame(width: 520, height: 600)
+        .modalPlate()
         .onAppear {
             name = project.name
             defaultAgent = project.defaultAgent
