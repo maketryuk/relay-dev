@@ -223,4 +223,6 @@
 "Work finished" = "Work finished";
 "Working" = "Working";
 "Workspace" = "Workspace";
+"in ~/.ssh/config" = "in ~/.ssh/config";
+"listening" = "listening";
 "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project";

@@ -30,11 +30,11 @@ struct SSHWindowView: View {
 
     private var header: some View {
         VStack(spacing: Theme.Spacing.small) {
-            HStack(spacing: Theme.Spacing.small) {
+            HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.small) {
                 Text(relayLocalized("SSH Hosts"))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Theme.Palette.textPrimary)
-                Text("\(model.sshHosts.count) in ~/.ssh/config")
+                Text(verbatim: "\(model.sshHosts.count) \(relayLocalized("in ~/.ssh/config"))")
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
                 Spacer()

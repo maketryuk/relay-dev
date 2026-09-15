@@ -59,11 +59,11 @@ struct PortsWindowView: View {
 
     private var header: some View {
         VStack(spacing: Theme.Spacing.small) {
-            HStack(spacing: Theme.Spacing.small) {
+            HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.small) {
                 Text(relayLocalized("Ports"))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Theme.Palette.textPrimary)
-                Text("\(model.ports.count) listening")
+                Text(verbatim: "\(model.ports.count) \(relayLocalized("listening"))")
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
                 WindowDragArea()

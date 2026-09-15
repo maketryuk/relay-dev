@@ -223,4 +223,6 @@
 "Work finished" = "Работа завершена";
 "Working" = "Работает";
 "Workspace" = "Рабочее пространство";
+"in ~/.ssh/config" = "в ~/.ssh/config";
+"listening" = "слушает";
 "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 выбирает сессию, ⌥⌘1…⌥⌘9 — проект";
