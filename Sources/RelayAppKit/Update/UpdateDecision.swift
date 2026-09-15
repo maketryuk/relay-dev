@@ -1,4 +1,5 @@
 import Foundation
+import RelayUI
 
 /// Whether a release is worth telling the user about.
 enum UpdateDecision {
@@ -26,5 +27,20 @@ enum UpdateDecision {
     static func shouldCheckNow(lastCheckedAt: Date?, now: Date) -> Bool {
         guard let lastCheckedAt else { return true }
         return now.timeIntervalSince(lastCheckedAt) >= checkInterval
+    }
+
+    /// What to say when GitHub refuses the question.
+    ///
+    /// 404 is the one worth naming: it is what a private repository returns to
+    /// an unauthenticated request, and it is indistinguishable from a repository
+    /// that does not exist. Reporting it as "nothing published" would hide a
+    /// setting the user can actually change.
+    @MainActor
+    static func message(forStatus status: Int) -> String {
+        switch status {
+        case 404: relayLocalized("Relay cannot see the releases. A private repository needs to be public for updates to work.")
+        case 403, 429: relayLocalized("GitHub is rate-limiting the update check. It will try again later.")
+        default: String(format: relayLocalized("The update check failed: HTTP %d"), status)
+        }
     }
 }

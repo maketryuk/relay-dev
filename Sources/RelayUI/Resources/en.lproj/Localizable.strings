@@ -109,6 +109,7 @@
 "Gemini" = "Gemini";
 "General" = "General";
 "Git" = "Git";
+"GitHub is rate-limiting the update check. It will try again later." = "GitHub is rate-limiting the update check. It will try again later.";
 "History" = "History";
 "Icon" = "Icon";
 "Idle" = "Idle";
@@ -189,6 +190,7 @@
 "Refresh usage" = "Refresh usage";
 "Relay" = "Relay";
 "Relay cannot replace itself at %@." = "Relay cannot replace itself at %@.";
+"Relay cannot see the releases. A private repository needs to be public for updates to work." = "Relay cannot see the releases. A private repository needs to be public for updates to work.";
 "Relay did not start this process" = "Relay did not start this process";
 "Relay has not looked yet" = "Relay has not looked yet";
 "Relay reads the git branch, package manager and dev command it finds." = "Relay reads the git branch, package manager and dev command it finds.";
@@ -280,6 +282,7 @@
 "The downloaded archive could not be opened." = "The downloaded archive could not be opened.";
 "The downloaded copy was rejected: %@" = "The downloaded copy was rejected: %@";
 "The only notification that plays a sound" = "The only notification that plays a sound";
+"The update check failed: HTTP %d" = "The update check failed: HTTP %d";
 "This is the newest release" = "This is the newest release";
 "This project" = "This project";
 "This session is no longer known to the daemon." = "This session is no longer known to the daemon.";

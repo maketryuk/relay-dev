@@ -75,9 +75,19 @@ final class UpdateController {
                 request.setValue("Relay/\(RelayVersion.current)", forHTTPHeaderField: "User-Agent")
                 request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
 
-                let (data, _) = try await self.session.data(for: request)
+                let (data, response) = try await self.session.data(for: request)
                 guard !Task.isCancelled else { return }
                 self.lastCheckedAt = Date()
+
+                // A refusal is not an answer. Letting a 404 fall through to the
+                // parser turns "Relay cannot see the releases" into "you are up
+                // to date", which is the more comforting of the two and the
+                // wrong one — a private repository reads exactly like a repo
+                // with nothing published.
+                if let http = response as? HTTPURLResponse, !(200 ..< 300).contains(http.statusCode) {
+                    self.state = .failed(UpdateDecision.message(forStatus: http.statusCode))
+                    return
+                }
 
                 guard let release = ReleaseFeed.latest(from: data),
                       UpdateDecision.isWorthOffering(release, running: self.running)
