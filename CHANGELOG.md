@@ -4,6 +4,42 @@ Versions follow [semantic versioning](https://semver.org): a breaking change to
 stored data or the daemon protocol bumps the major, a feature bumps the minor, a
 fix bumps the patch.
 
+## 0.3.0
+
+Interface restructuring, and the fixes that came out of using it.
+
+### Changed
+
+- **Left sidebar is sessions only.** Each row now carries the agent's own mark
+  with its status riding on it, the session name, what it is doing, and the
+  branch with a working-tree diff. The working directory is gone from the row:
+  it is already in the project header.
+- **New right-hand panel** with icon tabs for Services, Docker and History, plus
+  disabled placeholders for Git and Files so the shape of the app is honest
+  about where it is going. Toggles with `⌥⌘B`.
+- **SSH moved to its own window** (`⇧⌘S`). Hosts describe the machine, not the
+  repository, so they no longer take up room in a project sidebar.
+- **The Project section is gone.** Its one useful fact, the branch, now sits
+  under the path in the header.
+
+### Added
+
+- **History** of finished runs per project: what ran, for how long, how it
+  ended, and a one-click rerun.
+- Working-tree diff statistics next to the branch.
+- Builds are signed with a real certificate when one is available, so macOS
+  stops re-asking for folder permissions after every rebuild.
+
+### Fixed
+
+- Docker containers were only found when a compose file sat in the project root.
+  They are now matched by Compose's working-directory label, so a stack in
+  `<project>/docker` under an unrelated project name is picked up.
+- The window drag region covered the whole header, so clicking the project
+  settings button zoomed the window instead.
+- Settings did not open at all: a short-circuited condition returned before
+  sending the action.
+
 ## 0.2.0
 
 The rest of the v0.1 scope from the spec, plus the workflow around it.

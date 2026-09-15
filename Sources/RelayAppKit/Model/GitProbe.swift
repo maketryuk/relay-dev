@@ -7,6 +7,12 @@ struct GitStatus: Equatable, Sendable {
     var ahead: Int
     var behind: Int
     var upstream: String?
+    /// Lines added and removed in the working tree, as `git diff --shortstat`
+    /// reports them. Shown next to the branch the way a pull request does.
+    var insertions: Int = 0
+    var deletions: Int = 0
+
+    var hasDiff: Bool { insertions > 0 || deletions > 0 }
 }
 
 /// Reads repository state through the system `git`.
@@ -28,7 +34,37 @@ enum GitProbe {
             arguments: ["-C", path, "status", "--porcelain=v2", "--branch"],
             timeout: 4
         ) else { return nil }
-        return parse(porcelainV2: output)
+        var status = parse(porcelainV2: output)
+
+        // A second call, because porcelain v2 reports which files changed but
+        // not by how much.
+        if let shortstat = Shell.run(
+            "/usr/bin/git",
+            arguments: ["-C", path, "diff", "--shortstat", "HEAD"],
+            timeout: 4
+        ) {
+            let counts = parse(shortstat: shortstat)
+            status.insertions = counts.insertions
+            status.deletions = counts.deletions
+        }
+        return status
+    }
+
+    /// Parses `3 files changed, 44 insertions(+), 19 deletions(-)`.
+    ///
+    /// Any of the three clauses can be absent: a change that only adds lines
+    /// reports no deletions at all.
+    static func parse(shortstat output: String) -> (insertions: Int, deletions: Int) {
+        var insertions = 0
+        var deletions = 0
+        for clause in output.split(separator: ",") {
+            let trimmed = clause.trimmingCharacters(in: .whitespacesAndNewlines)
+            let parts = trimmed.split(separator: " ")
+            guard let value = Int(parts.first ?? "") else { continue }
+            if trimmed.contains("insertion") { insertions = value }
+            if trimmed.contains("deletion") { deletions = value }
+        }
+        return (insertions, deletions)
     }
 
     /// Pure parser for `git status --porcelain=v2 --branch`, kept separate from

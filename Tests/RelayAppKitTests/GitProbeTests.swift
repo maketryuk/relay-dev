@@ -140,3 +140,70 @@ final class TemporaryDirectory {
         try? FileManager.default.removeItem(at: url)
     }
 }
+
+@Suite("Git diff statistics")
+struct GitShortstatTests {
+    @Test("A shortstat line yields insertions and deletions")
+    func parsesBothCounts() {
+        let counts = GitProbe.parse(shortstat: " 3 files changed, 44 insertions(+), 19 deletions(-)\n")
+        #expect(counts.insertions == 44)
+        #expect(counts.deletions == 19)
+    }
+
+    @Test("A change that only adds lines reports no deletions")
+    func parsesInsertionsOnly() {
+        // Git omits the clause entirely rather than printing a zero.
+        let counts = GitProbe.parse(shortstat: " 1 file changed, 7 insertions(+)\n")
+        #expect(counts.insertions == 7)
+        #expect(counts.deletions == 0)
+    }
+
+    @Test("A change that only removes lines reports no insertions")
+    func parsesDeletionsOnly() {
+        let counts = GitProbe.parse(shortstat: " 2 files changed, 12 deletions(-)\n")
+        #expect(counts.insertions == 0)
+        #expect(counts.deletions == 12)
+    }
+
+    @Test("A singular line is parsed like a plural one")
+    func parsesSingularForms() {
+        let counts = GitProbe.parse(shortstat: " 1 file changed, 1 insertion(+), 1 deletion(-)\n")
+        #expect(counts.insertions == 1)
+        #expect(counts.deletions == 1)
+    }
+
+    @Test("Empty output means a clean tree, not a parse failure")
+    func parsesEmptyOutput() {
+        let counts = GitProbe.parse(shortstat: "")
+        #expect(counts.insertions == 0)
+        #expect(counts.deletions == 0)
+    }
+
+    @Test("A repository reports the size of its working-tree changes")
+    func readsRealRepository() throws {
+        let directory = try TemporaryDirectory()
+        let path = directory.url.path
+        try Git.run(["init", "-b", "main"], in: path)
+        try Git.run(["config", "user.email", "tests@relay.local"], in: path)
+        try Git.run(["config", "user.name", "Relay Tests"], in: path)
+        try "one\ntwo\nthree\n".write(
+            to: directory.url.appendingPathComponent("file.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try Git.run(["add", "."], in: path)
+        try Git.run(["commit", "-m", "initial"], in: path)
+
+        #expect(GitProbe.status(at: path)?.hasDiff == false)
+
+        try "one\ntwo\nthree\nfour\nfive\n".write(
+            to: directory.url.appendingPathComponent("file.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let status = try #require(GitProbe.status(at: path))
+        #expect(status.insertions == 2)
+        #expect(status.deletions == 0)
+        #expect(status.hasDiff)
+    }
+}

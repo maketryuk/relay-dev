@@ -7,5 +7,5 @@ import Foundation
 public enum RelayVersion {
     /// Semantic version: breaking behaviour bumps major, features bump minor,
     /// fixes bump patch.
-    public static let current = "0.2.0"
+    public static let current = "0.3.0"
 }
