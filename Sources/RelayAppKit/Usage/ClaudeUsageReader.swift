@@ -40,7 +40,7 @@ enum ClaudeUsageReader {
         limits.compactMap { limit in
             guard let percent = limit["percent"] as? Double else { return nil }
             return UsageWindow(
-                label: label(for: limit),
+                span: span(for: limit),
                 fraction: percent / 100,
                 resetsAt: (limit["resets_at"] as? String).flatMap(date(fromISO8601:))
             )
@@ -49,28 +49,31 @@ enum ClaudeUsageReader {
 
     /// A limit that applies to one model is named after it — that is the only
     /// thing that tells two otherwise identical weekly bars apart.
-    private static func label(for limit: [String: Any]) -> String {
+    private static func span(for limit: [String: Any]) -> UsageWindow.Span {
         if let scope = limit["scope"] as? [String: Any],
            let model = scope["model"] as? [String: Any],
            let name = model["display_name"] as? String, !name.isEmpty {
-            return name
+            return .model(name)
         }
-        switch limit["group"] as? String {
-        case "session": return "5h"
-        case "weekly": return "wk"
-        default: return limit["kind"] as? String ?? "?"
-        }
+        // The list says which group a limit belongs to but not how long the
+        // window is; the buckets beside it are named for their lengths, and the
+        // session one is five hours.
+        return (limit["group"] as? String) == "session" ? .rolling(minutes: 300) : .weekly
     }
 
     /// The older, flatter shape, kept as a fallback so an update to the CLI that
     /// drops `limits` leaves the bar working rather than empty.
     private static func buckets(from utilization: [String: Any]) -> [UsageWindow] {
-        [("five_hour", "5h"), ("seven_day", "wk")].compactMap { key, label in
+        let known: [(String, UsageWindow.Span)] = [
+            ("five_hour", .rolling(minutes: 300)),
+            ("seven_day", .weekly),
+        ]
+        return known.compactMap { key, span in
             guard let bucket = utilization[key] as? [String: Any],
                   let percent = bucket["utilization"] as? Double
             else { return nil }
             return UsageWindow(
-                label: label,
+                span: span,
                 fraction: percent / 100,
                 resetsAt: (bucket["resets_at"] as? String).flatMap(date(fromISO8601:))
             )

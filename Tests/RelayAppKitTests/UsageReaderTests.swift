@@ -144,10 +144,9 @@ struct CodexUsageReaderTests {
 
     @Test("A window is labelled by how long it is")
     func labelsWindows() {
-        #expect(CodexUsageReader.label(forWindowMinutes: 300) == "5h")
-        #expect(CodexUsageReader.label(forWindowMinutes: 10_080) == "wk")
-        #expect(CodexUsageReader.label(forWindowMinutes: 2_880) == "2d")
-        #expect(CodexUsageReader.label(forWindowMinutes: nil) == "?")
+        #expect(CodexUsageReader.span(forWindowMinutes: 300) == .rolling(minutes: 300))
+        #expect(CodexUsageReader.span(forWindowMinutes: 10_080) == .weekly)
+        #expect(CodexUsageReader.span(forWindowMinutes: 2_880) == .rolling(minutes: 2_880))
     }
 
     @Test("A transcript with no limits in it yields nothing")
@@ -163,5 +162,35 @@ struct CodexUsageReaderTests {
         let broken = "\"rate_limits\":{\"primary\":{\"used_per"
         let usage = try #require(CodexUsageReader.parse("\(line)\n\(broken)"))
         #expect(usage.windows.first?.percent == 5)
+    }
+}
+
+@Suite("Window naming")
+@MainActor
+struct UsageWindowNamingTests {
+    private func window(_ span: UsageWindow.Span) -> UsageWindow {
+        UsageWindow(span: span, fraction: 0, resetsAt: nil)
+    }
+
+    @Test("The bar gets a label short enough to fit")
+    func shortLabels() {
+        #expect(window(.rolling(minutes: 300)).label == "5h")
+        #expect(window(.rolling(minutes: 2_880)).label == "2d")
+        #expect(window(.weekly).label == "wk")
+        #expect(window(.model("Fable")).label == "Fable")
+    }
+
+    @Test("The tooltip gets the window spelled out")
+    func spelledOutNames() {
+        // `wk` is fine in a strip at the bottom of the screen and means nothing
+        // on its own, which is the whole reason these are two properties.
+        #expect(window(.rolling(minutes: 300)).name == "Every 5 hours")
+        #expect(window(.rolling(minutes: 2_880)).name == "Every 2 days")
+        #expect(window(.weekly).name == "Weekly")
+    }
+
+    @Test("A model-scoped limit is called by the model's name, both times")
+    func modelKeepsItsName() {
+        #expect(window(.model("Fable")).name == "Fable")
     }
 }
