@@ -164,19 +164,19 @@ struct CommandPaletteView: View {
                 title: relayLocalized("Project Settings"),
                 subtitle: project.name,
                 systemImage: "gearshape"
-            ) { model.isProjectSettingsOpen = true })
+            ) { model.openProjectSettings() })
             commands.append(PaletteCommand(
                 id: "ports-window",
                 title: relayLocalized("Ports"),
                 subtitle: relayLocalized("Everything listening on this Mac"),
                 systemImage: "point.3.filled.connected.trianglepath.dotted"
-            ) { model.activeModal = .ports })
+            ) { model.toggleModal(.ports) })
             commands.append(PaletteCommand(
                 id: "app-settings",
                 title: relayLocalized("Settings"),
                 subtitle: relayLocalized("Shortcuts, notifications and more"),
                 systemImage: "slider.horizontal.3"
-            ) { model.activeModal = .settings })
+            ) { model.toggleModal(.settings) })
 
             for service in project.services {
                 let state = model.state(of: service, in: project.id)

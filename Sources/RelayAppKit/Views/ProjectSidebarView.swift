@@ -72,7 +72,7 @@ struct ProjectSidebarView: View {
             }
 
             IconButton(systemImage: "gearshape", help: "", size: 22) {
-                model.isProjectSettingsOpen = true
+                model.openProjectSettings()
             }
             .relayTooltip(relayLocalized("Project settings"), shortcut: model.binding(for: .projectSettings))
         }

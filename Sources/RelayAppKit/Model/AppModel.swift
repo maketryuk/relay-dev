@@ -61,13 +61,17 @@ final class AppModel {
     var selectedProjectID: ProjectID?
     var selectedSessionID: SessionID?
     var isCommandPaletteOpen = false
-    var isProjectSettingsOpen = false
-    var isAddingProject = false
     var isInboxOpen = false
-    /// The panel shown over the window, if any. One at a time by design: these
-    /// are things you consult, and stacking them is how the separate windows
-    /// became tiresome in the first place.
-    var activeModal: RelayModal?
+    /// The panels open over the window, innermost last.
+    ///
+    /// A stack rather than a single value because some panels are opened from
+    /// inside another — the preset editor lives in Settings — and closing one
+    /// has to return to where it was opened from rather than to nothing. Peers
+    /// still replace each other; only a panel that was opened from within one
+    /// stacks on it.
+    private(set) var modalStack: [RelayModal] = []
+
+    var activeModal: RelayModal? { modalStack.last }
     /// Set by the rename shortcut and consumed by the sidebar row.
     var renamingSessionID: SessionID?
     /// Bumped to ask the visible terminal to take focus.
@@ -979,14 +983,32 @@ final class AppModel {
         persist()
     }
 
-    /// Showing a panel that is already up puts it away, the way every toggle in
-    /// the app behaves.
+    /// Shows a top-level panel, or puts it away if it is the one already up.
+    ///
+    /// These are peers: opening ports while the hosts are showing swaps them
+    /// rather than burying one under the other.
     func toggleModal(_ modal: RelayModal) {
-        activeModal = activeModal == modal ? nil : modal
+        modalStack = modalStack.last == modal ? [] : [modal]
     }
 
+    /// Opens a panel over whatever is already there, for one reached from
+    /// inside another.
+    func presentModal(_ modal: RelayModal) {
+        guard modalStack.last != modal else { return }
+        modalStack.append(modal)
+    }
+
+    /// Closes the innermost panel only.
     func dismissModal() {
-        activeModal = nil
+        guard !modalStack.isEmpty else { return }
+        modalStack.removeLast()
+    }
+
+    /// The settings of whichever project is in front, which is the only one the
+    /// command and the shortcut could mean.
+    func openProjectSettings() {
+        guard let projectID = selectedProjectID else { return }
+        toggleModal(.projectSettings(projectID))
     }
 
 

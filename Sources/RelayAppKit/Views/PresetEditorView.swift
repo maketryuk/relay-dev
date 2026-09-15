@@ -5,7 +5,6 @@ import SwiftUI
 /// Creates or edits a session preset.
 struct PresetEditorView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.dismiss) private var dismiss
 
     let preset: SessionPreset?
 
@@ -20,7 +19,7 @@ struct PresetEditorView: View {
     var body: some View {
         ModalSurface(
             isEditing ? relayLocalized("Edit Preset") : relayLocalized("New Preset"),
-            onDismiss: { dismiss() }
+            onDismiss: { model.dismissModal() }
         ) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.Spacing.large) {
@@ -35,8 +34,6 @@ struct PresetEditorView: View {
         } footer: {
             footer
         }
-        .frame(width: 540, height: 580)
-        .modalPlate()
         .onAppear(perform: load)
     }
 
@@ -132,7 +129,7 @@ struct PresetEditorView: View {
     private var footer: some View {
         HStack {
             Spacer()
-            RelayButton(relayLocalized("Cancel"), kind: .ghost) { dismiss() }
+            RelayButton(relayLocalized("Cancel"), kind: .ghost) { model.dismissModal() }
             RelayButton(isEditing ? relayLocalized("Save") : relayLocalized("Add"), kind: .primary, action: save)
         }
     }
@@ -179,7 +176,7 @@ struct PresetEditorView: View {
         } else {
             model.addPreset(updated)
         }
-        dismiss()
+        model.dismissModal()
     }
 
     private func field(_ label: String, @ViewBuilder content: () -> some View) -> some View {

@@ -100,6 +100,11 @@ than when a day of work ends. Until then everything lands here.
 
 ### Changed
 
+- **One mechanism for every panel and dialog,** not just one frame. The project
+  settings, the add-project dialog and the two editors were SwiftUI sheets: they
+  opened differently, and a click outside did nothing. They are all panels now,
+  closing on Escape or on the overlay. A panel opened from inside another —
+  the preset editor lives in Settings — returns to it rather than to nothing.
 - **One frame for every panel and dialog.** Ports, hosts, settings, the project
   sheet and the two editors were each built by hand and had drifted: the same
   dialog was tighter at the top than at the bottom, and no two of them agreed.

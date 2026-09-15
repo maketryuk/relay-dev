@@ -5,7 +5,6 @@ import SwiftUI
 
 struct ProjectSettingsView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.dismiss) private var dismiss
 
     let project: Project
 
@@ -19,7 +18,7 @@ struct ProjectSettingsView: View {
     @State private var isDropTargeted = false
 
     var body: some View {
-        ModalSurface(relayLocalized("Project Settings"), onDismiss: { dismiss() }) {
+        ModalSurface(relayLocalized("Project Settings"), onDismiss: { model.dismissModal() }) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.Spacing.large) {
                 field("Icon") { iconField }
@@ -78,10 +77,10 @@ struct ProjectSettingsView: View {
             HStack(spacing: Theme.Spacing.small) {
                 RelayButton(relayLocalized("Remove Project"), kind: .destructive) {
                     model.removeProject(project.id)
-                    dismiss()
+                    model.dismissModal()
                 }
                 Spacer()
-                RelayButton(relayLocalized("Cancel"), kind: .ghost) { dismiss() }
+                RelayButton(relayLocalized("Cancel"), kind: .ghost) { model.dismissModal() }
                 RelayButton(relayLocalized("Save"), kind: .primary) {
                     var updated = project
                     updated.name = name.trimmingCharacters(in: .whitespaces).isEmpty
@@ -99,12 +98,10 @@ struct ProjectSettingsView: View {
                         settings.toggleMute(project.id)
                     }
                     model.updateNotificationSettings(settings)
-                    dismiss()
+                    model.dismissModal()
                 }
             }
         }
-        .frame(width: 520, height: 600)
-        .modalPlate()
         .onAppear {
             name = project.name
             defaultAgent = project.defaultAgent
