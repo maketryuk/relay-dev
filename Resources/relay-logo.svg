@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="1024"
+  height="1024"
+  viewBox="0 0 1024 1024"
+  fill="none"
+  role="img"
+  aria-labelledby="title description"
+>
+  <title id="title">Relay logo</title>
+  <desc id="description">
+    A white circular dot above a thick open ring with rounded ends on a black square background.
+  </desc>
+
+  <rect width="1024" height="1024" fill="#000000" />
+
+  <path
+    d="M338 384
+       C260 447 216 541 216 640
+       C216 803 349 936 512 936
+       C675 936 808 803 808 640
+       C808 541 764 447 686 384"
+    stroke="#FFFFFF"
+    stroke-width="112"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <circle cx="512" cy="224" r="64" fill="#FFFFFF" />
+</svg>

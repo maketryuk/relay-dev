@@ -350,6 +350,20 @@ struct NotificationSettingsPane: View {
 struct AboutPane: View {
     var body: some View {
         SettingsScroll(title: relayLocalized("About")) {
+            HStack(spacing: Theme.Spacing.medium) {
+                RelayMark(size: 48)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: "Relay")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Theme.Palette.textPrimary)
+                    Text(verbatim: AppInfo.version)
+                        .font(Theme.Typography.rowSecondary)
+                        .foregroundStyle(Theme.Palette.textTertiary)
+                }
+                Spacer()
+            }
+            .padding(.bottom, Theme.Spacing.small)
+
             SettingsGroup(relayLocalized("Relay")) {
                 SettingsRow(title: relayLocalized("Version"), detail: AppInfo.version) { EmptyView() }
                 SettingsRow(title: relayLocalized("Protocol"), detail: "v\(RelayProtocolVersion.current)") { EmptyView() }

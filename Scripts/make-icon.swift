@@ -1,82 +1,134 @@
 #!/usr/bin/env swift
-// Generates Resources/AppIcon.icns. Run only when the mark changes.
+// Generates Resources/AppIcon.icns from the Relay mark.
+// Run only when the mark changes.
 import AppKit
-import Foundation
+import SwiftUI
 
-let sizes = [16, 32, 64, 128, 256, 512, 1024]
-let outputDirectory = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "Resources")
-let iconset = outputDirectory.appendingPathComponent("AppIcon.iconset")
-try? FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
+/// The logo, traced from `Resources/relay-logo.svg` so the icon and the source
+/// file cannot drift.
+///
+/// An open ring with a dot resting in its gap: the ring is the app, which you
+/// can close, and the dot is the process, which stays.
+struct RelayMarkShape: Shape {
+    /// The SVG's own grid, which the coordinates below are expressed in.
+    private let designSize: CGFloat = 1024
 
-func draw(size: Int) -> Data? {
-    let side = CGFloat(size)
-    let image = NSImage(size: NSSize(width: side, height: side))
-    image.lockFocus()
-    guard let context = NSGraphicsContext.current?.cgContext else { return nil }
+    func path(in rect: CGRect) -> Path {
+        let side = min(rect.width, rect.height)
+        let scale = side / designSize
+        let originX = rect.midX - side / 2
+        let originY = rect.midY - side / 2
+        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: originX + x * scale, y: originY + y * scale)
+        }
 
-    let inset = side * 0.06
-    let rect = CGRect(x: inset, y: inset, width: side - inset * 2, height: side - inset * 2)
-    let squircle = NSBezierPath(roundedRect: rect, xRadius: side * 0.225, yRadius: side * 0.225)
-
-    context.saveGState()
-    squircle.addClip()
-    let gradient = NSGradient(colors: [
-        NSColor(srgbRed: 0.09, green: 0.11, blue: 0.13, alpha: 1),
-        NSColor(srgbRed: 0.03, green: 0.035, blue: 0.04, alpha: 1),
-    ])
-    gradient?.draw(in: rect, angle: -90)
-
-    // Three stacked "relay" bars: the running, waiting and finished states.
-    let barHeight = side * 0.075
-    let barWidth = side * 0.46
-    let originX = rect.midX - barWidth / 2
-    let colors = [
-        NSColor(srgbRed: 0.345, green: 0.651, blue: 1.0, alpha: 1),
-        NSColor(srgbRed: 0.890, green: 0.702, blue: 0.255, alpha: 1),
-        NSColor(srgbRed: 0.247, green: 0.725, blue: 0.314, alpha: 1),
-    ]
-    for (index, color) in colors.enumerated() {
-        let width = barWidth * (index == 1 ? 0.72 : index == 2 ? 0.5 : 1.0)
-        let y = rect.midY + side * 0.13 - CGFloat(index) * (barHeight * 2.05)
-        let bar = NSBezierPath(
-            roundedRect: CGRect(x: originX, y: y, width: width, height: barHeight),
-            xRadius: barHeight / 2,
-            yRadius: barHeight / 2
-        )
-        color.setFill()
-        bar.fill()
+        var path = Path()
+        path.move(to: point(338, 384))
+        path.addCurve(to: point(216, 640), control1: point(260, 447), control2: point(216, 541))
+        path.addCurve(to: point(512, 936), control1: point(216, 803), control2: point(349, 936))
+        path.addCurve(to: point(808, 640), control1: point(675, 936), control2: point(808, 803))
+        path.addCurve(to: point(686, 384), control1: point(808, 541), control2: point(764, 447))
+        return path
     }
 
-    // Prompt caret, so it reads as a terminal tool at small sizes.
-    let caret = NSBezierPath()
-    caret.lineWidth = side * 0.05
-    caret.lineCapStyle = .round
-    caret.lineJoinStyle = .round
-    caret.move(to: CGPoint(x: rect.midX - side * 0.16, y: rect.midY - side * 0.17))
-    caret.line(to: CGPoint(x: rect.midX - side * 0.05, y: rect.midY - side * 0.255))
-    caret.line(to: CGPoint(x: rect.midX - side * 0.16, y: rect.midY - side * 0.34))
-    NSColor(srgbRed: 0.91, green: 0.925, blue: 0.933, alpha: 1).setStroke()
-    caret.stroke()
+    /// Stroke width in the same grid, so callers scale it the same way.
+    static func strokeWidth(forSide side: CGFloat) -> CGFloat { side * 112 / 1024 }
 
-    context.restoreGState()
+    static func dotRect(forSide side: CGFloat, in rect: CGRect) -> CGRect {
+        let scale = side / 1024
+        let radius = 64 * scale
+        let centre = CGPoint(
+            x: rect.midX - side / 2 + 512 * scale,
+            y: rect.midY - side / 2 + 224 * scale
+        )
+        return CGRect(x: centre.x - radius, y: centre.y - radius, width: radius * 2, height: radius * 2)
+    }
+}
 
-    squircle.lineWidth = side * 0.006
-    NSColor(white: 1, alpha: 0.09).setStroke()
-    squircle.stroke()
+struct IconTile: View {
+    let side: CGFloat
 
-    image.unlockFocus()
+    var body: some View {
+        // Apple's grid: the tile occupies 824 of a 1024 canvas, leaving the
+        // margin the system expects for shadows and alignment.
+        let tileSide = side * 824 / 1024
+        // The source file is full-bleed on its own 1024 grid and already
+        // carries the margins the designer intended; adding more shrinks the
+        // mark inside its tile.
+        let artSide = tileSide
 
-    guard let tiff = image.tiffRepresentation,
-          let bitmap = NSBitmapImageRep(data: tiff) else { return nil }
-    bitmap.size = NSSize(width: side, height: side)
+        ZStack {
+            Color.clear
+            RoundedRectangle(cornerRadius: tileSide * 0.2237, style: .continuous)
+                .fill(.black)
+                .overlay(
+                    RoundedRectangle(cornerRadius: tileSide * 0.2237, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.10), lineWidth: max(0.5, side * 0.004))
+                )
+                .frame(width: tileSide, height: tileSide)
+                .overlay {
+                    ZStack {
+                        RelayMarkShape()
+                            .stroke(
+                                .white,
+                                style: StrokeStyle(
+                                    lineWidth: RelayMarkShape.strokeWidth(forSide: artSide),
+                                    lineCap: .round,
+                                    lineJoin: .round
+                                )
+                            )
+                        GeometryReader { proxy in
+                            Circle()
+                                .fill(.white)
+                                .frame(
+                                    width: RelayMarkShape.dotRect(
+                                        forSide: artSide,
+                                        in: CGRect(origin: .zero, size: proxy.size)
+                                    ).width
+                                )
+                                .position(
+                                    x: RelayMarkShape.dotRect(
+                                        forSide: artSide,
+                                        in: CGRect(origin: .zero, size: proxy.size)
+                                    ).midX,
+                                    y: RelayMarkShape.dotRect(
+                                        forSide: artSide,
+                                        in: CGRect(origin: .zero, size: proxy.size)
+                                    ).midY
+                                )
+                        }
+                    }
+                    .frame(width: artSide, height: artSide)
+                }
+        }
+        .frame(width: side, height: side)
+    }
+}
+
+let outputDirectory = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "Resources")
+let iconset = outputDirectory.appendingPathComponent("AppIcon.iconset")
+try? FileManager.default.removeItem(at: iconset)
+try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
+
+@MainActor
+func render(size: Int) -> Data? {
+    let renderer = ImageRenderer(content: IconTile(side: CGFloat(size)))
+    renderer.scale = 1
+    guard let image = renderer.nsImage,
+          let tiff = image.tiffRepresentation,
+          let bitmap = NSBitmapImageRep(data: tiff)
+    else { return nil }
+    bitmap.size = NSSize(width: size, height: size)
     return bitmap.representation(using: .png, properties: [:])
 }
 
-for size in sizes {
-    guard let data = draw(size: size) else { continue }
-    try data.write(to: iconset.appendingPathComponent("icon_\(size)x\(size).png"))
-    if size <= 512, let retina = draw(size: size * 2) {
-        try retina.write(to: iconset.appendingPathComponent("icon_\(size)x\(size)@2x.png"))
+MainActor.assumeIsolated {
+    for size in [16, 32, 64, 128, 256, 512, 1024] {
+        guard let data = render(size: size) else { continue }
+        try? data.write(to: iconset.appendingPathComponent("icon_\(size)x\(size).png"))
+        if size <= 512, let retina = render(size: size * 2) {
+            try? retina.write(to: iconset.appendingPathComponent("icon_\(size)x\(size)@2x.png"))
+        }
     }
 }
 print("iconset written to \(iconset.path)")

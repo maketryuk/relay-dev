@@ -57,6 +57,10 @@ workspace is usually a git worktree.
 
 ## Smaller things worth doing
 
+- **An Icon Composer `.icon` bundle.** macOS 26 applies its own glass treatment
+  to a legacy `.icns`. It reads well at Dock size, but shipping the new format
+  would put the layering under our control rather than the system's.
+
 - **libghostty terminal engine.** GPU-rasterised text instead of CoreText.
   Contained to `TerminalSurface.swift` by design. Worth doing when heavy
   full-screen redraw starts to matter, not before.

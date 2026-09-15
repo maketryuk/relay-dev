@@ -78,3 +78,43 @@ struct VendorMarkTests {
         #expect(subpaths > 1)
     }
 }
+
+@Suite("Relay mark")
+struct RelayMarkTests {
+    private let frame = CGRect(x: 0, y: 0, width: 120, height: 120)
+
+    @Test("The ring is drawn and stays inside its frame")
+    func ringFitsItsFrame() {
+        let path = RelayMarkShape().path(in: frame)
+        #expect(!path.isEmpty)
+        let bounds = path.boundingRect
+        #expect(bounds.minX >= -0.5)
+        #expect(bounds.maxX <= frame.width + 0.5)
+        #expect(bounds.maxY <= frame.height + 0.5)
+    }
+
+    @Test("The ring is open at the top, where the dot sits")
+    func ringIsOpenAtTheTop() {
+        // The gap is the idea: the app can be closed, the process stays.
+        let bounds = RelayMarkShape().path(in: frame).boundingRect
+        let dotCentre = RelayMarkShape.dotCentre(forSide: frame.width)
+        #expect(dotCentre.y < bounds.minY)
+    }
+
+    @Test("A non-square frame still yields a square mark")
+    func staysSquare() {
+        let wide = CGRect(x: 0, y: 0, width: 300, height: 100)
+        let bounds = RelayMarkShape().path(in: wide).boundingRect
+        #expect(bounds.height <= wide.height + 0.5)
+        #expect(abs(bounds.midX - wide.midX) < 1)
+    }
+
+    @Test("Stroke and dot scale with the mark")
+    func proportionsScale() {
+        #expect(RelayMarkShape.strokeWidth(forSide: 1024) == 112)
+        #expect(RelayMarkShape.dotDiameter(forSide: 1024) == 128)
+        #expect(RelayMarkShape.strokeWidth(forSide: 512) == 56)
+        // Linear, so one definition serves a 16 pt glyph and a 1024 pt icon.
+        #expect(RelayMarkShape.dotCentre(forSide: 1024) == CGPoint(x: 512, y: 224))
+    }
+}
