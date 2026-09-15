@@ -124,6 +124,17 @@ struct GeneralSettingsPane: View {
                     RelayButton(relayLocalized("Add Project…")) { model.presentModal(.addProject) }
                 }
                 SettingsRow(
+                    title: relayLocalized("Status bar"),
+                    detail: relayLocalized("Shows what each agent has left of its rate limits")
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { model.showsStatusBar },
+                        set: { model.setShowsStatusBar($0) }
+                    ))
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                }
+                SettingsRow(
                     title: relayLocalized("Sidebar width"),
                     detail: "\(Int(model.sidebarWidth)) pt"
                 ) {

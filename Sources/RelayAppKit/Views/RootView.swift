@@ -31,6 +31,10 @@ struct RootView: View {
                     welcomePane
                 }
             }
+
+            if model.showsStatusBar {
+                StatusBar()
+            }
         }
         // Relay draws its own title bar, so the safe area the window reserves
         // for the system one is dead space above it.

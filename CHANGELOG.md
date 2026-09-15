@@ -8,6 +8,12 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
+- **A status bar along the bottom** showing what each agent has left of its rate
+  limits: a meter per window, the percentage, and how long until the nearest one
+  rolls over. The figures come from the CLIs' own caches on disk, so they cannot
+  disagree with what Claude Code or Codex would tell you, and Relay asks nobody
+  for them. It appears only when there is something to report, and can be turned
+  off in Settings.
 - **Relay updates itself.** It asks GitHub for the newest release on launch and
   every six hours; when one is newer than the running build a pill appears in
   the title bar, and clicking it downloads, checks and installs the new version,
