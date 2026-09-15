@@ -8,6 +8,13 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
+- **Relay updates itself.** It asks GitHub for the newest release on launch and
+  every six hours; when one is newer than the running build a pill appears in
+  the title bar, and clicking it downloads, checks and installs the new version,
+  then restarts into it. Sessions are untouched — they belong to the daemon.
+  The check lives in Settings → About and can be turned off, which stops the
+  request rather than hiding its answer; it carries a user agent and nothing
+  else.
 - **Projects wear their own icon.** A repository nearly always ships a favicon
   or an app icon, and it says which project this is far better than two letters
   over a colour. One can also be chosen or dropped in the project's settings.

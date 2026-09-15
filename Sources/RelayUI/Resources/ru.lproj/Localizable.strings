@@ -1,8 +1,10 @@
 /* Relay — Russian */
 
+"%@ available" = "Доступна %@";
 "%@ completed its work." = "%@ завершил работу.";
 "%@ failed" = "Сбой: %@";
 "%@ finished" = "Завершено: %@";
+"%@ is available" = "Доступна версия %@";
 "%@ is waiting for input." = "%@ ждёт ввода.";
 "%@ needs you" = "%@ ждёт вас";
 "%d changed" = "изменено: %d";
@@ -27,10 +29,14 @@
 "Application" = "Приложение";
 "Applies immediately, no restart needed" = "Применяется сразу, перезапуск не нужен";
 "Arguments" = "Аргументы";
+"Asks GitHub for the newest release; nothing about you is sent" = "Спрашивает у GitHub о новом релизе; ничего о вас не отправляется";
 "Back" = "Назад";
 "Built-in" = "Встроенный";
 "CUSTOM COMMAND" = "СВОЯ КОМАНДА";
 "Cancel" = "Отмена";
+"Check automatically" = "Проверять автоматически";
+"Check for updates" = "Проверка обновлений";
+"Check now" = "Проверить";
 "Choose Folder…" = "Выбрать папку…";
 "Choose…" = "Выбрать…";
 "Claude" = "Claude";
@@ -71,6 +77,8 @@
 "Done" = "Готово";
 "Double-click the session in the sidebar to rename it" = "Двойной клик по сессии в сайдбаре переименовывает её";
 "Down" = "Остановить";
+"Download and restart into the new version" = "Загрузить и перезапуститься в новой версии";
+"Downloading…" = "Загружаем…";
 "Drag a folder here" = "Перетащите папку сюда";
 "Drop an image here, or choose one" = "Перетащите изображение или выберите файл";
 "Drop to add" = "Отпустите, чтобы добавить";
@@ -99,12 +107,15 @@
 "History" = "История";
 "Icon" = "Иконка";
 "Idle" = "Простаивает";
+"Install %@" = "Установить %@";
+"Installing…" = "Устанавливаем…";
 "Jump by number" = "Переход по номеру";
 "Language" = "Язык";
 "Leave empty to detect the port automatically." = "Оставьте пустым, чтобы порт определился автоматически.";
 "Listening on this Mac" = "Слушает на этом Mac";
 "Logs" = "Логи";
 "Looking for containers…" = "Ищем контейнеры…";
+"Looking…" = "Проверяем…";
 "Mark all read" = "Отметить всё прочитанным";
 "Mute this project" = "Отключить для этого проекта";
 "Muted projects" = "Отключённые проекты";
@@ -171,7 +182,9 @@
 "Reconnect" = "Переподключиться";
 "Refresh containers" = "Обновить контейнеры";
 "Relay" = "Relay";
+"Relay cannot replace itself at %@." = "Relay не может заменить себя по пути %@.";
 "Relay did not start this process" = "Relay не запускал этот процесс";
+"Relay has not looked yet" = "Relay ещё не проверял";
 "Relay reads the git branch, package manager and dev command it finds." = "Relay определит git-ветку, пакетный менеджер и dev-команду.";
 "Relay reads ~/.ssh/config, including Include directives. Nothing there yet." = "Relay читает ~/.ssh/config вместе с директивами Include. Пока там пусто.";
 "Reload config" = "Перечитать конфиг";
@@ -253,7 +266,12 @@
 "Terminal" = "Терминал";
 "Terminate" = "Завершить";
 "That is a file. Drop the folder that contains it." = "Это файл. Перетащите папку, в которой он лежит.";
+"The download did not contain Relay." = "В загрузке не оказалось Relay.";
+"The download failed: %@" = "Не удалось загрузить: %@";
+"The downloaded archive could not be opened." = "Не удалось открыть загруженный архив.";
+"The downloaded copy was rejected: %@" = "Загруженная копия отклонена: %@";
 "The only notification that plays a sound" = "Единственное уведомление со звуком";
+"This is the newest release" = "Это самый свежий релиз";
 "This project" = "Этот проект";
 "This session is no longer known to the daemon." = "Демон больше не знает об этой сессии.";
 "Toggle Project Panel" = "Показать панель проекта";
@@ -263,6 +281,8 @@
 "Unpin from Project" = "Открепить от проекта";
 "Unpin from project" = "Открепить от проекта";
 "Up" = "Запустить";
+"Update failed" = "Обновление не удалось";
+"Updates" = "Обновления";
 "Version" = "Версия";
 "Waiting for you" = "Ждёт вас";
 "When to interrupt" = "Когда прерывать";
@@ -276,6 +296,8 @@
 "finished" = "завершено";
 "folder" = "folder";
 "in ~/.ssh/config" = "в ~/.ssh/config";
+"it was signed by someone else" = "она подписана кем-то другим";
+"its signature is not valid" = "её подпись недействительна";
 "listening" = "слушает";
 "logs" = "logs";
 "reported an error" = "сообщил об ошибке";

@@ -1,8 +1,10 @@
 /* Relay — English is the source language; the key is the English text. */
 
+"%@ available" = "%@ available";
 "%@ completed its work." = "%@ completed its work.";
 "%@ failed" = "%@ failed";
 "%@ finished" = "%@ finished";
+"%@ is available" = "%@ is available";
 "%@ is waiting for input." = "%@ is waiting for input.";
 "%@ needs you" = "%@ needs you";
 "%d changed" = "%d changed";
@@ -27,10 +29,14 @@
 "Application" = "Application";
 "Applies immediately, no restart needed" = "Applies immediately, no restart needed";
 "Arguments" = "Arguments";
+"Asks GitHub for the newest release; nothing about you is sent" = "Asks GitHub for the newest release; nothing about you is sent";
 "Back" = "Back";
 "Built-in" = "Built-in";
 "CUSTOM COMMAND" = "CUSTOM COMMAND";
 "Cancel" = "Cancel";
+"Check automatically" = "Check automatically";
+"Check for updates" = "Check for updates";
+"Check now" = "Check now";
 "Choose Folder…" = "Choose Folder…";
 "Choose…" = "Choose…";
 "Claude" = "Claude";
@@ -71,6 +77,8 @@
 "Done" = "Done";
 "Double-click the session in the sidebar to rename it" = "Double-click the session in the sidebar to rename it";
 "Down" = "Down";
+"Download and restart into the new version" = "Download and restart into the new version";
+"Downloading…" = "Downloading…";
 "Drag a folder here" = "Drag a folder here";
 "Drop an image here, or choose one" = "Drop an image here, or choose one";
 "Drop to add" = "Drop to add";
@@ -99,12 +107,15 @@
 "History" = "History";
 "Icon" = "Icon";
 "Idle" = "Idle";
+"Install %@" = "Install %@";
+"Installing…" = "Installing…";
 "Jump by number" = "Jump by number";
 "Language" = "Language";
 "Leave empty to detect the port automatically." = "Leave empty to detect the port automatically.";
 "Listening on this Mac" = "Listening on this Mac";
 "Logs" = "Logs";
 "Looking for containers…" = "Looking for containers…";
+"Looking…" = "Looking…";
 "Mark all read" = "Mark all read";
 "Mute this project" = "Mute this project";
 "Muted projects" = "Muted projects";
@@ -171,7 +182,9 @@
 "Reconnect" = "Reconnect";
 "Refresh containers" = "Refresh containers";
 "Relay" = "Relay";
+"Relay cannot replace itself at %@." = "Relay cannot replace itself at %@.";
 "Relay did not start this process" = "Relay did not start this process";
+"Relay has not looked yet" = "Relay has not looked yet";
 "Relay reads the git branch, package manager and dev command it finds." = "Relay reads the git branch, package manager and dev command it finds.";
 "Relay reads ~/.ssh/config, including Include directives. Nothing there yet." = "Relay reads ~/.ssh/config, including Include directives. Nothing there yet.";
 "Reload config" = "Reload config";
@@ -253,7 +266,12 @@
 "Terminal" = "Terminal";
 "Terminate" = "Terminate";
 "That is a file. Drop the folder that contains it." = "That is a file. Drop the folder that contains it.";
+"The download did not contain Relay." = "The download did not contain Relay.";
+"The download failed: %@" = "The download failed: %@";
+"The downloaded archive could not be opened." = "The downloaded archive could not be opened.";
+"The downloaded copy was rejected: %@" = "The downloaded copy was rejected: %@";
 "The only notification that plays a sound" = "The only notification that plays a sound";
+"This is the newest release" = "This is the newest release";
 "This project" = "This project";
 "This session is no longer known to the daemon." = "This session is no longer known to the daemon.";
 "Toggle Project Panel" = "Toggle Project Panel";
@@ -263,6 +281,8 @@
 "Unpin from Project" = "Unpin from Project";
 "Unpin from project" = "Unpin from project";
 "Up" = "Up";
+"Update failed" = "Update failed";
+"Updates" = "Updates";
 "Version" = "Version";
 "Waiting for you" = "Waiting for you";
 "When to interrupt" = "When to interrupt";
@@ -276,6 +296,8 @@
 "finished" = "finished";
 "folder" = "folder";
 "in ~/.ssh/config" = "in ~/.ssh/config";
+"it was signed by someone else" = "it was signed by someone else";
+"its signature is not valid" = "its signature is not valid";
 "listening" = "listening";
 "logs" = "logs";
 "reported an error" = "reported an error";

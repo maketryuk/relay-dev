@@ -53,6 +53,7 @@ final class AppModel {
     var isRightSidebarVisible = true
     var isLeftSidebarVisible = true
     private(set) var language: AppLanguage = .system
+    private(set) var checksForUpdates = true
     private(set) var paneLayouts: [ProjectID: PaneNode] = [:]
     var rightSidebarTab: RightSidebarTab = .services
 
@@ -92,6 +93,9 @@ final class AppModel {
     /// otherwise put them back.
     private var closingSessionIDs: Set<SessionID> = []
     private let notifier = AttentionNotifier()
+    /// The update check and, when the user asks for it, the install.
+    let updates = UpdateController()
+    private var updateTask: Task<Void, Never>?
 
     /// Cap on cached terminal renderers. Beyond this the least recently viewed
     /// surface is released; its session keeps running in the daemon and is
@@ -113,6 +117,7 @@ final class AppModel {
         isRightSidebarVisible = state.isRightSidebarVisible
         isLeftSidebarVisible = state.isLeftSidebarVisible
         language = state.language
+        checksForUpdates = state.checksForUpdates
         paneLayouts = Dictionary(uniqueKeysWithValues: state.paneLayouts.map {
             (ProjectID(rawValue: $0.key), $0.value)
         })
@@ -130,6 +135,7 @@ final class AppModel {
         refreshAllProjectFacts()
         loadSSHHosts()
         scheduleGitRefresh()
+        scheduleUpdateChecks()
     }
 
     private func connect() async {
@@ -792,6 +798,33 @@ final class AppModel {
                 }
             }
             self.projectIcons = icons
+        }
+    }
+
+    /// Asks GitHub whether there is a newer release, on launch and rarely after.
+    ///
+    /// Off entirely when the user has said so: the setting stops the request
+    /// being made, rather than hiding what it found.
+    private func scheduleUpdateChecks() {
+        updateTask?.cancel()
+        guard checksForUpdates else { return }
+        updateTask = Task { [weak self] in
+            while !Task.isCancelled {
+                self?.updates.checkPeriodically()
+                try? await Task.sleep(for: .seconds(UpdateDecision.checkInterval))
+            }
+        }
+    }
+
+    func setChecksForUpdates(_ enabled: Bool) {
+        checksForUpdates = enabled
+        persist()
+        if enabled {
+            scheduleUpdateChecks()
+        } else {
+            updateTask?.cancel()
+            updateTask = nil
+            updates.dismiss()
         }
     }
 
@@ -1493,6 +1526,7 @@ final class AppModel {
             isLeftSidebarVisible: isLeftSidebarVisible,
             rightSidebarTab: rightSidebarTab.rawValue,
             language: language,
+            checksForUpdates: checksForUpdates,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
         store.scheduleSave(state)
@@ -1514,6 +1548,7 @@ final class AppModel {
             isLeftSidebarVisible: isLeftSidebarVisible,
             rightSidebarTab: rightSidebarTab.rawValue,
             language: language,
+            checksForUpdates: checksForUpdates,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
         store.saveNow(state)
