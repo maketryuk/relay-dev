@@ -10,7 +10,6 @@ import SwiftUI
 struct ProjectRailView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
-    @Environment(\.openSettings) private var openSettings
     @State private var isDropTargeted = false
 
     var body: some View {
@@ -34,8 +33,6 @@ struct ProjectRailView: View {
                 .padding(.vertical, 2)
             portsButton
             sshButton
-            paletteButton
-            settingsButton
         }
         .padding(.vertical, Theme.Spacing.small)
         .frame(width: Theme.Metrics.railWidth)
@@ -130,19 +127,5 @@ struct ProjectRailView: View {
             openWindow(id: SSHWindow.id)
         }
         .relayTooltip("SSH hosts", shortcut: model.binding(for: .openSSHHosts), edge: .trailing)
-    }
-
-    private var paletteButton: some View {
-        IconButton(systemImage: "command", help: "", size: 28) {
-            model.isCommandPaletteOpen = true
-        }
-        .relayTooltip("Command Palette", shortcut: model.binding(for: .commandPalette), edge: .trailing)
-    }
-
-    private var settingsButton: some View {
-        IconButton(systemImage: "gearshape", help: "", size: 28) {
-            openSettings()
-        }
-        .relayTooltip("Settings", shortcut: model.binding(for: .openSettings), edge: .trailing)
     }
 }

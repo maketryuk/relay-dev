@@ -12,8 +12,8 @@ import SwiftUI
 /// construction.
 struct TitleBar: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
+    @State private var isSearchHovering = false
 
     /// Room for the traffic lights, which float over whatever is beneath them.
     private let trafficLightInset: CGFloat = 76
@@ -80,11 +80,16 @@ struct TitleBar: View {
             .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
-                    .strokeBorder(Theme.Palette.border, lineWidth: 1)
+                    .strokeBorder(
+                        isSearchHovering ? Theme.Palette.borderStrong : Theme.Palette.border,
+                        lineWidth: 1
+                    )
             )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { isSearchHovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: isSearchHovering)
     }
 
     private var placeholder: String {
@@ -100,16 +105,6 @@ struct TitleBar: View {
                 DiffBadge(insertions: git.insertions, deletions: git.deletions)
                     .padding(.trailing, Theme.Spacing.xsmall)
             }
-
-            IconButton(systemImage: "point.3.filled.connected.trianglepath.dotted", help: "", size: 24) {
-                openWindow(id: PortsWindow.id)
-            }
-            .relayTooltip("Ports", shortcut: model.binding(for: .togglePorts))
-
-            IconButton(systemImage: "network", help: "", size: 24) {
-                openWindow(id: SSHWindow.id)
-            }
-            .relayTooltip("SSH hosts", shortcut: model.binding(for: .openSSHHosts))
 
             IconButton(systemImage: "gearshape", help: "", size: 24) {
                 openSettings()

@@ -62,6 +62,7 @@ final class AppModel {
     private var eventTask: Task<Void, Never>?
     private var gitRefreshTask: Task<Void, Never>?
     private var portRefreshTask: Task<Void, Never>?
+    private var reconnectTask: Task<Void, Never>?
     private let notifier = AttentionNotifier()
 
     /// Cap on cached terminal renderers. Beyond this the least recently viewed
@@ -114,13 +115,31 @@ final class AppModel {
                 title: "Could not reach the session daemon",
                 message: error.localizedDescription,
                 duration: nil,
-                key: "daemon"
+                key: "daemon",
+                action: ToastAction(title: "Retry") { [weak self] in
+                    self?.retryConnection()
+                }
             ))
         }
     }
 
     func retryConnection() {
+        reconnectTask?.cancel()
         Task { await connect() }
+    }
+
+    /// Reconnects on its own after a brief pause, which covers the common case
+    /// of the daemon being retired and relaunched.
+    private func scheduleReconnect() {
+        reconnectTask?.cancel()
+        reconnectTask = Task { [weak self] in
+            for delay in [1.5, 3.0, 6.0] {
+                try? await Task.sleep(for: .seconds(delay))
+                guard let self, !Task.isCancelled, !self.connectionState.isConnected else { return }
+                await self.connect()
+                if self.connectionState.isConnected { return }
+            }
+        }
     }
 
     private func handleDisconnect() {
@@ -130,7 +149,10 @@ final class AppModel {
             title: "Session daemon disconnected",
             message: "Running sessions are unaffected. Reconnecting restores them.",
             duration: nil,
-            key: "daemon"
+            key: "daemon",
+            action: ToastAction(title: "Reconnect") { [weak self] in
+                self?.retryConnection()
+            }
         ))
         eventTask?.cancel()
         eventTask = nil
@@ -215,8 +237,14 @@ final class AppModel {
                 title: "Session daemon is shutting down",
                 message: "Sessions it was supervising have ended.",
                 duration: nil,
-                key: "daemon"
+                key: "daemon",
+                action: ToastAction(title: "Reconnect") { [weak self] in
+                    self?.retryConnection()
+                }
             ))
+            // A daemon that stops on purpose is usually being replaced, so the
+            // app tries to pick the new one up rather than waiting to be told.
+            scheduleReconnect()
         }
     }
 
@@ -632,8 +660,10 @@ final class AppModel {
     // MARK: - History
 
     private func recordHistory(for snapshot: SessionSnapshot) {
-        // Services come and go on their own schedule and would drown the list.
-        guard !snapshot.role.isService else { return }
+        // Services come and go on their own schedule and would drown the list,
+        // and a plain terminal that was opened and closed is not a record of
+        // anything — the history is about work an agent did.
+        guard !snapshot.role.isService, snapshot.kind.isAgent else { return }
         sessionHistory = SessionHistory.appending(SessionHistoryEntry(from: snapshot), to: sessionHistory)
         persist()
     }
