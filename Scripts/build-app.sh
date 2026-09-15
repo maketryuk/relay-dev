@@ -100,5 +100,14 @@ fi
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 [ -x "$LSREGISTER" ] && "$LSREGISTER" -f "$APP" >/dev/null 2>&1 || true
 
+# The archive a release carries, and the one the in-app updater downloads.
+# `ditto` rather than `zip`, because `zip` drops the symlinks and extended
+# attributes a signed bundle is made of, and the copy fails verification on the
+# other side.
+ARCHIVE="$BUILD_DIR/Relay.app.zip"
+rm -f "$ARCHIVE"
+ditto -c -k --keepParent "$APP" "$ARCHIVE"
+
 echo "==> Done: $APP"
+echo "    Archive:  $ARCHIVE"
 echo "    Install it with: ./Scripts/install.sh"

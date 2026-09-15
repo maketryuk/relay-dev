@@ -105,6 +105,9 @@ struct WorkspaceState: Codable {
     var isLeftSidebarVisible: Bool
     var rightSidebarTab: String?
     var language: AppLanguage
+    /// Asking GitHub about releases is the only request Relay makes; it can be
+    /// refused outright.
+    var checksForUpdates: Bool
     /// Terminal arrangement per project, so a split survives a relaunch the
     /// way the sessions in it do.
     var paneLayouts: [String: PaneNode]
@@ -127,6 +130,7 @@ struct WorkspaceState: Codable {
         isLeftSidebarVisible: Bool = true,
         rightSidebarTab: String? = nil,
         language: AppLanguage = .system,
+        checksForUpdates: Bool = true,
         paneLayouts: [String: PaneNode] = [:]
     ) {
         self.version = version
@@ -146,6 +150,7 @@ struct WorkspaceState: Codable {
         self.isLeftSidebarVisible = isLeftSidebarVisible
         self.rightSidebarTab = rightSidebarTab
         self.language = language
+        self.checksForUpdates = checksForUpdates
         self.paneLayouts = paneLayouts
     }
 
@@ -170,6 +175,7 @@ struct WorkspaceState: Codable {
         isLeftSidebarVisible = try container.decodeIfPresent(Bool.self, forKey: .isLeftSidebarVisible) ?? true
         rightSidebarTab = try container.decodeIfPresent(String.self, forKey: .rightSidebarTab)
         language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .system
+        checksForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checksForUpdates) ?? true
         paneLayouts = try container.decodeIfPresent([String: PaneNode].self, forKey: .paneLayouts) ?? [:]
     }
 }

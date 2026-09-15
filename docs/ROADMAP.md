@@ -72,56 +72,36 @@ workspace is usually a git worktree.
 
 ---
 
-## Auto-update
+## Updates
 
-Planned, not built. The goal: Relay notices a new release, shows a button in the
-top-right, and the user updates in one click.
+Built. Relay asks GitHub for the newest release on launch and every six hours,
+shows a pill in the title bar when one is newer than the running build, and on a
+click downloads it, checks it, swaps the bundle and restarts into it. The check
+can be turned off in Settings → About, and turning it off stops the request
+rather than hiding its result. The request carries a user agent and nothing
+else.
 
-### Distribution without an Apple Developer account
+How the swap works: an application cannot replace its own bundle while it is
+running, so the last step is a short script that waits for Relay to quit, moves
+the old bundle aside, moves the new one in and starts it — restoring the old one
+if the move fails. Sessions are untouched, because they belong to the daemon.
 
-Shipping through GitHub Releases works without paying Apple, with one honest
-caveat.
+**What is checked.** Relay is not notarised, so the download cannot be verified
+against Apple. What it can do is insist that the new bundle's signature is valid
+and that its team identifier matches the copy already running: the difference
+between an update to this application and an application somebody else built.
 
-**What works.** Sparkle — the standard macOS update framework — signs updates
-with its own EdDSA (ed25519) key pair, generated locally by its `generate_keys`
-tool. The public key lives in `Info.plist`, the private key stays out of the
-repository. Nothing in that chain involves Apple. The appcast XML and the
-`.zip` of each build are ordinary release assets, and `generate_appcast`
-produces both. GitHub Actions can build, sign and publish on a tag.
+### The caveat that remains
 
-**What does not.** Gatekeeper is a separate problem from update signing. An app
-downloaded from the internet is quarantined, and an app that is not notarised by
-Apple shows *"Relay cannot be opened because the developer cannot be verified"*
-on first launch. The user has to right-click → Open once, or allow it in
-System Settings → Privacy & Security. Only notarisation removes that, and
-notarisation requires the $99/year Developer ID.
+Gatekeeper is a separate problem from update integrity. An app downloaded
+through a browser is quarantined, and one that is not notarised shows *"Relay
+cannot be opened because the developer cannot be verified"* on first launch —
+the user has to right-click → Open once. Only notarisation removes that, and it
+needs the $99/year Developer ID. Updates delivered in-app afterwards do not
+re-trigger it, because the machine already trusts that copy.
 
-So: free distribution is entirely workable, and the friction is limited to the
-very first launch after download. Updates delivered by Sparkle afterwards do not
-re-trigger it, because the app is already trusted on that machine.
-
-### Two stages
-
-**Stage A — update notice.** Small and independent of any signing decision.
-
-- On launch and every few hours, GET
-  `https://api.github.com/repos/<owner>/relay/releases/latest`.
-- Compare `tag_name` against `CFBundleShortVersionString`.
-- If newer, show a pill in the top-right: *"0.2.0 available"* with a button that
-  opens the release page.
-- Respect a "check for updates" setting, off-by-default network access, and no
-  telemetry of any kind — the request carries nothing but the user agent.
-
-This is a few hours of work and delivers most of the value.
-
-**Stage B — in-place updates.** Sparkle.
-
-- Add the Sparkle package, generate an EdDSA key pair, put the public key in
-  `Info.plist` and the private key in the repository's Actions secrets.
-- A release workflow that builds, zips, signs, regenerates `appcast.xml` and
-  uploads all three to the release.
-- `SUFeedURL` pointing at the appcast asset.
-- Replace the pill's "open the page" action with Sparkle's own flow.
+**Worth doing if this ever goes past its author:** a Developer ID certificate,
+notarisation in the release step, and a checksum published beside the archive.
 
 ### Repository
 

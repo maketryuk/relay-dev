@@ -353,6 +353,8 @@ struct NotificationSettingsPane: View {
 // MARK: - About
 
 struct AboutPane: View {
+    @Environment(AppModel.self) private var model
+
     var body: some View {
         SettingsScroll(title: relayLocalized("About")) {
             HStack(spacing: Theme.Spacing.medium) {
@@ -369,6 +371,35 @@ struct AboutPane: View {
             }
             .padding(.bottom, Theme.Spacing.small)
 
+            SettingsGroup(relayLocalized("Updates")) {
+                SettingsRow(
+                    title: relayLocalized("Check for updates"),
+                    detail: updateDetail
+                ) {
+                    HStack(spacing: Theme.Spacing.small) {
+                        if case let .available(release) = model.updates.state {
+                            RelayButton(
+                                String(format: relayLocalized("Install %@"), release.version.description),
+                                kind: .primary
+                            ) { model.updates.install() }
+                        } else {
+                            RelayButton(relayLocalized("Check now")) { model.updates.check() }
+                        }
+                    }
+                }
+                SettingsRow(
+                    title: relayLocalized("Check automatically"),
+                    detail: relayLocalized("Asks GitHub for the newest release; nothing about you is sent")
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { model.checksForUpdates },
+                        set: { model.setChecksForUpdates($0) }
+                    ))
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                }
+            }
+
             SettingsGroup(relayLocalized("Relay")) {
                 SettingsRow(title: relayLocalized("Version"), detail: AppInfo.version) { EmptyView() }
                 SettingsRow(title: relayLocalized("Protocol"), detail: "v\(RelayProtocolVersion.current)") { EmptyView() }
@@ -377,6 +408,20 @@ struct AboutPane: View {
                     detail: relayLocalized("Sessions live in a background daemon and survive quitting the app")
                 ) { EmptyView() }
             }
+        }
+    }
+}
+
+private extension AboutPane {
+    var updateDetail: String {
+        switch model.updates.state {
+        case .idle: relayLocalized("Relay has not looked yet")
+        case .checking: relayLocalized("Looking…")
+        case let .available(release): String(format: relayLocalized("%@ is available"), release.version.description)
+        case .downloading: relayLocalized("Downloading…")
+        case .installing: relayLocalized("Installing…")
+        case .upToDate: relayLocalized("This is the newest release")
+        case let .failed(message): message
         }
     }
 }

@@ -102,6 +102,9 @@ struct TitleBar: View {
 
     private var trailingControls: some View {
         HStack(spacing: 2) {
+            UpdateBanner()
+                .padding(.trailing, Theme.Spacing.xsmall)
+
             if let projectID = model.selectedProjectID,
                let git = model.gitStatuses[projectID],
                git.hasDiff {

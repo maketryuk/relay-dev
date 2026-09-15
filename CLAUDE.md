@@ -22,8 +22,16 @@ When a release is asked for:
    Changed / Fixed grouping. Describe what changed for the person using the app,
    not which files moved. A fix entry says what was broken.
 3. **Tag** `vX.Y.Z` and push it.
-4. **Publish a GitHub release** on that tag with the changelog section as its
-   body. A tag with no notes tells nobody anything.
+4. **Build the archive locally** with `./Scripts/build-app.sh`, which leaves
+   `build/Relay.app.zip` beside the bundle. It has to be built on a machine
+   holding the signing certificate: a CI runner produces an ad-hoc signature,
+   and replacing a properly signed copy with one breaks the app's identity with
+   macOS — every permission is asked for again.
+5. **Publish a GitHub release** on that tag with the changelog section as its
+   body, and attach `Relay.app.zip`. A tag with no notes tells nobody anything,
+   and a release with no archive is invisible to the in-app updater: it looks
+   for an asset whose name starts with `Relay` and ends in `.zip`, and a release
+   without one is treated as an announcement rather than an update.
 
 After 0.1.0: a minor version is a milestone worth telling someone about, a patch
 is everything else, and a major is reserved for breaking changes to stored data.
