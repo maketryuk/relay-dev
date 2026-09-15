@@ -59,8 +59,10 @@
 "Connect SSH: %@" = "Подключиться по SSH: %@";
 "Connected — sessions keep running when Relay is closed" = "Подключено — сессии работают и при закрытом Relay";
 "Context" = "Контекст";
+"Conversations" = "Разговоры";
 "Copy Container Name" = "Скопировать имя контейнера";
 "Copy URL" = "Скопировать URL";
+"Copy session ID" = "Скопировать ID сессии";
 "Could not attach to the session" = "Не удалось подключиться к сессии";
 "Could not reach the session daemon" = "Не удалось связаться с демоном сессий";
 "Could not start" = "Не удалось запустить";
@@ -124,6 +126,7 @@
 "Leave empty to detect the port automatically." = "Оставьте пустым, чтобы порт определился автоматически.";
 "Listening on this Mac" = "Слушает на этом Mac";
 "Logs" = "Логи";
+"Look again" = "Обновить";
 "Looking for containers…" = "Ищем контейнеры…";
 "Looking…" = "Проверяем…";
 "Mark all read" = "Отметить всё прочитанным";
@@ -173,6 +176,7 @@
 "OpenCode" = "OpenCode";
 "Other hosts" = "Другие хосты";
 "Output" = "Ответ";
+"Past conversations with Claude and Codex in this project appear here, wherever they were started." = "Здесь появляются прошлые разговоры с Claude и Codex в этом проекте — где бы они ни были начаты.";
 "Pin to Project" = "Закрепить за проектом";
 "Pin to current project" = "Закрепить за текущим проектом";
 "Pinned to %@" = "Закреплено в проекте %@";
@@ -221,6 +225,7 @@
 "Restart container" = "Перезапустить контейнер";
 "Restart session" = "Перезапустить сессию";
 "Restore default" = "Вернуть по умолчанию";
+"Resume" = "Продолжить";
 "Retry" = "Повторить";
 "Reveal" = "Показать";
 "Reveal Owner Session" = "Показать сессию-владельца";

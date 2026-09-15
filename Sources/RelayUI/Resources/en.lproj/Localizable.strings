@@ -59,8 +59,10 @@
 "Connect SSH: %@" = "Connect SSH: %@";
 "Connected — sessions keep running when Relay is closed" = "Connected — sessions keep running when Relay is closed";
 "Context" = "Context";
+"Conversations" = "Conversations";
 "Copy Container Name" = "Copy Container Name";
 "Copy URL" = "Copy URL";
+"Copy session ID" = "Copy session ID";
 "Could not attach to the session" = "Could not attach to the session";
 "Could not reach the session daemon" = "Could not reach the session daemon";
 "Could not start" = "Could not start";
@@ -124,6 +126,7 @@
 "Leave empty to detect the port automatically." = "Leave empty to detect the port automatically.";
 "Listening on this Mac" = "Listening on this Mac";
 "Logs" = "Logs";
+"Look again" = "Look again";
 "Looking for containers…" = "Looking for containers…";
 "Looking…" = "Looking…";
 "Mark all read" = "Mark all read";
@@ -173,6 +176,7 @@
 "OpenCode" = "OpenCode";
 "Other hosts" = "Other hosts";
 "Output" = "Output";
+"Past conversations with Claude and Codex in this project appear here, wherever they were started." = "Past conversations with Claude and Codex in this project appear here, wherever they were started.";
 "Pin to Project" = "Pin to Project";
 "Pin to current project" = "Pin to current project";
 "Pinned to %@" = "Pinned to %@";
@@ -221,6 +225,7 @@
 "Restart container" = "Restart container";
 "Restart session" = "Restart session";
 "Restore default" = "Restore default";
+"Resume" = "Resume";
 "Retry" = "Retry";
 "Reveal" = "Reveal";
 "Reveal Owner Session" = "Reveal Owner Session";

@@ -18,6 +18,18 @@ public protocol ActivityAdapter: Sendable {
     ///   - producedOutput: whether the process wrote anything since the user
     ///     last sent input. Distinguishes "finished a task" from "sitting idle".
     func verdict(tail: String, producedOutput: Bool) -> QuietVerdict
+
+    /// Whether the tail shows the agent working *now*.
+    ///
+    /// Agents say so themselves — every one of them offers a way to interrupt
+    /// while it is busy — and asking the screen is worth more than any amount
+    /// of inference from the timing and volume of bytes, which is how a slowly
+    /// redrawing spinner came to read as an idle session.
+    func isBusy(tail: String) -> Bool
+}
+
+public extension ActivityAdapter {
+    func isBusy(tail _: String) -> Bool { false }
 }
 
 public enum ActivityAdapters {
@@ -79,11 +91,28 @@ public struct AgentActivityAdapter: ActivityAdapter {
         "[y] yes", "(a)lways",
     ]
 
+    /// What an agent shows while it is working. Every one of them offers a way
+    /// out of a running turn, and says so on the same line as the spinner.
+    private static let busyPatterns: [String] = [
+        "esc to interrupt",
+        "ctrl+c to stop",
+        "press esc to stop",
+        "interrupting…",
+    ]
+
     /// Idle input boxes: the agent finished and is offering the next prompt.
     private static let inputBoxPatterns: [String] = [
         "│ >", "| >", "> ", "❯", "try \"", "/help for help",
         "press up to", "shift+tab", "esc to clear",
     ]
+
+    public func isBusy(tail: String) -> Bool {
+        let lowered = tail.lowercased()
+        // A choice on screen outranks a spinner behind it: the agent may still
+        // be rendering, but it is not going anywhere until it is answered.
+        guard !Self.choicePatterns.contains(where: { lowered.contains($0) }) else { return false }
+        return Self.busyPatterns.contains { lowered.contains($0) }
+    }
 
     public func verdict(tail: String, producedOutput: Bool) -> QuietVerdict {
         let lowered = tail.lowercased()

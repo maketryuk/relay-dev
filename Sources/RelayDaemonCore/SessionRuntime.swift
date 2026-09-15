@@ -210,8 +210,19 @@ public final class SessionRuntime: @unchecked Sendable {
         DaemonQueue.assertIsolated()
         guard isAlive else { return false }
 
-        // Still talking. Only a sustained run of output is work; anything
-        // shorter is the interface redrawing itself.
+        let tail = TerminalText.tail(of: TerminalText.plainText(from: recentBytes))
+
+        // What the agent says about itself beats anything inferred from the
+        // timing of bytes: every one of them offers a way to interrupt while it
+        // is busy, and a spinner that redraws slowly is still a working agent.
+        if adapter.isBusy(tail: tail) {
+            guard status != .working else { return false }
+            status = .working
+            return true
+        }
+
+        // Failing that, a sustained run of output is work and anything shorter
+        // is the interface redrawing itself.
         if activity.isProducingOutput(now: now) {
             guard activity.isWorking(now: now), status != .working else { return false }
             status = .working
@@ -223,7 +234,6 @@ public final class SessionRuntime: @unchecked Sendable {
         // A banner printed by .zshrc on startup is not work the user asked for,
         // so a session that has never been typed into can only be idle.
         let producedOutput = hasReceivedUserInput && bytesSinceUserInput >= Self.meaningfulOutputBytes
-        let tail = TerminalText.tail(of: TerminalText.plainText(from: recentBytes))
         let verdict = adapter.verdict(tail: tail, producedOutput: producedOutput)
 
         let resolved: RuntimeStatus = switch verdict {

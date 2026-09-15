@@ -25,13 +25,15 @@ struct SessionRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 titleLine
-                if let activity {
-                    Text(activity)
-                        .font(Theme.Typography.caption)
-                        .foregroundStyle(Theme.Palette.textTertiary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
+                // Always present, whatever the state. A line that appears only
+                // when there is something to say makes the row change height as
+                // an agent works, and leaves "what is this doing" answerable
+                // only by the colour of a dot.
+                Text(activity)
+                    .font(Theme.Typography.caption)
+                    .foregroundStyle(Theme.Palette.textTertiary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                 footerLine
             }
         }
@@ -110,7 +112,7 @@ struct SessionRow: View {
     }
 
     /// The state line: what the session is doing, or how it ended.
-    private var activity: String? {
+    private var activity: String {
         if let exitCode = session.exitCode {
             return exitCode == 0 ? relayLocalized("Exited") : relayLocalized("Exited with an error")
         }
@@ -120,7 +122,7 @@ struct SessionRow: View {
         case .starting: return relayLocalized("Starting")
         case .finished: return relayLocalized("Finished")
         case .error: return relayLocalized("Error")
-        case .idle, .offline: return nil
+        case .idle, .offline: return session.status.localizedName
         }
     }
 

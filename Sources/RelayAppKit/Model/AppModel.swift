@@ -103,6 +103,11 @@ final class AppModel {
     let usage = UsageMonitor()
     /// How full each visible agent session's context window is.
     let context = ContextMonitor()
+    /// Past conversations for the selected project, from the agents' own
+    /// transcripts rather than from what Relay happens to have run.
+    private(set) var conversations: [Conversation] = []
+    private(set) var isLoadingConversations = false
+    private var conversationsTask: Task<Void, Never>?
     var sessionShowingContextDetail: SessionID?
     private var updateTask: Task<Void, Never>?
 
@@ -705,6 +710,49 @@ final class AppModel {
         selectSession(next)
     }
 
+    /// Lists the agent conversations belonging to a project.
+    ///
+    /// Reading a transcript each is not free, so it happens when the History
+    /// panel asks rather than on a timer.
+    func loadConversations(for projectID: ProjectID) {
+        guard let project = project(projectID) else { return }
+        conversationsTask?.cancel()
+        isLoadingConversations = true
+
+        let path = project.rootPath
+        conversationsTask = Task { [weak self] in
+            let found = await Task.detached(priority: .utility) { () -> [Conversation] in
+                ConversationSorting.byRecency(
+                    ClaudeConversationReader.list(forDirectory: path)
+                        + CodexConversationReader.list(forDirectory: path)
+                )
+            }.value
+
+            guard let self, !Task.isCancelled else { return }
+            self.conversations = found
+            self.isLoadingConversations = false
+        }
+    }
+
+    /// Picks a conversation back up in a session of its own.
+    ///
+    /// The agent is asked to resume it, so the conversation continues where it
+    /// was rather than starting again with its history pasted in — which is the
+    /// difference between resuming and quoting.
+    func resume(_ conversation: Conversation, in projectID: ProjectID) {
+        guard let project = project(projectID) else { return }
+        launch(SessionSpec(
+            projectID: projectID,
+            kind: conversation.kind,
+            name: SessionNaming.nextName(
+                base: conversation.sessionName,
+                existing: sessions(in: projectID).map(\.name)
+            ),
+            workingDirectory: project.rootPath,
+            command: conversation.resumeCommand
+        ))
+    }
+
     /// Keeps the context readers pointed at what is actually on screen.
     private func watchContextForVisiblePanes() {
         guard let projectID = selectedProjectID, let layout = paneLayouts[projectID] else {
@@ -1227,6 +1275,12 @@ final class AppModel {
     func openService(_ service: ServiceDefinition, in projectID: ProjectID) {
         guard let url = url(of: service, in: projectID) else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    func copyToClipboard(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
     }
 
     func copyServiceURL(_ service: ServiceDefinition, in projectID: ProjectID) {
