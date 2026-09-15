@@ -5,16 +5,28 @@ asked for twice.
 
 ## Releases
 
-Every change that reaches `main` and is worth a user noticing gets a release, and
-a release is more than a tag:
+### When to cut one
+
+Not every session of work is a release. A version number is a signal, and four
+minor versions in an afternoon says nothing at all.
+
+- **Patch** (`0.5.x`) — the default. Fixes, small adjustments, anything that
+  does not change what the app can do.
+- **Minor** (`0.x.0`) — a milestone worth telling someone about: a new
+  capability, or a restructuring they would notice on opening the app.
+- **Major** — reserved for 1.0 and for breaking changes to stored data after
+  that.
+
+Work accumulates under `## Unreleased` in `CHANGELOG.md`. Cut a release when
+that section is worth reading, not when the day ends.
+
+### How to cut one
 
 1. **Bump the version** in `Sources/RelayProtocol/RelayVersion.swift`. It is the
    single source of truth — the build script reads it, so the bundle, the daemon
-   and the About pane cannot disagree. Semantic versioning: a breaking change to
-   stored data or the daemon protocol bumps the major, a feature bumps the minor,
-   a fix bumps the patch.
-2. **Write the changelog entry** in `CHANGELOG.md` before tagging, grouped into
-   Added / Changed / Fixed. Describe what changed for the person using the app,
+   and the About pane cannot disagree.
+2. **Rename the `Unreleased` heading** to the version, keeping the Added /
+   Changed / Fixed grouping. Describe what changed for the person using the app,
    not which files moved. A fix entry says what was broken.
 3. **Tag** `vX.Y.Z` and push it.
 4. **Publish a GitHub release** on that tag with the changelog section as its

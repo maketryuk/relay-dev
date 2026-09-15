@@ -69,6 +69,14 @@ public enum SessionKind: String, Codable, Sendable, CaseIterable {
         }
     }
 
+    /// True for the CLI agents, as opposed to a shell or an SSH connection.
+    public var isAgent: Bool {
+        switch self {
+        case .claude, .codex, .gemini, .opencode: true
+        case .shell, .ssh, .custom: false
+        }
+    }
+
     public var isQuickAction: Bool {
         switch self {
         case .claude, .codex, .shell: true

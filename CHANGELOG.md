@@ -1,8 +1,24 @@
 # Changelog
 
-Versions follow [semantic versioning](https://semver.org): a breaking change to
-stored data or the daemon protocol bumps the major, a feature bumps the minor, a
-fix bumps the patch.
+Versions follow [semantic versioning](https://semver.org). A minor version is a
+milestone worth telling someone about; everything else is a patch. Work in
+progress collects under Unreleased until there is something worth reading.
+
+## 0.5.1
+
+### Fixed
+
+- The window reserved a full title bar's height of empty space above Relay's
+  own title bar.
+- A toast reporting the daemon going away offered no way to reconnect, which
+  the banner it replaced did. Toasts can now carry an action, and the app also
+  retries on its own when a daemon stops on purpose — usually it is being
+  replaced by a newer one.
+- Ports and SSH appeared both in the title bar and in the rail; the palette and
+  settings appeared in the rail as well as the title bar. Each now has one home.
+- The search field had no hover state.
+- History recorded plain terminals alongside agent runs. It is a record of what
+  agents did, so shells no longer clutter it.
 
 ## 0.5.0
 

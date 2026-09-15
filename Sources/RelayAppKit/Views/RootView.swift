@@ -32,6 +32,9 @@ struct RootView: View {
                 }
             }
         }
+        // Relay draws its own title bar, so the safe area the window reserves
+        // for the system one is dead space above it.
+        .ignoresSafeArea(.container, edges: .top)
         .frame(minWidth: 1_040, minHeight: 560)
         .animation(.easeOut(duration: 0.16), value: model.isRightSidebarVisible)
         .animation(.easeOut(duration: 0.16), value: model.isLeftSidebarVisible)

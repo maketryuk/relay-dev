@@ -25,7 +25,22 @@ public enum ToastKind: Sendable, Hashable {
     }
 }
 
-public struct ToastContent: Identifiable, Equatable, Sendable {
+/// A button offered by a toast.
+///
+/// Without one, a toast that reports a condition the user can do something
+/// about — the daemon dropping, most obviously — leaves them with nothing to
+/// press, which is worse than the banner it replaced.
+public struct ToastAction: Sendable {
+    public let title: String
+    public let handler: @MainActor @Sendable () -> Void
+
+    public init(title: String, handler: @escaping @MainActor @Sendable () -> Void) {
+        self.title = title
+        self.handler = handler
+    }
+}
+
+public struct ToastContent: Identifiable, Sendable {
     public let id: UUID
     public let kind: ToastKind
     public let title: String
@@ -36,13 +51,15 @@ public struct ToastContent: Identifiable, Equatable, Sendable {
     /// Groups repeats: a second toast with the same key replaces the first
     /// rather than stacking a duplicate.
     public let key: String?
+    public let action: ToastAction?
 
     public init(
         kind: ToastKind,
         title: String,
         message: String? = nil,
         duration: Duration? = .seconds(5),
-        key: String? = nil
+        key: String? = nil,
+        action: ToastAction? = nil
     ) {
         id = UUID()
         self.kind = kind
@@ -50,6 +67,15 @@ public struct ToastContent: Identifiable, Equatable, Sendable {
         self.message = message
         self.duration = duration
         self.key = key
+        self.action = action
+    }
+}
+
+extension ToastContent: Equatable {
+    /// Identity is the whole comparison: a toast carries a closure, and two
+    /// toasts are the same toast only if they are literally the same one.
+    public static func == (lhs: ToastContent, rhs: ToastContent) -> Bool {
+        lhs.id == rhs.id
     }
 }
 
@@ -109,6 +135,21 @@ struct ToastView: View {
             }
 
             Spacer(minLength: Theme.Spacing.small)
+
+            if let action = toast.action {
+                Button(action.title) {
+                    action.handler()
+                    onDismiss()
+                }
+                .buttonStyle(.plain)
+                .font(Theme.Typography.caption)
+                .foregroundStyle(toast.kind.tint)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(toast.kind.tint.opacity(0.14))
+                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                .contentShape(Rectangle())
+            }
 
             IconButton(systemImage: "xmark", help: "Dismiss", size: 16, action: onDismiss)
                 .opacity(isHovering ? 1 : 0.4)
