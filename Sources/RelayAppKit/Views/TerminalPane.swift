@@ -101,14 +101,14 @@ struct TerminalPane: View {
                 .help("Double-click the session in the sidebar to rename it")
 
             StatusDot(status: session.status)
-            Text(session.status.displayName)
+            Text(session.status.localizedName)
                 .font(Theme.Typography.rowSecondary)
                 .foregroundStyle(Theme.Palette.textTertiary)
 
             Spacer(minLength: Theme.Spacing.medium)
 
             if let pid = session.pid, session.exitCode == nil {
-                Text("pid \(pid)")
+                Text(verbatim: "pid \(String(pid))")
                     .font(Theme.Typography.mono)
                     .foregroundStyle(Theme.Palette.textTertiary)
             }
@@ -119,12 +119,12 @@ struct TerminalPane: View {
                     model.createSession(kind: session.kind, in: projectID)
                 }
             }
-            .relayTooltip("Restart session")
+            .relayTooltip(relayLocalized("Restart session"))
 
             IconButton(systemImage: "xmark", help: "") {
                 model.closeSession(session.id)
             }
-            .relayTooltip("Close session", shortcut: model.binding(for: .closeSession))
+            .relayTooltip(relayLocalized("Close session"), shortcut: model.binding(for: .closeSession))
         }
         .padding(.horizontal, Theme.Spacing.medium)
         .padding(.vertical, Theme.Spacing.small)
@@ -141,8 +141,8 @@ struct TerminalPane: View {
         } else {
             EmptyStateView(
                 systemImage: "terminal",
-                title: "Session unavailable",
-                message: "This session is no longer known to the daemon."
+                title: relayLocalized("Session unavailable"),
+                message: relayLocalized("This session is no longer known to the daemon.")
             )
         }
     }

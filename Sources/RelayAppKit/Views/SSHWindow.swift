@@ -31,17 +31,17 @@ struct SSHWindowView: View {
     private var header: some View {
         VStack(spacing: Theme.Spacing.small) {
             HStack(spacing: Theme.Spacing.small) {
-                Text("SSH Hosts")
+                Text(relayLocalized("SSH Hosts"))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Theme.Palette.textPrimary)
                 Text("\(model.sshHosts.count) in ~/.ssh/config")
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
                 Spacer()
-                IconButton(systemImage: "arrow.clockwise", help: "", size: 18) { model.loadSSHHosts() }
-                    .relayTooltip("Reload config")
+                IconButton(systemImage: "arrow.clockwise", help: "", size: 24) { model.loadSSHHosts() }
+                    .relayTooltip(relayLocalized("Reload config"))
             }
-            RelayTextField("Filter by alias or host", text: $query, systemImage: "magnifyingglass")
+            RelayTextField(relayLocalized("Filter by alias or host"), text: $query, systemImage: "magnifyingglass")
         }
         .padding(.horizontal, Theme.Spacing.large)
         .padding(.top, Theme.Spacing.large + Theme.Spacing.small)
@@ -115,18 +115,18 @@ struct SSHWindowView: View {
             accessoryVisibility: .always
         ) {
             HStack(spacing: 0) {
-                IconButton(systemImage: isPinned ? "pin.slash" : "pin", help: "", size: 18) {
+                IconButton(systemImage: isPinned ? "pin.slash" : "pin", help: "", size: 24) {
                     guard let projectID = model.selectedProjectID else { return }
                     model.togglePin(host, in: projectID)
                 }
                 .relayTooltip(isPinned ? "Unpin from project" : "Pin to current project")
 
-                IconButton(systemImage: "arrow.right.circle", help: "", size: 18) { connect(host) }
-                    .relayTooltip("Connect")
+                IconButton(systemImage: "arrow.right.circle", help: "", size: 24) { connect(host) }
+                    .relayTooltip(relayLocalized("Connect"))
             }
         }
         .contextMenu {
-            Button("Connect") { connect(host) }
+            Button(relayLocalized("Connect")) { connect(host) }
             if model.selectedProjectID != nil {
                 Button(isPinned ? "Unpin from Project" : "Pin to Project") {
                     guard let projectID = model.selectedProjectID else { return }

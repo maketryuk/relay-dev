@@ -43,13 +43,13 @@ struct ServiceEditorView: View {
                 field("URL override") {
                     VStack(alignment: .leading, spacing: 4) {
                         RelayTextField("http://localhost:3000", text: $urlOverride)
-                        Text("Leave empty to detect the port automatically.")
+                        Text(relayLocalized("Leave empty to detect the port automatically."))
                             .font(Theme.Typography.caption)
                             .foregroundStyle(Theme.Palette.textTertiary)
                     }
                 }
                 Toggle(isOn: $isDefault) {
-                    Text("Default dev service")
+                    Text(relayLocalized("Default dev service"))
                         .font(Theme.Typography.row)
                         .foregroundStyle(Theme.Palette.textSecondary)
                 }
@@ -62,7 +62,7 @@ struct ServiceEditorView: View {
 
             HStack {
                 Spacer()
-                RelayButton("Cancel", kind: .ghost) { dismiss() }
+                RelayButton(relayLocalized("Cancel"), kind: .ghost) { dismiss() }
                 RelayButton(isEditing ? "Save" : "Add", kind: .primary) { save() }
             }
             .padding(Theme.Spacing.large)

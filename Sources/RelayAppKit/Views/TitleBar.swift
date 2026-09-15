@@ -45,12 +45,12 @@ struct TitleBar: View {
             IconButton(systemImage: "sidebar.leading", help: "", size: 24) {
                 model.toggleLeftSidebar()
             }
-            .relayTooltip("Sessions sidebar", shortcut: model.binding(for: .toggleLeftSidebar))
+            .relayTooltip(relayLocalized("Sessions sidebar"), shortcut: model.binding(for: .toggleLeftSidebar))
 
             IconButton(systemImage: "sidebar.trailing", help: "", size: 24) {
                 model.toggleRightSidebar()
             }
-            .relayTooltip("Project panel", shortcut: model.binding(for: .toggleRightSidebar))
+            .relayTooltip(relayLocalized("Project panel"), shortcut: model.binding(for: .toggleRightSidebar))
         }
     }
 
@@ -109,7 +109,7 @@ struct TitleBar: View {
             IconButton(systemImage: "gearshape", help: "", size: 24) {
                 openSettings()
             }
-            .relayTooltip("Settings", shortcut: model.binding(for: .openSettings))
+            .relayTooltip(relayLocalized("Settings"), shortcut: model.binding(for: .openSettings))
 
             notificationsButton
         }
@@ -119,29 +119,26 @@ struct TitleBar: View {
         @Bindable var model = model
         let unread = model.unreadNotificationCount
 
-        return Button {
+        return IconButton(
+            systemImage: unread > 0 ? "bell.badge.fill" : "bell",
+            size: 24,
+            tint: unread > 0 ? Theme.Palette.statusWaiting : nil
+        ) {
             model.isInboxOpen.toggle()
-        } label: {
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: unread > 0 ? "bell.badge.fill" : "bell")
-                    .font(.system(size: 11, weight: .medium))
-                    .frame(width: 24, height: 24)
-                    .foregroundStyle(unread > 0 ? Theme.Palette.statusWaiting : Theme.Palette.textSecondary)
-
-                if unread > 0 {
-                    Text(unread > 9 ? "9+" : "\(unread)")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(Theme.Palette.base)
-                        .padding(.horizontal, 3)
-                        .padding(.vertical, 1)
-                        .background(Theme.Palette.statusWaiting)
-                        .clipShape(Capsule())
-                        .offset(x: 4, y: -2)
-                }
-            }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            if unread > 0 {
+                Text(unread > 9 ? "9+" : "\(unread)")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(Theme.Palette.base)
+                    .padding(.horizontal, 3)
+                    .padding(.vertical, 1)
+                    .background(Theme.Palette.statusWaiting)
+                    .clipShape(Capsule())
+                    .offset(x: 4, y: -2)
+                    .allowsHitTesting(false)
+            }
+        }
         .relayTooltip(unread > 0 ? "\(unread) unread" : "Notifications")
         .popover(isPresented: $model.isInboxOpen, arrowEdge: .bottom) {
             InboxPopover()

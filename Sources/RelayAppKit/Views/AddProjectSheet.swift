@@ -39,7 +39,7 @@ struct AddProjectSheet: View {
 
     private var header: some View {
         HStack {
-            Text("Add Project")
+            Text(relayLocalized("Add Project"))
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Theme.Palette.textPrimary)
             Spacer()
@@ -66,7 +66,7 @@ struct AddProjectSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            RelayButton("Choose Folder…", systemImage: "folder", kind: .secondary) {
+            RelayButton(relayLocalized("Choose Folder…"), systemImage: "folder", kind: .secondary) {
                 isImporting = true
             }
         }
@@ -93,7 +93,7 @@ struct AddProjectSheet: View {
                 .font(Theme.Typography.rowSecondary)
                 .foregroundStyle(Theme.Palette.textTertiary)
             Spacer()
-            RelayButton("Done", kind: .primary) { dismiss() }
+            RelayButton(relayLocalized("Done"), kind: .primary) { dismiss() }
         }
         .padding(Theme.Spacing.large)
     }

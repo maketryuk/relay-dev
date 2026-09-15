@@ -17,6 +17,8 @@ final class WindowDragRegions {
 
     private var views: [WeakViewBox] = []
     private var monitor: Any?
+    private var dragMonitor: Any?
+    private var dragOrigin: (window: NSWindow, mouse: NSPoint, frame: NSPoint)?
 
     private struct WeakViewBox {
         weak var view: NSView?
@@ -54,11 +56,51 @@ final class WindowDragRegions {
         if event.clickCount >= 2 {
             performSystemDoubleClickAction(on: window)
         } else {
-            // `performDrag` runs its own event loop until mouse-up, which is
-            // exactly the behaviour a title bar has.
-            window.performDrag(with: event)
+            beginDrag(window: window, at: event)
         }
         return true
+    }
+
+    /// Moves the window by hand.
+    ///
+    /// The window has `isMovable = false`, because AppKit drags from anywhere
+    /// in the title bar region — including over buttons, since the whole of a
+    /// SwiftUI hierarchy hit-tests as one `NSHostingView` that reports itself as
+    /// draggable. Turning the system behaviour off and doing it here is the only
+    /// way to have a title bar that both drags and holds controls.
+    private func beginDrag(window: NSWindow, at event: NSEvent) {
+        dragOrigin = (window, NSEvent.mouseLocation, window.frame.origin)
+        guard dragMonitor == nil else { return }
+        dragMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDragged, .leftMouseUp]) { event in
+            assert(Thread.isMainThread)
+            return MainActor.assumeIsolated { WindowDragRegions.shared.continueDrag(event) } ? nil : event
+        }
+    }
+
+    private func continueDrag(_ event: NSEvent) -> Bool {
+        guard let origin = dragOrigin else { return false }
+
+        if event.type == .leftMouseUp {
+            endDrag()
+            return true
+        }
+
+        let mouse = NSEvent.mouseLocation
+        origin.window.setFrameOrigin(
+            NSPoint(
+                x: origin.frame.x + (mouse.x - origin.mouse.x),
+                y: origin.frame.y + (mouse.y - origin.mouse.y)
+            )
+        )
+        return true
+    }
+
+    private func endDrag() {
+        dragOrigin = nil
+        if let dragMonitor {
+            NSEvent.removeMonitor(dragMonitor)
+        }
+        dragMonitor = nil
     }
 
     private func hitsRegion(_ event: NSEvent, in window: NSWindow) -> Bool {

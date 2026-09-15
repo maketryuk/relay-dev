@@ -67,8 +67,8 @@ struct RootView: View {
         VStack(spacing: Theme.Spacing.large) {
             EmptyStateView(
                 systemImage: "square.stack.3d.up",
-                title: "No projects yet",
-                message: "Add a local directory to start running agents, shells and dev servers in one place."
+                title: relayLocalized("No projects yet"),
+                message: relayLocalized("Add a local directory to start running agents, shells and dev servers in one place.")
             )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -119,7 +119,11 @@ struct ProjectOverviewPane: View {
 
     private var startPresets: [SessionPreset] {
         [.claude, .codex, .shell].map {
-            SessionPresets.preferred(for: $0, custom: model.customPresets)
+            SessionPresets.preferred(
+                for: $0,
+                custom: model.customPresets,
+                enabledIDs: model.enabledPresetIDs
+            )
         }
     }
 

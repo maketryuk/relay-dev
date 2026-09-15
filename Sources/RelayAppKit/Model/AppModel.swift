@@ -35,11 +35,13 @@ final class AppModel {
     private(set) var notificationSettings = NotificationSettings()
     private(set) var shortcutSettings = ShortcutSettings()
     private(set) var customPresets: [SessionPreset] = []
+    private(set) var enabledPresetIDs: [String]?
     private(set) var sessionHistory: [SessionHistoryEntry] = []
     private(set) var inbox: [InboxItem] = []
     private(set) var toasts: [ToastContent] = []
     var isRightSidebarVisible = true
     var isLeftSidebarVisible = true
+    private(set) var language: AppLanguage = .system
     var rightSidebarTab: RightSidebarTab = .services
 
     // MARK: - Selection and UI
@@ -81,9 +83,12 @@ final class AppModel {
         notificationSettings = state.notifications
         shortcutSettings = state.shortcuts
         customPresets = state.customPresets
+        enabledPresetIDs = state.enabledPresetIDs
         sessionHistory = state.sessionHistory
         isRightSidebarVisible = state.isRightSidebarVisible
         isLeftSidebarVisible = state.isLeftSidebarVisible
+        language = state.language
+        Localization.shared.language = state.language
         rightSidebarTab = state.rightSidebarTab.flatMap(RightSidebarTab.init(rawValue:)) ?? .services
         lastActiveSessionByProject = state.lastActiveSessionByProject
         selectedProjectID = state.lastActiveProjectID.map { ProjectID(rawValue: $0) }
@@ -112,11 +117,11 @@ final class AppModel {
             connectionState = .disconnected(error.localizedDescription)
             present(ToastContent(
                 kind: .error,
-                title: "Could not reach the session daemon",
+                title: relayLocalized("Could not reach the session daemon"),
                 message: error.localizedDescription,
                 duration: nil,
                 key: "daemon",
-                action: ToastAction(title: "Retry") { [weak self] in
+                action: ToastAction(title: relayLocalized("Retry")) { [weak self] in
                     self?.retryConnection()
                 }
             ))
@@ -146,11 +151,11 @@ final class AppModel {
         connectionState = .disconnected("Daemon connection lost")
         present(ToastContent(
             kind: .error,
-            title: "Session daemon disconnected",
-            message: "Running sessions are unaffected. Reconnecting restores them.",
+            title: relayLocalized("Session daemon disconnected"),
+            message: relayLocalized("Running sessions are unaffected. Reconnecting restores them."),
             duration: nil,
             key: "daemon",
-            action: ToastAction(title: "Reconnect") { [weak self] in
+            action: ToastAction(title: relayLocalized("Reconnect")) { [weak self] in
                 self?.retryConnection()
             }
         ))
@@ -200,14 +205,14 @@ final class AppModel {
     private func handle(event: DaemonEvent) {
         switch event {
         case let .sessionCreated(snapshot):
-            sessions[snapshot.id] = snapshot
+            SessionMerge.merging(snapshot, into: &sessions)
             if !sessionOrder.contains(snapshot.id) {
                 sessionOrder.append(snapshot.id)
             }
 
         case let .sessionUpdated(snapshot):
             let previous = sessions[snapshot.id]
-            sessions[snapshot.id] = snapshot
+            SessionMerge.merging(snapshot, into: &sessions)
             if let previous {
                 notifyIfNeeded(previous: previous.status, snapshot: snapshot)
                 if previous.exitCode == nil, snapshot.exitCode != nil {
@@ -234,11 +239,11 @@ final class AppModel {
             connectionState = .disconnected("Daemon is shutting down")
             present(ToastContent(
                 kind: .warning,
-                title: "Session daemon is shutting down",
-                message: "Sessions it was supervising have ended.",
+                title: relayLocalized("Session daemon is shutting down"),
+                message: relayLocalized("Sessions it was supervising have ended."),
                 duration: nil,
                 key: "daemon",
-                action: ToastAction(title: "Reconnect") { [weak self] in
+                action: ToastAction(title: relayLocalized("Reconnect")) { [weak self] in
                     self?.retryConnection()
                 }
             ))
@@ -349,9 +354,28 @@ final class AppModel {
         return statuses.isEmpty ? .offline : RuntimeStatus.aggregate(statuses)
     }
 
-    /// Every preset the new-session menu offers.
+    /// The presets the new-session menu offers.
     var sessionPresets: [SessionPreset] {
-        SessionPresets.all(custom: customPresets)
+        SessionPresets.enabled(custom: customPresets, enabledIDs: enabledPresetIDs)
+    }
+
+    /// Everything available, offered or not — the settings list.
+    var presetCatalogue: [SessionPreset] {
+        SessionPresets.catalogue(custom: customPresets)
+    }
+
+    func isPresetEnabled(_ preset: SessionPreset) -> Bool {
+        guard preset.isBuiltIn else { return true }
+        return Set(enabledPresetIDs ?? SessionPresets.defaultEnabledIDs).contains(preset.id)
+    }
+
+    func setPreset(_ preset: SessionPreset, enabled: Bool) {
+        guard preset.isBuiltIn else { return }
+        var identifiers = Set(enabledPresetIDs ?? SessionPresets.defaultEnabledIDs)
+        if enabled { identifiers.insert(preset.id) } else { identifiers.remove(preset.id) }
+        // Stored in catalogue order so the menu is stable.
+        enabledPresetIDs = SessionPresets.builtIn.map(\.id).filter { identifiers.contains($0) }
+        persist()
     }
 
     func addPreset(_ preset: SessionPreset) {
@@ -406,7 +430,9 @@ final class AppModel {
             guard let self else { return }
             do {
                 let snapshot = try await self.client.createSession(spec)
-                self.sessions[snapshot.id] = snapshot
+                // Events may already have moved this session on; the reply must
+                // not rewind it.
+                SessionMerge.merging(snapshot, into: &self.sessions)
                 if !self.sessionOrder.contains(snapshot.id) {
                     self.sessionOrder.append(snapshot.id)
                 }
@@ -502,7 +528,7 @@ final class AppModel {
             } catch {
                 self.present(ToastContent(
                     kind: .error,
-                    title: "Could not attach to the session",
+                    title: relayLocalized("Could not attach to the session"),
                     message: error.localizedDescription
                 ))
             }
@@ -694,6 +720,39 @@ final class AppModel {
 
     // MARK: - Right sidebar
 
+    /// Whether a tab has anything to show for this project.
+    ///
+    /// Docker is the case that matters: a project with no containers and no
+    /// compose file has nothing behind that tab, and an empty panel is a worse
+    /// answer than a disabled tab that says why.
+    func isTabAvailable(_ tab: RightSidebarTab, for project: Project) -> Bool {
+        switch tab {
+        case .services, .history:
+            true
+        case .docker:
+            projectFacts[project.id]?.hasDocker == true
+                || dockerSnapshots[project.id]?.containers.isEmpty == false
+        case .git, .files:
+            false
+        }
+    }
+
+    func tabTooltip(_ tab: RightSidebarTab, for project: Project) -> String {
+        guard !isTabAvailable(tab, for: project) else { return tab.title }
+        switch tab {
+        case .docker: return "Docker — no containers or compose file in this project"
+        default: return "\(tab.title) — coming soon"
+        }
+    }
+
+    /// Switching language takes effect immediately: `relayLocalized` reads the
+    /// shared setting during body evaluation, so every view re-renders.
+    func setLanguage(_ language: AppLanguage) {
+        self.language = language
+        Localization.shared.language = language
+        persist()
+    }
+
     func toggleLeftSidebar() {
         isLeftSidebarVisible.toggle()
         persist()
@@ -705,6 +764,7 @@ final class AppModel {
     }
 
     func selectRightSidebarTab(_ tab: RightSidebarTab) {
+        guard let project = selectedProject, isTabAvailable(tab, for: project) else { return }
         if rightSidebarTab == tab, isRightSidebarVisible {
             isRightSidebarVisible = false
         } else {
@@ -1120,10 +1180,12 @@ final class AppModel {
             notifications: notificationSettings,
             shortcuts: shortcutSettings,
             customPresets: customPresets,
+            enabledPresetIDs: enabledPresetIDs,
             sessionHistory: sessionHistory,
             isRightSidebarVisible: isRightSidebarVisible,
             isLeftSidebarVisible: isLeftSidebarVisible,
-            rightSidebarTab: rightSidebarTab.rawValue
+            rightSidebarTab: rightSidebarTab.rawValue,
+            language: language
         )
         store.scheduleSave(state)
     }
@@ -1138,10 +1200,12 @@ final class AppModel {
             notifications: notificationSettings,
             shortcuts: shortcutSettings,
             customPresets: customPresets,
+            enabledPresetIDs: enabledPresetIDs,
             sessionHistory: sessionHistory,
             isRightSidebarVisible: isRightSidebarVisible,
             isLeftSidebarVisible: isLeftSidebarVisible,
-            rightSidebarTab: rightSidebarTab.rawValue
+            rightSidebarTab: rightSidebarTab.rawValue,
+            language: language
         )
         store.saveNow(state)
     }

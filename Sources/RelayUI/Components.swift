@@ -120,18 +120,48 @@ public struct RelayButton: View {
     }
 }
 
+/// The one icon control in the app.
+///
+/// Every icon-only affordance goes through this: a toolbar button, a tab, a row
+/// action. Hover, disabled and selected states were being reimplemented per site
+/// and drifting apart — the notification bell had no hover while the gear beside
+/// it did.
 public struct IconButton: View {
+    public enum Prominence {
+        /// Ordinary toolbar or row action.
+        case standard
+        /// Sits in a group where one is chosen, such as a tab strip.
+        case selectable
+    }
+
     private let systemImage: String
     private let help: String
     private let size: CGFloat
+    private let prominence: Prominence
+    private let isSelected: Bool
+    private let isEnabled: Bool
+    private let tint: Color?
     private let action: () -> Void
 
     @State private var isHovering = false
 
-    public init(systemImage: String, help: String = "", size: CGFloat = 24, action: @escaping () -> Void) {
+    public init(
+        systemImage: String,
+        help: String = "",
+        size: CGFloat = 24,
+        prominence: Prominence = .standard,
+        isSelected: Bool = false,
+        isEnabled: Bool = true,
+        tint: Color? = nil,
+        action: @escaping () -> Void
+    ) {
         self.systemImage = systemImage
         self.help = help
         self.size = size
+        self.prominence = prominence
+        self.isSelected = isSelected
+        self.isEnabled = isEnabled
+        self.tint = tint
         self.action = action
     }
 
@@ -140,16 +170,87 @@ public struct IconButton: View {
             Image(systemName: systemImage)
                 .font(.system(size: size * 0.46, weight: .medium))
                 .frame(width: size, height: size)
-                .background(isHovering ? Theme.Palette.surfaceHover : .clear)
-                .foregroundStyle(isHovering ? Theme.Palette.textPrimary : Theme.Palette.textSecondary)
+                .background(background)
+                .foregroundStyle(foreground)
                 .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
                 // Without this the glyph itself is the target and the padding
                 // around it does nothing, which makes small buttons feel broken.
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .onHover { isHovering = $0 }
+        .disabled(!isEnabled)
+        .onHover { isHovering = isEnabled && $0 }
+        .animation(.easeOut(duration: 0.1), value: isHovering)
+        .animation(.easeOut(duration: 0.1), value: isSelected)
         .help(help)
+    }
+
+    private var background: Color {
+        guard isEnabled else { return .clear }
+        if isSelected { return isHovering ? Theme.Palette.surfaceHover : Theme.Palette.surfaceActive }
+        return isHovering ? Theme.Palette.surfaceHover : .clear
+    }
+
+    private var foreground: Color {
+        guard isEnabled else { return Theme.Palette.textTertiary.opacity(0.4) }
+        if let tint { return isHovering ? tint : tint.opacity(0.85) }
+        if isSelected { return Theme.Palette.textPrimary }
+        return isHovering ? Theme.Palette.textPrimary : Theme.Palette.textSecondary
+    }
+}
+
+/// A small labelled button for grouped actions, such as the Compose row.
+public struct PillButton: View {
+    private let title: String
+    private let systemImage: String?
+    private let isEnabled: Bool
+    private let action: () -> Void
+
+    @State private var isHovering = false
+
+    public init(
+        _ title: String,
+        systemImage: String? = nil,
+        isEnabled: Bool = true,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.isEnabled = isEnabled
+        self.action = action
+    }
+
+    public var body: some View {
+        Button(action: action) {
+            HStack(spacing: 3) {
+                if let systemImage {
+                    Image(systemName: systemImage).font(.system(size: 8, weight: .semibold))
+                }
+                Text(title).font(Theme.Typography.caption)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity)
+            .background(background)
+            .foregroundStyle(foreground)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .onHover { isHovering = isEnabled && $0 }
+        .animation(.easeOut(duration: 0.1), value: isHovering)
+    }
+
+    private var background: Color {
+        guard isEnabled else { return Theme.Palette.surface }
+        return isHovering ? Theme.Palette.surfaceHover : Theme.Palette.surfaceRaised
+    }
+
+    private var foreground: Color {
+        isEnabled
+            ? (isHovering ? Theme.Palette.textPrimary : Theme.Palette.textSecondary)
+            : Theme.Palette.textTertiary.opacity(0.5)
     }
 }
 
@@ -255,7 +356,8 @@ public struct SectionHeader<Trailing: View>: View {
             trailing.opacity(isHovering ? 1 : 0.35)
         }
         .padding(.horizontal, Theme.Spacing.small)
-        .padding(.vertical, 5)
+        .padding(.vertical, 2)
+        .frame(minHeight: 28)
         .contentShape(Rectangle())
         .onHover { isHovering = $0 }
         .onTapGesture { onToggle?() }

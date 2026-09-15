@@ -79,7 +79,7 @@ struct CommandPaletteView: View {
                         }
                 }
                 if filteredCommands.isEmpty {
-                    Text("No matching commands")
+                    Text(relayLocalized("No matching commands"))
                         .font(Theme.Typography.rowSecondary)
                         .foregroundStyle(Theme.Palette.textTertiary)
                         .padding(Theme.Spacing.large)
@@ -150,32 +150,32 @@ struct CommandPaletteView: View {
             }
             commands.append(PaletteCommand(
                 id: "reveal",
-                title: "Open Project in Finder",
+                title: relayLocalized("Open Project in Finder"),
                 subtitle: project.displayPath,
                 systemImage: "folder"
             ) { model.revealInFinder(project) })
             commands.append(PaletteCommand(
                 id: "editor",
-                title: "Open Project in Editor",
+                title: relayLocalized("Open Project in Editor"),
                 subtitle: project.displayPath,
                 systemImage: "chevron.left.forwardslash.chevron.right"
             ) { model.openInEditor(project) })
             commands.append(PaletteCommand(
                 id: "settings",
-                title: "Project Settings",
+                title: relayLocalized("Project Settings"),
                 subtitle: project.name,
                 systemImage: "gearshape"
             ) { model.isProjectSettingsOpen = true })
             commands.append(PaletteCommand(
                 id: "ports-window",
-                title: "Ports",
-                subtitle: "Everything listening on this Mac",
+                title: relayLocalized("Ports"),
+                subtitle: relayLocalized("Everything listening on this Mac"),
                 systemImage: "point.3.filled.connected.trianglepath.dotted"
             ) { openWindow(id: PortsWindow.id) })
             commands.append(PaletteCommand(
                 id: "app-settings",
-                title: "Settings",
-                subtitle: "Shortcuts, notifications and more",
+                title: relayLocalized("Settings"),
+                subtitle: relayLocalized("Shortcuts, notifications and more"),
                 systemImage: "slider.horizontal.3"
             ) { openSettings() })
 

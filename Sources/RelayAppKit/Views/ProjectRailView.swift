@@ -74,26 +74,30 @@ struct ProjectRailView: View {
                 isSelected: isSelected
             )
             .onTapGesture { model.selectProject(project.id) }
-            .help("\(project.name) — \(model.aggregatedStatus(for: project.id).displayName)")
+            .relayTooltip(
+                project.name,
+                shortcut: model.aggregatedStatus(for: project.id).displayName,
+                edge: .trailing
+            )
             .contextMenu { projectMenu(project) }
         }
     }
 
     @ViewBuilder
     private func projectMenu(_ project: Project) -> some View {
-        Button("Open") { model.selectProject(project.id) }
-        Button("Open in Finder") { model.revealInFinder(project) }
-        Button("Open in Editor") { model.openInEditor(project) }
+        Button(relayLocalized("Open")) { model.selectProject(project.id) }
+        Button(relayLocalized("Open in Finder")) { model.revealInFinder(project) }
+        Button(relayLocalized("Open in Editor")) { model.openInEditor(project) }
         Divider()
-        Button("New Claude Session") { model.createSession(kind: .claude, in: project.id) }
-        Button("New Codex Session") { model.createSession(kind: .codex, in: project.id) }
-        Button("New Shell") { model.createSession(kind: .shell, in: project.id) }
+        Button(relayLocalized("New Claude Session")) { model.createSession(kind: .claude, in: project.id) }
+        Button(relayLocalized("New Codex Session")) { model.createSession(kind: .codex, in: project.id) }
+        Button(relayLocalized("New Shell")) { model.createSession(kind: .shell, in: project.id) }
         Divider()
-        Button("Project Settings…") {
+        Button(relayLocalized("Project Settings…")) {
             model.selectProject(project.id)
             model.isProjectSettingsOpen = true
         }
-        Button("Remove from Workspace") { model.removeProject(project.id) }
+        Button(relayLocalized("Remove from Workspace")) { model.removeProject(project.id) }
     }
 
     private var addButton: some View {
@@ -112,20 +116,20 @@ struct ProjectRailView: View {
                 )
         }
         .buttonStyle(.plain)
-        .relayTooltip("Add project", shortcut: model.binding(for: .addProject), edge: .trailing)
+        .relayTooltip(relayLocalized("Add project"), shortcut: model.binding(for: .addProject), edge: .trailing)
     }
 
     private var portsButton: some View {
         IconButton(systemImage: "point.3.filled.connected.trianglepath.dotted", help: "", size: 28) {
             openWindow(id: PortsWindow.id)
         }
-        .relayTooltip("Ports", shortcut: model.binding(for: .togglePorts), edge: .trailing)
+        .relayTooltip(relayLocalized("Ports"), shortcut: model.binding(for: .togglePorts), edge: .trailing)
     }
 
     private var sshButton: some View {
         IconButton(systemImage: "network", help: "", size: 28) {
             openWindow(id: SSHWindow.id)
         }
-        .relayTooltip("SSH hosts", shortcut: model.binding(for: .openSSHHosts), edge: .trailing)
+        .relayTooltip(relayLocalized("SSH hosts"), shortcut: model.binding(for: .openSSHHosts), edge: .trailing)
     }
 }

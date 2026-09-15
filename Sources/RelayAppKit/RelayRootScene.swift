@@ -30,9 +30,13 @@ struct RelayMainApp: App {
                     // do anything, and dragging the background matches how a
                     // chrome-less window is expected to behave.
                     window.styleMask.insert([.resizable, .miniaturizable])
-                    window.isMovableByWindowBackground = false
                     window.titlebarAppearsTransparent = true
                     window.collectionBehavior.insert(.fullScreenPrimary)
+                    // Relay drags the window itself, from regions it knows are
+                    // empty. AppKit would otherwise drag from anywhere in the
+                    // title bar strip, buttons included.
+                    window.isMovable = false
+                    window.isMovableByWindowBackground = false
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -100,19 +104,19 @@ struct RelayCommands: Commands {
         // item. Replacing it keeps the shortcut editor honest: rebinding
         // "Settings" in the app has to actually change the shortcut.
         CommandGroup(replacing: .appSettings) {
-            Button(RelayCommand.openSettings.title + "…") { openSettings() }
+            Button(RelayCommand.openSettings.localizedTitle + "…") { openSettings() }
                 .relayShortcut(model.binding(for: .openSettings))
         }
 
         CommandGroup(replacing: .newItem) {
-            Button(RelayCommand.newShell.title) { newSession(.shell) }
+            Button(RelayCommand.newShell.localizedTitle) { newSession(.shell) }
                 .relayShortcut(model.binding(for: .newShell))
-            Button(RelayCommand.newClaude.title) { newSession(.claude) }
+            Button(RelayCommand.newClaude.localizedTitle) { newSession(.claude) }
                 .relayShortcut(model.binding(for: .newClaude))
-            Button(RelayCommand.newCodex.title) { newSession(.codex) }
+            Button(RelayCommand.newCodex.localizedTitle) { newSession(.codex) }
                 .relayShortcut(model.binding(for: .newCodex))
             Divider()
-            Button(RelayCommand.addProject.title) { model.isAddingProject = true }
+            Button(RelayCommand.addProject.localizedTitle) { model.isAddingProject = true }
                 .relayShortcut(model.binding(for: .addProject))
         }
 
@@ -121,21 +125,21 @@ struct RelayCommands: Commands {
         CommandGroup(replacing: .saveItem) {}
 
         CommandMenu("Session") {
-            Button(RelayCommand.closeSession.title) {
+            Button(RelayCommand.closeSession.localizedTitle) {
                 if let id = model.selectedSessionID { model.closeSession(id) }
             }
             .relayShortcut(model.binding(for: .closeSession))
 
-            Button(RelayCommand.renameSession.title) { model.beginRenamingSelectedSession() }
+            Button(RelayCommand.renameSession.localizedTitle) { model.beginRenamingSelectedSession() }
                 .relayShortcut(model.binding(for: .renameSession))
 
             Divider()
 
-            Button(RelayCommand.nextSession.title) { model.selectAdjacentSession(offset: 1) }
+            Button(RelayCommand.nextSession.localizedTitle) { model.selectAdjacentSession(offset: 1) }
                 .relayShortcut(model.binding(for: .nextSession))
-            Button(RelayCommand.previousSession.title) { model.selectAdjacentSession(offset: -1) }
+            Button(RelayCommand.previousSession.localizedTitle) { model.selectAdjacentSession(offset: -1) }
                 .relayShortcut(model.binding(for: .previousSession))
-            Button(RelayCommand.focusTerminal.title) { model.focusTerminal() }
+            Button(RelayCommand.focusTerminal.localizedTitle) { model.focusTerminal() }
                 .relayShortcut(model.binding(for: .focusTerminal))
 
             if model.shortcutSettings.indexShortcutsEnabled {
@@ -148,12 +152,12 @@ struct RelayCommands: Commands {
         }
 
         CommandMenu("Service") {
-            Button(RelayCommand.startDefaultService.title) {
+            Button(RelayCommand.startDefaultService.localizedTitle) {
                 if let projectID = model.selectedProjectID { model.startDefaultService(in: projectID) }
             }
             .relayShortcut(model.binding(for: .startDefaultService))
 
-            Button(RelayCommand.restartDefaultService.title) {
+            Button(RelayCommand.restartDefaultService.localizedTitle) {
                 guard let projectID = model.selectedProjectID,
                       let service = model.project(projectID)?.defaultService else { return }
                 model.restartService(service, in: projectID)
@@ -162,19 +166,19 @@ struct RelayCommands: Commands {
         }
 
         CommandMenu("Project") {
-            Button(RelayCommand.nextProject.title) { model.selectNextProject(offset: 1) }
+            Button(RelayCommand.nextProject.localizedTitle) { model.selectNextProject(offset: 1) }
                 .relayShortcut(model.binding(for: .nextProject))
-            Button(RelayCommand.previousProject.title) { model.selectNextProject(offset: -1) }
+            Button(RelayCommand.previousProject.localizedTitle) { model.selectNextProject(offset: -1) }
                 .relayShortcut(model.binding(for: .previousProject))
 
             Divider()
 
-            Button(RelayCommand.revealProject.title) {
+            Button(RelayCommand.revealProject.localizedTitle) {
                 if let project = model.selectedProject { model.revealInFinder(project) }
             }
             .relayShortcut(model.binding(for: .revealProject))
 
-            Button(RelayCommand.projectSettings.title) { model.isProjectSettingsOpen = true }
+            Button(RelayCommand.projectSettings.localizedTitle) { model.isProjectSettingsOpen = true }
                 .relayShortcut(model.binding(for: .projectSettings))
 
             if model.shortcutSettings.indexShortcutsEnabled {
@@ -190,20 +194,20 @@ struct RelayCommands: Commands {
         }
 
         CommandGroup(after: .toolbar) {
-            Button(RelayCommand.commandPalette.title) { model.isCommandPaletteOpen.toggle() }
+            Button(RelayCommand.commandPalette.localizedTitle) { model.isCommandPaletteOpen.toggle() }
                 .relayShortcut(model.binding(for: .commandPalette))
             // ⌘K is muscle memory from every other tool; keep it alongside ⌘P.
-            Button("Command Palette (⌘K)") { model.isCommandPaletteOpen.toggle() }
+            Button(relayLocalized("Command Palette (⌘K)")) { model.isCommandPaletteOpen.toggle() }
                 .keyboardShortcut("k", modifiers: .command)
                 .hidden()
 
-            Button(RelayCommand.togglePorts.title) { openWindow(id: PortsWindow.id) }
+            Button(RelayCommand.togglePorts.localizedTitle) { openWindow(id: PortsWindow.id) }
                 .relayShortcut(model.binding(for: .togglePorts))
 
-            Button(RelayCommand.openSSHHosts.title) { openWindow(id: SSHWindow.id) }
+            Button(RelayCommand.openSSHHosts.localizedTitle) { openWindow(id: SSHWindow.id) }
                 .relayShortcut(model.binding(for: .openSSHHosts))
 
-            Button(RelayCommand.toggleRightSidebar.title) { model.toggleRightSidebar() }
+            Button(RelayCommand.toggleRightSidebar.localizedTitle) { model.toggleRightSidebar() }
                 .relayShortcut(model.binding(for: .toggleRightSidebar))
         }
     }
@@ -211,7 +215,11 @@ struct RelayCommands: Commands {
     private func newSession(_ kind: SessionKind) {
         guard let projectID = model.selectedProjectID else { return }
         model.createSession(
-            from: SessionPresets.preferred(for: kind, custom: model.customPresets),
+            from: SessionPresets.preferred(
+                for: kind,
+                custom: model.customPresets,
+                enabledIDs: model.enabledPresetIDs
+            ),
             in: projectID
         )
     }

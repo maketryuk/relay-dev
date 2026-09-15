@@ -50,7 +50,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 2) {
             ForEach(Tab.allCases) { tab in
                 SidebarRow(
-                    title: tab.title,
+                    title: relayLocalized(tab.title),
                     systemImage: tab.symbolName,
                     isSelected: selection == tab,
                     action: { selection = tab }
@@ -80,19 +80,19 @@ struct GeneralSettingsPane: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        SettingsScroll(title: "General") {
+        SettingsScroll(title: relayLocalized("General")) {
             SettingsGroup("Workspace") {
                 SettingsRow(
-                    title: "Projects",
+                    title: relayLocalized("Projects"),
                     detail: "\(model.projects.count) in this workspace"
                 ) {
-                    RelayButton("Add Project…") { model.isAddingProject = true }
+                    RelayButton(relayLocalized("Add Project…")) { model.isAddingProject = true }
                 }
                 SettingsRow(
-                    title: "Sidebar width",
+                    title: relayLocalized("Sidebar width"),
                     detail: "\(Int(model.sidebarWidth)) pt"
                 ) {
-                    RelayButton("Reset") {
+                    RelayButton(relayLocalized("Reset")) {
                         model.sidebarWidth = Theme.Metrics.sidebarWidth
                         model.persist()
                     }
@@ -103,9 +103,9 @@ struct GeneralSettingsPane: View {
                 ForEach(model.sessionPresets) { preset in
                     SettingsRow(title: preset.name, detail: preset.subtitle) {
                         if preset.isBuiltIn {
-                            Badge("Built-in")
+                            Badge(relayLocalized("Built-in"))
                         } else {
-                            RelayButton("Remove", kind: .destructive) { model.removePreset(preset) }
+                            RelayButton(relayLocalized("Remove"), kind: .destructive) { model.removePreset(preset) }
                         }
                     }
                 }
@@ -113,20 +113,20 @@ struct GeneralSettingsPane: View {
 
             SettingsGroup("Session daemon") {
                 SettingsRow(
-                    title: "Status",
+                    title: relayLocalized("Status"),
                     detail: model.connectionState.isConnected
                         ? "Connected — sessions keep running when Relay is closed"
                         : "Disconnected"
                 ) {
                     if !model.connectionState.isConnected {
-                        RelayButton("Reconnect", kind: .primary) { model.retryConnection() }
+                        RelayButton(relayLocalized("Reconnect"), kind: .primary) { model.retryConnection() }
                     }
                 }
                 SettingsRow(
-                    title: "Logs",
+                    title: relayLocalized("Logs"),
                     detail: RelayPaths.daemonLogURL.path
                 ) {
-                    RelayButton("Reveal") {
+                    RelayButton(relayLocalized("Reveal")) {
                         NSWorkspace.shared.selectFile(
                             RelayPaths.daemonLogURL.path,
                             inFileViewerRootedAtPath: RelayPaths.logsDirectory.path
@@ -147,17 +147,17 @@ struct ShortcutSettingsPane: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Shortcuts")
+                Text(relayLocalized("Shortcuts"))
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(Theme.Palette.textPrimary)
                 Spacer()
-                RelayButton("Reset All") { model.resetAllShortcuts() }
+                RelayButton(relayLocalized("Reset All")) { model.resetAllShortcuts() }
             }
             .padding(.horizontal, Theme.Spacing.xlarge)
             .padding(.top, Theme.Spacing.xlarge)
             .padding(.bottom, Theme.Spacing.medium)
 
-            RelayTextField("Search commands", text: $query, systemImage: "magnifyingglass")
+            RelayTextField(relayLocalized("Search commands"), text: $query, systemImage: "magnifyingglass")
                 .padding(.horizontal, Theme.Spacing.xlarge)
                 .padding(.bottom, Theme.Spacing.medium)
 
@@ -168,7 +168,7 @@ struct ShortcutSettingsPane: View {
                     ForEach(ShortcutCategory.allCases) { category in
                         let commands = filteredCommands(in: category)
                         if !commands.isEmpty {
-                            SettingsGroup(category.title) {
+                            SettingsGroup(category.localizedTitle) {
                                 ForEach(commands) { command in
                                     shortcutRow(command)
                                 }
@@ -178,7 +178,7 @@ struct ShortcutSettingsPane: View {
 
                     SettingsGroup("Quick switching") {
                         SettingsRow(
-                            title: "Jump by number",
+                            title: relayLocalized("Jump by number"),
                             detail: "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project"
                         ) {
                             Toggle("", isOn: Binding(
@@ -213,7 +213,7 @@ struct ShortcutSettingsPane: View {
         } ?? []
 
         return SettingsRow(
-            title: command.title,
+            title: command.localizedTitle,
             detail: conflicts.isEmpty ? nil : "Also used by \(conflicts.map(\.title).joined(separator: ", "))",
             detailTint: conflicts.isEmpty ? nil : Theme.Palette.statusWaiting
         ) {
@@ -234,7 +234,7 @@ struct NotificationSettingsPane: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        SettingsScroll(title: "Notifications") {
+        SettingsScroll(title: relayLocalized("Notifications")) {
             SettingsGroup("When to interrupt") {
                 toggleRow(
                     "Enabled",
@@ -263,7 +263,7 @@ struct NotificationSettingsPane: View {
 
             SettingsGroup("Muted projects") {
                 if model.projects.isEmpty {
-                    SettingsRow(title: "No projects yet", detail: nil) { EmptyView() }
+                    SettingsRow(title: relayLocalized("No projects yet"), detail: nil) { EmptyView() }
                 } else {
                     ForEach(model.projects) { project in
                         SettingsRow(title: project.name, detail: project.displayPath) {
@@ -306,12 +306,12 @@ struct NotificationSettingsPane: View {
 
 struct AboutPane: View {
     var body: some View {
-        SettingsScroll(title: "About") {
+        SettingsScroll(title: relayLocalized("About")) {
             SettingsGroup("Relay") {
-                SettingsRow(title: "Version", detail: AppInfo.version) { EmptyView() }
-                SettingsRow(title: "Protocol", detail: "v\(RelayProtocolVersion.current)") { EmptyView() }
+                SettingsRow(title: relayLocalized("Version"), detail: AppInfo.version) { EmptyView() }
+                SettingsRow(title: relayLocalized("Protocol"), detail: "v\(RelayProtocolVersion.current)") { EmptyView() }
                 SettingsRow(
-                    title: "Runtime",
+                    title: relayLocalized("Runtime"),
                     detail: "Sessions live in a background daemon and survive quitting the app"
                 ) { EmptyView() }
             }

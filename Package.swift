@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "Relay",
+    defaultLocalization: "en",
     platforms: [.macOS(.v14)],
     products: [
         .executable(name: "relay-daemon", targets: ["relay-daemon"]),
@@ -15,7 +16,11 @@ let package = Package(
         .target(name: "RelayProtocol"),
         .target(name: "RelayDaemonCore", dependencies: ["RelayProtocol"]),
         .executableTarget(name: "relay-daemon", dependencies: ["RelayDaemonCore"]),
-        .target(name: "RelayUI", dependencies: ["RelayProtocol"]),
+        .target(
+            name: "RelayUI",
+            dependencies: ["RelayProtocol"],
+            resources: [.process("Resources")]
+        ),
         .target(
             name: "RelayAppKit",
             dependencies: [
@@ -28,6 +33,6 @@ let package = Package(
 
         .testTarget(name: "RelayProtocolTests", dependencies: ["RelayProtocol"]),
         .testTarget(name: "RelayDaemonCoreTests", dependencies: ["RelayDaemonCore"]),
-        .testTarget(name: "RelayAppKitTests", dependencies: ["RelayAppKit", "RelayUI"]),
+.testTarget(name: "RelayAppKitTests", dependencies: ["RelayAppKit", "RelayUI"]),
     ]
 )

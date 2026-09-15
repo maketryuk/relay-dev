@@ -30,7 +30,7 @@ struct NewSessionMenu: View {
 
     private var presetList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("NEW SESSION")
+            Text(relayLocalized("NEW SESSION"))
                 .font(Theme.Typography.sectionHeader)
                 .tracking(0.7)
                 .foregroundStyle(Theme.Palette.textTertiary)
@@ -60,7 +60,7 @@ struct NewSessionMenu: View {
                         .font(.system(size: 12))
                         .frame(width: 18)
                         .foregroundStyle(Theme.Palette.textTertiary)
-                    Text("Custom command…")
+                    Text(relayLocalized("Custom command…"))
                         .font(Theme.Typography.row)
                         .foregroundStyle(Theme.Palette.textSecondary)
                     Spacer()
@@ -84,23 +84,23 @@ struct NewSessionMenu: View {
 
     private var customEditor: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
-            Text("CUSTOM COMMAND")
+            Text(relayLocalized("CUSTOM COMMAND"))
                 .font(Theme.Typography.sectionHeader)
                 .tracking(0.7)
                 .foregroundStyle(Theme.Palette.textTertiary)
 
-            RelayTextField("Name", text: $customName)
+            RelayTextField(relayLocalized("Name"), text: $customName)
             RelayTextField("npm run something", text: $customCommand)
 
-            Text("Saved as a preset and run through your shell in the project root.")
+            Text(relayLocalized("Saved as a preset and run through your shell in the project root."))
                 .font(Theme.Typography.caption)
                 .foregroundStyle(Theme.Palette.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack {
-                RelayButton("Back", kind: .ghost) { isAddingCustom = false }
+                RelayButton(relayLocalized("Back"), kind: .ghost) { isAddingCustom = false }
                 Spacer()
-                RelayButton("Run", kind: .primary) { saveAndRun() }
+                RelayButton(relayLocalized("Run"), kind: .primary) { saveAndRun() }
             }
         }
         .padding(Theme.Spacing.medium)

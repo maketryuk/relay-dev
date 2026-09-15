@@ -4,6 +4,42 @@ Versions follow [semantic versioning](https://semver.org). A minor version is a
 milestone worth telling someone about; everything else is a patch. Work in
 progress collects under Unreleased until there is something worth reading.
 
+## 0.6.0
+
+### Added
+
+- **Localisation.** English and Russian, switched in Settings and applied
+  immediately without a restart. The English text is the lookup key, so a gap in
+  a translation shows readable English rather than a raw identifier, and a test
+  fails if the two tables drift apart.
+- **Session presets are customisable.** The menu offers Terminal, Claude and
+  Codex out of the box; Gemini, OpenCode and the supervised variants are one
+  toggle away in Settings. A preset you create is always offered.
+
+### Changed
+
+- One icon control for the whole app. Hover, disabled and selected states were
+  being reimplemented per site and drifting — the notification bell had no hover
+  while the gear beside it did. Row and header buttons also grew from 16 to 24
+  points, which is the difference between aiming and pressing.
+- Right panel tab order: Files, Git, History, Services, Docker.
+- The Docker tab is disabled, with a reason, when a project has no containers
+  and no compose file.
+- Project tiles in the rail use Relay's own tooltip, showing the name and the
+  aggregated status.
+
+### Fixed
+
+- **A service could sit at "Starting" forever.** The reply to `createSession`
+  carries the session as it was when the daemon answered, and it was overwriting
+  the newer state the events had already delivered. For anything that starts and
+  then goes quiet — a dev server, exactly — nothing ever arrived to correct it.
+- **The window dragged from anywhere in the title bar, buttons included.** A
+  SwiftUI hierarchy hit-tests as one `NSHostingView` that reports itself as
+  draggable, so AppKit could not tell a button from empty chrome. Relay now
+  moves the window itself, only from regions it knows are empty.
+- The process id was rendered with a thousands separator: "pid 85 258".
+
 ## 0.5.1
 
 ### Fixed
