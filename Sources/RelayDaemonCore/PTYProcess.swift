@@ -67,6 +67,13 @@ public final class PTYProcess: @unchecked Sendable {
             ws_ypixel: 0
         )
 
+        // Mark everything the daemon has open as close-on-exec *before* forking.
+        // The child cannot do this reliably: `closefrom` does not exist on
+        // macOS, and `getdtablesize()` here is 61440, so looping over the whole
+        // table in the child is both slow and — if capped — incomplete. A
+        // descriptor above the cap survived into spawned processes.
+        Self.markOpenDescriptorsCloseOnExec()
+
         var master: Int32 = -1
         let childPID = forkpty(&master, nil, nil, &size)
 
@@ -74,11 +81,8 @@ public final class PTYProcess: @unchecked Sendable {
             // --- child ---
             _ = chdir(directoryPath)
 
-            // Close everything the daemon had open. `forkpty` hands the child a
-            // copy of the parent's descriptor table, and only descriptors marked
-            // FD_CLOEXEC disappear at `execve` — so without this a spawned agent
-            // inherits the daemon's log handle and, worse, its live IPC sockets.
-            // Descriptors 0/1/2 are the pty and must survive.
+            // Backstop for anything another thread opened between the marking
+            // above and the fork. Descriptors 0/1/2 are the pty and must survive.
             let limit = min(getdtablesize(), 4096)
             var descriptor: Int32 = 3
             while descriptor < limit {
@@ -232,6 +236,32 @@ public final class PTYProcess: @unchecked Sendable {
         exitSource?.cancel()
         exitSource = nil
         Darwin.close(masterFD)
+    }
+
+    /// Sets `FD_CLOEXEC` on every descriptor this process currently holds,
+    /// except the standard three.
+    ///
+    /// Done in the parent, where enumerating is safe: after `fork` only
+    /// async-signal-safe calls are legal, which rules this out.
+    private static func markOpenDescriptorsCloseOnExec() {
+        let bufferSize = proc_pidinfo(getpid(), PROC_PIDLISTFDS, 0, nil, 0)
+        guard bufferSize > 0 else { return }
+
+        let capacity = Int(bufferSize) / MemoryLayout<proc_fdinfo>.stride + 16
+        var entries = [proc_fdinfo](repeating: proc_fdinfo(), count: capacity)
+        let written = entries.withUnsafeMutableBytes { raw in
+            proc_pidinfo(getpid(), PROC_PIDLISTFDS, 0, raw.baseAddress, Int32(raw.count))
+        }
+        guard written > 0 else { return }
+
+        let count = Int(written) / MemoryLayout<proc_fdinfo>.stride
+        for index in 0 ..< min(count, entries.count) {
+            let descriptor = entries[index].proc_fd
+            guard descriptor > 2 else { continue }
+            let flags = fcntl(descriptor, F_GETFD)
+            guard flags >= 0, flags & FD_CLOEXEC == 0 else { continue }
+            _ = fcntl(descriptor, F_SETFD, flags | FD_CLOEXEC)
+        }
     }
 
     static func setWindowSize(masterFD: Int32, columns: Int, rows: Int) {

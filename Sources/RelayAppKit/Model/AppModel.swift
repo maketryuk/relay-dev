@@ -34,8 +34,7 @@ final class AppModel {
     private(set) var dockerSnapshots: [ProjectID: DockerSnapshot] = [:]
     private(set) var notificationSettings = NotificationSettings()
     private(set) var shortcutSettings = ShortcutSettings()
-    private(set) var customPresets: [SessionPreset] = []
-    private(set) var enabledPresetIDs: [String]?
+    private(set) var presets: [SessionPreset] = SessionPresets.defaultSet
     private(set) var sessionHistory: [SessionHistoryEntry] = []
     private(set) var inbox: [InboxItem] = []
     private(set) var toasts: [ToastContent] = []
@@ -82,8 +81,7 @@ final class AppModel {
         collapsedSections = Set(state.collapsedSections)
         notificationSettings = state.notifications
         shortcutSettings = state.shortcuts
-        customPresets = state.customPresets
-        enabledPresetIDs = state.enabledPresetIDs
+        presets = state.presets ?? SessionPresets.migrate(custom: state.customPresets, enabledIDs: state.enabledPresetIDs)
         sessionHistory = state.sessionHistory
         isRightSidebarVisible = state.isRightSidebarVisible
         isLeftSidebarVisible = state.isLeftSidebarVisible
@@ -355,37 +353,28 @@ final class AppModel {
     }
 
     /// The presets the new-session menu offers.
-    var sessionPresets: [SessionPreset] {
-        SessionPresets.enabled(custom: customPresets, enabledIDs: enabledPresetIDs)
-    }
+    var sessionPresets: [SessionPreset] { presets }
 
-    /// Everything available, offered or not — the settings list.
-    var presetCatalogue: [SessionPreset] {
-        SessionPresets.catalogue(custom: customPresets)
-    }
-
-    func isPresetEnabled(_ preset: SessionPreset) -> Bool {
-        guard preset.isBuiltIn else { return true }
-        return Set(enabledPresetIDs ?? SessionPresets.defaultEnabledIDs).contains(preset.id)
-    }
-
-    func setPreset(_ preset: SessionPreset, enabled: Bool) {
-        guard preset.isBuiltIn else { return }
-        var identifiers = Set(enabledPresetIDs ?? SessionPresets.defaultEnabledIDs)
-        if enabled { identifiers.insert(preset.id) } else { identifiers.remove(preset.id) }
-        // Stored in catalogue order so the menu is stable.
-        enabledPresetIDs = SessionPresets.builtIn.map(\.id).filter { identifiers.contains($0) }
+    func addPreset(_ preset: SessionPreset) {
+        presets.append(preset)
         persist()
     }
 
-    func addPreset(_ preset: SessionPreset) {
-        customPresets.append(preset)
+    func updatePreset(_ preset: SessionPreset) {
+        guard let index = presets.firstIndex(where: { $0.id == preset.id }) else { return }
+        presets[index] = preset
         persist()
     }
 
     func removePreset(_ preset: SessionPreset) {
-        guard !preset.isBuiltIn else { return }
-        customPresets.removeAll { $0.id == preset.id }
+        // There has to be a way to open a plain terminal.
+        guard !preset.isProtected else { return }
+        presets.removeAll { $0.id == preset.id }
+        persist()
+    }
+
+    func resetPresets() {
+        presets = SessionPresets.defaultSet
         persist()
     }
 
@@ -614,16 +603,6 @@ final class AppModel {
         focusTerminalRequest += 1
     }
 
-    /// Fallback for opening Settings where the SwiftUI `openSettings` action is
-    /// not reachable. The selector was renamed in macOS 13, so both are tried.
-    ///
-    /// Views should prefer `@Environment(\.openSettings)`; this exists because
-    /// the model is also called from places that have no environment.
-    func openSettingsWindow() {
-        NSApp.activate(ignoringOtherApps: true)
-        if NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil) { return }
-        _ = NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-    }
 
     // MARK: - Shortcuts
 
@@ -1179,8 +1158,7 @@ final class AppModel {
             collapsedSections: Array(collapsedSections),
             notifications: notificationSettings,
             shortcuts: shortcutSettings,
-            customPresets: customPresets,
-            enabledPresetIDs: enabledPresetIDs,
+            presets: presets,
             sessionHistory: sessionHistory,
             isRightSidebarVisible: isRightSidebarVisible,
             isLeftSidebarVisible: isLeftSidebarVisible,
@@ -1199,8 +1177,7 @@ final class AppModel {
             collapsedSections: Array(collapsedSections),
             notifications: notificationSettings,
             shortcuts: shortcutSettings,
-            customPresets: customPresets,
-            enabledPresetIDs: enabledPresetIDs,
+            presets: presets,
             sessionHistory: sessionHistory,
             isRightSidebarVisible: isRightSidebarVisible,
             isLeftSidebarVisible: isLeftSidebarVisible,

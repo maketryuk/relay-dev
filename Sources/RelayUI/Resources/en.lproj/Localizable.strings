@@ -1,6 +1,7 @@
 /* Relay — English is the source language; the key is the English text. */
 
 "A project file tree and an editor with linting will live here." = "A project file tree and an editor with linting will live here.";
+"A session, service or container exited with an error" = "A session, service or container exited with an error";
 "About" = "About";
 "Add Project" = "Add Project";
 "Add Project…" = "Add Project…";
@@ -8,6 +9,7 @@
 "Add project" = "Add project";
 "Add service" = "Add service";
 "Agent is waiting for you" = "Agent is waiting for you";
+"Agents and services only — a shell returning to its prompt is not an event" = "Agents and services only — a shell returning to its prompt is not an event";
 "Appearance" = "Appearance";
 "Application" = "Application";
 "Applies immediately, no restart needed" = "Applies immediately, no restart needed";
@@ -97,6 +99,7 @@
 "Quick switching" = "Quick switching";
 "Reconnect" = "Reconnect";
 "Refresh containers" = "Refresh containers";
+"Relay" = "Relay";
 "Reload config" = "Reload config";
 "Remove" = "Remove";
 "Remove Project" = "Remove Project";
@@ -133,6 +136,7 @@
 "Session unavailable" = "Session unavailable";
 "Sessions" = "Sessions";
 "Sessions it was supervising have ended." = "Sessions it was supervising have ended.";
+"Sessions live in a background daemon and survive quitting the app" = "Sessions live in a background daemon and survive quitting the app";
 "Sessions sidebar" = "Sessions sidebar";
 "Sessions you finish appear here, with what ran and how it ended." = "Sessions you finish appear here, with what ran and how it ended.";
 "Settings" = "Settings";
@@ -150,9 +154,11 @@
 "Stopped" = "Stopped";
 "Stopping" = "Stopping";
 "Terminate" = "Terminate";
+"The only notification that plays a sound" = "The only notification that plays a sound";
 "This session is no longer known to the daemon." = "This session is no longer known to the daemon.";
 "Toggle Project Panel" = "Toggle Project Panel";
 "Toggle Sessions Sidebar" = "Toggle Sessions Sidebar";
+"Turn everything off without losing your other choices" = "Turn everything off without losing your other choices";
 "Up" = "Up";
 "Version" = "Version";
 "Waiting for you" = "Waiting for you";
@@ -160,3 +166,7 @@
 "Work finished" = "Work finished";
 "Working" = "Working";
 "Workspace" = "Workspace";
+"\\(Int(model.sidebarWidth)) pt" = "\\(Int(model.sidebarWidth)) pt";
+"\\(model.projects.count) in this workspace" = "\\(model.projects.count) in this workspace";
+"v\\(RelayProtocolVersion.current)" = "v\\(RelayProtocolVersion.current)";
+"⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project";

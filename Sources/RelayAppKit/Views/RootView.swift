@@ -118,13 +118,7 @@ struct ProjectOverviewPane: View {
     let project: Project
 
     private var startPresets: [SessionPreset] {
-        [.claude, .codex, .shell].map {
-            SessionPresets.preferred(
-                for: $0,
-                custom: model.customPresets,
-                enabledIDs: model.enabledPresetIDs
-            )
-        }
+        [.claude, .codex, .shell].map { SessionPresets.preferred(for: $0, in: model.presets) }
     }
 
     var body: some View {

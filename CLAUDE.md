@@ -5,22 +5,15 @@ asked for twice.
 
 ## Releases
 
-### When to cut one
+**Never tag or publish a release without being asked to.** Work lands on `main`
+and accumulates under `## Unreleased` in `CHANGELOG.md`; whether it is ready to
+be a version is a judgement about the product, not about whether a batch of work
+is finished. A stream of versions nobody decided to cut is noise.
 
-Not every session of work is a release. A version number is a signal, and four
-minor versions in an afternoon says nothing at all.
+Nothing has been released yet. The first release will be `0.1.0`, and until then
+`RelayVersion.current` stays `0.1.0-dev`.
 
-- **Patch** (`0.5.x`) — the default. Fixes, small adjustments, anything that
-  does not change what the app can do.
-- **Minor** (`0.x.0`) — a milestone worth telling someone about: a new
-  capability, or a restructuring they would notice on opening the app.
-- **Major** — reserved for 1.0 and for breaking changes to stored data after
-  that.
-
-Work accumulates under `## Unreleased` in `CHANGELOG.md`. Cut a release when
-that section is worth reading, not when the day ends.
-
-### How to cut one
+When a release is asked for:
 
 1. **Bump the version** in `Sources/RelayProtocol/RelayVersion.swift`. It is the
    single source of truth — the build script reads it, so the bundle, the daemon
@@ -31,6 +24,9 @@ that section is worth reading, not when the day ends.
 3. **Tag** `vX.Y.Z` and push it.
 4. **Publish a GitHub release** on that tag with the changelog section as its
    body. A tag with no notes tells nobody anything.
+
+After 0.1.0: a minor version is a milestone worth telling someone about, a patch
+is everything else, and a major is reserved for breaking changes to stored data.
 
 ## Daemon protocol
 

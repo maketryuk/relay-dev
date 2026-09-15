@@ -12,7 +12,7 @@ import SwiftUI
 /// construction.
 struct TitleBar: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
     @State private var isSearchHovering = false
 
     /// Room for the traffic lights, which float over whatever is beneath them.
@@ -107,7 +107,7 @@ struct TitleBar: View {
             }
 
             IconButton(systemImage: "gearshape", help: "", size: 24) {
-                openSettings()
+                openWindow(id: SettingsWindow.id)
             }
             .relayTooltip(relayLocalized("Settings"), shortcut: model.binding(for: .openSettings))
 
