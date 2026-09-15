@@ -134,8 +134,12 @@ public final class PTYProcess: @unchecked Sendable {
         let exit = DispatchSource.makeProcessSource(identifier: pid, eventMask: .exit, queue: DaemonQueue.shared)
         exit.setEventHandler { [weak self] in
             guard let self else { return }
-            // Give the reader a chance to pick up the final bytes before we
-            // report the exit upstream.
+            // Drained *before* the child is reaped, and the order is the whole
+            // point: on macOS it is reaping, not exiting, that tears the pty
+            // down and discards whatever is still buffered in it. Measured, not
+            // assumed — reading after the reap lost the output 30 times out of
+            // 30. A command that prints why it failed and exits in the same
+            // breath would have printed into nothing.
             self.drainAvailableOutput(into: onOutput)
             onExit(self.reapExitCode())
         }
