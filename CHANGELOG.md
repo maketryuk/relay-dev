@@ -8,6 +8,9 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
+- **Projects wear their own icon.** A repository nearly always ships a favicon
+  or an app icon, and it says which project this is far better than two letters
+  over a colour. One can also be chosen or dropped in the project's settings.
 - **A control under the keyboard looks like a control under the pointer**, and
   carries an accent ring on top: one shade of grey away from near-black is not
   an answer to "where am I".
@@ -97,6 +100,12 @@ than when a day of work ends. Until then everything lands here.
 
 ### Changed
 
+- **One frame for every panel and dialog.** Ports, hosts, settings, the project
+  sheet and the two editors were each built by hand and had drifted: the same
+  dialog was tighter at the top than at the bottom, and no two of them agreed.
+  They now share a surface, with generous insets that match.
+- The traffic lights sit on the centre line of Relay's own title bar rather than
+  the shorter one macOS would have drawn.
 - One draggable divider for the whole app. The sidebars and the splits each drew
   and handled their own, and only one of them had a hover state — or moved at
   the speed of the pointer.

@@ -18,10 +18,10 @@ struct PresetEditorView: View {
     private var isEditing: Bool { preset != nil }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            RelayDivider()
-
+        ModalSurface(
+            isEditing ? relayLocalized("Edit Preset") : relayLocalized("New Preset"),
+            onDismiss: { dismiss() }
+        ) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.Spacing.large) {
                     if !isEditing {
@@ -29,27 +29,15 @@ struct PresetEditorView: View {
                     }
                     fields
                 }
-                .padding(Theme.Spacing.large)
+                .padding(.horizontal, ModalSurface<EmptyView, EmptyView>.horizontalInset)
+                .padding(.vertical, ModalSurface<EmptyView, EmptyView>.verticalInset)
             }
-
-            RelayDivider()
+        } footer: {
             footer
         }
-        .frame(width: 520, height: 520)
-        .background(Theme.Palette.surface)
-        .preferredColorScheme(.dark)
+        .frame(width: 540, height: 580)
+        .modalPlate()
         .onAppear(perform: load)
-    }
-
-    private var header: some View {
-        HStack {
-            Text(isEditing ? relayLocalized("Edit Preset") : relayLocalized("New Preset"))
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Theme.Palette.textPrimary)
-            Spacer()
-            IconButton(systemImage: "xmark", help: relayLocalized("Close")) { dismiss() }
-        }
-        .padding(Theme.Spacing.large)
     }
 
     /// Starting points, so the common presets need no typing and nobody has to
@@ -147,7 +135,6 @@ struct PresetEditorView: View {
             RelayButton(relayLocalized("Cancel"), kind: .ghost) { dismiss() }
             RelayButton(isEditing ? relayLocalized("Save") : relayLocalized("Add"), kind: .primary, action: save)
         }
-        .padding(Theme.Spacing.large)
     }
 
     private func load() {

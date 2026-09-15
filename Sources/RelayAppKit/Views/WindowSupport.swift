@@ -214,3 +214,47 @@ extension View {
         background(WindowConfigurator(configure: configure))
     }
 }
+
+/// Puts the traffic lights on the centre line of Relay's own title bar.
+///
+/// AppKit places them for the title bar it would have drawn, which is shorter
+/// than the one Relay draws instead, so they sit high. There is no API for
+/// this — only moving the buttons — and AppKit puts them back whenever it
+/// rebuilds the title bar, which is why the alignment is reapplied rather than
+/// set once.
+@MainActor
+enum TrafficLightAligner {
+    private static let buttons: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+
+    static func align(_ window: NSWindow, barHeight: CGFloat) {
+        apply(to: window, barHeight: barHeight)
+
+        let centre = NotificationCenter.default
+        for name in [
+            NSWindow.didResizeNotification,
+            NSWindow.didEnterFullScreenNotification,
+            NSWindow.didExitFullScreenNotification,
+            NSWindow.didBecomeKeyNotification,
+        ] {
+            centre.addObserver(forName: name, object: window, queue: .main) { _ in
+                MainActor.assumeIsolated { apply(to: window, barHeight: barHeight) }
+            }
+        }
+    }
+
+    private static func apply(to window: NSWindow, barHeight: CGFloat) {
+        for type in buttons {
+            guard let button = window.standardWindowButton(type),
+                  let container = button.superview
+            else { continue }
+
+            // The container sits at the top of the window and measures upward
+            // from its own bottom, so the centre line is expressed as a
+            // distance down from the top and then converted.
+            var origin = button.frame.origin
+            origin.y = container.bounds.height - (barHeight / 2) - (button.frame.height / 2)
+            guard abs(origin.y - button.frame.origin.y) > 0.5 else { continue }
+            button.setFrameOrigin(origin)
+        }
+    }
+}
