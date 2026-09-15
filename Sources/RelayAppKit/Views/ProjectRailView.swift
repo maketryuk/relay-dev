@@ -11,6 +11,7 @@ struct ProjectRailView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
+    @State private var isDropTargeted = false
 
     var body: some View {
         @Bindable var model = model
@@ -44,16 +45,23 @@ struct ProjectRailView: View {
         .padding(.vertical, Theme.Spacing.small)
         .frame(width: Theme.Metrics.railWidth)
         .frame(maxHeight: .infinity)
-        .background(Theme.Palette.rail)
+        .background(isDropTargeted ? Theme.Palette.accentMuted : Theme.Palette.rail)
         .overlay(alignment: .trailing) { RelayDivider(axis: .vertical) }
-        .fileImporter(
-            isPresented: $model.isAddingProject,
-            allowedContentTypes: [.folder],
-            allowsMultipleSelection: false
-        ) { result in
-            if case let .success(urls) = result, let url = urls.first {
-                model.addProject(at: url)
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+            for provider in providers {
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                    guard let url else { return }
+                    var isDirectory: ObjCBool = false
+                    guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+                          isDirectory.boolValue
+                    else { return }
+                    Task { @MainActor in model.addProject(at: url) }
+                }
             }
+            return true
+        }
+        .sheet(isPresented: $model.isAddingProject) {
+            AddProjectSheet()
         }
     }
 
