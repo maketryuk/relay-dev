@@ -6,6 +6,10 @@ import SwiftUI
 /// Entry point. `main()` is invoked from the thin `RelayApp` executable rather
 /// than via `@main` so the whole UI stays inside an importable library.
 public enum RelayApplication {
+    /// `App.main()` is main-actor isolated. Swift 6.2 infers that through the
+    /// wrapper; 6.1 does not, and CI runs 6.1 — so it is stated explicitly
+    /// rather than left to the compiler's mood.
+    @MainActor
     public static func main() {
         RelayMainApp.main()
     }

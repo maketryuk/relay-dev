@@ -28,7 +28,7 @@ struct ProjectSidebarView: View {
     // MARK: - Header
 
     private var header: some View {
-        HStack(alignment: .top, spacing: Theme.Spacing.small) {
+        HStack(alignment: .center, spacing: Theme.Spacing.small) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(project.name)
                     .font(Theme.Typography.title)
@@ -41,10 +41,22 @@ struct ProjectSidebarView: View {
                     .truncationMode(.head)
             }
 
+            // Fixed height: an expanding drag area would stretch the header to
+            // fill the sidebar, which is exactly what it did.
             WindowDragArea()
-                .frame(minWidth: Theme.Spacing.small, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: Theme.Spacing.small, maxWidth: .infinity, minHeight: 30, maxHeight: 30)
 
-            IconButton(systemImage: "gearshape", help: "") {
+            IconButton(systemImage: "plus", help: "", size: 22) {
+                isShowingNewSessionMenu.toggle()
+            }
+            .relayTooltip("New session", shortcut: model.binding(for: .newShell))
+            .popover(isPresented: $isShowingNewSessionMenu, arrowEdge: .bottom) {
+                NewSessionMenu(projectID: project.id) {
+                    isShowingNewSessionMenu = false
+                }
+            }
+
+            IconButton(systemImage: "gearshape", help: "", size: 22) {
                 model.isProjectSettingsOpen = true
             }
             .relayTooltip("Project settings", shortcut: model.binding(for: .projectSettings))
@@ -57,31 +69,23 @@ struct ProjectSidebarView: View {
 
     // MARK: - Sessions
 
+    /// No section header: with sessions the only thing in this sidebar, a
+    /// heading would be labelling the whole panel.
     private var sessions: some View {
         let list = model.interactiveSessions(in: project.id)
 
-        return VStack(alignment: .leading, spacing: 0) {
-            SectionHeader("Sessions") {
-                IconButton(systemImage: "plus", help: "", size: 16) {
-                    isShowingNewSessionMenu.toggle()
-                }
-                .relayTooltip("New session", shortcut: model.binding(for: .newShell))
-                .popover(isPresented: $isShowingNewSessionMenu, arrowEdge: .bottom) {
-                    NewSessionMenu(projectID: project.id) {
-                        isShowingNewSessionMenu = false
-                    }
-                }
-            }
-            .padding(.horizontal, Theme.Spacing.xsmall)
-
+        return Group {
             if list.isEmpty {
-                Text("No sessions yet. Press + to start one.")
-                    .font(Theme.Typography.rowSecondary)
-                    .foregroundStyle(Theme.Palette.textTertiary)
-                    .padding(.horizontal, Theme.Spacing.medium)
-                    .padding(.vertical, Theme.Spacing.small)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer()
+                VStack(spacing: Theme.Spacing.small) {
+                    Text("No sessions yet")
+                        .font(Theme.Typography.row)
+                        .foregroundStyle(Theme.Palette.textSecondary)
+                    Text("Press + to start one")
+                        .font(Theme.Typography.rowSecondary)
+                        .foregroundStyle(Theme.Palette.textTertiary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, Theme.Spacing.xlarge)
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 2) {
@@ -90,7 +94,7 @@ struct ProjectSidebarView: View {
                         }
                     }
                     .padding(.horizontal, Theme.Spacing.small)
-                    .padding(.bottom, Theme.Spacing.small)
+                    .padding(.vertical, Theme.Spacing.small)
                 }
             }
         }

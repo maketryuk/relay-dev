@@ -15,6 +15,7 @@ struct RightSidebarView: View {
                 tabStrip
                 RelayDivider()
                 content
+                Spacer(minLength: 0)
             }
             .frame(width: 300)
             .background(Theme.Palette.sidebar)
@@ -26,8 +27,10 @@ struct RightSidebarView: View {
             ForEach(RightSidebarTab.allCases) { tab in
                 tabButton(tab)
             }
+            // Fixed height: an expanding drag area stretches the strip to fill
+            // the whole panel.
             WindowDragArea()
-                .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 24, maxHeight: 24)
         }
         .padding(.horizontal, Theme.Spacing.small)
         .padding(.top, Theme.Spacing.large + Theme.Spacing.small)
