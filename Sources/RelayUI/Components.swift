@@ -53,6 +53,7 @@ public enum RelayButtonStyleKind {
 public struct RelayButton: View {
     private let title: String
     private let systemImage: String?
+    private let leading: AnyView?
     private let kind: RelayButtonStyleKind
     private let action: () -> Void
 
@@ -66,6 +67,21 @@ public struct RelayButton: View {
     ) {
         self.title = title
         self.systemImage = systemImage
+        leading = nil
+        self.kind = kind
+        self.action = action
+    }
+
+    /// For the buttons whose mark is a vendor logo rather than an SF Symbol.
+    public init<Leading: View>(
+        _ title: String,
+        kind: RelayButtonStyleKind = .secondary,
+        @ViewBuilder leading: () -> Leading,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        systemImage = nil
+        self.leading = AnyView(leading())
         self.kind = kind
         self.action = action
     }
@@ -73,7 +89,9 @@ public struct RelayButton: View {
     public var body: some View {
         Button(action: action) {
             HStack(spacing: Theme.Spacing.xsmall + 2) {
-                if let systemImage {
+                if let leading {
+                    leading
+                } else if let systemImage {
                     Image(systemName: systemImage).font(.system(size: 11, weight: .semibold))
                 }
                 Text(title).font(Theme.Typography.row)
@@ -301,6 +319,74 @@ public struct RelayTextField: View {
     }
 }
 
+/// A name being edited in place.
+///
+/// Return and Escape already commit and cancel, but nothing on screen said so,
+/// and an edit field with no visible way out reads as a trap. The buttons are
+/// the affordance; the keys remain the shortcut.
+public struct InlineRenameField: View {
+    private let placeholder: String
+    @Binding private var text: String
+    private let onCommit: () -> Void
+    private let onCancel: () -> Void
+
+    @FocusState private var isFocused: Bool
+
+    public init(
+        _ placeholder: String,
+        text: Binding<String>,
+        onCommit: @escaping () -> Void,
+        onCancel: @escaping () -> Void
+    ) {
+        self.placeholder = placeholder
+        _text = text
+        self.onCommit = onCommit
+        self.onCancel = onCancel
+    }
+
+    public var body: some View {
+        HStack(spacing: Theme.Spacing.xsmall) {
+            TextField(placeholder, text: $text)
+                .textFieldStyle(.plain)
+                .font(Theme.Typography.row)
+                .foregroundStyle(Theme.Palette.textPrimary)
+                .focused($isFocused)
+                .onSubmit(commit)
+
+            IconButton(
+                systemImage: "checkmark",
+                size: 20,
+                isEnabled: !isBlank,
+                tint: Theme.Palette.statusFinished,
+                action: commit
+            )
+            IconButton(systemImage: "xmark", size: 20, action: onCancel)
+        }
+        .padding(.leading, Theme.Spacing.small + 2)
+        .padding(.trailing, 3)
+        .padding(.vertical, 3)
+        .background(Theme.Palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
+                .strokeBorder(isFocused ? Theme.Palette.accent.opacity(0.7) : Theme.Palette.border, lineWidth: 1)
+        )
+        // Renaming starts with the pointer, so the caret has to arrive without
+        // a second click.
+        .onAppear { isFocused = true }
+        .onExitCommand(perform: onCancel)
+    }
+
+    private var isBlank: Bool {
+        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func commit() {
+        guard !isBlank else { return }
+        onCommit()
+    }
+}
+
 // MARK: - Structure
 
 public struct RelayDivider: View {
@@ -365,6 +451,28 @@ public struct SectionHeader<Trailing: View>: View {
 }
 
 /// When a row's trailing controls are shown.
+/// Keeps a control that only matters on hover in the layout at all times.
+///
+/// Inserting it when the pointer arrives reflows everything beside it, so the
+/// row twitches under the cursor. The highlight is meant to be the only thing
+/// that changes.
+public struct HoverReveal<Content: View>: View {
+    private let isVisible: Bool
+    private let content: Content
+
+    public init(isVisible: Bool, @ViewBuilder content: () -> Content) {
+        self.isVisible = isVisible
+        self.content = content()
+    }
+
+    public var body: some View {
+        content
+            .opacity(isVisible ? 1 : 0)
+            .allowsHitTesting(isVisible)
+            .accessibilityHidden(!isVisible)
+    }
+}
+
 public enum RowAccessoryVisibility {
     /// Keeps the row quiet until the pointer is over it. Right for destructive
     /// or secondary actions.
@@ -444,7 +552,7 @@ public struct SidebarRow<Accessory: View>: View {
 
             Spacer(minLength: Theme.Spacing.xsmall)
 
-            if isHovering || accessoryVisibility == .always {
+            HoverReveal(isVisible: isHovering || accessoryVisibility == .always) {
                 accessory
             }
             if let status {
@@ -481,21 +589,28 @@ public struct SidebarRow<Accessory: View>: View {
 
 public struct Badge: View {
     private let text: String
+    private let systemImage: String?
     private let tint: Color
 
-    public init(_ text: String, tint: Color = Theme.Palette.textTertiary) {
+    public init(_ text: String, systemImage: String? = nil, tint: Color = Theme.Palette.textTertiary) {
         self.text = text
+        self.systemImage = systemImage
         self.tint = tint
     }
 
     public var body: some View {
-        Text(text)
-            .font(Theme.Typography.caption)
-            .foregroundStyle(tint)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1.5)
-            .background(tint.opacity(0.12))
-            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        HStack(spacing: 3) {
+            if let systemImage {
+                Image(systemName: systemImage).font(.system(size: 9, weight: .medium))
+            }
+            Text(text)
+        }
+        .font(Theme.Typography.caption)
+        .foregroundStyle(tint)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 1.5)
+        .background(tint.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
     }
 }
 

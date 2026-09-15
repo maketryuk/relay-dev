@@ -175,10 +175,15 @@ final class AppModel {
 
     private func startEventLoop() {
         eventTask?.cancel()
+        // A new stream per connection, taken out *before* reconciling, so no
+        // state change between the two is missed. Reusing the previous one
+        // would deliver nothing: cancelling its consumer above closes it for
+        // good, and events from the daemon just retired are not worth replaying
+        // against the daemon that replaced it.
+        let stream = client.eventStream()
         eventTask = Task { [weak self] in
-            guard let self else { return }
-            for await event in self.client.events {
-                if Task.isCancelled { return }
+            for await event in stream {
+                guard let self, !Task.isCancelled else { return }
                 self.handle(event: event)
             }
         }
@@ -513,8 +518,20 @@ final class AppModel {
         paneLayouts[projectID]
     }
 
+    /// The session being dragged out of the sidebar or a pane header.
+    ///
+    /// Held here rather than in the drag payload because every pane needs to
+    /// know, while the pointer is still moving, whether what is coming is one of
+    /// ours — the drop zones only light up for a session.
+    var draggingSessionID: SessionID?
+
     /// Splits the focused pane, starting a terminal beside it.
     func splitFocusedPane(axis: PaneAxis) {
+        splitPane(showing: selectedSessionID, axis: axis)
+    }
+
+    /// Splits the pane showing `sessionID`, starting a terminal beside it.
+    func splitPane(showing sessionID: SessionID?, axis: PaneAxis) {
         guard let projectID = selectedProjectID, let project = project(projectID) else { return }
         let preset = SessionPresets.preferred(for: .shell, in: presets)
         let name = SessionNaming.nextName(base: preset.name, existing: sessions(in: projectID).map(\.name))
@@ -536,11 +553,11 @@ final class AppModel {
                     self.sessionOrder.append(snapshot.id)
                 }
 
-                if let focused = self.selectedSessionID, let layout = self.paneLayouts[projectID],
-                   PaneLayout.contains(focused, in: layout) {
+                if let target = sessionID, let layout = self.paneLayouts[projectID],
+                   PaneLayout.contains(target, in: layout) {
                     self.paneLayouts[projectID] = PaneLayout.split(
                         layout,
-                        target: focused,
+                        target: target,
                         with: snapshot.id,
                         axis: axis
                     )
@@ -576,6 +593,26 @@ final class AppModel {
         } else {
             paneLayouts[projectID] = .session(sessionID)
         }
+    }
+
+    /// Lands a dragged session on the pane showing `target`.
+    ///
+    /// Moving rather than copying: a session is one running process and showing
+    /// it in two panes at once would give the user two views of one terminal,
+    /// which is a bug dressed as a feature.
+    func movePane(_ moved: SessionID, onto target: SessionID, edge: PaneDropEdge) {
+        draggingSessionID = nil
+        guard let projectID = sessions[moved]?.projectID,
+              sessions[target]?.projectID == projectID
+        else { return }
+
+        if let layout = paneLayouts[projectID] {
+            paneLayouts[projectID] = PaneLayout.moving(moved, onto: target, edge: edge, in: layout)
+        } else {
+            paneLayouts[projectID] = .session(moved)
+        }
+        selectSession(moved)
+        persist()
     }
 
     func setPaneFraction(_ fraction: Double, forSplit id: UUID, in projectID: ProjectID) {

@@ -8,6 +8,14 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
+- **Splitting is visible, not just bound to a key.** Every pane header carries
+  split-right and split-down buttons, and a session can be dragged — from the
+  sidebar or by its own header — onto any pane. The half it will occupy is
+  previewed while the pointer moves: the four edges divide, the middle takes the
+  pane over. A session dragged across a split moves rather than appearing twice.
+- **The rename field says how to leave it.** Renaming a session — or a project,
+  by double-clicking its name in the sidebar header — now offers a tick and a
+  cross beside the field, and puts the caret there without a second click.
 - **Split terminals.** `⌘D` splits right, `⇧⌘D` splits down, `⌥⌘]` moves focus
   between panes. Dividers drag, the arrangement is remembered per project, and a
   pane whose session has gone is dropped rather than left blank. Choosing a
@@ -68,6 +76,8 @@ than when a day of work ends. Until then everything lands here.
 
 ### Changed
 
+- The project screen offers your own presets rather than a hardcoded trio, each
+  with its agent's real mark, and shows the branch with a Git glyph.
 - One icon control for the whole app. Hover, disabled and selected states were
   being reimplemented per site and drifting — the notification bell had no hover
   while the gear beside it did. Row and header buttons also grew from 16 to 24
@@ -92,6 +102,18 @@ than when a day of work ends. Until then everything lands here.
 
 ### Fixed
 
+- **Terminals took a minute to start, and often never did.** Two separate
+  faults, both of which left a session at "Starting" with nothing on screen.
+  The app's event stream was closed for good the first time the daemon
+  connection was rebuilt — which happens on every launch that retires an older
+  daemon — so replies kept working while every status change and every byte of
+  terminal output was silently dropped. And the daemon answered `lsof`, `docker
+  ps` and `docker compose up` on the same serial queue that carries PTY output,
+  keystrokes and session creation, so pressing Start in the Docker tab froze
+  every terminal in the app until the command returned.
+- **Session rows twitched under the pointer.** The close button was being
+  inserted on hover, pushing everything beside it; it now holds its place and
+  only fades in, as do the other hover-revealed row controls.
 - `⌘\\`, `⇧⌘S` and `⌘,` only ever opened their window. They now toggle: front
   and focused closes, anything else brings it forward.
 

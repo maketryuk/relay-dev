@@ -113,6 +113,18 @@ struct TerminalPane: View {
                     .foregroundStyle(Theme.Palette.textTertiary)
             }
 
+            // Splitting has a keyboard shortcut and a drag gesture; neither is
+            // discoverable, so the pane says out loud that it can divide.
+            IconButton(systemImage: "rectangle.split.2x1", help: "") {
+                model.splitPane(showing: session.id, axis: .horizontal)
+            }
+            .relayTooltip(relayLocalized("Split Right"), shortcut: model.binding(for: .splitRight))
+
+            IconButton(systemImage: "rectangle.split.1x2", help: "") {
+                model.splitPane(showing: session.id, axis: .vertical)
+            }
+            .relayTooltip(relayLocalized("Split Down"), shortcut: model.binding(for: .splitDown))
+
             IconButton(systemImage: "arrow.clockwise", help: "") {
                 model.closeSession(session.id)
                 if let projectID = model.selectedProjectID {
@@ -129,6 +141,10 @@ struct TerminalPane: View {
         .padding(.horizontal, Theme.Spacing.medium)
         .padding(.vertical, Theme.Spacing.small)
         .background(Theme.Palette.sidebar)
+        .contentShape(Rectangle())
+        // The header is the pane's handle: drag it onto another pane to move
+        // this terminal there, the way a tab bar works.
+        .sessionDragSource(session.id, model: model)
     }
 
     @ViewBuilder

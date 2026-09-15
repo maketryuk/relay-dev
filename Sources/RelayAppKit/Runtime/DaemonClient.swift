@@ -3,7 +3,7 @@ import RelayProtocol
 
 /// Typed, async client for the session daemon.
 ///
-/// Owns request correlation and republishes daemon events as an `AsyncStream`.
+/// Owns request correlation and republishes daemon events to its subscribers.
 /// Output frames are delivered on a background queue and coalesced by the
 /// terminal layer, so a chatty session never floods the main thread.
 final class DaemonClient: @unchecked Sendable {
@@ -23,22 +23,44 @@ final class DaemonClient: @unchecked Sendable {
     private var transport: (any DaemonTransport)?
     private var nextRequestID: UInt64 = 1
     private var pending: [UInt64: CheckedContinuation<DaemonReply, Error>] = [:]
-    private var eventContinuation: AsyncStream<DaemonEvent>.Continuation?
+    private var subscribers: [UInt64: AsyncStream<DaemonEvent>.Continuation] = [:]
+    private var nextSubscriberID: UInt64 = 1
     private let encoder = MessageFraming.makeEncoder()
     private let decoder = MessageFraming.makeDecoder()
 
-    private(set) var events: AsyncStream<DaemonEvent>!
     /// Fired when the socket drops so the UI can show a reconnect affordance.
     var onDisconnect: (@Sendable () -> Void)?
 
-    init() {
-        events = AsyncStream(bufferingPolicy: .unbounded) { continuation in
-            self.eventContinuation = continuation
+    /// A fresh stream of daemon events for one consumer.
+    ///
+    /// Deliberately not a single long-lived stream. `AsyncStream` terminates for
+    /// good the moment its consuming task is cancelled, and the connection is
+    /// torn down and rebuilt as a matter of course — a retired daemon, a dropped
+    /// socket. With one shared stream the app went permanently deaf after the
+    /// first reconnect: requests still got replies, so it looked connected,
+    /// while every session sat at "Starting" with a blank terminal because no
+    /// output or status event ever arrived again.
+    func eventStream() -> AsyncStream<DaemonEvent> {
+        AsyncStream(bufferingPolicy: .unbounded) { continuation in
+            let token = lock.withLock { () -> UInt64 in
+                let identifier = nextSubscriberID
+                nextSubscriberID += 1
+                subscribers[identifier] = continuation
+                return identifier
+            }
+            continuation.onTermination = { [weak self] _ in
+                guard let self else { return }
+                self.lock.withLock { _ = self.subscribers.removeValue(forKey: token) }
+            }
         }
     }
 
     var isConnected: Bool {
         lock.withLock { transport != nil }
+    }
+
+    var subscriberCount: Int {
+        lock.withLock { subscribers.count }
     }
 
     // MARK: - Connection
@@ -147,7 +169,18 @@ final class DaemonClient: @unchecked Sendable {
 
     /// A reply that never arrives — a frame the daemon could not decode, for
     /// instance — must not leave the UI waiting forever.
-    private static let requestTimeout = Duration.seconds(20)
+    ///
+    /// How long "forever" is depends on the request. Anything the daemon answers
+    /// from memory is instant and a slow one means something is wrong; anything
+    /// that shells out inherits however long that program takes, and giving up
+    /// on it early reports a failure the user would then watch succeed.
+    private static func timeout(for request: DaemonRequest) -> Duration {
+        switch request {
+        case .dockerCommand: .seconds(180)
+        case .listPorts, .dockerStatus: .seconds(60)
+        default: .seconds(20)
+        }
+    }
 
     @discardableResult
     func send(_ request: DaemonRequest) async throws -> DaemonReply {
@@ -163,7 +196,7 @@ final class DaemonClient: @unchecked Sendable {
         let frame = try MessageFraming.encode(ClientMessage(requestID: requestID, request: request), using: encoder)
 
         let watchdog = Task { [weak self] in
-            try? await Task.sleep(for: Self.requestTimeout)
+            try? await Task.sleep(for: Self.timeout(for: request))
             guard !Task.isCancelled else { return }
             self?.resume(
                 requestID: requestID,
@@ -195,7 +228,7 @@ final class DaemonClient: @unchecked Sendable {
         transport.send(frame)
     }
 
-    private func handle(frame: Data) {
+    func handle(frame: Data) {
         guard let message = try? decoder.decode(ServerMessage.self, from: frame) else { return }
         switch message {
         case let .reply(requestID, reply):
@@ -203,7 +236,9 @@ final class DaemonClient: @unchecked Sendable {
         case let .failure(requestID, error):
             resume(requestID: requestID, with: .failure(error))
         case let .event(event):
-            eventContinuation?.yield(event)
+            for continuation in lock.withLock({ Array(subscribers.values) }) {
+                continuation.yield(event)
+            }
         }
     }
 

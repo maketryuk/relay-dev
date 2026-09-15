@@ -29,6 +29,7 @@ struct PaneTreeView: View {
                 // A click anywhere in a pane focuses it, which is what makes a
                 // split usable without reaching for the sidebar.
                 .onTapGesture { model.selectSession(sessionID) }
+                .paneDropTarget(sessionID)
         } else {
             EmptyStateView(
                 systemImage: "terminal",

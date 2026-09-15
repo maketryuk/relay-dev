@@ -152,7 +152,7 @@ private struct PresetRow: View {
 
             Spacer(minLength: Theme.Spacing.xsmall)
 
-            if isHovering, !preset.isProtected {
+            HoverReveal(isVisible: isHovering && !preset.isProtected) {
                 IconButton(systemImage: "trash", help: "Remove preset", size: 16, action: onDelete)
             }
         }

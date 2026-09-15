@@ -20,6 +20,8 @@ public final class DaemonServer: @unchecked Sendable {
     /// opens free, short enough that a just-started dev server shows up.
     private static let portCacheLifetime: TimeInterval = 2.0
     private static let dockerCacheLifetime: TimeInterval = 4.0
+    /// Long enough for a first `compose up` to pull its images.
+    private static let dockerCommandTimeout: TimeInterval = 150
 
     private var listener: SocketListener?
     private var sessions: [SessionID: SessionRuntime] = [:]
@@ -27,24 +29,45 @@ public final class DaemonServer: @unchecked Sendable {
     private var clients: [UInt64: ClientConnection] = [:]
     private var nextClientID: UInt64 = 1
     private var ticker: DispatchSourceTimer?
-    private var portCache: [ProjectID: (timestamp: Date, ports: [ListeningPort])] = [:]
+    private var portCache: (timestamp: Date, ports: [ListeningPort])?
+    private var portWaiters: [(clientID: UInt64, requestID: UInt64)] = []
+    private var isScanningPorts = false
     private var dockerCache: [String: (timestamp: Date, snapshot: DockerSnapshot)] = [:]
-    private let commandRunner: any CommandRunning = SystemCommandRunner()
+    private var dockerWaiters: [String: [(clientID: UInt64, requestID: UInt64)]] = [:]
+    private let commandRunner: any CommandRunning
+    /// Everything that shells out runs here, never on `DaemonQueue.shared`.
+    ///
+    /// That queue carries PTY output, keystrokes and session creation. `lsof`
+    /// takes a moment, `docker ps` takes seconds when the engine is starting,
+    /// and `docker compose up` can take minutes — run inline, each of them
+    /// froze every terminal in the app for its whole duration, which is how a
+    /// new session came to sit at "Starting" with a blank screen for a minute.
+    private let commandQueue = DispatchQueue(
+        label: "studio.lince.relay.daemon.commands",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
     private var idleTimer: DispatchSourceTimer?
     private let startedAt = Date()
     private let socketURL: URL
     private let logURL: URL
 
-    /// The socket path is injectable so tests can run a real daemon on a
-    /// throwaway path without colliding with the user's live one.
+    /// The socket path and the command runner are injectable so tests can run a
+    /// real daemon on a throwaway path, and can make `lsof` or `docker` take as
+    /// long as they like without depending on the machine underneath.
     /// Invoked when the daemon has finished tearing down and the process should
     /// end. Exiting is the entry point's decision, not the server's — otherwise
     /// the server could not be hosted inside another process, including tests.
     public var onExitRequested: (@Sendable () -> Void)?
 
-    public init(socketURL: URL = RelayPaths.socketURL, logURL: URL = RelayPaths.daemonLogURL) {
+    public init(
+        socketURL: URL = RelayPaths.socketURL,
+        logURL: URL = RelayPaths.daemonLogURL,
+        commandRunner: any CommandRunning = SystemCommandRunner()
+    ) {
         self.socketURL = socketURL
         self.logURL = logURL
+        self.commandRunner = commandRunner
     }
 
     // MARK: - Server lifecycle
@@ -135,7 +158,9 @@ public final class DaemonServer: @unchecked Sendable {
     private func handle(message: ClientMessage, from client: ClientConnection) {
         DaemonQueue.assertIsolated()
         do {
-            let reply = try perform(message.request, for: client)
+            // A `nil` reply means the request had to shell out: it answers
+            // itself once the command returns, from another queue.
+            guard let reply = try perform(message.request, requestID: message.requestID, for: client) else { return }
             client.send(.reply(requestID: message.requestID, reply))
         } catch let error as DaemonError {
             client.send(.failure(requestID: message.requestID, error))
@@ -147,7 +172,11 @@ public final class DaemonServer: @unchecked Sendable {
         }
     }
 
-    private func perform(_ request: DaemonRequest, for client: ClientConnection) throws -> DaemonReply {
+    private func perform(
+        _ request: DaemonRequest,
+        requestID: UInt64,
+        for client: ClientConnection
+    ) throws -> DaemonReply? {
         switch request {
         case let .handshake(protocolVersion, clientName):
             guard protocolVersion == RelayProtocolVersion.current else {
@@ -163,14 +192,22 @@ public final class DaemonServer: @unchecked Sendable {
         case .listSessions:
             return .sessions(sessionOrder.compactMap { sessions[$0]?.snapshot() })
 
-        case let .listPorts(projectID):
-            return .ports(listPorts(for: projectID))
+        case .listPorts:
+            beginPortScan(requestID: requestID, for: client)
+            return nil
 
         case let .dockerStatus(projectDirectory):
-            return .docker(dockerStatus(for: projectDirectory))
+            beginDockerStatus(projectDirectory: projectDirectory, requestID: requestID, for: client)
+            return nil
 
         case let .dockerCommand(projectDirectory, arguments):
-            return runDockerCommand(projectDirectory: projectDirectory, arguments: arguments)
+            beginDockerCommand(
+                projectDirectory: projectDirectory,
+                arguments: arguments,
+                requestID: requestID,
+                for: client
+            )
+            return nil
 
         case let .terminateProcess(pid, force):
             return terminateProcess(pid: pid, force: force)
@@ -280,57 +317,59 @@ public final class DaemonServer: @unchecked Sendable {
 
     // MARK: - Ports
 
-    /// Ports are resolved on demand and cached briefly: the scan spawns `ps` and
-    /// `lsof`, which is far too expensive to run on a timer.
+    /// Ports are scanned on demand, off the daemon queue, and cached briefly.
     ///
-    /// The whole machine is scanned, not just this project. A developer looking
-    /// at a port list wants to know what is on 3000 regardless of who started
-    /// it; ports Relay owns are attributed, the rest are reported as-is.
-    private func listPorts(for projectID: ProjectID) -> [ListeningPort] {
+    /// The whole machine is scanned, not just the project in front of the user:
+    /// the question a developer has is "what is on 3000", and the answer is just
+    /// as often a server they started elsewhere. That also means the result does
+    /// not depend on who asked, so one scan answers everyone waiting for it —
+    /// which matters, because the ports window rescans itself while it is open.
+    private func beginPortScan(requestID: UInt64, for client: ClientConnection) {
         DaemonQueue.assertIsolated()
-        if let cached = portCache[projectID], Date().timeIntervalSince(cached.timestamp) < Self.portCacheLifetime {
-            return cached.ports
+        if let cached = portCache, Date().timeIntervalSince(cached.timestamp) < Self.portCacheLifetime {
+            client.send(.reply(requestID: requestID, .ports(cached.ports)))
+            return
         }
 
-        var ports = PortScanner.scanAll(runner: commandRunner)
-        let parents = PortScanner.processParents(runner: commandRunner)
+        portWaiters.append((client.id, requestID))
+        guard !isScanningPorts else { return }
+        isScanningPorts = true
 
-        // Map every live session's pid back to its session so a listener several
-        // forks deep can still be named.
-        var sessionByPID: [Int32: SessionRuntime] = [:]
-        for identifier in sessionOrder {
-            guard let session = sessions[identifier], session.isAlive,
-                  let pid = session.snapshot().pid
-            else { continue }
-            sessionByPID[pid] = session
+        // Session ownership is daemon state, so it is read here; the forks it
+        // takes to turn that into a port list happen elsewhere.
+        let owners = livePortOwners()
+        let runner = commandRunner
+        commandQueue.async { [weak self] in
+            let ports = PortScanner.survey(runner: runner, owners: owners)
+            guard let self else { return }
+            DaemonQueue.shared.async { self.finishPortScan(ports) }
         }
-        let candidates = Set(sessionByPID.keys)
+    }
 
-        // One syscall per port; the answer is what tells two `node` servers
-        // apart.
-        var directories: [Int32: String] = [:]
-        for port in ports where directories[port.pid] == nil {
-            directories[port.pid] = PortScanner.workingDirectory(of: port.pid) ?? ""
+    private func livePortOwners() -> [PortScanner.PortOwner] {
+        DaemonQueue.assertIsolated()
+        return sessionOrder.compactMap { identifier in
+            guard let session = sessions[identifier], session.isAlive else { return nil }
+            let snapshot = session.snapshot()
+            guard let pid = snapshot.pid else { return nil }
+            return PortScanner.PortOwner(
+                pid: pid,
+                sessionID: session.id,
+                name: snapshot.displayName,
+                projectID: snapshot.projectID
+            )
         }
+    }
 
-        for index in ports.indices {
-            let directory = directories[ports[index].pid]
-            ports[index].workingDirectory = directory?.isEmpty == true ? nil : directory
-
-            guard let ancestor = PortScanner.nearestAncestor(
-                of: ports[index].pid,
-                among: candidates,
-                parents: parents
-            ), let owner = sessionByPID[ancestor] else { continue }
-
-            let snapshot = owner.snapshot()
-            ports[index].ownerSessionID = owner.id
-            ports[index].ownerName = snapshot.displayName
-            ports[index].ownerProjectID = snapshot.projectID
+    private func finishPortScan(_ ports: [ListeningPort]) {
+        DaemonQueue.assertIsolated()
+        isScanningPorts = false
+        portCache = (Date(), ports)
+        let waiting = portWaiters
+        portWaiters.removeAll()
+        for waiter in waiting {
+            clients[waiter.clientID]?.send(.reply(requestID: waiter.requestID, .ports(ports)))
         }
-
-        portCache[projectID] = (Date(), ports)
-        return ports
     }
 
     /// Stops a process the ports list is showing.
@@ -351,7 +390,7 @@ public final class DaemonServer: @unchecked Sendable {
         // The whole group, so a shell wrapper does not leave its child behind.
         _ = killpg(getpgid(pid), signalNumber)
         let result = kill(pid, signalNumber)
-        portCache.removeAll()
+        portCache = nil
 
         guard result == 0 else {
             return .commandOutput(status: 1, output: String(cString: strerror(errno)))
@@ -361,17 +400,38 @@ public final class DaemonServer: @unchecked Sendable {
 
     // MARK: - Docker
 
-    /// Compose status is cached like ports are: the CLI round trip is slow and
-    /// the sidebar asks for it whenever the project changes.
-    private func dockerStatus(for projectDirectory: String) -> DockerSnapshot {
+    /// Compose status is cached like ports are, and read off the daemon queue
+    /// for the same reason: a `docker` call against an engine that is still
+    /// starting up takes seconds to answer.
+    private func beginDockerStatus(projectDirectory: String, requestID: UInt64, for client: ClientConnection) {
         DaemonQueue.assertIsolated()
         if let cached = dockerCache[projectDirectory],
            Date().timeIntervalSince(cached.timestamp) < Self.dockerCacheLifetime {
-            return cached.snapshot
+            client.send(.reply(requestID: requestID, .docker(cached.snapshot)))
+            return
         }
-        let snapshot = DockerProbe.snapshot(projectDirectory: projectDirectory, runner: commandRunner)
+
+        let alreadyProbing = dockerWaiters[projectDirectory] != nil
+        dockerWaiters[projectDirectory, default: []].append((client.id, requestID))
+        guard !alreadyProbing else { return }
+
+        let runner = commandRunner
+        commandQueue.async { [weak self] in
+            let snapshot = DockerProbe.snapshot(projectDirectory: projectDirectory, runner: runner)
+            guard let self else { return }
+            DaemonQueue.shared.async {
+                self.finishDockerStatus(projectDirectory: projectDirectory, snapshot: snapshot)
+            }
+        }
+    }
+
+    private func finishDockerStatus(projectDirectory: String, snapshot: DockerSnapshot) {
+        DaemonQueue.assertIsolated()
         dockerCache[projectDirectory] = (Date(), snapshot)
-        return snapshot
+        let waiting = dockerWaiters.removeValue(forKey: projectDirectory) ?? []
+        for waiter in waiting {
+            clients[waiter.clientID]?.send(.reply(requestID: waiter.requestID, .docker(snapshot)))
+        }
     }
 
     /// Runs a short docker command and invalidates the cached status, so the
@@ -380,21 +440,45 @@ public final class DaemonServer: @unchecked Sendable {
     /// Starting and stopping a container does not deserve a terminal session:
     /// it finishes in a second and leaves nothing worth reading behind. Logs,
     /// which do, still open as a session.
-    private func runDockerCommand(projectDirectory: String, arguments: [String]) -> DaemonReply {
+    private func beginDockerCommand(
+        projectDirectory: String,
+        arguments: [String],
+        requestID: UInt64,
+        for client: ClientConnection
+    ) {
         DaemonQueue.assertIsolated()
         guard let dockerPath = DockerProbe.locateDockerCLI() else {
-            return .commandOutput(status: 127, output: "Docker CLI not found")
+            client.send(.reply(requestID: requestID, .commandOutput(status: 127, output: "Docker CLI not found")))
+            return
         }
-        let result = commandRunner.run(dockerPath, arguments: arguments, timeout: 30)
-        dockerCache.removeValue(forKey: projectDirectory)
 
-        guard let result else {
-            return .commandOutput(status: 127, output: "Could not run the Docker CLI")
+        let clientID = client.id
+        let runner = commandRunner
+        commandQueue.async { [weak self] in
+            // Generous, because the first `compose up` of a stack pulls images.
+            // Nothing waits on this but the button that started it.
+            let result = runner.run(dockerPath, arguments: arguments, timeout: Self.dockerCommandTimeout)
+            let reply: DaemonReply
+            if let result {
+                let output = result.succeeded
+                    ? result.standardOutput
+                    : (result.standardError.isEmpty ? result.standardOutput : result.standardError)
+                reply = .commandOutput(
+                    status: result.status,
+                    output: output.trimmingCharacters(in: .whitespacesAndNewlines)
+                )
+            } else {
+                reply = .commandOutput(status: 127, output: "Could not run the Docker CLI")
+            }
+
+            guard let self else { return }
+            DaemonQueue.shared.async {
+                // Dropped here rather than before the command, so a status probe
+                // that overlapped it cannot leave a pre-command snapshot cached.
+                self.dockerCache.removeValue(forKey: projectDirectory)
+                self.clients[clientID]?.send(.reply(requestID: requestID, reply))
+            }
         }
-        let output = result.succeeded
-            ? result.standardOutput
-            : (result.standardError.isEmpty ? result.standardOutput : result.standardError)
-        return .commandOutput(status: result.status, output: output.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     // MARK: - Timers
