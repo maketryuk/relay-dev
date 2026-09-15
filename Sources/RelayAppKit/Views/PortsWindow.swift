@@ -26,6 +26,7 @@ struct PortsWindowView: View {
         .frame(minWidth: 460, minHeight: 320)
         .background(Theme.Palette.base)
         .preferredColorScheme(.dark)
+        .reportsWindowPresence(PortsWindow.id)
         .onAppear { model.refreshPorts() }
         .confirmationDialog(
             relayLocalized("Stop this process?"),

@@ -36,6 +36,9 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     case nextSession
     case previousSession
     case focusTerminal
+    case splitRight
+    case splitDown
+    case focusNextPane
 
     case startDefaultService
     case restartDefaultService
@@ -64,6 +67,9 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .nextSession: "Next Session"
         case .previousSession: "Previous Session"
         case .focusTerminal: "Focus Terminal"
+        case .splitRight: "Split Right"
+        case .splitDown: "Split Down"
+        case .focusNextPane: "Focus Next Pane"
         case .startDefaultService: "Start Dev Service"
         case .restartDefaultService: "Restart Dev Service"
         case .nextProject: "Next Project"
@@ -79,7 +85,8 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .commandPalette, .openSettings, .togglePorts, .openSSHHosts,
              .toggleRightSidebar, .toggleLeftSidebar: .application
         case .newShell, .newClaude, .newCodex, .closeSession, .renameSession,
-             .nextSession, .previousSession, .focusTerminal: .sessions
+             .nextSession, .previousSession, .focusTerminal,
+             .splitRight, .splitDown, .focusNextPane: .sessions
         case .startDefaultService, .restartDefaultService: .services
         case .nextProject, .previousProject, .addProject, .revealProject, .projectSettings: .projects
         }
@@ -104,6 +111,9 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .nextSession: KeyBinding("]", [.command, .shift])
         case .previousSession: KeyBinding("[", [.command, .shift])
         case .focusTerminal: KeyBinding("return", .command)
+        case .splitRight: KeyBinding("d", .command)
+        case .splitDown: KeyBinding("d", [.command, .shift])
+        case .focusNextPane: KeyBinding("]", [.command, .option])
         case .startDefaultService: KeyBinding("r", .command)
         case .restartDefaultService: KeyBinding("r", [.command, .option])
         case .nextProject: KeyBinding("down", [.command, .option])

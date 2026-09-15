@@ -44,6 +44,7 @@ final class AppModel {
     var isRightSidebarVisible = true
     var isLeftSidebarVisible = true
     private(set) var language: AppLanguage = .system
+    private(set) var paneLayouts: [ProjectID: PaneNode] = [:]
     var rightSidebarTab: RightSidebarTab = .services
 
     // MARK: - Selection and UI
@@ -54,6 +55,7 @@ final class AppModel {
     var isProjectSettingsOpen = false
     var isAddingProject = false
     var isInboxOpen = false
+    private(set) var openWindowIDs: Set<String> = []
     /// Set by the rename shortcut and consumed by the sidebar row.
     var renamingSessionID: SessionID?
     /// Bumped to ask the visible terminal to take focus.
@@ -89,6 +91,9 @@ final class AppModel {
         isRightSidebarVisible = state.isRightSidebarVisible
         isLeftSidebarVisible = state.isLeftSidebarVisible
         language = state.language
+        paneLayouts = Dictionary(uniqueKeysWithValues: state.paneLayouts.map {
+            (ProjectID(rawValue: $0.key), $0.value)
+        })
         Localization.shared.language = state.language
         rightSidebarTab = state.rightSidebarTab.flatMap(RightSidebarTab.init(rawValue:)) ?? .services
         lastActiveSessionByProject = state.lastActiveSessionByProject
@@ -185,6 +190,7 @@ final class AppModel {
         let snapshots = try await client.listSessions()
         sessions = Dictionary(uniqueKeysWithValues: snapshots.map { ($0.id, $0) })
         sessionOrder = snapshots.map(\.id)
+        prunePaneLayouts()
     }
 
     private func restoreSelection() {
@@ -228,6 +234,7 @@ final class AppModel {
             sessions.removeValue(forKey: sessionID)
             sessionOrder.removeAll { $0 == sessionID }
             releaseSurface(for: sessionID)
+            prunePaneLayouts()
             if selectedSessionID == sessionID {
                 selectedSessionID = selectedProjectID.flatMap { sessions(in: $0).first?.id }
                 if let next = selectedSessionID { selectSession(next) }
@@ -444,6 +451,7 @@ final class AppModel {
     func selectSession(_ id: SessionID) {
         selectedSessionID = id
         if let projectID = sessions[id]?.projectID {
+            showInFocusedPane(id, projectID: projectID)
             lastActiveSessionByProject[projectID.rawValue] = id.rawValue
             persist()
         }
@@ -483,6 +491,7 @@ final class AppModel {
         sessions.removeValue(forKey: id)
         sessionOrder.removeAll { $0 == id }
         releaseSurface(for: id)
+        prunePaneLayouts()
         if selectedSessionID == id {
             selectedSessionID = interactiveSessions(in: snapshot.projectID).first?.id
             if let next = selectedSessionID { selectSession(next) }
@@ -494,6 +503,104 @@ final class AppModel {
                 _ = try? await self.client.send(.terminate(id))
             }
             _ = try? await self.client.send(.forget(id))
+        }
+    }
+
+    // MARK: - Panes
+
+    /// What the main area shows for a project.
+    func paneLayout(for projectID: ProjectID) -> PaneNode? {
+        paneLayouts[projectID]
+    }
+
+    /// Splits the focused pane, starting a terminal beside it.
+    func splitFocusedPane(axis: PaneAxis) {
+        guard let projectID = selectedProjectID, let project = project(projectID) else { return }
+        let preset = SessionPresets.preferred(for: .shell, in: presets)
+        let name = SessionNaming.nextName(base: preset.name, existing: sessions(in: projectID).map(\.name))
+
+        let spec = SessionSpec(
+            projectID: projectID,
+            kind: preset.kind,
+            name: name,
+            workingDirectory: project.rootPath,
+            command: preset.command
+        )
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let snapshot = try await self.client.createSession(spec)
+                SessionMerge.merging(snapshot, into: &self.sessions)
+                if !self.sessionOrder.contains(snapshot.id) {
+                    self.sessionOrder.append(snapshot.id)
+                }
+
+                if let focused = self.selectedSessionID, let layout = self.paneLayouts[projectID],
+                   PaneLayout.contains(focused, in: layout) {
+                    self.paneLayouts[projectID] = PaneLayout.split(
+                        layout,
+                        target: focused,
+                        with: snapshot.id,
+                        axis: axis
+                    )
+                } else {
+                    self.paneLayouts[projectID] = .session(snapshot.id)
+                }
+                self.selectSession(snapshot.id)
+                self.persist()
+            } catch {
+                self.present(ToastContent(
+                    kind: .error,
+                    title: relayLocalized("Could not start") + " \(name)",
+                    message: error.localizedDescription
+                ))
+            }
+        }
+    }
+
+    /// Shows a session in the focused pane, or focuses it if already on screen.
+    ///
+    /// Choosing a session from the sidebar replaces what the active pane is
+    /// showing rather than tearing the split down — the same as opening a file
+    /// into the active editor.
+    private func showInFocusedPane(_ sessionID: SessionID, projectID: ProjectID) {
+        guard let layout = paneLayouts[projectID] else {
+            paneLayouts[projectID] = .session(sessionID)
+            return
+        }
+        guard !PaneLayout.contains(sessionID, in: layout) else { return }
+
+        if let focused = selectedSessionID, PaneLayout.contains(focused, in: layout) {
+            paneLayouts[projectID] = PaneLayout.replacing(focused, with: sessionID, in: layout)
+        } else {
+            paneLayouts[projectID] = .session(sessionID)
+        }
+    }
+
+    func setPaneFraction(_ fraction: Double, forSplit id: UUID, in projectID: ProjectID) {
+        guard let layout = paneLayouts[projectID] else { return }
+        paneLayouts[projectID] = PaneLayout.setting(fraction: fraction, forSplit: id, in: layout)
+    }
+
+    func commitPaneLayout() {
+        persist()
+    }
+
+    func focusNextPane() {
+        guard let projectID = selectedProjectID,
+              let layout = paneLayouts[projectID],
+              let current = selectedSessionID,
+              let next = PaneLayout.session(after: current, in: layout)
+        else { return }
+        selectSession(next)
+    }
+
+    /// Drops panes whose session has gone.
+    private func prunePaneLayouts() {
+        let known = Set(sessions.keys)
+        for (projectID, layout) in paneLayouts {
+            paneLayouts[projectID] = PaneLayout.pruning(layout, keeping: known)
         }
     }
 
@@ -733,6 +840,18 @@ final class AppModel {
         self.language = language
         Localization.shared.language = language
         persist()
+    }
+
+    func windowOpened(_ id: String) {
+        openWindowIDs.insert(id)
+    }
+
+    func windowClosed(_ id: String) {
+        openWindowIDs.remove(id)
+    }
+
+    func isWindowOpen(_ id: String) -> Bool {
+        openWindowIDs.contains(id)
     }
 
     func toggleLeftSidebar() {
@@ -1211,7 +1330,8 @@ final class AppModel {
             isRightSidebarVisible: isRightSidebarVisible,
             isLeftSidebarVisible: isLeftSidebarVisible,
             rightSidebarTab: rightSidebarTab.rawValue,
-            language: language
+            language: language,
+            paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
         store.scheduleSave(state)
     }
@@ -1230,7 +1350,8 @@ final class AppModel {
             isRightSidebarVisible: isRightSidebarVisible,
             isLeftSidebarVisible: isLeftSidebarVisible,
             rightSidebarTab: rightSidebarTab.rawValue,
-            language: language
+            language: language,
+            paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
         store.saveNow(state)
     }

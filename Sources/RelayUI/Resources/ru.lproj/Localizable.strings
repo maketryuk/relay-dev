@@ -44,6 +44,7 @@
 "Copy URL" = "Скопировать URL";
 "Could not attach to the session" = "Не удалось подключиться к сессии";
 "Could not reach the session daemon" = "Не удалось связаться с демоном сессий";
+"Could not start" = "Не удалось запустить";
 "Could not stop the process" = "Не удалось остановить процесс";
 "Custom command" = "Своя команда";
 "Custom command…" = "Своя команда…";
@@ -71,6 +72,7 @@
 "Filter by alias or host" = "Фильтр по алиасу или хосту";
 "Filter by port, process or session" = "Фильтр по порту, процессу или сессии";
 "Finished" = "Завершено";
+"Focus Next Pane" = "Следующая панель";
 "Focus Terminal" = "Фокус в терминал";
 "Force quit" = "Завершить принудительно";
 "Gemini" = "Gemini";
@@ -190,6 +192,8 @@
 "Showing every port" = "Показаны все порты";
 "Sidebar width" = "Ширина панели";
 "Something failed" = "Что-то упало";
+"Split Down" = "Разделить вниз";
+"Split Right" = "Разделить вправо";
 "Start" = "Запустить";
 "Start Dev Service" = "Запустить dev-сервис";
 "Start container" = "Запустить контейнер";
@@ -223,6 +227,12 @@
 "Work finished" = "Работа завершена";
 "Working" = "Работает";
 "Workspace" = "Рабочее пространство";
+"folder" = "folder";
 "in ~/.ssh/config" = "в ~/.ssh/config";
 "listening" = "слушает";
+"logs" = "logs";
+"restart" = "restart";
+"shippingbox" = "shippingbox";
+"start" = "start";
+"stop" = "stop";
 "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 выбирает сессию, ⌥⌘1…⌥⌘9 — проект";

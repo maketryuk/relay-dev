@@ -8,6 +8,15 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
+- **Split terminals.** `⌘D` splits right, `⇧⌘D` splits down, `⌥⌘]` moves focus
+  between panes. Dividers drag, the arrangement is remembered per project, and a
+  pane whose session has gone is dropped rather than left blank. Choosing a
+  session from the sidebar shows it in the focused pane instead of tearing the
+  split down, the same as opening a file into the active editor.
+- **Where a port came from.** Each listening process reports its working
+  directory, so two `node` servers on 5173 are finally distinguishable. Rows are
+  named after the project the directory belongs to, and the path is searchable.
+
 - **The app's own icon and mark.** An open ring with a dot resting in its gap:
   the ring is the app, which you can close, and the dot is the process, which
   stays. Traced once from the source SVG and shared by the icon generator and
@@ -82,6 +91,9 @@ than when a day of work ends. Until then everything lands here.
   under the path in the header.
 
 ### Fixed
+
+- `⌘\\`, `⇧⌘S` and `⌘,` only ever opened their window. They now toggle: front
+  and focused closes, anything else brings it forward.
 
 - **A service could sit at "Starting" forever.** The reply to `createSession`
   carries the session as it was when the daemon answered, and it was overwriting
