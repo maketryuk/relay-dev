@@ -8,6 +8,16 @@ than when a day of work ends. Until then everything lands here.
 
 ### Added
 
+- **Ports, SSH hosts and Settings open over the window** instead of as separate
+  windows with their own traffic lights. Escape or a click outside puts them
+  away, and the shortcut that opened one closes it.
+- **The Docker tab can be asked again.** A project whose containers were not
+  running when it was opened left the tab off with no way to re-check short of
+  restarting. Clicking it now probes again, with a spinner while it does, and
+  opens the tab if anything turned up.
+- **A stop button on every port row**, rather than only in its context menu.
+  Relay's own processes stop on the click; anything else still asks first.
+- **The right-hand panel resizes**, and its width is remembered.
 - **Splitting is visible, not just bound to a key.** Every pane header carries
   split-right and split-down buttons, and a session can be dragged — from the
   sidebar or by its own header — onto any pane. The half it will occupy is
@@ -76,6 +86,9 @@ than when a day of work ends. Until then everything lands here.
 
 ### Changed
 
+- One draggable divider for the whole app. The sidebars and the splits each drew
+  and handled their own, and only one of them had a hover state — or moved at
+  the speed of the pointer.
 - The project screen offers your own presets rather than a hardcoded trio, each
   with its agent's real mark, and shows the branch with a Git glyph.
 - One icon control for the whole app. Hover, disabled and selected states were
@@ -102,6 +115,20 @@ than when a day of work ends. Until then everything lands here.
 
 ### Fixed
 
+- **Splitting a pane froze the window.** Drawing a pane asked the model for its
+  terminal renderer, and that call recorded the session as recently used — a
+  write that invalidated the very view which had just read it, so every draw
+  scheduled another. One pane happened to settle; two kept each other going at
+  100% of a core. The renderers are a cache rather than state the interface
+  watches, and now live outside it.
+- **Typing landed in the wrong pane.** Every pane claimed the keyboard on every
+  update, so two of them traded it back and forth.
+- **`docker compose up` failed with "no configuration file provided"** for any
+  project keeping its stack in a subdirectory. Compose now runs where the file
+  actually is, and a project with no compose file is not asked about one.
+- Localised labels re-resolved their `.lproj` and reopened a bundle on every
+  redraw, and the startup hint kept a timer redrawing a whole terminal pane
+  forever to say nothing.
 - **Terminals took a minute to start, and often never did.** Two separate
   faults, both of which left a session at "Starting" with nothing on screen.
   The app's event stream was closed for good the first time the daemon

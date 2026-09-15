@@ -157,12 +157,14 @@ struct DockerAvailabilityTests {
     private func snapshot(
         _ responses: [String: CommandResult],
         directory: String = "/Users/me/shop",
-        dockerPath: String? = "/usr/local/bin/docker"
+        dockerPath: String? = "/usr/local/bin/docker",
+        composeFiles: [String] = ["/Users/me/shop/docker-compose.yml"]
     ) -> DockerSnapshot {
         DockerProbe.snapshot(
             projectDirectory: directory,
             runner: FakeCommandRunner(results: responses),
-            dockerPath: dockerPath
+            dockerPath: dockerPath,
+            fileExists: Set(composeFiles).contains
         )
     }
 
@@ -223,6 +225,20 @@ struct DockerAvailabilityTests {
         ])
         #expect(result.isAvailable)
         #expect(result.containers.map(\.name) == ["legacy-api-1"])
+    }
+
+    @Test("A project with no compose file is not asked about one")
+    func withoutAComposeFileComposeIsNotRun() {
+        // Compose looks in the working directory, so running it for a project
+        // that defines no stack only ever produces "no configuration file
+        // provided" — a confusing way to say there is nothing here.
+        let result = snapshot(
+            ["docker ps": result(status: 0, out: "")],
+            composeFiles: []
+        )
+        #expect(result.isAvailable)
+        #expect(result.containers.isEmpty)
+        #expect(result.message == nil)
     }
 
     @Test("A timeout is reported as such")

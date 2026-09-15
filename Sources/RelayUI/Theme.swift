@@ -57,6 +57,9 @@ public enum Theme {
         public static let sidebarWidth: CGFloat = 248
         public static let sidebarMinWidth: CGFloat = 200
         public static let sidebarMaxWidth: CGFloat = 380
+        public static let rightSidebarWidth: CGFloat = 300
+        public static let rightSidebarMinWidth: CGFloat = 240
+        public static let rightSidebarMaxWidth: CGFloat = 480
         public static let rowHeight: CGFloat = 30
         public static let projectIconSize: CGFloat = 40
     }

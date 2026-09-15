@@ -2,10 +2,6 @@ import RelayProtocol
 import RelayUI
 import SwiftUI
 
-enum SettingsWindow {
-    static let id = "relay.settings"
-}
-
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var selection: Tab = .general
@@ -44,11 +40,8 @@ struct SettingsView: View {
             RelayDivider(axis: .vertical)
             content
         }
-        .frame(width: 720, height: 520)
         .background(Theme.Palette.base)
         .tooltipRoot(tooltips)
-        .preferredColorScheme(.dark)
-        .reportsWindowPresence(SettingsWindow.id)
     }
 
     private var sidebar: some View {

@@ -2,17 +2,13 @@ import RelayProtocol
 import RelayUI
 import SwiftUI
 
-enum SSHWindow {
-    static let id = "relay.ssh"
-}
-
 /// Every host from the user's OpenSSH configuration.
 ///
 /// Hosts are global, not per-project — `~/.ssh/config` describes the machine,
 /// not the repository in front of you. Pinning still exists, and pinned hosts
 /// float to the top for whichever project is selected, but the list itself no
 /// longer clutters a project sidebar it does not belong to.
-struct SSHWindowView: View {
+struct SSHPane: View {
     @Environment(AppModel.self) private var model
     @State private var query = ""
 
@@ -22,19 +18,12 @@ struct SSHWindowView: View {
             RelayDivider()
             content
         }
-        .frame(minWidth: 420, minHeight: 320)
-        .background(Theme.Palette.base)
-        .preferredColorScheme(.dark)
-        .reportsWindowPresence(SSHWindow.id)
         .onAppear { model.loadSSHHosts() }
     }
 
     private var header: some View {
         VStack(spacing: Theme.Spacing.small) {
             HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.small) {
-                Text(relayLocalized("SSH Hosts"))
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.Palette.textPrimary)
                 Text(verbatim: "\(model.sshHosts.count) \(relayLocalized("in ~/.ssh/config"))")
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
@@ -45,9 +34,7 @@ struct SSHWindowView: View {
             RelayTextField(relayLocalized("Filter by alias or host"), text: $query, systemImage: "magnifyingglass")
         }
         .padding(.horizontal, Theme.Spacing.large)
-        .padding(.top, Theme.Spacing.large + Theme.Spacing.small)
         .padding(.bottom, Theme.Spacing.medium)
-        .background(Theme.Palette.base)
     }
 
     @ViewBuilder

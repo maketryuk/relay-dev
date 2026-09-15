@@ -158,6 +158,8 @@ public struct IconButton: View {
     private let prominence: Prominence
     private let isSelected: Bool
     private let isEnabled: Bool
+    private let respondsWhenDisabled: Bool
+    private let isBusy: Bool
     private let tint: Color?
     private let action: () -> Void
 
@@ -170,6 +172,11 @@ public struct IconButton: View {
         prominence: Prominence = .standard,
         isSelected: Bool = false,
         isEnabled: Bool = true,
+        /// Keeps a dimmed control clickable. For one that is off because
+        /// something was not found, where clicking is how you ask again.
+        respondsWhenDisabled: Bool = false,
+        /// Replaces the glyph with a spinner while the action is in flight.
+        isBusy: Bool = false,
         tint: Color? = nil,
         action: @escaping () -> Void
     ) {
@@ -179,32 +186,44 @@ public struct IconButton: View {
         self.prominence = prominence
         self.isSelected = isSelected
         self.isEnabled = isEnabled
+        self.respondsWhenDisabled = respondsWhenDisabled
+        self.isBusy = isBusy
         self.tint = tint
         self.action = action
     }
 
+    private var respondsToClicks: Bool { (isEnabled || respondsWhenDisabled) && !isBusy }
+
     public var body: some View {
         Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: size * 0.46, weight: .medium))
-                .frame(width: size, height: size)
-                .background(background)
-                .foregroundStyle(foreground)
-                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
-                // Without this the glyph itself is the target and the padding
-                // around it does nothing, which makes small buttons feel broken.
-                .contentShape(Rectangle())
+            Group {
+                if isBusy {
+                    ProgressView()
+                        .controlSize(.small)
+                        .scaleEffect(size / 34)
+                } else {
+                    Image(systemName: systemImage)
+                        .font(.system(size: size * 0.46, weight: .medium))
+                }
+            }
+            .frame(width: size, height: size)
+            .background(background)
+            .foregroundStyle(foreground)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+            // Without this the glyph itself is the target and the padding
+            // around it does nothing, which makes small buttons feel broken.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(!isEnabled)
-        .onHover { isHovering = isEnabled && $0 }
+        .disabled(!respondsToClicks)
+        .onHover { isHovering = respondsToClicks && $0 }
         .animation(.easeOut(duration: 0.1), value: isHovering)
         .animation(.easeOut(duration: 0.1), value: isSelected)
         .help(help)
     }
 
     private var background: Color {
-        guard isEnabled else { return .clear }
+        guard isEnabled || respondsWhenDisabled else { return .clear }
         if isSelected { return isHovering ? Theme.Palette.surfaceHover : Theme.Palette.surfaceActive }
         return isHovering ? Theme.Palette.surfaceHover : .clear
     }

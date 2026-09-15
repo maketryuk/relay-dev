@@ -43,30 +43,6 @@ struct RelayMainApp: App {
         .windowResizability(.contentMinSize)
         .defaultSize(width: 1240, height: 760)
         .commands { RelayCommands(model: model) }
-
-        Window("Ports", id: PortsWindow.id) {
-            PortsWindowView()
-                .environment(model)
-        }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentMinSize)
-        .defaultSize(width: 560, height: 480)
-        .keyboardShortcut(nil)
-
-        Window("SSH Hosts", id: SSHWindow.id) {
-            SSHWindowView()
-                .environment(model)
-        }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentMinSize)
-        .defaultSize(width: 520, height: 480)
-
-        Window(relayLocalized("Settings"), id: SettingsWindow.id) {
-            SettingsView()
-                .environment(model)
-        }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize)
     }
 }
 
@@ -98,15 +74,13 @@ extension View {
 
 struct RelayCommands: Commands {
     let model: AppModel
-    @Environment(\.openWindow) private var openWindow
-    @Environment(\.dismissWindow) private var dismissWindow
 
     var body: some Commands {
         // SwiftUI's Settings scene installs its own ⌘, on the standard menu
         // item. Replacing it keeps the shortcut editor honest: rebinding
         // "Settings" in the app has to actually change the shortcut.
         CommandGroup(replacing: .appSettings) {
-            Button(RelayCommand.openSettings.localizedTitle + "…") { toggle(SettingsWindow.id) }
+            Button(RelayCommand.openSettings.localizedTitle + "…") { model.toggleModal(.settings) }
                 .relayShortcut(model.binding(for: .openSettings))
         }
 
@@ -212,10 +186,10 @@ struct RelayCommands: Commands {
                 .keyboardShortcut("k", modifiers: .command)
                 .hidden()
 
-            Button(RelayCommand.togglePorts.localizedTitle) { toggle(PortsWindow.id) }
+            Button(RelayCommand.togglePorts.localizedTitle) { model.toggleModal(.ports) }
                 .relayShortcut(model.binding(for: .togglePorts))
 
-            Button(RelayCommand.openSSHHosts.localizedTitle) { toggle(SSHWindow.id) }
+            Button(RelayCommand.openSSHHosts.localizedTitle) { model.toggleModal(.sshHosts) }
                 .relayShortcut(model.binding(for: .openSSHHosts))
 
             Button(RelayCommand.toggleRightSidebar.localizedTitle) { model.toggleRightSidebar() }
@@ -223,14 +197,6 @@ struct RelayCommands: Commands {
         }
     }
 
-    private func toggle(_ id: String) {
-        WindowToggle.toggle(
-            id: id,
-            isOpen: model.isWindowOpen(id),
-            openWindow: openWindow,
-            dismissWindow: dismissWindow
-        )
-    }
 
     private func newSession(_ kind: SessionKind) {
         guard let projectID = model.selectedProjectID else { return }

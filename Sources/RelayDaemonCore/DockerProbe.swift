@@ -163,7 +163,8 @@ public enum DockerProbe {
     public static func snapshot(
         projectDirectory: String,
         runner: some CommandRunning = SystemCommandRunner(),
-        dockerPath: String? = locateDockerCLI()
+        dockerPath: String? = locateDockerCLI(),
+        fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
     ) -> DockerSnapshot {
         guard let dockerPath else {
             return DockerSnapshot(isAvailable: false, message: "Docker CLI not found")
@@ -216,10 +217,15 @@ public enum DockerProbe {
         }
 
         // Nothing is running for this project; ask Compose what it *would*
-        // create, which also reports stopped services.
+        // create, which also reports stopped services. The file is named
+        // explicitly because Compose looks in the working directory otherwise,
+        // and a stack kept in `docker/` would never be found.
+        guard let composeFile = ComposeLocator.file(forProjectAt: projectDirectory, fileExists: fileExists) else {
+            return DockerSnapshot(isAvailable: true, composeProjectName: projectName, containers: [])
+        }
         guard let compose = runner.run(
             dockerPath,
-            arguments: ["compose", "--project-directory", projectDirectory, "ps", "--all", "--format", "json"],
+            arguments: ["compose", "--file", composeFile, "ps", "--all", "--format", "json"],
             timeout: 12
         ), !compose.timedOut else {
             return DockerSnapshot(isAvailable: true, composeProjectName: projectName, containers: [])

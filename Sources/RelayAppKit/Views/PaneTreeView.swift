@@ -100,50 +100,20 @@ private struct SplitPaneView: View {
     }
 
     private func divider(total: CGFloat) -> some View {
-        Rectangle()
-            .fill(Theme.Palette.border)
-            .frame(
-                width: split.axis == .horizontal ? dividerThickness : nil,
-                height: split.axis == .vertical ? dividerThickness : nil
+        ResizeHandle(orientation: split.axis == .horizontal ? .vertical : .horizontal) {
+            dragFraction = split.fraction
+        } onDrag: { translation in
+            guard total > 0 else { return }
+            dragFraction = min(
+                max(split.fraction + translation / total, PaneLayout.minimumFraction),
+                PaneLayout.maximumFraction
             )
-            // The hit area is wider than the line, which is one pixel and
-            // impossible to grab otherwise.
-            .overlay {
-                Rectangle()
-                    .fill(.clear)
-                    .contentShape(Rectangle())
-                    .frame(
-                        width: split.axis == .horizontal ? 9 : nil,
-                        height: split.axis == .vertical ? 9 : nil
-                    )
-                    .onHover { hovering in
-                        if hovering {
-                            (split.axis == .horizontal ? NSCursor.resizeLeftRight : NSCursor.resizeUpDown).push()
-                        } else {
-                            NSCursor.pop()
-                        }
-                    }
-                    .gesture(
-                        DragGesture(minimumDistance: 1)
-                            .onChanged { value in
-                                guard total > 0 else { return }
-                                let delta = split.axis == .horizontal
-                                    ? value.translation.width
-                                    : value.translation.height
-                                let proposed = split.fraction + delta / total
-                                dragFraction = min(
-                                    max(proposed, PaneLayout.minimumFraction),
-                                    PaneLayout.maximumFraction
-                                )
-                            }
-                            .onEnded { _ in
-                                if let dragFraction {
-                                    model.setPaneFraction(dragFraction, forSplit: split.id, in: projectID)
-                                }
-                                dragFraction = nil
-                                model.commitPaneLayout()
-                            }
-                    )
+        } onEnd: {
+            if let dragFraction {
+                model.setPaneFraction(dragFraction, forSplit: split.id, in: projectID)
             }
+            dragFraction = nil
+            model.commitPaneLayout()
+        }
     }
 }
