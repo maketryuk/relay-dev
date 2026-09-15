@@ -54,6 +54,7 @@ final class AppModel {
     var isLeftSidebarVisible = true
     private(set) var language: AppLanguage = .system
     private(set) var checksForUpdates = true
+    private(set) var showsStatusBar = true
     private(set) var paneLayouts: [ProjectID: PaneNode] = [:]
     var rightSidebarTab: RightSidebarTab = .services
 
@@ -95,6 +96,9 @@ final class AppModel {
     private let notifier = AttentionNotifier()
     /// The update check and, when the user asks for it, the install.
     let updates = UpdateController()
+    /// What the agents have left of their rate limits, read from their own
+    /// caches on disk.
+    let usage = UsageMonitor()
     private var updateTask: Task<Void, Never>?
 
     /// Cap on cached terminal renderers. Beyond this the least recently viewed
@@ -118,6 +122,7 @@ final class AppModel {
         isLeftSidebarVisible = state.isLeftSidebarVisible
         language = state.language
         checksForUpdates = state.checksForUpdates
+        showsStatusBar = state.showsStatusBar
         paneLayouts = Dictionary(uniqueKeysWithValues: state.paneLayouts.map {
             (ProjectID(rawValue: $0.key), $0.value)
         })
@@ -136,6 +141,7 @@ final class AppModel {
         loadSSHHosts()
         scheduleGitRefresh()
         scheduleUpdateChecks()
+        if showsStatusBar { usage.start() }
     }
 
     private func connect() async {
@@ -814,6 +820,12 @@ final class AppModel {
                 try? await Task.sleep(for: .seconds(UpdateDecision.checkInterval))
             }
         }
+    }
+
+    func setShowsStatusBar(_ visible: Bool) {
+        showsStatusBar = visible
+        persist()
+        if visible { usage.start() } else { usage.stop() }
     }
 
     func setChecksForUpdates(_ enabled: Bool) {
@@ -1527,6 +1539,7 @@ final class AppModel {
             rightSidebarTab: rightSidebarTab.rawValue,
             language: language,
             checksForUpdates: checksForUpdates,
+            showsStatusBar: showsStatusBar,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
         store.scheduleSave(state)
@@ -1549,6 +1562,7 @@ final class AppModel {
             rightSidebarTab: rightSidebarTab.rawValue,
             language: language,
             checksForUpdates: checksForUpdates,
+            showsStatusBar: showsStatusBar,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
         store.saveNow(state)

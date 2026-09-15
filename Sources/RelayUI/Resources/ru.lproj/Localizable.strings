@@ -181,6 +181,7 @@
 "Quick switching" = "Быстрое переключение";
 "Reconnect" = "Переподключиться";
 "Refresh containers" = "Обновить контейнеры";
+"Refresh usage" = "Обновить лимиты";
 "Relay" = "Relay";
 "Relay cannot replace itself at %@." = "Relay не может заменить себя по пути %@.";
 "Relay did not start this process" = "Relay не запускал этот процесс";
@@ -242,6 +243,7 @@
 "Shortcuts, notifications and more" = "Горячие клавиши, уведомления и прочее";
 "Showing development ports only" = "Только порты разработки";
 "Showing every port" = "Показаны все порты";
+"Shows what each agent has left of its rate limits" = "Показывает, сколько у каждого агента осталось от лимитов";
 "Sidebar width" = "Ширина панели";
 "Something failed" = "Что-то упало";
 "Split Down" = "Разделить вниз";
@@ -254,6 +256,7 @@
 "Start from a template or write your own command" = "Начните с шаблона или напишите свою команду";
 "Starting" = "Запускается";
 "Status" = "Состояние";
+"Status bar" = "Нижняя панель";
 "Still starting" = "Ещё запускается";
 "Stop" = "Остановить";
 "Stop %@" = "Остановить %@";
@@ -289,6 +292,7 @@
 "Work finished" = "Работа завершена";
 "Working" = "Работает";
 "Workspace" = "Рабочее пространство";
+"as of %@" = "по состоянию на %@";
 "coming soon" = "скоро";
 "development build" = "сборка для разработки";
 "exited %@" = "код выхода %@";
@@ -301,6 +305,7 @@
 "listening" = "слушает";
 "logs" = "logs";
 "reported an error" = "сообщил об ошибке";
+"resets in %@" = "сбрасывается через %@";
 "restart" = "restart";
 "shippingbox" = "shippingbox";
 "start" = "start";

@@ -181,6 +181,7 @@
 "Quick switching" = "Quick switching";
 "Reconnect" = "Reconnect";
 "Refresh containers" = "Refresh containers";
+"Refresh usage" = "Refresh usage";
 "Relay" = "Relay";
 "Relay cannot replace itself at %@." = "Relay cannot replace itself at %@.";
 "Relay did not start this process" = "Relay did not start this process";
@@ -242,6 +243,7 @@
 "Shortcuts, notifications and more" = "Shortcuts, notifications and more";
 "Showing development ports only" = "Showing development ports only";
 "Showing every port" = "Showing every port";
+"Shows what each agent has left of its rate limits" = "Shows what each agent has left of its rate limits";
 "Sidebar width" = "Sidebar width";
 "Something failed" = "Something failed";
 "Split Down" = "Split Down";
@@ -254,6 +256,7 @@
 "Start from a template or write your own command" = "Start from a template or write your own command";
 "Starting" = "Starting";
 "Status" = "Status";
+"Status bar" = "Status bar";
 "Still starting" = "Still starting";
 "Stop" = "Stop";
 "Stop %@" = "Stop %@";
@@ -289,6 +292,7 @@
 "Work finished" = "Work finished";
 "Working" = "Working";
 "Workspace" = "Workspace";
+"as of %@" = "as of %@";
 "coming soon" = "coming soon";
 "development build" = "development build";
 "exited %@" = "exited %@";
@@ -301,6 +305,7 @@
 "listening" = "listening";
 "logs" = "logs";
 "reported an error" = "reported an error";
+"resets in %@" = "resets in %@";
 "restart" = "restart";
 "shippingbox" = "shippingbox";
 "start" = "start";
