@@ -108,9 +108,10 @@ struct SidebarResizeHandle: View {
         ResizeHandle(orientation: .vertical) {
             startWidth = model.sidebarWidth
         } onDrag: { translation in
-            model.sidebarWidth = min(
-                max(startWidth + translation, Theme.Metrics.sidebarMinWidth),
-                Theme.Metrics.sidebarMaxWidth
+            model.sidebarWidth = ResizeMath.length(
+                from: startWidth,
+                translation: translation,
+                limits: Theme.Metrics.sidebarMinWidth ... Theme.Metrics.sidebarMaxWidth
             )
         } onEnd: {
             model.persist()
@@ -130,9 +131,10 @@ struct RightSidebarResizeHandle: View {
         ResizeHandle(orientation: .vertical) {
             startWidth = model.rightSidebarWidth
         } onDrag: { translation in
-            model.rightSidebarWidth = min(
-                max(startWidth - translation, Theme.Metrics.rightSidebarMinWidth),
-                Theme.Metrics.rightSidebarMaxWidth
+            model.rightSidebarWidth = ResizeMath.length(
+                from: startWidth,
+                translation: -translation,
+                limits: Theme.Metrics.rightSidebarMinWidth ... Theme.Metrics.rightSidebarMaxWidth
             )
         } onEnd: {
             model.persist()

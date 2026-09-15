@@ -12,12 +12,23 @@ import SwiftUI
 struct PortsPane: View {
     @Environment(AppModel.self) private var model
     @State private var query = ""
+    @State private var highlighted = 0
+
+    /// The rows as the keyboard sees them: one list, in the order drawn.
+    private var orderedPorts: [ListeningPort] {
+        let groups = model.groupedPorts(for: model.selectedProjectID, matching: query)
+        return groups.project + groups.other
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             header
             RelayDivider()
             content
+        }
+        .keyboardNavigableList(count: orderedPorts.count, highlighted: $highlighted) {
+            guard orderedPorts.indices.contains(highlighted) else { return }
+            model.openPort(orderedPorts[highlighted])
         }
         .onAppear { model.refreshPorts() }
         .confirmationDialog(
@@ -93,26 +104,43 @@ struct PortsPane: View {
                     : "No port matches “\(query)”."
             )
         } else {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 1, pinnedViews: [.sectionHeaders]) {
-                    if !groups.project.isEmpty {
-                        Section {
-                            ForEach(groups.project) { PortRow(port: $0) }
-                        } header: {
-                            sectionHeader(model.selectedProject?.name ?? "This project")
+            ScrollViewReader { scroller in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 1, pinnedViews: [.sectionHeaders]) {
+                        if !groups.project.isEmpty {
+                            Section {
+                                ForEach(Array(groups.project.enumerated()), id: \.element.id) { index, port in
+                                    row(port, at: index)
+                                }
+                            } header: {
+                                sectionHeader(model.selectedProject?.name ?? "This project")
+                            }
+                        }
+                        if !groups.other.isEmpty {
+                            Section {
+                                ForEach(Array(groups.other.enumerated()), id: \.element.id) { index, port in
+                                    row(port, at: groups.project.count + index)
+                                }
+                            } header: {
+                                sectionHeader("Elsewhere on this Mac")
+                            }
                         }
                     }
-                    if !groups.other.isEmpty {
-                        Section {
-                            ForEach(groups.other) { PortRow(port: $0) }
-                        } header: {
-                            sectionHeader("Elsewhere on this Mac")
-                        }
+                    .padding(Theme.Spacing.small)
+                }
+                .onChange(of: highlighted) { _, index in
+                    guard orderedPorts.indices.contains(index) else { return }
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        scroller.scrollTo(orderedPorts[index].id, anchor: .center)
                     }
                 }
-                .padding(Theme.Spacing.small)
             }
         }
+    }
+
+    private func row(_ port: ListeningPort, at index: Int) -> some View {
+        PortRow(port: port, isHighlighted: index == highlighted)
+            .id(port.id)
     }
 
     private func sectionHeader(_ title: String) -> some View {
@@ -130,6 +158,8 @@ struct PortsPane: View {
 struct PortRow: View {
     @Environment(AppModel.self) private var model
     let port: ListeningPort
+    /// Where the keyboard is, as opposed to where the pointer is.
+    var isHighlighted = false
 
     @State private var isHovering = false
 
@@ -159,7 +189,7 @@ struct PortRow: View {
 
             Spacer(minLength: Theme.Spacing.small)
 
-            HoverReveal(isVisible: isHovering) {
+            HoverReveal(isVisible: isHovering || isHighlighted) {
                 HStack(spacing: 0) {
                     if port.url != nil {
                         IconButton(systemImage: "arrow.up.forward.app", help: "") { model.openPort(port) }
@@ -183,10 +213,14 @@ struct PortRow: View {
         }
         .padding(.horizontal, Theme.Spacing.small)
         .padding(.vertical, 6)
-        .background(isHovering ? Theme.Palette.surfaceHover : .clear)
+        .background(rowBackground)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
         .contentShape(Rectangle())
         .onHover { isHovering = $0 }
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
+                .strokeBorder(isHighlighted ? Theme.Palette.borderStrong : .clear, lineWidth: 1)
+        )
         .contextMenu {
             if port.url != nil {
                 Button(relayLocalized("Open in Browser")) { model.openPort(port) }
@@ -206,5 +240,12 @@ struct PortRow: View {
             }
             Button(relayLocalized("Force quit")) { model.portPendingTermination = port }
         }
+    }
+}
+
+private extension PortRow {
+    var rowBackground: Color {
+        if isHighlighted { return Theme.Palette.surfaceActive }
+        return isHovering ? Theme.Palette.surfaceHover : .clear
     }
 }

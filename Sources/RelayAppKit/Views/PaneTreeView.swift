@@ -103,10 +103,11 @@ private struct SplitPaneView: View {
         ResizeHandle(orientation: split.axis == .horizontal ? .vertical : .horizontal) {
             dragFraction = split.fraction
         } onDrag: { translation in
-            guard total > 0 else { return }
-            dragFraction = min(
-                max(split.fraction + translation / total, PaneLayout.minimumFraction),
-                PaneLayout.maximumFraction
+            dragFraction = ResizeMath.fraction(
+                from: split.fraction,
+                translation: translation,
+                total: total,
+                limits: PaneLayout.minimumFraction ... PaneLayout.maximumFraction
             )
         } onEnd: {
             if let dragFraction {

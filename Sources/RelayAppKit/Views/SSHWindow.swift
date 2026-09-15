@@ -11,12 +11,23 @@ import SwiftUI
 struct SSHPane: View {
     @Environment(AppModel.self) private var model
     @State private var query = ""
+    @State private var highlighted = 0
+
+    /// The rows as the keyboard sees them: one list, in the order drawn.
+    private var orderedHosts: [SSHHost] {
+        let groups = model.sshHosts(for: model.selectedProjectID)
+        return groups.pinned.filter(matches) + groups.others.filter(matches)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             header
             RelayDivider()
             content
+        }
+        .keyboardNavigableList(count: orderedHosts.count, highlighted: $highlighted) {
+            guard orderedHosts.indices.contains(highlighted) else { return }
+            connect(orderedHosts[highlighted])
         }
         .onAppear { model.loadSSHHosts() }
     }
@@ -52,24 +63,36 @@ struct SSHPane: View {
                     : "No host matches “\(query)”."
             )
         } else {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 1, pinnedViews: [.sectionHeaders]) {
-                    if !pinned.isEmpty {
-                        Section {
-                            ForEach(pinned) { row($0, isPinned: true) }
-                        } header: {
-                            sectionHeader("Pinned to \(model.selectedProject?.name ?? "this project")")
+            ScrollViewReader { scroller in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 1, pinnedViews: [.sectionHeaders]) {
+                        if !pinned.isEmpty {
+                            Section {
+                                ForEach(Array(pinned.enumerated()), id: \.element.id) { index, host in
+                                    row(host, isPinned: true, at: index)
+                                }
+                            } header: {
+                                sectionHeader("Pinned to \(model.selectedProject?.name ?? "this project")")
+                            }
+                        }
+                        if !others.isEmpty {
+                            Section {
+                                ForEach(Array(others.enumerated()), id: \.element.id) { index, host in
+                                    row(host, isPinned: false, at: pinned.count + index)
+                                }
+                            } header: {
+                                sectionHeader(pinned.isEmpty ? "All hosts" : "Other hosts")
+                            }
                         }
                     }
-                    if !others.isEmpty {
-                        Section {
-                            ForEach(others) { row($0, isPinned: false) }
-                        } header: {
-                            sectionHeader(pinned.isEmpty ? "All hosts" : "Other hosts")
-                        }
+                    .padding(Theme.Spacing.small)
+                }
+                .onChange(of: highlighted) { _, index in
+                    guard orderedHosts.indices.contains(index) else { return }
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        scroller.scrollTo(orderedHosts[index].id, anchor: .center)
                     }
                 }
-                .padding(Theme.Spacing.small)
             }
         }
     }
@@ -92,13 +115,13 @@ struct SSHPane: View {
             .background(Theme.Palette.base)
     }
 
-    private func row(_ host: SSHHost, isPinned: Bool) -> some View {
+    private func row(_ host: SSHHost, isPinned: Bool, at index: Int) -> some View {
         SidebarRow(
             title: host.alias,
             subtitle: host.identityFile.map { "\(host.displayTarget) · \($0)" } ?? host.displayTarget,
             systemImage: isPinned ? "pin.fill" : "network",
             iconTint: isPinned ? Theme.Palette.statusWaiting : nil,
-            isSelected: false,
+            isSelected: index == highlighted,
             action: { connect(host) },
             accessoryVisibility: .always
         ) {
@@ -113,6 +136,7 @@ struct SSHPane: View {
                     .relayTooltip(relayLocalized("Connect"))
             }
         }
+        .id(host.id)
         .contextMenu {
             Button(relayLocalized("Connect")) { connect(host) }
             if model.selectedProjectID != nil {

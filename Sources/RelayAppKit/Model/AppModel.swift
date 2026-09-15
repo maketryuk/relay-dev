@@ -560,14 +560,18 @@ final class AppModel {
                     self.sessionOrder.append(snapshot.id)
                 }
 
-                if let target = sessionID, let layout = self.paneLayouts[projectID],
-                   PaneLayout.contains(target, in: layout) {
-                    self.paneLayouts[projectID] = PaneLayout.split(
-                        layout,
-                        target: target,
-                        with: snapshot.id,
-                        axis: axis
-                    )
+                if let layout = self.paneLayouts[projectID] {
+                    // Falling back to the focused pane, and then to any pane at
+                    // all, rather than to a fresh layout: replacing the tree
+                    // would throw away every other split to make room for one.
+                    let target = [sessionID, self.selectedSessionID]
+                        .compactMap { $0 }
+                        .first { PaneLayout.contains($0, in: layout) }
+                        ?? PaneLayout.sessions(in: layout).last
+
+                    self.paneLayouts[projectID] = target.map {
+                        PaneLayout.split(layout, target: $0, with: snapshot.id, axis: axis)
+                    } ?? .session(snapshot.id)
                 } else {
                     self.paneLayouts[projectID] = .session(snapshot.id)
                 }
