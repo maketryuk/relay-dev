@@ -13,6 +13,8 @@ struct ProjectSidebarView: View {
 
     @State private var renameText = ""
     @State private var isShowingNewSessionMenu = false
+    @State private var isRenamingProject = false
+    @State private var projectNameDraft = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -30,10 +32,24 @@ struct ProjectSidebarView: View {
     private var header: some View {
         HStack(alignment: .center, spacing: Theme.Spacing.small) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(project.name)
-                    .font(Theme.Typography.title)
-                    .foregroundStyle(Theme.Palette.textPrimary)
-                    .lineLimit(1)
+                if isRenamingProject {
+                    InlineRenameField(
+                        relayLocalized("Project name"),
+                        text: $projectNameDraft,
+                        onCommit: commitProjectRename,
+                        onCancel: { isRenamingProject = false }
+                    )
+                } else {
+                    Text(project.name)
+                        .font(Theme.Typography.title)
+                        .foregroundStyle(Theme.Palette.textPrimary)
+                        .lineLimit(1)
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) {
+                            projectNameDraft = project.name
+                            isRenamingProject = true
+                        }
+                }
                 Text(project.displayPath)
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
@@ -98,6 +114,15 @@ struct ProjectSidebarView: View {
         }
     }
 
+    private func commitProjectRename() {
+        let trimmed = projectNameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        isRenamingProject = false
+        guard !trimmed.isEmpty, trimmed != project.name else { return }
+        var updated = project
+        updated.name = trimmed
+        model.updateProject(updated)
+    }
+
     /// Names the actual shortcut rather than pointing at a button, and stays
     /// correct if the user rebinds it.
     private var startHint: String {
@@ -110,13 +135,17 @@ struct ProjectSidebarView: View {
     @ViewBuilder
     private func row(_ session: SessionSnapshot) -> some View {
         if model.renamingSessionID == session.id {
-            RelayTextField(relayLocalized("Session name"), text: $renameText) {
-                model.renameSession(session.id, to: renameText)
-                model.renamingSessionID = nil
-            }
+            InlineRenameField(
+                relayLocalized("Session name"),
+                text: $renameText,
+                onCommit: {
+                    model.renameSession(session.id, to: renameText)
+                    model.renamingSessionID = nil
+                },
+                onCancel: { model.renamingSessionID = nil }
+            )
             .padding(.horizontal, Theme.Spacing.xsmall)
             .padding(.vertical, 4)
-            .onExitCommand { model.renamingSessionID = nil }
             .onAppear { renameText = session.displayName }
         } else {
             SessionRow(
@@ -128,6 +157,7 @@ struct ProjectSidebarView: View {
                     model.renamingSessionID = session.id
                 }
             )
+            .sessionDragSource(session.id, model: model)
             .contextMenu {
                 Button(relayLocalized("Rename…")) {
                     renameText = session.displayName

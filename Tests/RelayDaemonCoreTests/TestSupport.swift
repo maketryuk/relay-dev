@@ -2,6 +2,8 @@ import Darwin
 import Foundation
 import RelayProtocol
 
+@testable import RelayDaemonCore
+
 /// Minimal blocking client used by the daemon integration tests.
 ///
 /// Deliberately not `DaemonClient`: the tests should exercise the wire protocol
@@ -148,9 +150,9 @@ final class DaemonHarness {
     let socketURL: URL
     let server: DaemonServerBox
 
-    init() throws {
+    init(commandRunner: (any CommandRunning)? = nil) throws {
         socketURL = URL(fileURLWithPath: "/tmp/relay-test-\(UUID().uuidString.prefix(8)).sock")
-        server = try DaemonServerBox(socketURL: socketURL)
+        server = try DaemonServerBox(socketURL: socketURL, commandRunner: commandRunner)
     }
 
     func makeClient() throws -> TestClient {

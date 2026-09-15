@@ -123,8 +123,20 @@ struct ProjectOverviewPane: View {
     @Environment(AppModel.self) private var model
     let project: Project
 
-    private var startPresets: [SessionPreset] {
-        [.claude, .codex, .shell].map { SessionPresets.preferred(for: $0, in: model.presets) }
+    /// Whatever the user keeps in their presets, in their order, wrapped so a
+    /// long list stays readable instead of running off the pane.
+    private var presetRows: [[SessionPreset]] {
+        stride(from: 0, to: model.presets.count, by: Self.presetsPerRow).map { start in
+            Array(model.presets[start ..< min(start + Self.presetsPerRow, model.presets.count)])
+        }
+    }
+
+    private static let presetsPerRow = 4
+
+    /// Only the very first preset is the prominent one; a wall of accent-filled
+    /// buttons would make none of them the obvious start.
+    private func isLeading(_ preset: SessionPreset, inFirstRow: Bool) -> Bool {
+        inFirstRow && preset.id == model.presets.first?.id
     }
 
     var body: some View {
@@ -145,23 +157,33 @@ struct ProjectOverviewPane: View {
                     .foregroundStyle(Theme.Palette.textTertiary)
             }
 
-            // The empty-project view has room for the three starts people
-            // actually reach for; everything else lives behind the sidebar's +.
-            HStack(spacing: Theme.Spacing.small) {
-                ForEach(startPresets) { preset in
-                    RelayButton(
-                        preset.name,
-                        systemImage: preset.kind.symbolName,
-                        kind: preset.kind == .claude ? .primary : .secondary
-                    ) {
-                        model.createSession(from: preset, in: project.id)
+            // The same presets the sidebar's + offers, because there is no
+            // second answer to "how do I start something here".
+            VStack(spacing: Theme.Spacing.small) {
+                ForEach(Array(presetRows.enumerated()), id: \.offset) { rowIndex, row in
+                    HStack(spacing: Theme.Spacing.small) {
+                        ForEach(row) { preset in
+                            RelayButton(
+                                preset.name,
+                                kind: isLeading(preset, inFirstRow: rowIndex == 0) ? .primary : .secondary
+                            ) {
+                                SessionGlyph(
+                                    kind: preset.kind,
+                                    size: 12,
+                                    tint: Color(hex: preset.kind.accentHex)
+                                )
+                            } action: {
+                                model.createSession(from: preset, in: project.id)
+                            }
+                            .relayTooltip(preset.subtitle)
+                        }
                     }
                 }
             }
 
             if let git = model.gitStatuses[project.id] {
                 HStack(spacing: Theme.Spacing.small) {
-                    Badge(git.branch, tint: Theme.Palette.textSecondary)
+                    Badge(git.branch, systemImage: "arrow.triangle.branch", tint: Theme.Palette.textSecondary)
                     if git.isDirty { Badge("\(git.changedFiles) changed", tint: Theme.Palette.statusWaiting) }
                     if git.ahead > 0 { Badge("↑\(git.ahead)", tint: Theme.Palette.statusFinished) }
                     if git.behind > 0 { Badge("↓\(git.behind)", tint: Theme.Palette.statusWorking) }

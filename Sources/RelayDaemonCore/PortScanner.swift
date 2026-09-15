@@ -165,6 +165,66 @@ public enum PortScanner {
         return path.isEmpty ? nil : path
     }
 
+    /// One of Relay's own sessions, for attributing a listener back to it.
+    public struct PortOwner: Sendable {
+        public var pid: Int32
+        public var sessionID: SessionID
+        public var name: String
+        public var projectID: ProjectID
+
+        public init(pid: Int32, sessionID: SessionID, name: String, projectID: ProjectID) {
+            self.pid = pid
+            self.sessionID = sessionID
+            self.name = name
+            self.projectID = projectID
+        }
+    }
+
+    /// The whole picture: what is listening, where it was started from, and
+    /// which Relay session owns it.
+    ///
+    /// Takes its view of Relay's sessions as a parameter rather than reading
+    /// daemon state, so the forks this costs — `lsof`, `ps`, and one syscall per
+    /// listener — can happen off the queue that carries terminal output.
+    public static func survey(
+        runner: some CommandRunning = SystemCommandRunner(),
+        owners: [PortOwner]
+    ) -> [ListeningPort] {
+        var ports = scanAll(runner: runner)
+        guard !ports.isEmpty else { return ports }
+
+        // One syscall per port; the answer is what tells two `node` servers
+        // apart.
+        var directories: [Int32: String] = [:]
+        for port in ports where directories[port.pid] == nil {
+            directories[port.pid] = workingDirectory(of: port.pid) ?? ""
+        }
+        for index in ports.indices {
+            let directory = directories[ports[index].pid]
+            ports[index].workingDirectory = (directory?.isEmpty ?? true) ? nil : directory
+        }
+
+        // With nothing of Relay's own running there is no ancestry to walk, and
+        // reading the process table would be a fork spent to learn nothing.
+        let byPID = Dictionary(owners.map { ($0.pid, $0) }, uniquingKeysWith: { first, _ in first })
+        guard !byPID.isEmpty else { return ports }
+
+        let parents = processParents(runner: runner)
+        let candidates = Set(byPID.keys)
+        for index in ports.indices {
+            guard let ancestor = nearestAncestor(
+                of: ports[index].pid,
+                among: candidates,
+                parents: parents
+            ), let owner = byPID[ancestor] else { continue }
+
+            ports[index].ownerSessionID = owner.sessionID
+            ports[index].ownerName = owner.name
+            ports[index].ownerProjectID = owner.projectID
+        }
+        return ports
+    }
+
     /// Reads the process ancestry once, for attributing ports to sessions.
     public static func processParents(runner: some CommandRunning = SystemCommandRunner()) -> [Int32: Int32] {
         guard let ps = runner.run("/bin/ps", arguments: ["-axo", "pid=,ppid="], timeout: 4), ps.succeeded else {

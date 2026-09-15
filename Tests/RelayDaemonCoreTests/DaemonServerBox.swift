@@ -8,11 +8,15 @@ final class DaemonServerBox: @unchecked Sendable {
     private let lock = NSLock()
     private var exitRequested = false
 
-    init(socketURL: URL) throws {
+    init(socketURL: URL, commandRunner: (any CommandRunning)? = nil) throws {
         // Keep test output out of the log the user reads.
         let logURL = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("relay-tests-\(UUID().uuidString).log")
-        server = DaemonServer(socketURL: socketURL, logURL: logURL)
+        server = if let commandRunner {
+            DaemonServer(socketURL: socketURL, logURL: logURL, commandRunner: commandRunner)
+        } else {
+            DaemonServer(socketURL: socketURL, logURL: logURL)
+        }
         // The real entry point calls `exit` here; a test only records it.
         server.onExitRequested = { [weak self] in
             self?.lock.withLock { self?.exitRequested = true }

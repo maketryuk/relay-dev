@@ -28,6 +28,36 @@ struct PaneSplit: Codable, Hashable, Sendable, Identifiable {
     }
 }
 
+/// Where a dragged session lands relative to the pane it was dropped on.
+///
+/// Four edges and a middle, the arrangement every editor uses, because the
+/// gesture has to say *where* as well as *what* — dropping on the right half
+/// and on the left half are different requests.
+enum PaneDropEdge: Hashable, Sendable {
+    case leading
+    case trailing
+    case top
+    case bottom
+    /// Take the pane over instead of dividing it.
+    case replace
+
+    var axis: PaneAxis? {
+        switch self {
+        case .leading, .trailing: .horizontal
+        case .top, .bottom: .vertical
+        case .replace: nil
+        }
+    }
+
+    /// True when the newcomer takes the first half of the new split.
+    var insertsBefore: Bool {
+        switch self {
+        case .leading, .top: true
+        case .trailing, .bottom, .replace: false
+        }
+    }
+}
+
 /// The arrangement of terminals in the main area.
 ///
 /// A tree rather than a list of columns: splitting a pane that is itself half of
@@ -64,18 +94,57 @@ enum PaneLayout {
         _ node: PaneNode,
         target: SessionID,
         with newSession: SessionID,
-        axis: PaneAxis
+        axis: PaneAxis,
+        insertingBefore: Bool = false
     ) -> PaneNode {
         switch node {
         case let .session(id):
             guard id == target else { return node }
-            return .split(PaneSplit(axis: axis, first: .session(id), second: .session(newSession)))
+            let existing = PaneNode.session(id)
+            let arriving = PaneNode.session(newSession)
+            return .split(PaneSplit(
+                axis: axis,
+                first: insertingBefore ? arriving : existing,
+                second: insertingBefore ? existing : arriving
+            ))
         case let .split(split):
             var updated = split
-            updated.first = self.split(split.first, target: target, with: newSession, axis: axis)
-            updated.second = self.split(split.second, target: target, with: newSession, axis: axis)
+            updated.first = self.split(
+                split.first,
+                target: target,
+                with: newSession,
+                axis: axis,
+                insertingBefore: insertingBefore
+            )
+            updated.second = self.split(
+                split.second,
+                target: target,
+                with: newSession,
+                axis: axis,
+                insertingBefore: insertingBefore
+            )
             return .split(updated)
         }
+    }
+
+    /// Drops `moved` onto the pane showing `target`, beside it or in its place.
+    ///
+    /// The session is taken out of wherever it already was first, so dragging a
+    /// pane across a split moves it rather than showing it twice.
+    static func moving(
+        _ moved: SessionID,
+        onto target: SessionID,
+        edge: PaneDropEdge,
+        in node: PaneNode
+    ) -> PaneNode {
+        guard moved != target else { return node }
+        let base = removing(moved, from: node) ?? .session(target)
+        guard contains(target, in: base) else { return .session(moved) }
+
+        guard let axis = edge.axis else {
+            return replacing(target, with: moved, in: base)
+        }
+        return split(base, target: target, with: moved, axis: axis, insertingBefore: edge.insertsBefore)
     }
 
     /// Swaps whichever pane shows `target` for one showing `replacement`.

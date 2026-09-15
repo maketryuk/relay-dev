@@ -335,3 +335,62 @@ struct PortOwnershipTests {
         #expect(owned.isManagedByRelay)
     }
 }
+
+@Suite("Port survey")
+struct PortSurveyTests {
+    private let lsof = """
+    p900
+    cnode
+    n*:3000
+    p901
+    cnginx
+    n127.0.0.1:8080
+    """
+
+    private let ps = """
+      900   880
+      880   700
+      901     1
+      700     1
+    """
+
+    @Test("A listener several forks below a session is attributed to it")
+    func attributesDescendantToItsSession() {
+        let owner = PortScanner.PortOwner(
+            pid: 700,
+            sessionID: SessionID(rawValue: "session"),
+            name: "Dev server",
+            projectID: ProjectID(rawValue: "project")
+        )
+        let ports = PortScanner.survey(
+            runner: FakeCommandRunner(responses: ["lsof": lsof, "ps": ps]),
+            owners: [owner]
+        )
+
+        let node = ports.first { $0.port == 3_000 }
+        #expect(node?.ownerSessionID == owner.sessionID)
+        #expect(node?.ownerName == "Dev server")
+        #expect(node?.ownerProjectID == owner.projectID)
+
+        // Someone else's nginx is reported, never claimed.
+        let nginx = ports.first { $0.port == 8_080 }
+        #expect(nginx?.ownerSessionID == nil)
+    }
+
+    @Test("With nothing of Relay's running, the process table is not read")
+    func skipsTheProcessTableWithoutOwners() {
+        // Walking ancestry with no candidates can only ever fail, and `ps` costs
+        // a fork on a path the ports window takes every few seconds.
+        let runner = FakeCommandRunner(responses: ["lsof": lsof])
+        let ports = PortScanner.survey(runner: runner, owners: [])
+
+        #expect(ports.count == 2)
+        #expect(ports.allSatisfy { $0.ownerSessionID == nil })
+    }
+
+    @Test("Nothing listening means no further work")
+    func emptyScanReturnsEmpty() {
+        let ports = PortScanner.survey(runner: FakeCommandRunner(responses: ["lsof": ""]), owners: [])
+        #expect(ports.isEmpty)
+    }
+}

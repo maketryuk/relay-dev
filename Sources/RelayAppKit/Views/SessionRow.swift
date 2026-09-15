@@ -79,7 +79,7 @@ struct SessionRow: View {
 
             Spacer(minLength: Theme.Spacing.xsmall)
 
-            if isHovering {
+            HoverReveal(isVisible: isHovering) {
                 IconButton(systemImage: "xmark", help: "", size: 16) {
                     model.closeSession(session.id)
                 }
