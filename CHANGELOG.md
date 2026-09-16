@@ -5,38 +5,9 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
-## Unreleased
+## 0.2.0 — 2026-09-16
 
-### Changed
-
-- **⌘P finds a command by whatever you call it.** The palette used to match the
-  text on screen, character for character, so an interface in Russian could not
-  be searched in English — «Переключить ветку» was invisible to "branch" — and
-  neither could an interface in English be searched in Russian. It now matches
-  every language Relay ships, reads a query typed on the wrong keyboard layout
-  ("икфтср" is "branch"), understands Russian written in Latin letters
-  ("vetka"), tolerates the ending of an inflected word, accepts letters in order
-  without being together ("swbr" finds Switch Branch), and orders what it found
-  by how well it fits rather than by where it happens to sit in the list. The
-  shortcut list in Settings searches the same way.
-- **The pointer says what a control does before it is clicked.** It had stopped
-  saying anything at all: the shape was declared with an AppKit cursor
-  rectangle, registered on a view sitting behind the SwiftUI content, and on a
-  current macOS that view is never consulted — so every button, every field and
-  every divider in Relay showed the plain arrow. SwiftUI has stated the pointer
-  itself since macOS 15, and Relay now says it that way, keeping the old route
-  for macOS 14. With the mechanism working again, the places that had never
-  declared a shape were filled in: switches, pop-up menus and the header that
-  collapses a section now show the hand, text fields the caret, a pane's header
-  the open hand it is dragged by; and the divider between two panes keeps the
-  resize pointer through a drag that outruns it.
-- **Releases are signed with Developer ID and notarised by Apple.** Until now a
-  build carried a development certificate, which signs an app for the machine
-  that made it: every other Mac refused to open it without being talked round in
-  System Settings. `./Scripts/release.sh` now builds, signs, notarises and
-  staples, and produces both the archive the in-app updater downloads and a disk
-  image to drag into Applications. Because the signing identity changes, macOS
-  will ask once more for the permissions it has already been given.
+Reviewing what an agent just did, beside the terminal it is still running in.
 
 ### Added
 
@@ -61,13 +32,39 @@ breaking change to stored data.
   size it started at, in the View menu, and in Settings. It applies to every
   terminal at once and survives a relaunch.
 
+### Changed
+
+- **⌘P finds a command by whatever you call it.** The palette used to match the
+  text on screen, character for character, so an interface in Russian could not
+  be searched in English — «Переключить ветку» was invisible to "branch" — and
+  neither could an interface in English be searched in Russian. It now matches
+  every language Relay ships, reads a query typed on the wrong keyboard layout
+  ("икфтср" is "branch"), understands Russian written in Latin letters
+  ("vetka"), tolerates the ending of an inflected word, accepts letters in order
+  without being together ("swbr" finds Switch Branch), and orders what it found
+  by how well it fits rather than by where it happens to sit in the list. The
+  shortcut list in Settings searches the same way.
+- **Releases are signed with Developer ID and notarised by Apple.** Until now a
+  build carried a development certificate, which signs an app for the machine
+  that made it: every other Mac refused to open it without being talked round in
+  System Settings. `./Scripts/release.sh` now builds, signs, notarises and
+  staples, and produces both the archive the in-app updater downloads and a disk
+  image to drag into Applications. Because the signing identity changes, macOS
+  will ask once more for the permissions it has already been given.
+
 ### Fixed
 
-- **The pointer never changed shape.** Every button, row and tab kept the arrow,
-  so nothing on screen admitted to being clickable until it was clicked, and the
-  resize cursor on the dividers appeared only sometimes — it was pushed onto a
-  stack that a SwiftUI redraw could quietly unbalance. Cursors are now cursor
-  rectangles, which the window rebuilds for itself.
+- **The pointer never changed shape.** Every button, row, tab and field kept the
+  arrow, so nothing on screen admitted to being clickable until it was clicked.
+  The shape was declared with an AppKit cursor rectangle registered on a view
+  sitting behind the SwiftUI content, and on a current macOS that view is never
+  consulted: the rectangle was registered and then never applied. SwiftUI has
+  stated the pointer itself since macOS 15, and Relay now says it that way,
+  keeping the old route for macOS 14. The places that had never declared a shape
+  were filled in at the same time — switches, pop-up menus and the header that
+  collapses a section show the hand, text fields the caret, a pane's header the
+  open hand it is dragged by — and the divider between two panes holds the
+  resize pointer through a drag that outruns it.
 - **The context line under a terminal went missing.** The readers were pointed
   at the panes as they were a moment *before* the session was shown, so the
   terminal in front of you was never the one being read — the figure appeared
@@ -90,6 +87,8 @@ breaking change to stored data.
   than the session reading it, and Relay — which matches a session to the
   transcript that began alongside it — found nothing. The command says which
   conversation it is resuming, and that is now what is looked up.
+- **The palette described a session in English** while every other place showing
+  a status had it translated.
 
 ## 0.1.0 — 2026-09-15
 
