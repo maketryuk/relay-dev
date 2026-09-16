@@ -215,7 +215,7 @@ struct DockerPane: View {
             })
 
             if let snapshot, !snapshot.isAvailable {
-                hint(snapshot.message ?? relayLocalized("Docker is unavailable."))
+                unavailable(snapshot)
             } else {
                 composeActions
                 ForEach(snapshot?.containers ?? []) { container in
@@ -233,6 +233,39 @@ struct DockerPane: View {
         // which Relay is told about.
         .refreshingWhileVisible(id: project.id, every: .seconds(5)) {
             model.refreshDocker(for: project.id)
+        }
+    }
+
+    /// Three different kinds of nothing, which have nothing in common but the
+    /// empty panel they produce.
+    @ViewBuilder
+    private func unavailable(_ snapshot: DockerSnapshot) -> some View {
+        switch snapshot.absence {
+        case .notInstalled:
+            // The one Relay cannot help with, and says so rather than offering
+            // something that would not work: it shows containers, it does not
+            // carry an engine.
+            hint(relayLocalized("Docker is not installed. Relay shows the containers an engine is running — Docker Desktop and Colima are both engines it can read."))
+
+        case let .engineStopped(engine):
+            VStack(alignment: .leading, spacing: Theme.Spacing.xsmall) {
+                hint(engine.map { String(format: relayLocalized("%@ is not running."), $0.displayName) }
+                    ?? relayLocalized("The Docker engine is not running."))
+                if let engine {
+                    PillButton(
+                        String(format: relayLocalized("Start %@"), engine.displayName),
+                        systemImage: "play.fill"
+                    ) {
+                        model.startDockerEngine(engine, in: project.id)
+                    }
+                    .padding(.horizontal, Theme.Spacing.small)
+                }
+            }
+
+        case .failed, .none:
+            // Whatever Docker said, verbatim: an error Relay has not been
+            // taught to read is an error it must not paraphrase.
+            hint(snapshot.message ?? relayLocalized("Docker is unavailable."))
         }
     }
 

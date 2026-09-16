@@ -168,11 +168,37 @@ struct DockerAvailabilityTests {
         )
     }
 
-    @Test("A missing CLI is reported rather than silently ignored")
+    @Test("A missing CLI is reported as the one thing Relay cannot fix")
     func missingCLI() {
+        // Not an engine that needs starting: there is no engine. Relay shows
+        // containers and ships none, so the panel must not offer a button.
         let result = snapshot([:], dockerPath: nil)
         #expect(!result.isAvailable)
-        #expect(result.message == "Docker CLI not found")
+        #expect(result.absence == .notInstalled)
+    }
+
+    @Test("An engine that is merely stopped is told apart from a failure")
+    func stoppedEngineIsNotAFailure() {
+        // The wall of text Docker Desktop leaves behind when it quits. It means
+        // one thing, and the person reading it should not have to work it out.
+        let result = snapshot([
+            "docker ps": result(
+                status: 1,
+                err: "failed to connect to the docker API at unix:///Users/me/.docker/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /Users/me/.docker/run/docker.sock: connect: no such file or directory"
+            ),
+        ])
+        #expect(!result.isAvailable)
+        guard case .engineStopped = result.absence else {
+            Issue.record("expected a stopped engine, got \(String(describing: result.absence))")
+            return
+        }
+    }
+
+    @Test("An error Relay has not been taught to read stays a failure")
+    func unrecognisedErrorsAreNotParaphrased() {
+        let result = snapshot(["docker ps": result(status: 1, err: "permission denied while trying to connect")])
+        #expect(result.absence == .failed)
+        #expect(result.message == "permission denied while trying to connect")
     }
 
     @Test("An unreachable engine surfaces the CLI's own message")
@@ -258,6 +284,56 @@ struct DockerAvailabilityTests {
             dockerPath: "/usr/local/bin/docker"
         )
         #expect(!result.isAvailable)
+    }
+}
+
+@Suite("Docker engines")
+struct DockerEngineTests {
+    private func exists(_ paths: [String]) -> (String) -> Bool {
+        let set = Set(paths)
+        return { set.contains($0) }
+    }
+
+    @Test("The socket the CLI failed to reach names the engine behind it")
+    func socketNamesTheEngine() {
+        let both = exists([DockerProbe.dockerDesktopPath, "/opt/homebrew/bin/colima"])
+        #expect(DockerProbe.installedEngine(
+            pointedAtBy: "dial unix /Users/me/.colima/default/docker.sock: connect: no such file or directory",
+            fileExists: both
+        ) == .colima)
+        #expect(DockerProbe.installedEngine(
+            pointedAtBy: "dial unix /Users/me/.docker/run/docker.sock: connect: no such file or directory",
+            fileExists: both
+        ) == .dockerDesktop)
+    }
+
+    @Test("Colima alone is offered when it is the only engine installed")
+    func colimaWithoutDesktop() {
+        #expect(DockerProbe.installedEngine(
+            pointedAtBy: "Cannot connect to the Docker daemon at unix:///var/run/docker.sock.",
+            fileExists: exists(["/usr/local/bin/colima"])
+        ) == .colima)
+    }
+
+    @Test("Nothing installed means nothing offered")
+    func nothingToOffer() {
+        // A machine with a `docker` CLI and no engine behind it. Relay has
+        // nothing it could press, and a button that cannot honour itself is
+        // worse than the sentence explaining why there is none.
+        #expect(DockerProbe.installedEngine(
+            pointedAtBy: "Cannot connect to the Docker daemon at unix:///var/run/docker.sock.",
+            fileExists: exists([])
+        ) == nil)
+    }
+
+    @Test("Every way an engine says it is not there is recognised")
+    func recognisesTheWordings() {
+        #expect(DockerProbe.isEngineDown("Cannot connect to the Docker daemon at unix:///var/run/docker.sock."))
+        #expect(DockerProbe.isEngineDown("failed to connect to the docker API at unix:///x/docker.sock: connect: no such file or directory"))
+        #expect(DockerProbe.isEngineDown("Is the docker daemon running?"))
+        #expect(DockerProbe.isEngineDown("dial tcp 127.0.0.1:2375: connect: connection refused"))
+        #expect(DockerProbe.isEngineDown("no such file or directory") == false)
+        #expect(DockerProbe.isEngineDown("permission denied") == false)
     }
 }
 
