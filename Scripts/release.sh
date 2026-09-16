@@ -22,6 +22,12 @@ for argument in "$@"; do
   esac
 done
 
+# A release nobody but its author can open, for the stretch before the Developer
+# ID question is settled. It is still signed — with whatever certificate is to
+# hand — because the in-app updater refuses a bundle whose team is not the one
+# already running, and an ad-hoc signature has no team at all.
+UNSIGNED="${RELAY_UNSIGNED:-0}"
+
 VERSION="$(sed -n 's/.*static let current = "\(.*\)"/\1/p' Sources/RelayProtocol/RelayVersion.swift | head -1)"
 if [ -z "$VERSION" ]; then
   echo "error: could not read the version from Sources/RelayProtocol/RelayVersion.swift" >&2
@@ -45,22 +51,36 @@ if [ "${RELAY_ALLOW_DIRTY:-0}" != "1" ] && [ -n "$(git status --porcelain)" ]; t
   exit 1
 fi
 
+# `|| true` because not finding one is the case this script exists to explain,
+# and under `set -o pipefail` an empty grep would exit before it could.
+find_identity() {
+  security find-identity -v -p codesigning 2>/dev/null \
+    | grep -m1 "$1" \
+    | sed -E 's/.*"(.*)"/\1/' || true
+}
+
 IDENTITY="${RELAY_CODESIGN_IDENTITY:-}"
-if [ -z "$IDENTITY" ]; then
-  # `|| true` because not finding one is the case this script exists to explain,
-  # and under `set -o pipefail` an empty grep would exit before it could.
-  IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
-    | grep -m1 "Developer ID Application" \
-    | sed -E 's/.*"(.*)"/\1/' || true)"
+[ -n "$IDENTITY" ] || IDENTITY="$(find_identity "Developer ID Application")"
+if [ -z "$IDENTITY" ] && [ "$UNSIGNED" = "1" ]; then
+  IDENTITY="$(find_identity "Apple Development")"
 fi
+
 if [ -z "$IDENTITY" ]; then
-  echo "error: no Developer ID Application certificate in the keychain" >&2
-  echo "       Xcode → Settings → Accounts → your team → Manage Certificates →" >&2
-  echo "       + → Developer ID Application. Only the account holder can create one." >&2
+  if [ "$UNSIGNED" = "1" ]; then
+    echo "error: no code signing certificate in the keychain at all" >&2
+    echo "       Even an unsigned release needs one: the in-app updater checks" >&2
+    echo "       that the download carries the same team as the running copy," >&2
+    echo "       and an ad-hoc signature carries no team." >&2
+  else
+    echo "error: no Developer ID Application certificate in the keychain" >&2
+    echo "       Xcode → Settings → Accounts → your team → Manage Certificates →" >&2
+    echo "       + → Developer ID Application. Only the account holder can create one." >&2
+    echo "       For a release before that is settled: RELAY_UNSIGNED=1 $0" >&2
+  fi
   exit 1
 fi
 
-if ! xcrun notarytool history --keychain-profile "$PROFILE" --limit 1 >/dev/null 2>&1; then
+if [ "$UNSIGNED" != "1" ] && ! xcrun notarytool history --keychain-profile "$PROFILE" --limit 1 >/dev/null 2>&1; then
   echo "error: no notarisation credentials stored as \"$PROFILE\"" >&2
   echo "       Store them once with an App Store Connect API key:" >&2
   echo "       xcrun notarytool store-credentials \"$PROFILE\" \\" >&2
@@ -84,13 +104,19 @@ if [ -z "$(release_notes | tr -d '[:space:]')" ]; then
 fi
 
 echo "==> Releasing $VERSION as: $IDENTITY"
+if [ "$UNSIGNED" = "1" ]; then
+  echo "    Not notarised, and not signed for distribution. Another Mac will"
+  echo "    refuse this download until it is talked round in System Settings."
+  echo "    The in-app updater is unaffected: it checks the team, not Apple."
+fi
 rm -rf "$OUT"
 mkdir -p "$OUT"
 release_notes > "$NOTES"
 
 # --- The application -----------------------------------------------------
 
-RELAY_SIGN_FOR_DISTRIBUTION=1 RELAY_CODESIGN_IDENTITY="$IDENTITY" ./Scripts/build-app.sh release
+RELAY_SIGN_FOR_DISTRIBUTION="$([ "$UNSIGNED" = "1" ] && echo 0 || echo 1)" \
+  RELAY_CODESIGN_IDENTITY="$IDENTITY" ./Scripts/build-app.sh release
 
 notarise() {
   local file="$1"
@@ -106,45 +132,59 @@ notarise() {
   fi
 }
 
-# Apple is given the archive the build already produced; the ticket it issues is
-# then stapled into the bundle, so a first launch with no network still passes.
-notarise "$ROOT/build/Relay.app.zip"
-xcrun stapler staple "$APP"
+if [ "$UNSIGNED" = "1" ]; then
+  # No ticket to staple and no disk image: an unsigned image is the worst of
+  # both, a download that looks official and opens nowhere. The archive is what
+  # the updater needs, and it is enough for a person too.
+  ditto -c -k --keepParent "$APP" "$ARCHIVE"
+else
+  # Apple is given the archive the build already produced; the ticket it issues
+  # is then stapled into the bundle, so a first launch with no network still
+  # passes.
+  notarise "$ROOT/build/Relay.app.zip"
+  xcrun stapler staple "$APP"
 
-# Re-made after stapling: the ticket lives inside the bundle, and the archive
-# built before it does not carry one.
-ditto -c -k --keepParent "$APP" "$ARCHIVE"
+  # Re-made after stapling: the ticket lives inside the bundle, and the archive
+  # built before it does not carry one.
+  ditto -c -k --keepParent "$APP" "$ARCHIVE"
 
-# --- The disk image ------------------------------------------------------
+  # --- The disk image ----------------------------------------------------
 
-STAGE="$(mktemp -d)"
-trap 'rm -rf "$STAGE"' EXIT
-cp -R "$APP" "$STAGE/Relay.app"
-# The drag-to-install gesture everyone already knows.
-ln -s /Applications "$STAGE/Applications"
+  STAGE="$(mktemp -d)"
+  trap 'rm -rf "$STAGE"' EXIT
+  cp -R "$APP" "$STAGE/Relay.app"
+  # The drag-to-install gesture everyone already knows.
+  ln -s /Applications "$STAGE/Applications"
 
-echo "==> Building $(basename "$IMAGE")"
-hdiutil create \
-  -volname "Relay $VERSION" \
-  -srcfolder "$STAGE" \
-  -fs HFS+ \
-  -format UDZO \
-  -ov \
-  "$IMAGE" >/dev/null
+  echo "==> Building $(basename "$IMAGE")"
+  hdiutil create \
+    -volname "Relay $VERSION" \
+    -srcfolder "$STAGE" \
+    -fs HFS+ \
+    -format UDZO \
+    -ov \
+    "$IMAGE" >/dev/null
 
-codesign --force --timestamp --sign "$IDENTITY" "$IMAGE"
-notarise "$IMAGE"
-xcrun stapler staple "$IMAGE"
+  codesign --force --timestamp --sign "$IDENTITY" "$IMAGE"
+  notarise "$IMAGE"
+  xcrun stapler staple "$IMAGE"
 
-# --- What a stranger's Mac will make of them -----------------------------
+  # --- What a stranger's Mac will make of them ---------------------------
 
-echo "==> Checking what Gatekeeper sees"
-spctl --assess --type execute --verbose=2 "$APP"
-spctl --assess --type open --context context:primary-signature --verbose=2 "$IMAGE"
+  echo "==> Checking what Gatekeeper sees"
+  spctl --assess --type execute --verbose=2 "$APP"
+  spctl --assess --type open --context context:primary-signature --verbose=2 "$IMAGE"
+fi
+
+# What the updater actually checks, checked here rather than discovered by the
+# person the update fails for.
+echo "==> Checking what the in-app updater will see"
+codesign --verify --deep --strict "$APP"
+codesign -d --verbose=2 "$APP" 2>&1 | grep TeamIdentifier
 
 echo "==> Done"
 echo "    Archive: $ARCHIVE"
-echo "    Image:   $IMAGE"
+[ "$UNSIGNED" = "1" ] || echo "    Image:   $IMAGE"
 echo "    Notes:   $NOTES"
 
 # --- Publishing ----------------------------------------------------------
@@ -164,8 +204,10 @@ if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
 fi
 
 echo "==> Publishing v$VERSION"
+ASSETS=("$ARCHIVE")
+[ "$UNSIGNED" = "1" ] || ASSETS+=("$IMAGE")
+
 gh release create "v$VERSION" \
   --title "$VERSION" \
   --notes-file "$NOTES" \
-  "$ARCHIVE" \
-  "$IMAGE"
+  "${ASSETS[@]}"
