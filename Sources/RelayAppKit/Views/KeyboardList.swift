@@ -98,6 +98,40 @@ extension View {
     }
 }
 
+/// A scrolling list that keeps the keyboard's row on screen.
+///
+/// A container rather than a modifier, because `ScrollViewReader` has to sit
+/// outside the scroll view it reads — which is most of why following the
+/// highlight was written out twice and then forgotten twice. A list that can be
+/// walked with the arrow keys but not followed with them is a list that can be
+/// walked off the bottom of.
+struct KeyboardScrollingList<RowID: Hashable, Content: View>: View {
+    /// The row the keyboard is on.
+    let focusedRow: Int
+    /// What identifies that row to the scroll view, or nil when the index
+    /// points past a list that has been filtered out from under it.
+    let identifyingRow: (Int) -> RowID?
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        ScrollViewReader { scroller in
+            ScrollView {
+                content()
+            }
+            .onChange(of: focusedRow) { _, row in
+                guard let id = identifyingRow(row) else { return }
+                // No anchor, which scrolls the least that brings the row into
+                // view. Centring it instead moves a list that is already on
+                // screen on every single keypress, so reading one by arrowing
+                // down it means reading something that will not hold still.
+                withAnimation(.easeOut(duration: 0.12)) {
+                    scroller.scrollTo(id)
+                }
+            }
+        }
+    }
+}
+
 /// The actions of a highlighted row, with the one in focus marked.
 struct RowActionBar: View {
     let actions: [RowAction]

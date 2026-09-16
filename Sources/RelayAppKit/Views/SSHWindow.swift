@@ -99,36 +99,31 @@ struct SSHPane: View {
                     : "No host matches “\(query)”."
             )
         } else {
-            ScrollViewReader { scroller in
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 1, pinnedViews: [.sectionHeaders]) {
-                        if !pinned.isEmpty {
-                            Section {
-                                ForEach(Array(pinned.enumerated()), id: \.element.id) { index, host in
-                                    row(host, isPinned: true, at: index)
-                                }
-                            } header: {
-                                sectionHeader("Pinned to \(model.selectedProject?.name ?? "this project")")
+            KeyboardScrollingList(
+                focusedRow: focus.row,
+                identifyingRow: { orderedHosts.indices.contains($0) ? orderedHosts[$0].id : nil }
+            ) {
+                LazyVStack(alignment: .leading, spacing: 1, pinnedViews: [.sectionHeaders]) {
+                    if !pinned.isEmpty {
+                        Section {
+                            ForEach(Array(pinned.enumerated()), id: \.element.id) { index, host in
+                                row(host, isPinned: true, at: index)
                             }
-                        }
-                        if !others.isEmpty {
-                            Section {
-                                ForEach(Array(others.enumerated()), id: \.element.id) { index, host in
-                                    row(host, isPinned: false, at: pinned.count + index)
-                                }
-                            } header: {
-                                sectionHeader(pinned.isEmpty ? "All hosts" : "Other hosts")
-                            }
+                        } header: {
+                            sectionHeader("Pinned to \(model.selectedProject?.name ?? "this project")")
                         }
                     }
-                    .padding(Theme.Spacing.small)
-                }
-                .onChange(of: focus.row) { _, index in
-                    guard orderedHosts.indices.contains(index) else { return }
-                    withAnimation(.easeOut(duration: 0.12)) {
-                        scroller.scrollTo(orderedHosts[index].id, anchor: .center)
+                    if !others.isEmpty {
+                        Section {
+                            ForEach(Array(others.enumerated()), id: \.element.id) { index, host in
+                                row(host, isPinned: false, at: pinned.count + index)
+                            }
+                        } header: {
+                            sectionHeader(pinned.isEmpty ? "All hosts" : "Other hosts")
+                        }
                     }
                 }
+                .padding(Theme.Spacing.small)
             }
         }
     }
