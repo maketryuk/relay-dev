@@ -84,6 +84,24 @@ different app to macOS. They carry the hardened runtime too, so what is tested
 is what ships; only the timestamp Apple has to witness is left out, because it
 costs a round trip on every build.
 
+### Cutting one before that is settled
+
+`RELAY_UNSIGNED=1 ./Scripts/release.sh` builds a release with neither. It signs
+with whatever certificate is to hand — an *Apple Development* one will do —
+because the in-app updater refuses a download whose team is not the team already
+running, and an ad-hoc signature has no team at all. It skips notarisation, and
+it skips the disk image, which unsigned is the worst of both: a download that
+looks official and opens nowhere.
+
+What that costs: a Mac other than the one that built it refuses the download
+until it is talked round in System Settings. What it does not cost: the in-app
+updater, which asks whether the team matches rather than whether Apple has
+blessed it, so an existing install updates itself as usual.
+
+The team is what has to hold, not the certificate. Moving later to a Developer
+ID issued under the same team keeps every existing install updating; moving to
+one under a different team does not, and everybody has to install by hand once.
+
 ## Daemon protocol
 
 `RelayProtocolVersion.current` must be bumped whenever the message set changes.
