@@ -7,6 +7,15 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Changed
+
+- **Clicking a container opens a prompt inside it.** It used to open the
+  container's log, which is something you ask for rather than the thing you
+  came for — getting inside is. Bash where the image has it and `sh` where it
+  does not, which is most of them. A container that is not running has nothing
+  to step into, so it still opens the log, which is the only account of why it
+  stopped. Both stay in the right-click menu.
+
 ### Fixed
 
 - **Arrowing through a list left the list where it was.** In the branch window

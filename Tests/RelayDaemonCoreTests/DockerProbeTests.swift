@@ -306,7 +306,10 @@ struct DockerAvailabilityTests {
         let result = DockerProbe.snapshot(
             projectDirectory: "/tmp",
             runner: FakeCommandRunner(responses: [:], isUnavailable: true),
-            dockerPath: "/usr/local/bin/docker"
+            dockerPath: "/usr/local/bin/docker",
+            // Stated, not defaulted: the default asks the machine running the
+            // test, and it passed only while no engine happened to be up.
+            engineContainers: { nil }
         )
         #expect(!result.isAvailable)
     }

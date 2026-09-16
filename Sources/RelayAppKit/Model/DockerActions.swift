@@ -46,6 +46,8 @@ enum ComposeAction: String, CaseIterable, Identifiable {
 
 /// Actions for a single container.
 enum ContainerAction: String, CaseIterable, Identifiable {
+    /// A prompt inside the container, which is what you open a container for.
+    case shell
     case start
     case stop
     case restart
@@ -55,6 +57,7 @@ enum ContainerAction: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .shell: "Shell"
         case .start: "Start"
         case .stop: "Stop"
         case .restart: "Restart"
@@ -64,6 +67,7 @@ enum ContainerAction: String, CaseIterable, Identifiable {
 
     var sessionPrefix: String {
         switch self {
+        case .shell: "shell"
         case .start: "start"
         case .stop: "stop"
         case .restart: "restart"
@@ -71,8 +75,25 @@ enum ContainerAction: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Whether the action is something to watch rather than something that
+    /// happens. Starting a container finishes in a second and leaves nothing to
+    /// read; a prompt inside one is the opposite of that.
+    var needsTerminal: Bool {
+        switch self {
+        case .shell, .logs: true
+        case .start, .stop, .restart: false
+        }
+    }
+
+    /// Bash where the image has it and sh where it does not, which is most of
+    /// them. Asked with `command -v` rather than by trying to exec bash and
+    /// falling back: a failed `exec` ends the shell rather than carrying on to
+    /// the next command, so the fallback would never run.
+    static let preferredShell = "command -v bash >/dev/null 2>&1 && exec bash || exec sh"
+
     func arguments(for container: DockerContainer) -> [String] {
         switch self {
+        case .shell: ["exec", "--interactive", "--tty", container.name, "sh", "-c", Self.preferredShell]
         case .start: ["start", container.name]
         case .stop: ["stop", container.name]
         case .restart: ["restart", container.name]

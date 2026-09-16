@@ -292,7 +292,13 @@ struct DockerPane: View {
             systemImage: "cube",
             status: container.runtimeStatus,
             isSelected: false,
-            action: { model.containerAction(.logs, container: container, in: project.id) },
+            // A container is opened to get inside it. Its log is a thing you
+            // ask for; a prompt is the thing you came for — except on one that
+            // is not running, where there is nothing to exec into and the log
+            // is the only account of why.
+            action: {
+                model.containerAction(isRunning ? .shell : .logs, container: container, in: project.id)
+            },
             accessoryVisibility: .always
         ) {
             HStack(spacing: 1) {
@@ -320,6 +326,13 @@ struct DockerPane: View {
                 }
             }
         }
+        .relayTooltip(
+            isRunning
+                ? relayLocalized("Open a terminal inside this container")
+                : relayLocalized("Show this container's log"),
+            shortcut: container.name,
+            edge: .leading
+        )
         .contextMenu {
             ForEach(ContainerAction.allCases) { action in
                 Button(action.localizedTitle) {
