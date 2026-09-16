@@ -63,6 +63,23 @@ public func relayLocalized(_ key: String) -> String {
     return bundle.localizedString(forKey: key, value: key, table: nil)
 }
 
+/// Every shipped wording of a key, the one on screen first.
+///
+/// What a search has to be matched against, because the interface speaks one
+/// language and the person at the keyboard may well be thinking in the other:
+/// someone running Relay in Russian still knows the command as "branch", and
+/// typing it found nothing as long as only the visible label was searched.
+@MainActor
+public func relaySearchTerms(_ key: String) -> [String] {
+    var terms = [relayLocalized(key)]
+    for language in AppLanguage.allCases {
+        guard language.code != nil else { continue }
+        let wording = Self_bundle(for: language).localizedString(forKey: key, value: key, table: nil)
+        if !terms.contains(wording) { terms.append(wording) }
+    }
+    return terms
+}
+
 /// Resolves the `.lproj` for an explicit language, falling back to the module
 /// bundle so the system language applies on its own.
 ///

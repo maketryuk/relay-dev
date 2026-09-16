@@ -28,6 +28,7 @@ struct UsagePopover: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                .clickable()
                 .frame(maxWidth: .infinity)
 
                 ForEach(model.usage.agents) { usage in

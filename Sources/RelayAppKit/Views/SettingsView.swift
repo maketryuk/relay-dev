@@ -130,6 +130,7 @@ struct GeneralSettingsPane: View {
                         }
                     }
                     .labelsHidden()
+                    .clickable()
                     .frame(width: 160)
                 }
             }
@@ -159,6 +160,7 @@ struct GeneralSettingsPane: View {
                     ))
                     .toggleStyle(.switch)
                     .labelsHidden()
+                    .clickable()
                 }
             }
 
@@ -179,6 +181,7 @@ struct GeneralSettingsPane: View {
                     ))
                     .toggleStyle(.switch)
                     .labelsHidden()
+                    .clickable()
                 }
                 SettingsRow(
                     title: relayLocalized("Sidebar width"),
@@ -292,6 +295,7 @@ struct ShortcutSettingsPane: View {
                             ))
                             .labelsHidden()
                             .toggleStyle(.switch)
+                            .clickable()
                         }
                     }
                 }
@@ -301,10 +305,12 @@ struct ShortcutSettingsPane: View {
     }
 
     private func filteredCommands(in category: ShortcutCategory) -> [RelayCommand] {
-        let trimmed = query.trimmingCharacters(in: .whitespaces).lowercased()
+        let search = RelaySearchQuery(query)
         return RelayCommand.allCases
             .filter { $0.category == category }
-            .filter { trimmed.isEmpty || $0.title.lowercased().contains(trimmed) }
+            // Matched against both languages, like the palette: the list is of
+            // the same commands, so looking one up cannot work differently here.
+            .filter { search.matches(relaySearchTerms($0.title)) }
     }
 
     private func shortcutRow(_ command: RelayCommand) -> some View {
@@ -378,6 +384,7 @@ struct NotificationSettingsPane: View {
                             ))
                             .labelsHidden()
                             .toggleStyle(.switch)
+                            .clickable()
                         }
                     }
                 }
@@ -402,6 +409,7 @@ struct NotificationSettingsPane: View {
             ))
             .labelsHidden()
             .toggleStyle(.switch)
+            .clickable()
             .disabled(value != \NotificationSettings.isEnabled && !model.notificationSettings.isEnabled)
         }
     }
@@ -454,6 +462,7 @@ struct AboutPane: View {
                     ))
                     .toggleStyle(.switch)
                     .labelsHidden()
+                    .clickable()
                 }
             }
 

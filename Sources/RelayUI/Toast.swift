@@ -142,6 +142,7 @@ struct ToastView: View {
                     onDismiss()
                 }
                 .buttonStyle(.plain)
+                .clickable()
                 .font(Theme.Typography.caption)
                 .foregroundStyle(toast.kind.tint)
                 .padding(.horizontal, 7)

@@ -43,6 +43,7 @@ struct ProjectSettingsView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                    .clickable()
                 }
 
                 field("Dev command") {
@@ -60,11 +61,13 @@ struct ProjectSettingsView: View {
                                 .font(Theme.Typography.row)
                                 .foregroundStyle(Theme.Palette.textSecondary)
                         }
+                        .clickable()
                         Toggle(isOn: $projectMuted) {
                             Text(relayLocalized("Mute this project"))
                                 .font(Theme.Typography.row)
                                 .foregroundStyle(Theme.Palette.textSecondary)
                         }
+                        .clickable(notificationsEnabled)
                         .disabled(!notificationsEnabled)
                     }
                     .toggleStyle(.switch)

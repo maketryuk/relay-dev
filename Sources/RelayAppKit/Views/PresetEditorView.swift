@@ -95,6 +95,7 @@ struct PresetEditorView: View {
                 Toggle("", isOn: $usesCustomCommand)
                     .labelsHidden()
                     .toggleStyle(.switch)
+                    .clickable()
             }
 
             if usesCustomCommand {
