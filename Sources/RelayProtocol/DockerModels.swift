@@ -36,6 +36,10 @@ public struct DockerContainer: Codable, Sendable, Hashable, Identifiable {
     /// Directory Compose was invoked from, which is how a container is matched
     /// to a project even when the stack lives in a subdirectory.
     public var composeWorkingDirectory: String?
+    /// The Compose file this container was defined by, as Compose itself
+    /// recorded it. Guessing which file a stack uses is guesswork; this is the
+    /// answer, and it is written on every container Compose creates.
+    public var composeConfigFile: String?
 
     public init(
         id: String,
@@ -46,7 +50,8 @@ public struct DockerContainer: Codable, Sendable, Hashable, Identifiable {
         status: String = "",
         publishedPorts: [DockerPort] = [],
         composeProject: String? = nil,
-        composeWorkingDirectory: String? = nil
+        composeWorkingDirectory: String? = nil,
+        composeConfigFile: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -57,6 +62,7 @@ public struct DockerContainer: Codable, Sendable, Hashable, Identifiable {
         self.publishedPorts = publishedPorts
         self.composeProject = composeProject
         self.composeWorkingDirectory = composeWorkingDirectory
+        self.composeConfigFile = composeConfigFile
     }
 
     /// Maps docker vocabulary onto Relay's single status model so containers

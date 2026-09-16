@@ -40,6 +40,36 @@ struct ComposeLocatorTests {
         #expect(found == "/p/compose.yaml")
     }
 
+    @Test("A file named after its environment is found")
+    func environmentSuffixedFileIsFound() {
+        // The case that produced "no configuration file provided" in a project
+        // whose containers were visibly running: nothing is named any of the
+        // four Compose looks for, so Compose found nothing and Relay agreed.
+        let present = locator([
+            "/p/docker/docker-compose.local.yml",
+            "/p/docker/docker-compose.stage.yml",
+            "/p/docker/docker-compose.prod.yml",
+        ])
+        #expect(ComposeLocator.file(forProjectAt: "/p", fileExists: present) == "/p/docker/docker-compose.local.yml")
+    }
+
+    @Test("A file Compose would find itself beats one named after an environment")
+    func plainNamesWinOverSuffixedOnes() {
+        let present = locator(["/p/docker-compose.local.yml", "/p/compose.yaml"])
+        #expect(ComposeLocator.file(forProjectAt: "/p", fileExists: present) == "/p/compose.yaml")
+    }
+
+    @Test("A stack that only has stage and production files is left alone")
+    func productionIsNeverGuessedAt() {
+        // The file this picks is the one an Up button starts. Guessing that a
+        // laptop wants the production stack is not a mistake to make once.
+        let present = locator([
+            "/p/docker/docker-compose.prod.yml",
+            "/p/docker/docker-compose.stage.yml",
+        ])
+        #expect(ComposeLocator.file(forProjectAt: "/p", fileExists: present) == nil)
+    }
+
     @Test("A project with no compose file reports none, and runs from its root")
     func missingFileFallsBackToTheRoot() {
         let none = locator([])

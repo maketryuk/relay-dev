@@ -14,6 +14,25 @@ breaking change to stored data.
   going, so the keyboard was somewhere the window was not showing — while the
   ports and SSH windows followed it, which made it look like a list that
   sometimes worked rather than two that never did. All four follow it now.
+- **Compose Up reported that the project had no Compose file, with that
+  project's containers listed beside the button.** Relay looked for the four
+  names Compose looks for and gave up, while a stack split into
+  `docker-compose.local.yml`, `.stage.yml` and `.prod.yml` has none of them.
+  Docker writes the file it was given onto every container it creates, so the
+  running stack is now asked rather than guessed at, and the file and the
+  project name are passed to Compose rather than left to whichever directory the
+  command started in — which is what made Up act on a different stack than the
+  one on screen. When nothing is running the search knows the environment
+  suffixes too, preferring the local one and never a production file: the file
+  this picks is the one the button starts.
+- **Panels showed what was true when they were opened.** Containers are started
+  in Docker Desktop, files are written by agents, branches are checked out in a
+  terminal — none of which Relay is told about, so the Docker panel, the review
+  panel, the branch window and the history list each sat on an answer from
+  whenever they had last been asked. They keep themselves current while they are
+  on screen now, and stop the moment they are not. An answer that has not
+  changed is not applied, so a panel nobody is touching does not redraw, and a
+  diff being read does not reload under the reader.
 
 ## 0.2.0 — 2026-09-16
 
