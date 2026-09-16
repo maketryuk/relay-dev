@@ -13,10 +13,7 @@ breaking change to stored data.
   and the command palette the highlight walked off the bottom and carried on
   going, so the keyboard was somewhere the window was not showing — while the
   ports and SSH windows followed it, which made it look like a list that
-  sometimes worked rather than two that never did. All four follow it now, and
-  they scroll the least that brings the row into view instead of re-centring on
-  every keypress, which moved a list that was already on screen under the hands
-  reading it.
+  sometimes worked rather than two that never did. All four follow it now.
 
 ## 0.2.0 — 2026-09-16
 

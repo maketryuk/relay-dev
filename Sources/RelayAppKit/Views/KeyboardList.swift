@@ -120,12 +120,17 @@ struct KeyboardScrollingList<RowID: Hashable, Content: View>: View {
             }
             .onChange(of: focusedRow) { _, row in
                 guard let id = identifyingRow(row) else { return }
-                // No anchor, which scrolls the least that brings the row into
-                // view. Centring it instead moves a list that is already on
-                // screen on every single keypress, so reading one by arrowing
-                // down it means reading something that will not hold still.
+                // Centred rather than scrolled the least that would reveal it.
+                // "Wholly visible" is measured against the scroll view, and a
+                // pinned section header floats over its content rather than
+                // shortening it — so the least that reveals a row puts it
+                // under the header, which is where it stops being visible.
+                //
+                // This costs less than it sounds: the offset is clamped to the
+                // content, so at either end of a list nothing moves at all, and
+                // in the middle each keypress scrolls exactly one row.
                 withAnimation(.easeOut(duration: 0.12)) {
-                    scroller.scrollTo(id)
+                    scroller.scrollTo(id, anchor: .center)
                 }
             }
         }
