@@ -68,7 +68,7 @@ struct ProjectRailView: View {
                 tint: ProjectAppearance.tint(for: project.rootPath),
                 status: model.aggregatedStatus(for: project.id),
                 isSelected: isSelected,
-                image: model.projectIcons[project.id]
+                artwork: model.projectIcons[project.id]
             )
             .clickable()
             .onTapGesture { model.selectProject(project.id) }

@@ -10,12 +10,14 @@
 "%@ will go back to the last committed version." = "%@ вернётся к последней закоммиченной версии.";
 "%d branches" = "Веток: %d";
 "%d changed" = "изменено: %d";
+"%d picked" = "выбрано: %d";
 "%d unmodified lines" = "Неизменённых строк: %d";
 "%d unread" = "непрочитанных: %d";
 "A project file tree and an editor with linting will live here." = "Здесь появится дерево файлов проекта и редактор с линтером.";
 "A session, service or container exited with an error" = "Сессия, сервис или контейнер завершились с ошибкой";
 "About" = "О программе";
 "Add a local directory to start running agents, shells and dev servers in one place." = "Добавьте локальную папку, чтобы запускать агентов, терминалы и dev-серверы в одном месте.";
+"Add a marker…" = "Добавить маркер…";
 "Add a preset" = "Добавить пресет";
 "Add Project" = "Добавить проект";
 "Add project" = "Добавить проект";
@@ -26,6 +28,7 @@
 "Agent is waiting for you" = "Агент ждёт вас";
 "Agent" = "Агент";
 "Agents and services only — a shell returning to its prompt is not an event" = "Только агенты и сервисы — возврат шелла к приглашению событием не считается";
+"All" = "Все";
 "All hosts" = "Все хосты";
 "Also used by %@" = "Также используется: %@";
 "Appearance" = "Оформление";
@@ -35,12 +38,14 @@
 "Arguments" = "Аргументы";
 "as of %@" = "по состоянию на %@";
 "Asks GitHub for the newest release; nothing about you is sent" = "Спрашивает у GitHub о новом релизе; ничего о вас не отправляется";
+"At least one marker is needed" = "Нужен хотя бы один маркер";
 "Back" = "Назад";
 "Binary file" = "Двоичный файл";
 "Branches" = "Ветки";
 "Built-in" = "Встроенный";
 "Cached" = "Из кэша";
 "Cancel" = "Отмена";
+"Case sensitive; letters only." = "Регистр важен, только буквы.";
 "Check automatically" = "Проверять автоматически";
 "Check for updates" = "Проверка обновлений";
 "Check now" = "Проверить";
@@ -75,6 +80,7 @@
 "Connected — sessions keep running when Relay is closed" = "Подключено — сессии работают и при закрытом Relay";
 "Context" = "Контекст";
 "Conversations" = "Разговоры";
+"Copy" = "Копировать";
 "Copy Container Name" = "Скопировать имя контейнера";
 "Copy notes" = "Скопировать заметки";
 "Copy path" = "Скопировать путь";
@@ -198,6 +204,7 @@
 "Newly cached" = "Записано в кэш";
 "Next Project" = "Следующий проект";
 "Next Session" = "Следующая сессия";
+"No %@ comments in this project." = "В проекте нет комментариев %@.";
 "No branch matches “%@”." = "Ни одна ветка не подходит под «%@».";
 "No containers for this project. Press Up to start the stack." = "Для этого проекта нет контейнеров. Нажмите «Запустить», чтобы поднять стек.";
 "No host matches “%@”." = "Нет хостов по запросу «%@».";
@@ -215,6 +222,7 @@
 "Notes" = "Заметки";
 "Nothing changed" = "Изменений нет";
 "Nothing is listening" = "Никто не слушает";
+"Nothing left to do" = "Ничего не осталось";
 "Nothing selected" = "Ничего не выбрано";
 "Nothing to show" = "Показывать нечего";
 "Nothing yet. Agents waiting on you, failures and finished work land here." = "Пока пусто. Сюда попадают агенты, ждущие вас, сбои и завершённая работа.";
@@ -228,6 +236,7 @@
 "Open in Browser" = "Открыть в браузере";
 "Open in browser" = "Открыть в браузере";
 "Open in Editor" = "Открыть в редакторе";
+"Open in editor" = "Открыть в редакторе";
 "Open in Finder" = "Показать в Finder";
 "Open localhost:%d" = "Открыть localhost:%d";
 "Open port %d" = "Открыть порт %d";
@@ -321,6 +330,8 @@
 "Search sessions, services, hosts…" = "Поиск: сессии, сервисы, хосты…";
 "Send notes to" = "Отправить заметки в";
 "Send notes" = "Отправить заметки";
+"Send to" = "Отправить";
+"Send to an agent" = "Отправить агенту";
 "Services" = "Сервисы";
 "Session daemon disconnected" = "Демон сессий отключился";
 "Session daemon is shutting down" = "Демон сессий останавливается";
@@ -382,6 +393,7 @@
 "The download failed: %@" = "Не удалось загрузить: %@";
 "The downloaded archive could not be opened." = "Не удалось открыть загруженный архив.";
 "The downloaded copy was rejected: %@" = "Загруженная копия отклонена: %@";
+"The first %d are shown. There are more." = "Показаны первые %d. Есть ещё.";
 "The only notification that plays a sound" = "Единственное уведомление со звуком";
 "The update check failed: HTTP %d" = "Проверка обновлений не удалась: HTTP %d";
 "The working copy matches the last commit." = "Рабочая копия совпадает с последним коммитом.";
@@ -390,6 +402,8 @@
 "This project" = "Этот проект";
 "This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand." = "Это перезапишет ветку на удалённом сервере. Всем, кто её уже забрал, придётся восстанавливаться вручную.";
 "This session is no longer known to the daemon." = "Демон больше не знает об этой сессии.";
+"TODO" = "TODO";
+"TODO markers" = "Маркеры TODO";
 "Toggle Project Panel" = "Показать панель проекта";
 "Toggle Sessions Sidebar" = "Показать панель сессий";
 "Too large to show" = "Слишком большой для показа";
@@ -408,9 +422,12 @@
 "Weekly" = "Еженедельно";
 "What is in the context window" = "Что лежит в контекстном окне";
 "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly" = "Именно это делает прокрутку плавной. Выключите, если терминал рисуется неправильно";
+"What should be done about these?" = "Что с ними нужно сделать?";
 "When to interrupt" = "Когда прерывать";
+"Which words to look for" = "Какие слова искать";
 "Window (inferred)" = "Окно (вычислено)";
 "Window" = "Окно";
+"Words the TODO panel looks for in comments. Case sensitive; letters only." = "Слова, которые панель TODO ищет в комментариях. Регистр важен, только буквы.";
 "Work finished" = "Работа завершена";
 "Working" = "Работает";
 "Workspace" = "Рабочее пространство";

@@ -5,6 +5,7 @@ enum RightSidebarTab: String, CaseIterable, Identifiable, Sendable {
     // Declaration order is the order in the strip.
     case files
     case git
+    case todo
     case history
     case services
     case docker
@@ -17,6 +18,7 @@ enum RightSidebarTab: String, CaseIterable, Identifiable, Sendable {
         case .docker: "Docker"
         case .history: "History"
         case .git: "Git"
+        case .todo: "TODO"
         case .files: "Files"
         }
     }
@@ -27,6 +29,7 @@ enum RightSidebarTab: String, CaseIterable, Identifiable, Sendable {
         case .docker: "shippingbox"
         case .history: "clock.arrow.circlepath"
         case .git: "arrow.triangle.branch"
+        case .todo: "checklist"
         case .files: "folder"
         }
     }
@@ -36,8 +39,18 @@ enum RightSidebarTab: String, CaseIterable, Identifiable, Sendable {
     /// going, and disabled rather than half-working.
     var isAvailable: Bool {
         switch self {
-        case .services, .docker, .history, .git: true
+        case .services, .docker, .history, .git, .todo: true
         case .files: false
+        }
+    }
+
+    /// Whether the pane lays out its own full height. The ones that do keep a
+    /// list scrolling against a box pinned to the bottom, which the shared
+    /// scroll view would push somewhere below fifty rows.
+    var fillsPanel: Bool {
+        switch self {
+        case .git, .todo: true
+        default: false
         }
     }
 

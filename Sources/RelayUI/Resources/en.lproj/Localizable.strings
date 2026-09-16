@@ -10,12 +10,14 @@
 "%@ will go back to the last committed version." = "%@ will go back to the last committed version.";
 "%d branches" = "%d branches";
 "%d changed" = "%d changed";
+"%d picked" = "%d picked";
 "%d unmodified lines" = "%d unmodified lines";
 "%d unread" = "%d unread";
 "A project file tree and an editor with linting will live here." = "A project file tree and an editor with linting will live here.";
 "A session, service or container exited with an error" = "A session, service or container exited with an error";
 "About" = "About";
 "Add a local directory to start running agents, shells and dev servers in one place." = "Add a local directory to start running agents, shells and dev servers in one place.";
+"Add a marker…" = "Add a marker…";
 "Add a preset" = "Add a preset";
 "Add Project" = "Add Project";
 "Add project" = "Add project";
@@ -26,6 +28,7 @@
 "Agent is waiting for you" = "Agent is waiting for you";
 "Agent" = "Agent";
 "Agents and services only — a shell returning to its prompt is not an event" = "Agents and services only — a shell returning to its prompt is not an event";
+"All" = "All";
 "All hosts" = "All hosts";
 "Also used by %@" = "Also used by %@";
 "Appearance" = "Appearance";
@@ -35,12 +38,14 @@
 "Arguments" = "Arguments";
 "as of %@" = "as of %@";
 "Asks GitHub for the newest release; nothing about you is sent" = "Asks GitHub for the newest release; nothing about you is sent";
+"At least one marker is needed" = "At least one marker is needed";
 "Back" = "Back";
 "Binary file" = "Binary file";
 "Branches" = "Branches";
 "Built-in" = "Built-in";
 "Cached" = "Cached";
 "Cancel" = "Cancel";
+"Case sensitive; letters only." = "Case sensitive; letters only.";
 "Check automatically" = "Check automatically";
 "Check for updates" = "Check for updates";
 "Check now" = "Check now";
@@ -75,6 +80,7 @@
 "Connected — sessions keep running when Relay is closed" = "Connected — sessions keep running when Relay is closed";
 "Context" = "Context";
 "Conversations" = "Conversations";
+"Copy" = "Copy";
 "Copy Container Name" = "Copy Container Name";
 "Copy notes" = "Copy notes";
 "Copy path" = "Copy path";
@@ -198,6 +204,7 @@
 "Newly cached" = "Newly cached";
 "Next Project" = "Next Project";
 "Next Session" = "Next Session";
+"No %@ comments in this project." = "No %@ comments in this project.";
 "No branch matches “%@”." = "No branch matches “%@”.";
 "No containers for this project. Press Up to start the stack." = "No containers for this project. Press Up to start the stack.";
 "No host matches “%@”." = "No host matches “%@”.";
@@ -215,6 +222,7 @@
 "Notes" = "Notes";
 "Nothing changed" = "Nothing changed";
 "Nothing is listening" = "Nothing is listening";
+"Nothing left to do" = "Nothing left to do";
 "Nothing selected" = "Nothing selected";
 "Nothing to show" = "Nothing to show";
 "Nothing yet. Agents waiting on you, failures and finished work land here." = "Nothing yet. Agents waiting on you, failures and finished work land here.";
@@ -228,6 +236,7 @@
 "Open in browser" = "Open in browser";
 "Open in Browser" = "Open in Browser";
 "Open in Editor" = "Open in Editor";
+"Open in editor" = "Open in editor";
 "Open in Finder" = "Open in Finder";
 "Open localhost:%d" = "Open localhost:%d";
 "Open port %d" = "Open port %d";
@@ -321,6 +330,8 @@
 "Search sessions, services, hosts…" = "Search sessions, services, hosts…";
 "Send notes to" = "Send notes to";
 "Send notes" = "Send notes";
+"Send to" = "Send to";
+"Send to an agent" = "Send to an agent";
 "Services" = "Services";
 "Session daemon disconnected" = "Session daemon disconnected";
 "Session daemon is shutting down" = "Session daemon is shutting down";
@@ -382,6 +393,7 @@
 "The download failed: %@" = "The download failed: %@";
 "The downloaded archive could not be opened." = "The downloaded archive could not be opened.";
 "The downloaded copy was rejected: %@" = "The downloaded copy was rejected: %@";
+"The first %d are shown. There are more." = "The first %d are shown. There are more.";
 "The only notification that plays a sound" = "The only notification that plays a sound";
 "The update check failed: HTTP %d" = "The update check failed: HTTP %d";
 "The working copy matches the last commit." = "The working copy matches the last commit.";
@@ -390,6 +402,8 @@
 "this project" = "this project";
 "This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand." = "This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand.";
 "This session is no longer known to the daemon." = "This session is no longer known to the daemon.";
+"TODO" = "TODO";
+"TODO markers" = "TODO markers";
 "Toggle Project Panel" = "Toggle Project Panel";
 "Toggle Sessions Sidebar" = "Toggle Sessions Sidebar";
 "Too large to show" = "Too large to show";
@@ -408,9 +422,12 @@
 "Weekly" = "Weekly";
 "What is in the context window" = "What is in the context window";
 "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly" = "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly";
+"What should be done about these?" = "What should be done about these?";
 "When to interrupt" = "When to interrupt";
+"Which words to look for" = "Which words to look for";
 "Window (inferred)" = "Window (inferred)";
 "Window" = "Window";
+"Words the TODO panel looks for in comments. Case sensitive; letters only." = "Words the TODO panel looks for in comments. Case sensitive; letters only.";
 "Work finished" = "Work finished";
 "Working" = "Working";
 "Workspace" = "Workspace";

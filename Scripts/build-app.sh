@@ -38,6 +38,15 @@ for bundle in "$BIN_PATH"/*.bundle; do
   cp -R "$bundle" "$APP/Contents/Resources/"
 done
 
+# Relay's own strings are not optional furniture: the menu bar is built before
+# the first window and asks for them immediately. A bundle assembled without
+# them is a bundle that has to be caught here, not by whoever downloads it.
+if [ ! -d "$APP/Contents/Resources/Relay_RelayUI.bundle" ]; then
+  echo "error: Relay_RelayUI.bundle was not emitted into $BIN_PATH" >&2
+  echo "       The app would launch with no string table at all." >&2
+  exit 1
+fi
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

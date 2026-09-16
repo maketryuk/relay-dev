@@ -106,16 +106,20 @@ struct GitPane: View {
                     .clickable()
                     .relayTooltip(relayLocalized("Switch branch"))
 
+                    // The same two colours the project tile gives them: work
+                    // of yours that the remote has not got, and work of
+                    // everyone else's that you have not. Grey here and
+                    // coloured there read as two different facts.
                     if status.ahead > 0 {
                         Text(verbatim: "↑\(status.ahead)")
                             .font(Theme.Typography.caption)
-                            .foregroundStyle(Theme.Palette.textSecondary)
+                            .foregroundStyle(Theme.Palette.statusFinished)
                             .monospacedDigit()
                     }
                     if status.behind > 0 {
                         Text(verbatim: "↓\(status.behind)")
                             .font(Theme.Typography.caption)
-                            .foregroundStyle(Theme.Palette.textSecondary)
+                            .foregroundStyle(Theme.Palette.statusWorking)
                             .monospacedDigit()
                     }
                 }
@@ -128,7 +132,7 @@ struct GitPane: View {
                         .foregroundStyle(Theme.Palette.textTertiary)
                 }
 
-                IconButton(systemImage: "arrow.clockwise", help: "", size: 22) {
+                IconButton(systemImage: "arrow.clockwise", help: "", size: Theme.Metrics.action) {
                     model.refreshChanges(for: project.id)
                     model.refreshGit(for: project.id)
                 }
@@ -298,14 +302,14 @@ struct GitPane: View {
 
                 SendNotesMenu(project: project, comments: notesForProject)
 
-                IconButton(systemImage: "doc.on.doc", help: "", size: 20) {
+                IconButton(systemImage: "doc.on.doc", help: "", size: Theme.Metrics.action) {
                     let pasteboard = NSPasteboard.general
                     pasteboard.clearContents()
                     pasteboard.setString(ReviewCommentTranscript.compose(notesForProject), forType: .string)
                 }
                 .relayTooltip(relayLocalized("Copy notes"))
 
-                IconButton(systemImage: "trash", help: "", size: 20) { model.clearComments(in: project.id) }
+                IconButton(systemImage: "trash", help: "", size: Theme.Metrics.action) { model.clearComments(in: project.id) }
                     .relayTooltip(relayLocalized("Clear"))
             }
             .padding(.horizontal, Theme.Spacing.small)
@@ -370,16 +374,16 @@ private struct NoteRow: View {
             HoverReveal(isVisible: isHovering || isEditing) {
                 HStack(spacing: Theme.Spacing.xxsmall) {
                     if isEditing {
-                        IconButton(systemImage: "checkmark", help: "", size: 18) { commit() }
+                        IconButton(systemImage: "checkmark", help: "", size: Theme.Metrics.action) { commit() }
                     } else {
-                        SendNotesMenu(project: project, comments: [comment], size: 18)
-                        IconButton(systemImage: "pencil", help: "", size: 18) {
+                        SendNotesMenu(project: project, comments: [comment], size: Theme.Metrics.action)
+                        IconButton(systemImage: "pencil", help: "", size: Theme.Metrics.action) {
                             draft = comment.text
                             isEditing = true
                         }
                         .relayTooltip(relayLocalized("Edit"))
                     }
-                    IconButton(systemImage: "trash", help: "", size: 18) { model.removeComment(comment) }
+                    IconButton(systemImage: "trash", help: "", size: Theme.Metrics.action) { model.removeComment(comment) }
                         .relayTooltip(relayLocalized("Delete"))
                 }
             }
@@ -402,7 +406,7 @@ private struct SendNotesMenu: View {
     @Environment(AppModel.self) private var model
     let project: Project
     let comments: [ReviewComment]
-    var size: CGFloat = 20
+    var size: CGFloat = Theme.Metrics.action
 
     var body: some View {
         Menu {
@@ -423,7 +427,10 @@ private struct SendNotesMenu: View {
             }
         } label: {
             Image(systemName: "paperplane")
-                .font(.system(size: size * 0.5, weight: .medium))
+                // The ratio `IconButton` uses. Anything else and the two
+                // sitting side by side look like different sizes, because they
+                // are.
+                .font(.system(size: size * 0.46, weight: .medium))
                 .foregroundStyle(Theme.Palette.accent)
                 .frame(width: size, height: size)
                 .contentShape(Rectangle())
@@ -509,11 +516,11 @@ private struct FileCard: View {
 
             HoverReveal(isVisible: isHovering) {
                 HStack(spacing: Theme.Spacing.xxsmall) {
-                    IconButton(systemImage: "doc.on.doc", help: "", size: 20) { copyPath() }
+                    IconButton(systemImage: "doc.on.doc", help: "", size: Theme.Metrics.action) { copyPath() }
                         .relayTooltip(relayLocalized("Copy path"))
-                    IconButton(systemImage: "arrow.uturn.backward", help: "", size: 20, action: onDiscard)
+                    IconButton(systemImage: "arrow.uturn.backward", help: "", size: Theme.Metrics.action, action: onDiscard)
                         .relayTooltip(relayLocalized("Discard"))
-                    IconButton(systemImage: "arrow.up.forward.square", help: "", size: 20) { open() }
+                    IconButton(systemImage: "arrow.up.forward.square", help: "", size: Theme.Metrics.action) { open() }
                         .relayTooltip(relayLocalized("Open"))
                 }
             }
@@ -800,7 +807,7 @@ private struct CommentComposer: View {
         HStack(spacing: Theme.Spacing.small) {
             RelayTextField(relayLocalized("Comment on this line"), text: $text, onSubmit: onAdd)
             RelayButton(relayLocalized("Add"), kind: .primary, action: onAdd)
-            IconButton(systemImage: "xmark", help: "", size: 20, action: onCancel)
+            IconButton(systemImage: "xmark", help: "", size: Theme.Metrics.action, action: onCancel)
         }
         .padding(.horizontal, Theme.Spacing.small)
         .padding(.vertical, 5)

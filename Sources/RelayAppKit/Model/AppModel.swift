@@ -28,6 +28,14 @@ final class AppModel {
     private(set) var sessionOrder: [SessionID] = []
     private(set) var connectionState: ConnectionState = .connecting
     private(set) var gitStatuses: [ProjectID: GitStatus] = [:]
+    /// Which projects have a repository in them.
+    ///
+    /// Read off the disk rather than inferred from the first `git status`
+    /// coming back. The status costs two processes, and what it gates is the
+    /// Git tab: until it answered, the tab was disabled and its tooltip said
+    /// the project was not a repository — which for the first seconds of every
+    /// launch was a guess, and a wrong one.
+    private(set) var gitRepositories: Set<ProjectID> = []
     /// What has changed in each project's working copy.
     ///
     /// Read only while something is looking: the list costs a process, and it
@@ -42,6 +50,20 @@ final class AppModel {
     private(set) var diffContext: [String: Int] = [:]
     /// Remarks left on lines, waiting to be handed to an agent.
     private(set) var reviewComments: [ReviewComment] = []
+    /// What each project has left itself to do, once it has been searched for.
+    ///
+    /// Not persisted: the notes live in the code, and a list restored from disk
+    /// would describe a working copy that has moved on since.
+    private(set) var todoScans: [ProjectID: TodoScan] = [:]
+    private(set) var projectsScanningTodos: Set<ProjectID> = []
+    /// Which notes have been picked up to hand over, by `TodoItem.id`.
+    private(set) var pickedTodoIDs: [ProjectID: Set<String>] = [:]
+    /// What the picked notes are to be done about, per project. Kept on the
+    /// model rather than in the panel for the reason the commit message is:
+    /// switching tabs to check something must not lose a half-written
+    /// sentence — and kept per project because it was written about that
+    /// project's notes and belongs to none of the others.
+    private(set) var todoInstructions: [ProjectID: String] = [:]
     /// Branches of each project, read when the switcher is opened.
     private(set) var branches: [ProjectID: [GitBranch]] = [:]
     private(set) var projectsReadingBranches: Set<ProjectID> = []
@@ -62,7 +84,7 @@ final class AppModel {
     ///
     /// Observed, because a tile has to redraw when its icon arrives, and written
     /// only from a task — never while a view is drawing.
-    private(set) var projectIcons: [ProjectID: NSImage] = [:]
+    private(set) var projectIcons: [ProjectID: ProjectArtwork] = [:]
     private(set) var sshHosts: [SSHHost] = []
     private(set) var ports: [ListeningPort] = []
     private(set) var isRefreshingPorts = false
@@ -187,6 +209,14 @@ final class AppModel {
         selectedProjectID = state.lastActiveProjectID.map { ProjectID(rawValue: $0) }
             ?? projects.first?.id
 
+        // Before the daemon, because git has nothing to do with it: waiting for
+        // a session host to start is what left the Git tab dead for the first
+        // seconds of a launch.
+        gitRepositories = Set(
+            projects.filter { GitProbe.isRepository(at: $0.rootPath) }.map(\.id)
+        )
+        scheduleGitRefresh()
+
         client.onDisconnect = { [weak self] in
             Task { @MainActor in self?.handleDisconnect() }
         }
@@ -194,7 +224,6 @@ final class AppModel {
         await connect()
         refreshAllProjectFacts()
         loadSSHHosts()
-        scheduleGitRefresh()
         scheduleUpdateChecks()
         if showsStatusBar { usage.start() }
     }
@@ -404,9 +433,19 @@ final class AppModel {
     func updateProject(_ project: Project) {
         guard let index = projects.firstIndex(where: { $0.id == project.id }) else { return }
         let iconChanged = projects[index].iconPath != project.iconPath
+        let markersChanged = projects[index].todoMarkers != project.todoMarkers
         projects[index] = project
         persist()
         if iconChanged { refreshProjectIcons() }
+        // A list found with the old words describes a search nobody asked for
+        // any more, and the panel's own timer would leave it up for half a
+        // minute after the setting was changed.
+        if markersChanged {
+            todoScans.removeValue(forKey: project.id)
+            pickedTodoIDs.removeValue(forKey: project.id)
+            todoInstructions.removeValue(forKey: project.id)
+            refreshTodos(for: project.id)
+        }
     }
 
     func selectProject(_ id: ProjectID) {
@@ -442,6 +481,32 @@ final class AppModel {
             return
         }
         NSWorkspace.shared.open(url)
+    }
+
+    /// Opens one file at one line, for the editors that can be told which.
+    ///
+    /// `code` and its relatives take `--goto path:line`; `zed` and `subl` take
+    /// the same suffix with no flag before it. Anything else is handed the
+    /// plain path, which opens the right file at the wrong line — better than
+    /// a filename it would fail to find.
+    func openFileInEditor(_ path: String, line: Int, in project: Project) {
+        let url = URL(fileURLWithPath: project.rootPath).appendingPathComponent(path)
+        guard let editor = project.preferredEditor, !editor.isEmpty else {
+            NSWorkspace.shared.open(url)
+            return
+        }
+        let arguments: [String] = switch (editor as NSString).lastPathComponent {
+        case "code", "code-insiders", "codium", "cursor", "windsurf":
+            [editor, "--goto", "\(url.path):\(line)"]
+        case "zed", "subl", "mate", "bbedit":
+            [editor, "\(url.path):\(line)"]
+        default:
+            [editor, url.path]
+        }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = arguments
+        try? process.run()
     }
 
     func openInEditor(_ project: Project) {
@@ -891,6 +956,14 @@ final class AppModel {
 
     func refreshGit(for projectID: ProjectID) {
         guard let path = project(projectID)?.rootPath else { return }
+        // Re-read each time rather than only at launch: a repository cloned
+        // into a project that is already open must not need a relaunch to be
+        // noticed, and asking is one look at the filesystem.
+        if GitProbe.isRepository(at: path) {
+            gitRepositories.insert(projectID)
+        } else {
+            gitRepositories.remove(projectID)
+        }
         Task { [weak self] in
             // Only Sendable values cross into the detached task; the model stays
             // firmly on the main actor.
@@ -1225,6 +1298,129 @@ final class AppModel {
         persist()
     }
 
+    // MARK: - Todos
+
+    func todos(in projectID: ProjectID) -> TodoScan {
+        todoScans[projectID] ?? TodoScan()
+    }
+
+    func isScanningTodos(_ projectID: ProjectID) -> Bool {
+        projectsScanningTodos.contains(projectID)
+    }
+
+    /// Searches the project's comments for the words it marks its work with.
+    ///
+    /// One search at a time per project: the panel asks again on a timer while
+    /// it is open, and a sweep of a large repository outlasts the interval.
+    func refreshTodos(for projectID: ProjectID) {
+        guard let project = project(projectID),
+              !projectsScanningTodos.contains(projectID)
+        else { return }
+        let root = project.rootPath
+        let markers = TodoScanner.markers(from: project.todoMarkers)
+
+        projectsScanningTodos.insert(projectID)
+        Task { [weak self] in
+            let scan = await Task.detached(priority: .utility) {
+                TodoScanner.scan(at: root, markers: markers)
+            }.value
+            guard let self else { return }
+            self.projectsScanningTodos.remove(projectID)
+            guard self.todoScans[projectID] != scan else { return }
+            self.todoScans[projectID] = scan
+            // A note that has been dealt with cannot stay picked: it is gone
+            // from the list it was picked out of.
+            let present = Set(scan.items.map(\.id))
+            self.pickedTodoIDs[projectID] = self.pickedTodoIDs[projectID]?.intersection(present)
+        }
+    }
+
+    /// Changes which words the panel looks for, from wherever it was asked.
+    ///
+    /// Goes through `updateProject`, so the two places that offer this setting
+    /// cannot drift: both write the project, and the project is what the scan
+    /// reads.
+    func setTodoMarkers(_ markers: [String], in projectID: ProjectID) {
+        guard var project = project(projectID) else { return }
+        project.todoMarkers = TodoScanner.markers(from: markers)
+        updateProject(project)
+    }
+
+    func isPicked(_ todo: TodoItem, in projectID: ProjectID) -> Bool {
+        pickedTodoIDs[projectID]?.contains(todo.id) == true
+    }
+
+    func togglePick(_ todo: TodoItem, in projectID: ProjectID) {
+        var picked = pickedTodoIDs[projectID] ?? []
+        if picked.contains(todo.id) {
+            picked.remove(todo.id)
+        } else {
+            picked.insert(todo.id)
+        }
+        pickedTodoIDs[projectID] = picked
+    }
+
+    /// The picked notes in the order the list shows them, so what is sent
+    /// reads the same way as what was ticked.
+    func pickedTodos(in projectID: ProjectID) -> [TodoItem] {
+        let picked = pickedTodoIDs[projectID] ?? []
+        return todos(in: projectID).items.filter { picked.contains($0.id) }
+    }
+
+    func clearPickedTodos(in projectID: ProjectID) {
+        pickedTodoIDs[projectID] = []
+        todoInstructions[projectID] = ""
+    }
+
+    func todoInstruction(in projectID: ProjectID) -> String {
+        todoInstructions[projectID] ?? ""
+    }
+
+    func setTodoInstruction(_ text: String, in projectID: ProjectID) {
+        todoInstructions[projectID] = text
+    }
+
+    /// Types the notes and the instruction into an agent's prompt, and stops
+    /// there — for the reason a review stops there: it is meant to be read over
+    /// before it is sent.
+    func send(
+        _ todos: [TodoItem],
+        instruction: String,
+        to sessionID: SessionID,
+        in projectID: ProjectID
+    ) {
+        guard !todos.isEmpty else { return }
+        selectSession(sessionID)
+        type(TodoTranscript.compose(todos, instruction: instruction), into: sessionID)
+        focusTerminal()
+        finishSending(todos, in: projectID)
+    }
+
+    /// Starts an agent and hands it the notes as soon as it is listening.
+    func send(
+        _ todos: [TodoItem],
+        instruction: String,
+        toNewSessionFrom preset: SessionPreset,
+        in projectID: ProjectID
+    ) {
+        guard !todos.isEmpty else { return }
+        createSession(
+            from: preset,
+            in: projectID,
+            thenType: TodoTranscript.compose(todos, instruction: instruction)
+        )
+        finishSending(todos, in: projectID)
+    }
+
+    /// The notes themselves stay: they are in the code until the code changes,
+    /// and the next sweep is what removes them. Only the picking goes, along
+    /// with the instruction that described *this* handover — carried into the
+    /// next one it would be somebody else's sentence.
+    private func finishSending(_ todos: [TodoItem], in projectID: ProjectID) {
+        pickedTodoIDs[projectID]?.subtract(todos.map(\.id))
+        todoInstructions[projectID] = ""
+    }
+
     /// Runs one git action off the main thread and folds the result back in:
     /// the lists are re-read either way, and a refusal is shown rather than
     /// swallowed.
@@ -1292,13 +1488,15 @@ final class AppModel {
             }.value
 
             guard let self else { return }
-            var icons: [ProjectID: NSImage] = [:]
+            var icons: [ProjectID: ProjectArtwork] = [:]
             for (identifier, data) in payloads {
                 // A file that claims to be an image and is not simply leaves the
                 // project with its initials, which is a perfectly good tile.
-                if let image = NSImage(data: data), image.isValid {
-                    icons[identifier] = image
-                }
+                guard let image = NSImage(data: data), image.isValid else { continue }
+                // Measured here rather than in the task above: the artwork is
+                // an `NSImage` either way, and reading a quarter of a megabyte
+                // of alpha once per project is not worth crossing an actor for.
+                icons[identifier] = ProjectIconLoader.artwork(for: image)
             }
             self.projectIcons = icons
         }
@@ -1387,9 +1585,13 @@ final class AppModel {
         gitRefreshTask?.cancel()
         gitRefreshTask = Task { [weak self] in
             while !Task.isCancelled {
+                // Now, and then every so often. The branch is on screen the
+                // moment the window is, and one that arrives twelve seconds
+                // later has already been read as absent.
+                if let self, let projectID = self.selectedProjectID {
+                    self.refreshGit(for: projectID)
+                }
                 try? await Task.sleep(for: .seconds(12))
-                guard let self, let projectID = self.selectedProjectID else { continue }
-                self.refreshGit(for: projectID)
             }
         }
     }
@@ -1513,7 +1715,9 @@ final class AppModel {
             projectFacts[project.id]?.hasDocker == true
                 || dockerSnapshots[project.id]?.containers.isEmpty == false
         case .git:
-            gitStatuses[project.id] != nil
+            gitRepositories.contains(project.id) || gitStatuses[project.id] != nil
+        case .todo:
+            true
         case .files:
             false
         }
