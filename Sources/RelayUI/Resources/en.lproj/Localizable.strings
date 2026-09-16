@@ -52,8 +52,8 @@
 "Clear all" = "Clear all";
 "Clear history" = "Clear history";
 "Clear" = "Clear";
-"Close session" = "Close session";
 "Close Session" = "Close Session";
+"Close session" = "Close session";
 "Close" = "Close";
 "Codex · ask first" = "Codex · ask first";
 "Codex" = "Codex";
@@ -89,8 +89,8 @@
 "Could not stop the process" = "Could not stop the process";
 "Could not switch to %@" = "Could not switch to %@";
 "Create branch “%@”" = "Create branch “%@”";
-"CUSTOM COMMAND" = "CUSTOM COMMAND";
 "Custom command" = "Custom command";
+"CUSTOM COMMAND" = "CUSTOM COMMAND";
 "Custom command…" = "Custom command…";
 "Decrease Font Size" = "Decrease Font Size";
 "Default agent" = "Default agent";
@@ -141,8 +141,8 @@
 "Filled in once the agent has answered" = "Filled in once the agent has answered";
 "Filter by alias or host" = "Filter by alias or host";
 "Filter by port, process or session" = "Filter by port, process or session";
-"Finished" = "Finished";
 "finished" = "finished";
+"Finished" = "Finished";
 "Focus %@" = "Focus %@";
 "Focus Next Pane" = "Focus Next Pane";
 "Focus Terminal" = "Focus Terminal";
@@ -224,6 +224,7 @@
 "Offline" = "Offline";
 "Open %@ URL" = "Open %@ URL";
 "Open %@" = "Open %@";
+"Open a terminal inside this container" = "Open a terminal inside this container";
 "Open in browser" = "Open in browser";
 "Open in Browser" = "Open in Browser";
 "Open in Editor" = "Open in Editor";
@@ -250,8 +251,8 @@
 "Previous Session" = "Previous Session";
 "Project name" = "Project name";
 "Project panel" = "Project panel";
-"Project Settings" = "Project Settings";
 "Project settings" = "Project settings";
+"Project Settings" = "Project Settings";
 "Project Settings…" = "Project Settings…";
 "Projects" = "Projects";
 "Projects: %d" = "Projects: %d";
@@ -303,8 +304,8 @@
 "Review Changes" = "Review Changes";
 "Root path" = "Root path";
 "Run a command…" = "Run a command…";
-"Run again" = "Run again";
 "Run Again" = "Run Again";
+"Run again" = "Run again";
 "Run my own command" = "Run my own command";
 "Run" = "Run";
 "Running sessions are unaffected. Reconnecting restores them." = "Running sessions are unaffected. Reconnecting restores them.";
@@ -333,9 +334,11 @@
 "Sessions you finish appear here, with what ran and how it ended." = "Sessions you finish appear here, with what ran and how it ended.";
 "Sessions" = "Sessions";
 "Settings" = "Settings";
+"Shell" = "Shell";
 "shippingbox" = "shippingbox";
 "Shortcuts" = "Shortcuts";
 "Shortcuts, notifications and more" = "Shortcuts, notifications and more";
+"Show this container's log" = "Show this container's log";
 "Showing development ports only" = "Showing development ports only";
 "Showing every port" = "Showing every port";
 "Shows what each agent has left of its rate limits" = "Shows what each agent has left of its rate limits";
@@ -383,8 +386,8 @@
 "The update check failed: HTTP %d" = "The update check failed: HTTP %d";
 "The working copy matches the last commit." = "The working copy matches the last commit.";
 "This is the newest release" = "This is the newest release";
-"this project" = "this project";
 "This project" = "This project";
+"this project" = "this project";
 "This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand." = "This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand.";
 "This session is no longer known to the daemon." = "This session is no longer known to the daemon.";
 "Toggle Project Panel" = "Toggle Project Panel";

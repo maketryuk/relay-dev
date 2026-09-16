@@ -57,8 +57,8 @@
 "Close" = "Закрыть";
 "Codex · ask first" = "Codex · спрашивать";
 "Codex" = "Codex";
-"Coming soon" = "Скоро";
 "coming soon" = "скоро";
+"Coming soon" = "Скоро";
 "Command Palette (⌘K)" = "Палитра команд (⌘K)";
 "Command Palette" = "Палитра команд";
 "Command" = "Команда";
@@ -141,8 +141,8 @@
 "Filled in once the agent has answered" = "Появится после первого ответа агента";
 "Filter by alias or host" = "Фильтр по алиасу или хосту";
 "Filter by port, process or session" = "Фильтр по порту, процессу или сессии";
-"Finished" = "Завершено";
 "finished" = "завершено";
+"Finished" = "Завершено";
 "Focus %@" = "Перейти к %@";
 "Focus Next Pane" = "Следующая панель";
 "Focus Terminal" = "Фокус в терминал";
@@ -218,12 +218,13 @@
 "Nothing selected" = "Ничего не выбрано";
 "Nothing to show" = "Показывать нечего";
 "Nothing yet. Agents waiting on you, failures and finished work land here." = "Пока пусто. Сюда попадают агенты, ждущие вас, сбои и завершённая работа.";
-"NOTIFICATIONS" = "УВЕДОМЛЕНИЯ";
 "Notifications" = "Уведомления";
+"NOTIFICATIONS" = "УВЕДОМЛЕНИЯ";
 "Notify me about agents and services" = "Уведомлять об агентах и сервисах";
 "Offline" = "Не запущено";
 "Open %@ URL" = "Открыть адрес сервиса %@";
 "Open %@" = "Открыть %@";
+"Open a terminal inside this container" = "Открыть терминал внутри контейнера";
 "Open in Browser" = "Открыть в браузере";
 "Open in browser" = "Открыть в браузере";
 "Open in Editor" = "Открыть в редакторе";
@@ -303,8 +304,8 @@
 "Review Changes" = "Посмотреть изменения";
 "Root path" = "Путь к папке";
 "Run a command…" = "Выполнить команду…";
-"Run Again" = "Запустить снова";
 "Run again" = "Запустить снова";
+"Run Again" = "Запустить снова";
 "Run my own command" = "Своя команда";
 "Run" = "Запустить";
 "Running sessions are unaffected. Reconnecting restores them." = "Запущенные сессии не затронуты — переподключение их вернёт.";
@@ -333,9 +334,11 @@
 "Sessions you finish appear here, with what ran and how it ended." = "Завершённые сессии появятся здесь — что запускалось и чем закончилось.";
 "Sessions" = "Сессии";
 "Settings" = "Настройки";
+"Shell" = "Терминал";
 "shippingbox" = "shippingbox";
 "Shortcuts" = "Горячие клавиши";
 "Shortcuts, notifications and more" = "Горячие клавиши, уведомления и прочее";
+"Show this container's log" = "Показать лог контейнера";
 "Showing development ports only" = "Только порты разработки";
 "Showing every port" = "Показаны все порты";
 "Shows what each agent has left of its rate limits" = "Показывает, сколько у каждого агента осталось от лимитов";
@@ -367,8 +370,8 @@
 "Stop" = "Остановить";
 "Stopped" = "Остановлен";
 "Stopping" = "Останавливается";
-"Switch Branch" = "Переключить ветку";
 "Switch branch" = "Переключить ветку";
+"Switch Branch" = "Переключить ветку";
 "Switch to %@" = "Перейти в %@";
 "Terminal" = "Терминал";
 "Terminate" = "Завершить";
@@ -391,8 +394,8 @@
 "Toggle Sessions Sidebar" = "Показать панель сессий";
 "Too large to show" = "Слишком большой для показа";
 "Turn everything off without losing your other choices" = "Выключить всё, не теряя остальные настройки";
-"Unpin from Project" = "Открепить от проекта";
 "Unpin from project" = "Открепить от проекта";
+"Unpin from Project" = "Открепить от проекта";
 "Unstage all" = "Убрать всё из индекса";
 "Unstage" = "Убрать из индекса";
 "Up" = "Запустить";

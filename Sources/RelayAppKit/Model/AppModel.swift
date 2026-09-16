@@ -1919,12 +1919,13 @@ final class AppModel {
     func containerAction(_ action: ContainerAction, container: DockerContainer, in projectID: ProjectID) {
         guard let project = project(projectID) else { return }
 
-        guard action != .logs else {
-            // Logs are worth a terminal: they keep running and you read them.
+        guard !action.needsTerminal else {
+            // A prompt inside the container, or its log as it is written. Both
+            // are things you sit and read, which is what a session is for.
             launch(SessionSpec(
                 projectID: projectID,
                 kind: .custom,
-                name: "logs \(container.service ?? container.name)",
+                name: "\(action.sessionPrefix) \(container.service ?? container.name)",
                 workingDirectory: project.rootPath,
                 command: ["docker"] + action.arguments(for: container)
             ))
