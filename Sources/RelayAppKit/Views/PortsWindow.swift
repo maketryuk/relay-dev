@@ -148,36 +148,31 @@ struct PortsPane: View {
                     : String(format: relayLocalized("No port matches “%@”."), query)
             )
         } else {
-            ScrollViewReader { scroller in
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 1, pinnedViews: [.sectionHeaders]) {
-                        if !groups.project.isEmpty {
-                            Section {
-                                ForEach(Array(groups.project.enumerated()), id: \.element.id) { index, port in
-                                    row(port, at: index)
-                                }
-                            } header: {
-                                sectionHeader(model.selectedProject?.name ?? relayLocalized("This project"))
+            KeyboardScrollingList(
+                focusedRow: focus.row,
+                identifyingRow: { orderedPorts.indices.contains($0) ? orderedPorts[$0].id : nil }
+            ) {
+                LazyVStack(alignment: .leading, spacing: 1, pinnedViews: [.sectionHeaders]) {
+                    if !groups.project.isEmpty {
+                        Section {
+                            ForEach(Array(groups.project.enumerated()), id: \.element.id) { index, port in
+                                row(port, at: index)
                             }
-                        }
-                        if !groups.other.isEmpty {
-                            Section {
-                                ForEach(Array(groups.other.enumerated()), id: \.element.id) { index, port in
-                                    row(port, at: groups.project.count + index)
-                                }
-                            } header: {
-                                sectionHeader(relayLocalized("Elsewhere on this Mac"))
-                            }
+                        } header: {
+                            sectionHeader(model.selectedProject?.name ?? relayLocalized("This project"))
                         }
                     }
-                    .padding(Theme.Spacing.small)
-                }
-                .onChange(of: focus.row) { _, index in
-                    guard orderedPorts.indices.contains(index) else { return }
-                    withAnimation(.easeOut(duration: 0.12)) {
-                        scroller.scrollTo(orderedPorts[index].id, anchor: .center)
+                    if !groups.other.isEmpty {
+                        Section {
+                            ForEach(Array(groups.other.enumerated()), id: \.element.id) { index, port in
+                                row(port, at: groups.project.count + index)
+                            }
+                        } header: {
+                            sectionHeader(relayLocalized("Elsewhere on this Mac"))
+                        }
                     }
                 }
+                .padding(Theme.Spacing.small)
             }
         }
     }

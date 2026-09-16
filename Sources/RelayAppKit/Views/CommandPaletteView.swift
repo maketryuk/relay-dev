@@ -104,7 +104,10 @@ struct CommandPaletteView: View {
         // the query is not something to do twice for the same list.
         let commands = filteredCommands
 
-        return ScrollView {
+        return KeyboardScrollingList(
+            focusedRow: highlightedIndex,
+            identifyingRow: { commands.indices.contains($0) ? commands[$0].id : nil }
+        ) {
             VStack(spacing: 1) {
                 ForEach(Array(commands.enumerated()), id: \.element.id) { index, command in
                     row(command, isHighlighted: index == highlightedIndex)

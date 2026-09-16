@@ -100,7 +100,10 @@ struct BranchesPane: View {
                 message: String(format: relayLocalized("No branch matches “%@”."), query)
             )
         } else {
-            ScrollView {
+            KeyboardScrollingList(
+                focusedRow: focus.row,
+                identifyingRow: { ordered.indices.contains($0) ? ordered[$0].id : nil }
+            ) {
                 LazyVStack(alignment: .leading, spacing: 1, pinnedViews: [.sectionHeaders]) {
                     if let name = newBranchName {
                         row(

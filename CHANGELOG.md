@@ -5,6 +5,19 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Fixed
+
+- **Arrowing through a list left the list where it was.** In the branch window
+  and the command palette the highlight walked off the bottom and carried on
+  going, so the keyboard was somewhere the window was not showing — while the
+  ports and SSH windows followed it, which made it look like a list that
+  sometimes worked rather than two that never did. All four follow it now, and
+  they scroll the least that brings the row into view instead of re-centring on
+  every keypress, which moved a list that was already on screen under the hands
+  reading it.
+
 ## 0.2.0 — 2026-09-16
 
 Reviewing what an agent just did, beside the terminal it is still running in.
