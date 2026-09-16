@@ -4,54 +4,95 @@ import SwiftUI
 
 /// The line under a terminal saying how full the agent's context window is.
 ///
-/// Present only for the agents that report one. A shell has no context to fill,
-/// and a bar that sits at zero forever teaches people to stop reading it.
+/// Under every agent terminal, and under no shell: a shell has no context to
+/// fill, and a bar that sits at zero forever teaches people to stop reading it.
+/// An agent that has not been spoken to yet keeps the row and shows a dash —
+/// it has written no transcript, so there is nothing to read, and a row that
+/// only appears with the first reply reads as one pane behaving differently
+/// from the one beside it.
 struct ContextBar: View {
     @Environment(AppModel.self) private var model
     let session: SessionSnapshot
 
+    private var context: SessionContext? { model.context.context(for: session.id) }
+
     var body: some View {
-        if let context = model.context.context(for: session.id) {
-            Button {
-                model.sessionShowingContextDetail =
-                    model.sessionShowingContextDetail == session.id ? nil : session.id
-            } label: {
-                HStack(spacing: Theme.Spacing.small) {
-                    Text(relayLocalized("Context"))
-                        .font(Theme.Typography.caption)
-                        .foregroundStyle(Theme.Palette.textTertiary)
-
-                    ContextMeter(context: context, width: 52)
-
-                    if let percent = context.percent {
-                        Text(verbatim: "\(percent)%")
-                            .font(Theme.Typography.caption)
-                            .foregroundStyle(Theme.Palette.textSecondary)
-                            .monospacedDigit()
-                    }
-
-                    Text(verbatim: TokenFormatting.short(context.tokens))
-                        .font(Theme.Typography.caption)
-                        .foregroundStyle(Theme.Palette.textTertiary)
-                        .monospacedDigit()
-
-                    Spacer(minLength: 0)
+        if session.kind.isAgent {
+            // The strip runs the width of the pane; the control does not. A
+            // button stretched across the empty half of a bar answers clicks
+            // where nothing is drawn, and hangs its tooltip over the middle of
+            // the terminal — away from the numbers it is explaining.
+            HStack(spacing: 0) {
+                Button {
+                    guard context != nil else { return }
+                    model.sessionShowingContextDetail =
+                        model.sessionShowingContextDetail == session.id ? nil : session.id
+                } label: {
+                    reading
                 }
-                .padding(.horizontal, Theme.Spacing.medium)
-                .frame(height: Theme.Metrics.contextBarHeight)
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .clickable()
+                // Silent while the panel it opens is up: the tooltip asks the
+                // question the panel is already answering, and after a click
+                // the pointer is still sitting there to be asked.
+                .relayTooltip(
+                    tooltip,
+                    edge: .top,
+                    isEnabled: model.sessionShowingContextDetail != session.id
+                )
+
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
+            .frame(height: Theme.Metrics.contextBarHeight)
             .background(Theme.Palette.sidebar)
             .overlay(alignment: .top) { RelayDivider() }
-            .relayTooltip(relayLocalized("What is in the context window"), edge: .top)
         }
+    }
+
+    private var reading: some View {
+        HStack(spacing: Theme.Spacing.small) {
+            Text(relayLocalized("Context"))
+                .font(Theme.Typography.caption)
+                .foregroundStyle(Theme.Palette.textTertiary)
+
+            ContextMeter(fraction: context?.fraction, width: 52)
+
+            if let context {
+                if let percent = context.percent {
+                    Text(verbatim: "\(percent)%")
+                        .font(Theme.Typography.caption)
+                        .foregroundStyle(Theme.Palette.textSecondary)
+                        .monospacedDigit()
+                }
+
+                Text(verbatim: TokenFormatting.short(context.tokens))
+                    .font(Theme.Typography.caption)
+                    .foregroundStyle(Theme.Palette.textTertiary)
+                    .monospacedDigit()
+            } else {
+                // A dash rather than a zero: nothing has been measured. The CLI
+                // writes its transcript as it answers, so before the first
+                // reply the figure does not exist anywhere to be read from.
+                Text(verbatim: "—")
+                    .font(Theme.Typography.caption)
+                    .foregroundStyle(Theme.Palette.textTertiary)
+            }
+        }
+        .padding(.horizontal, Theme.Spacing.medium)
+        .frame(height: Theme.Metrics.contextBarHeight)
+        .contentShape(Rectangle())
+    }
+
+    private var tooltip: String {
+        context == nil
+            ? relayLocalized("Filled in once the agent has answered")
+            : relayLocalized("What is in the context window")
     }
 }
 
-/// The meter, shared by the bar and the detail panel.
+/// The meter, drawn empty when there is nothing to show yet.
 struct ContextMeter: View {
-    let context: SessionContext
+    let fraction: Double?
     var width: CGFloat = 52
 
     var body: some View {
@@ -61,7 +102,7 @@ struct ContextMeter: View {
             .overlay(alignment: .leading) {
                 Capsule()
                     .fill(tint)
-                    .frame(width: width * (context.fraction ?? 0))
+                    .frame(width: width * (fraction ?? 0))
             }
     }
 
@@ -69,7 +110,7 @@ struct ContextMeter: View {
     /// the last stretch — where a conversation is about to be compacted — is
     /// worth a colour.
     private var tint: Color {
-        switch context.fraction ?? 0 {
+        switch fraction ?? 0 {
         case 0.9...: Theme.Palette.statusError
         case 0.75...: Theme.Palette.statusWaiting
         default: Theme.Palette.accent

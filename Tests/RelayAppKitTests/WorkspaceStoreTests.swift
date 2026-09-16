@@ -15,6 +15,34 @@ struct WorkspaceStoreTests {
         #expect(state.lastActiveProjectID == nil)
     }
 
+    @Test("Review notes survive being quit on")
+    func notesRoundTrip() throws {
+        // The point of keeping them on disk: an afternoon of remarks must not
+        // depend on the window staying open.
+        let directory = try TemporaryDirectory()
+        let url = directory.url.appendingPathComponent("workspace.json")
+        let project = ProjectID(rawValue: "storefront")
+
+        WorkspaceStore(url: url).saveNow(WorkspaceState(reviewComments: [
+            ReviewComment(projectID: project, path: "a.swift", line: 12, code: "let x = 1", text: "rename"),
+            ReviewComment(projectID: project, path: "b.swift", line: nil, code: "gone", text: "why?"),
+        ]))
+
+        let loaded = WorkspaceStore(url: url).load()
+        #expect(loaded.reviewComments.count == 2)
+        #expect(loaded.reviewComments.first?.projectID == project)
+        #expect(loaded.reviewComments.first?.line == 12)
+        #expect(loaded.reviewComments.last?.line == nil)
+    }
+
+    @Test("A workspace written before notes existed still opens")
+    func olderFileWithoutNotes() throws {
+        let directory = try TemporaryDirectory()
+        let url = directory.url.appendingPathComponent("workspace.json")
+        try #"{"version":1,"projects":[]}"#.write(to: url, atomically: true, encoding: .utf8)
+        #expect(WorkspaceStore(url: url).load().reviewComments.isEmpty)
+    }
+
     @Test("State survives a save and load round trip")
     func roundTrip() throws {
         let directory = try TemporaryDirectory()

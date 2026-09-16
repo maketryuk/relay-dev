@@ -182,7 +182,7 @@ struct TerminalPane: View {
                 tint: Color(hex: session.kind.accentHex)
             )
 
-            Text(session.displayName)
+            Text(model.label(for: session))
                 .font(Theme.Typography.title)
                 .foregroundStyle(Theme.Palette.textPrimary)
                 .lineLimit(1)

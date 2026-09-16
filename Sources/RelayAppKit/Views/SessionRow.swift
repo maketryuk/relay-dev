@@ -46,6 +46,7 @@ struct SessionRow: View {
                 .strokeBorder(isSelected ? Theme.Palette.borderStrong : .clear, lineWidth: 1)
         )
         .contentShape(Rectangle())
+        .clickable()
         .onHover { isHovering = $0 }
         .onTapGesture(count: 2, perform: onRename)
         .onTapGesture(count: 1, perform: onSelect)
@@ -74,7 +75,7 @@ struct SessionRow: View {
 
     private var titleLine: some View {
         HStack(spacing: Theme.Spacing.xsmall) {
-            Text(session.displayName)
+            Text(model.label(for: session))
                 .font(Theme.Typography.row)
                 .foregroundStyle(isSelected ? Theme.Palette.textPrimary : Theme.Palette.textSecondary)
                 .lineLimit(1)
@@ -149,11 +150,13 @@ struct DiffBadge: View {
     var body: some View {
         HStack(spacing: 4) {
             if insertions > 0 {
-                Text("+\(insertions)")
+                // `verbatim`, or SwiftUI reads the interpolation as a localised
+                // number and writes 1 111 for a thousand and eleven lines.
+                Text(verbatim: "+\(insertions)")
                     .foregroundStyle(Theme.Palette.statusFinished)
             }
             if deletions > 0 {
-                Text("−\(deletions)")
+                Text(verbatim: "−\(deletions)")
                     .foregroundStyle(Theme.Palette.statusError)
             }
         }

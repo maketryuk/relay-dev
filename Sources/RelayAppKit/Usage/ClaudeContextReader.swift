@@ -23,11 +23,13 @@ enum ClaudeContextReader {
     static func read(
         workingDirectory: String,
         startedAt: Date,
+        conversationID: String? = nil,
         projects: URL = projectsDirectory
     ) -> SessionContext? {
         guard let transcript = transcript(
             forDirectory: workingDirectory,
             startedAt: startedAt,
+            conversationID: conversationID,
             projects: projects
         ) else { return nil }
         return parse(TranscriptTail.objects(in: transcript), measuredAt: TranscriptTail.modificationDate(of: transcript))
@@ -41,15 +43,27 @@ enum ClaudeContextReader {
     /// not know — the alternative was picking the most recently written
     /// transcript, which for a freshly opened pane meant showing a long-running
     /// conversation's 93% as if it were its own.
+    ///
+    /// A resumed conversation is named outright by the command that resumed it,
+    /// and Claude Code names the file after the conversation — so there the
+    /// question of which transcript this is does not arise.
     static func transcript(
         forDirectory path: String,
         startedAt: Date,
+        conversationID: String? = nil,
         projects: URL = projectsDirectory
     ) -> URL? {
         let manager = FileManager.default
         let folders = directoryNames(for: path)
             .map(projects.appendingPathComponent)
             .filter { manager.fileExists(atPath: $0.path) }
+
+        if let conversationID {
+            let named = folders
+                .map { $0.appendingPathComponent("\(conversationID).jsonl") }
+                .first { manager.fileExists(atPath: $0.path) }
+            if let named { return named }
+        }
 
         let keys: [URLResourceKey] = [.creationDateKey]
         let candidates = folders.flatMap { folder in

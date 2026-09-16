@@ -128,3 +128,68 @@ struct SessionMergeTests {
         #expect(sessions[identifier]?.status == .working)
     }
 }
+
+@Suite("Session labels")
+struct SessionLabelTests {
+    private func session(_ id: String, name: String, title: String?, userDefined: Bool = false) -> SessionSnapshot {
+        SessionSnapshot(
+            id: SessionID(rawValue: id),
+            projectID: ProjectID(rawValue: "p"),
+            kind: .claude,
+            name: name,
+            workingDirectory: "/tmp",
+            command: ["claude"],
+            status: .idle,
+            pid: 1,
+            exitCode: nil,
+            startedAt: Date(timeIntervalSince1970: 0),
+            lastActivityAt: Date(timeIntervalSince1970: 0),
+            columns: 80,
+            rows: 24,
+            title: title,
+            isNameUserDefined: userDefined
+        )
+    }
+
+    @Test("Two agents that report the same title are still told apart")
+    func sharedTitles() {
+        // Every Claude session calls its terminal "Claude Code", so the titles
+        // alone give a list of identical rows.
+        let labels = SessionNaming.labels(for: [
+            session("a", name: "Claude Code", title: "Claude Code"),
+            session("b", name: "Claude Code 2", title: "Claude Code"),
+        ])
+        #expect(labels[SessionID(rawValue: "a")] == "Claude Code")
+        #expect(labels[SessionID(rawValue: "b")] == "Claude Code 2")
+    }
+
+    @Test("A title nobody else claims is left alone")
+    func uniqueTitleWins() {
+        let labels = SessionNaming.labels(for: [
+            session("a", name: "Claude Code", title: "relay — fixing the parser"),
+        ])
+        #expect(labels[SessionID(rawValue: "a")] == "relay — fixing the parser")
+    }
+
+    @Test("A name the user chose is never rewritten")
+    func userNamesAreKept() {
+        let labels = SessionNaming.labels(for: [
+            session("a", name: "Reviewer", title: "Claude Code", userDefined: true),
+            session("b", name: "Claude Code", title: "Claude Code"),
+        ])
+        #expect(labels[SessionID(rawValue: "a")] == "Reviewer")
+        #expect(labels[SessionID(rawValue: "b")] == "Claude Code")
+    }
+
+    @Test("Names that collide too are numbered rather than repeated")
+    func numbersAsALastResort() {
+        // Sessions started before the daemon was restarted can share a name.
+        let labels = SessionNaming.labels(for: [
+            session("a", name: "Claude Code", title: "Claude Code"),
+            session("b", name: "Claude Code", title: "Claude Code"),
+            session("c", name: "Claude Code", title: "Claude Code"),
+        ])
+        #expect(Set(labels.values).count == 3)
+        #expect(labels[SessionID(rawValue: "c")] == "Claude Code 3")
+    }
+}

@@ -164,6 +164,16 @@ struct RelayCommands: Commands {
             }
             .relayShortcut(model.binding(for: .revealProject))
 
+            Button(RelayCommand.reviewChanges.localizedTitle) {
+                if let projectID = model.selectedProjectID { model.reviewChanges(in: projectID) }
+            }
+            .relayShortcut(model.binding(for: .reviewChanges))
+
+            Button(RelayCommand.switchBranch.localizedTitle) {
+                if let projectID = model.selectedProjectID { model.pickBranch(in: projectID) }
+            }
+            .relayShortcut(model.binding(for: .switchBranch))
+
             Button(RelayCommand.projectSettings.localizedTitle) { model.openProjectSettings() }
                 .relayShortcut(model.binding(for: .projectSettings))
 
@@ -195,6 +205,21 @@ struct RelayCommands: Commands {
 
             Button(RelayCommand.toggleRightSidebar.localizedTitle) { model.toggleRightSidebar() }
                 .relayShortcut(model.binding(for: .toggleRightSidebar))
+
+            Divider()
+
+            Button(RelayCommand.increaseTerminalFontSize.localizedTitle) { model.stepTerminalFontSize(by: 1) }
+                .relayShortcut(model.binding(for: .increaseTerminalFontSize))
+            // `⌘+` is `⌘=` with the Shift held, and which of the two a person
+            // presses is not something they think about. The menu shows the one
+            // it is called by; this one is here so the other also arrives.
+            Button(relayLocalized("Increase Font Size (⌘=)")) { model.stepTerminalFontSize(by: 1) }
+                .keyboardShortcut("=", modifiers: .command)
+                .hidden()
+            Button(RelayCommand.decreaseTerminalFontSize.localizedTitle) { model.stepTerminalFontSize(by: -1) }
+                .relayShortcut(model.binding(for: .decreaseTerminalFontSize))
+            Button(RelayCommand.resetTerminalFontSize.localizedTitle) { model.resetTerminalFontSize() }
+                .relayShortcut(model.binding(for: .resetTerminalFontSize))
         }
     }
 

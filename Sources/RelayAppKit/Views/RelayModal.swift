@@ -12,6 +12,9 @@ enum RelayModal: Identifiable, Hashable {
     case ports
     case sshHosts
     case settings
+    /// Somewhere to switch branches from, reachable by typing as well as by
+    /// clicking the branch name.
+    case branches(ProjectID)
     case addProject
     case projectSettings(ProjectID)
     /// A nil service is a new one.
@@ -26,6 +29,7 @@ enum RelayModal: Identifiable, Hashable {
         switch self {
         case .ports: "ports"
         case .sshHosts: "ssh"
+        case let .branches(projectID): "branches:\(projectID.rawValue)"
         case .settings: "settings"
         case .addProject: "add-project"
         case let .projectSettings(projectID): "project-settings:\(projectID.rawValue)"
@@ -39,6 +43,7 @@ enum RelayModal: Identifiable, Hashable {
         switch self {
         case .ports: relayLocalized("Ports")
         case .sshHosts: relayLocalized("SSH Hosts")
+        case .branches: relayLocalized("Branches")
         case .settings: relayLocalized("Settings")
         case .addProject: relayLocalized("Add Project")
         case .projectSettings: relayLocalized("Project Settings")
@@ -53,6 +58,7 @@ enum RelayModal: Identifiable, Hashable {
         switch self {
         case .ports: CGSize(width: 640, height: 560)
         case .sshHosts: CGSize(width: 560, height: 540)
+        case .branches: CGSize(width: 520, height: 520)
         case .settings: CGSize(width: 760, height: 580)
         case .addProject: CGSize(width: 480, height: 460)
         case .projectSettings: CGSize(width: 520, height: 600)
@@ -98,6 +104,10 @@ struct ModalHost: View {
         switch modal {
         case .ports: PortsPane()
         case .sshHosts: SSHPane()
+        case let .branches(projectID):
+            if let project = model.project(projectID) {
+                BranchesPane(project: project)
+            }
         case .settings: SettingsView()
         case .addProject: AddProjectSheet()
         case let .projectSettings(projectID):
@@ -124,7 +134,7 @@ struct ModalHost: View {
     /// surface; the rest are just a body.
     private var hasOwnSurface: Bool {
         switch modal {
-        case .ports, .sshHosts, .settings: false
+        case .ports, .sshHosts, .settings, .branches: false
         case .addProject, .projectSettings, .serviceEditor, .presetEditor: true
         }
     }

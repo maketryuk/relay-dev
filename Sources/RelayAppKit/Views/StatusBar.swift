@@ -30,6 +30,7 @@ struct StatusBar: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .clickable()
 
                 // Beside the figures it refreshes, not at the other end of the
                 // window from them.

@@ -36,14 +36,13 @@ enum RightSidebarTab: String, CaseIterable, Identifiable, Sendable {
     /// going, and disabled rather than half-working.
     var isAvailable: Bool {
         switch self {
-        case .services, .docker, .history: true
-        case .git, .files: false
+        case .services, .docker, .history, .git: true
+        case .files: false
         }
     }
 
     var comingSoonDescription: String {
         switch self {
-        case .git: "Commits, branch switching and diffs will live here."
         case .files: "A project file tree and an editor with linting will live here."
         default: ""
         }

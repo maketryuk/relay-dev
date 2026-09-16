@@ -18,6 +18,9 @@ ordered by when they are worth doing, not by size.
 
 ### Milestone 2 — the rest of v0.1
 
+- Diff review: the working copy, file by file, with staging and committing.
+- Terminals on the GPU, `⇧↩` for a new line, and a text size that can be changed.
+
 - Services: start, stop, restart, logs, port detection, Open URL.
 - Ports: every listener on the machine, attributed to Relay's own sessions.
 - Docker Compose: up, down, restart, logs, container status, published ports.
@@ -25,7 +28,15 @@ ordered by when they are worth doing, not by size.
 - Notifications for events that need attention, with three levels of opt-out.
 - Settings window, rebindable shortcuts, Warp-style tooltips.
 
-277 tests. The daemon suite drives real processes on real PTYs.
+603 tests. The daemon suite drives real processes on real PTYs.
+
+### Releasing
+
+`./Scripts/release.sh` signs with Developer ID, notarises, staples and packages
+both the archive the updater downloads and a disk image to drag into
+Applications. It needs a Developer ID certificate and notarisation credentials
+on the machine that runs it; until those exist, nothing distributable can be
+built at all.
 
 ---
 
@@ -51,8 +62,6 @@ workspace is usually a git worktree.
   their specific UI rather than generic prompt patterns.
 - **Session and project templates.** "New project from template" that creates
   the services and sessions a project always needs.
-- **Diff preview and basic git actions.** Enough to review what an agent did
-  without leaving Relay.
 - **Activity history.** What ran, when, and how it ended.
 
 ## Smaller things worth doing
@@ -61,14 +70,13 @@ workspace is usually a git worktree.
   to a legacy `.icns`. It reads well at Dock size, but shipping the new format
   would put the layering under our control rather than the system's.
 
-- **libghostty terminal engine.** GPU-rasterised text instead of CoreText.
-  Contained to `TerminalSurface.swift` by design. Worth doing when heavy
-  full-screen redraw starts to matter, not before.
+- **libghostty terminal engine.** Superseded for now: SwiftTerm's own Metal
+  renderer is switched on, which is what the CoreText redraw cost was about.
+  Worth revisiting only if the renderer itself becomes the limit.
 - **Project icons taken from the project.** Rail tiles are initials over a tint
   derived from the path. A project that already carries a favicon or an app icon
   could supply its own, with a way to set one by hand when it does not.
 - **Per-project environment variables.** Set once, applied to every session.
-- **Proper app signing.** See below — it gates the update mechanism too.
 
 ---
 
@@ -112,6 +120,6 @@ pushed: that is an outward-facing action and needs an explicit go-ahead.
 Suggested shape when the time comes:
 
 - public or private repository named `relay`;
-- `main` as the default branch;
+- `master` as the default branch;
 - a CI workflow running `swift build` and `swift test` on every push;
 - a release workflow triggered by `v*` tags producing the `.app` zip.

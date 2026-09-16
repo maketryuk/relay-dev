@@ -21,14 +21,24 @@ final class ContextMonitor {
     /// Called as the selection changes. Reading is scoped to what is visible:
     /// a project with thirty sessions should not make Relay read thirty
     /// transcripts every ten seconds.
+    ///
+    /// A changed set is read at once rather than at the next tick. Ten seconds
+    /// is nothing while a figure is only drifting, and a very long time to stare
+    /// at a terminal that is not saying how full it is.
     func watch(_ sessions: [SessionSnapshot]) {
-        watched = sessions.filter { $0.kind.isAgent }
+        let agents = sessions.filter { $0.kind.isAgent }
+        guard agents.map(\.id) != watched.map(\.id) else { return }
+        watched = agents
+
         guard !watched.isEmpty else {
             task?.cancel()
             task = nil
             return
         }
-        guard task == nil else { return }
+        guard task == nil else {
+            Task { [weak self] in await self?.refresh() }
+            return
+        }
 
         task = Task { [weak self] in
             while !Task.isCancelled {
@@ -43,7 +53,15 @@ final class ContextMonitor {
     }
 
     func refresh() async {
-        let targets = watched.map { (id: $0.id, kind: $0.kind, directory: $0.workingDirectory, startedAt: $0.startedAt) }
+        let targets = watched.map {
+            (
+                id: $0.id,
+                kind: $0.kind,
+                directory: $0.workingDirectory,
+                startedAt: $0.startedAt,
+                conversationID: ResumedConversation.identifier(in: $0.command, kind: $0.kind)
+            )
+        }
         guard !targets.isEmpty else { return }
 
         let found = await Task.detached(priority: .utility) { () -> [SessionID: SessionContext] in
@@ -51,9 +69,17 @@ final class ContextMonitor {
             for target in targets {
                 let context: SessionContext? = switch target.kind {
                 case .claude:
-                    ClaudeContextReader.read(workingDirectory: target.directory, startedAt: target.startedAt)
+                    ClaudeContextReader.read(
+                        workingDirectory: target.directory,
+                        startedAt: target.startedAt,
+                        conversationID: target.conversationID
+                    )
                 case .codex:
-                    CodexContextReader.read(workingDirectory: target.directory, startedAt: target.startedAt)
+                    CodexContextReader.read(
+                        workingDirectory: target.directory,
+                        startedAt: target.startedAt,
+                        conversationID: target.conversationID
+                    )
                 default:
                     nil
                 }

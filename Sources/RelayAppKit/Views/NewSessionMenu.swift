@@ -70,6 +70,7 @@ struct NewSessionMenu: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .clickable()
         }
     }
 
@@ -161,6 +162,7 @@ private struct PresetRow: View {
         .background(isHovering ? Theme.Palette.surfaceHover : .clear)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
         .contentShape(Rectangle())
+        .clickable()
         .onHover { isHovering = $0 }
         .onTapGesture(perform: onRun)
     }

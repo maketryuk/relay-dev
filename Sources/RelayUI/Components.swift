@@ -108,6 +108,7 @@ public struct RelayButton: View {
             )
         }
         .buttonStyle(.plain)
+        .clickable()
         .onHover { isHovering = $0 }
     }
 
@@ -226,6 +227,9 @@ public struct IconButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // Some of these answer a click while looking disabled — the Docker tab
+        // that found nothing is asking to be tried again.
+        .clickable(respondsToClicks)
         .disabled(!respondsToClicks)
         .onHover { isHovering = respondsToClicks && $0 }
         .animation(.easeOut(duration: 0.1), value: isHovering)
@@ -290,6 +294,7 @@ public struct PillButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .clickable()
         .disabled(!isEnabled)
         .onHover { isHovering = isEnabled && $0 }
         .animation(.easeOut(duration: 0.1), value: isHovering)
@@ -600,6 +605,7 @@ public struct SidebarRow<Accessory: View>: View {
         .background(rowBackground)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
         .contentShape(Rectangle())
+        .clickable()
         .onHover { isHovering = $0 }
         // The double-tap gesture must be declared first, otherwise the single
         // tap claims the event and the second click never arrives.
@@ -771,6 +777,7 @@ public struct Chip<Content: View>: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .clickable()
         .onHover { isHovering = $0 }
         .animation(.easeOut(duration: 0.1), value: isHovering)
         .animation(.easeOut(duration: 0.1), value: isSelected)
