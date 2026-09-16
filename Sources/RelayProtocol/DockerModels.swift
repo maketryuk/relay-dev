@@ -82,6 +82,40 @@ public struct DockerContainer: Codable, Sendable, Hashable, Identifiable {
 }
 
 /// Everything the sidebar needs to render the Docker section.
+/// An engine Relay found on the machine and could start on request.
+///
+/// Named rather than described by a command: the daemon says which engine it
+/// recognised and the app decides what to run, so nothing Docker printed can
+/// become something Relay executes.
+public enum DockerEngine: String, Codable, Sendable, Hashable {
+    case dockerDesktop
+    case colima
+
+    public var displayName: String {
+        switch self {
+        case .dockerDesktop: "Docker Desktop"
+        case .colima: "Colima"
+        }
+    }
+}
+
+/// Why Docker has nothing to show.
+///
+/// Worth distinguishing, because the three have nothing in common but the empty
+/// panel they produce. Relay ships no engine and replaces no part of one — it
+/// shows containers, and when there is no engine on the machine at all that is
+/// the honest end of it, not a button.
+public enum DockerAbsence: Codable, Sendable, Hashable {
+    /// No `docker` anywhere Relay looks.
+    case notInstalled
+    /// The CLI is installed and has nobody to talk to. Carries what to offer to
+    /// start, or nil when Relay recognised no engine it could press for you —
+    /// a button that cannot honour itself is worse than no button.
+    case engineStopped(DockerEngine?)
+    /// Something else went wrong, and `message` is what it said.
+    case failed
+}
+
 public struct DockerSnapshot: Codable, Sendable, Hashable {
     /// False when the CLI is missing or the engine is not reachable.
     public var isAvailable: Bool
@@ -89,17 +123,21 @@ public struct DockerSnapshot: Codable, Sendable, Hashable {
     public var containers: [DockerContainer]
     /// Why Docker is unavailable, shown verbatim so the user can act on it.
     public var message: String?
+    /// Which kind of nothing this is, when `isAvailable` is false.
+    public var absence: DockerAbsence?
 
     public init(
         isAvailable: Bool,
         composeProjectName: String? = nil,
         containers: [DockerContainer] = [],
-        message: String? = nil
+        message: String? = nil,
+        absence: DockerAbsence? = nil
     ) {
         self.isAvailable = isAvailable
         self.composeProjectName = composeProjectName
         self.containers = containers
         self.message = message
+        self.absence = absence
     }
 
     public var aggregatedStatus: RuntimeStatus {

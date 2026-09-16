@@ -1849,6 +1849,32 @@ final class AppModel {
         }
     }
 
+    /// Starts the engine, when Relay found one to start.
+    ///
+    /// Docker Desktop is opened rather than run: it is an application with a
+    /// window and a menu bar item, and launching its executable by hand is not
+    /// how it expects to arrive. Colima has neither, so it runs as a session —
+    /// it takes the better part of a minute and says what it is doing, which is
+    /// worth watching rather than hiding behind a spinner.
+    ///
+    /// Nothing is polled afterwards on purpose: the panel is already asking
+    /// every few seconds while it is open, and will notice on its own.
+    func startDockerEngine(_ engine: DockerEngine, in projectID: ProjectID) {
+        switch engine {
+        case .dockerDesktop:
+            NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications/Docker.app"))
+        case .colima:
+            guard let project = project(projectID) else { return }
+            launch(SessionSpec(
+                projectID: projectID,
+                kind: .custom,
+                name: "colima start",
+                workingDirectory: project.rootPath,
+                command: ["colima", "start"]
+            ))
+        }
+    }
+
     /// Which stack a Compose action should act on.
     ///
     /// What Docker recorded when it created the containers, in preference to

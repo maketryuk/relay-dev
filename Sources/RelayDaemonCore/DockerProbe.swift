@@ -173,7 +173,14 @@ public enum DockerProbe {
         fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
     ) -> DockerSnapshot {
         guard let dockerPath else {
-            return DockerSnapshot(isAvailable: false, message: "Docker CLI not found")
+            // The one Relay genuinely cannot help with. It shows containers; it
+            // does not carry an engine, and pretending otherwise with a button
+            // would waste the click it took to find out.
+            return DockerSnapshot(
+                isAvailable: false,
+                message: "Docker is not installed on this Mac.",
+                absence: .notInstalled
+            )
         }
 
         let projectName = URL(fileURLWithPath: projectDirectory).lastPathComponent
@@ -189,8 +196,25 @@ public enum DockerProbe {
             return DockerSnapshot(isAvailable: false, message: "Docker command timed out")
         }
         if !listing.succeeded {
-            let reason = firstLine(of: listing.standardError.trimmingCharacters(in: .whitespacesAndNewlines))
-            return DockerSnapshot(isAvailable: false, message: reason.isEmpty ? "Docker is unavailable" : reason)
+            let stderr = listing.standardError.trimmingCharacters(in: .whitespacesAndNewlines)
+            let reason = firstLine(of: stderr)
+            if isEngineDown(stderr) {
+                // Four lines about a socket path mean one thing, and it is not
+                // something the person reading them has to diagnose.
+                return DockerSnapshot(
+                    isAvailable: false,
+                    message: reason.isEmpty ? "Docker is unavailable" : reason,
+                    absence: .engineStopped(installedEngine(
+                        pointedAtBy: stderr,
+                        fileExists: fileExists
+                    ))
+                )
+            }
+            return DockerSnapshot(
+                isAvailable: false,
+                message: reason.isEmpty ? "Docker is unavailable" : reason,
+                absence: .failed
+            )
         }
 
         let all = parseContainers(listing.standardOutput)
@@ -257,6 +281,43 @@ public enum DockerProbe {
         guard !parent.isEmpty else { return false }
         return child == parent || child.hasPrefix(parent + "/")
     }
+
+    /// True when the CLI is in working order and simply has nobody to talk to.
+    ///
+    /// Every engine phrases it differently, and the phrasing has changed
+    /// between Docker versions, so several are recognised rather than one.
+    static func isEngineDown(_ text: String) -> Bool {
+        let lowered = text.lowercased()
+        if lowered.contains("cannot connect to the docker daemon") { return true }
+        if lowered.contains("failed to connect to the docker api") { return true }
+        if lowered.contains("is the docker daemon running") { return true }
+        if lowered.contains("connection refused") { return true }
+        // The shape Docker Desktop leaves behind when it quits: the socket it
+        // was serving is simply gone.
+        return lowered.contains("docker.sock") && lowered.contains("no such file or directory")
+    }
+
+    /// Which engine is installed and could be started, judged first by the
+    /// socket the CLI failed to reach and then by what is actually on disk.
+    ///
+    /// Returns nil when nothing recognisable is installed, which is not the
+    /// same as no engine being needed — it means Relay has nothing to offer to
+    /// press, and should say the engine is not running rather than invent one.
+    static func installedEngine(
+        pointedAtBy reason: String,
+        fileExists: (String) -> Bool
+    ) -> DockerEngine? {
+        let hasColima = colimaPaths.contains(where: fileExists)
+        let hasDesktop = fileExists(dockerDesktopPath)
+
+        if reason.lowercased().contains(".colima"), hasColima { return .colima }
+        if hasDesktop { return .dockerDesktop }
+        if hasColima { return .colima }
+        return nil
+    }
+
+    public static let dockerDesktopPath = "/Applications/Docker.app"
+    public static let colimaPaths = ["/opt/homebrew/bin/colima", "/usr/local/bin/colima"]
 
     private static func isMissingComposeFile(_ text: String) -> Bool {
         let lowered = text.lowercased()

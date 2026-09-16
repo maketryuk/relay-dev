@@ -25,6 +25,15 @@ breaking change to stored data.
   one on screen. When nothing is running the search knows the environment
   suffixes too, preferring the local one and never a production file: the file
   this picks is the one the button starts.
+- **The Docker panel answered a closed engine with four lines about a socket
+  path.** It is one thing — nothing is running — and it is now said in one
+  line, with a button that starts what Relay found: Docker Desktop, or Colima
+  for a machine that would rather not run a desktop app at all. A machine with
+  no engine installed gets neither a button nor the socket, but the one
+  sentence that applies: Relay shows the containers an engine is running and
+  does not carry one. Anything Relay has not been taught to read is still
+  passed on word for word, because an error it cannot name is one it must not
+  paraphrase.
 - **A project's status dot was missing its right-hand side.** The tile drew it
   three points outside its own frame, which works exactly as long as nothing
   laying the tile out clips — and the tile carries a context menu, which does.
