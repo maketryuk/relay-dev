@@ -42,7 +42,10 @@ struct GitPane: View {
             footer
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .onAppear { model.refreshChanges(for: project.id) }
+        // What an agent is doing to the working copy, while it does it.
+        .refreshingWhileVisible(id: project.id, every: .seconds(4)) {
+            model.refreshChanges(for: project.id)
+        }
         .confirmationDialog(
             relayLocalized("Discard these changes?"),
             isPresented: Binding(

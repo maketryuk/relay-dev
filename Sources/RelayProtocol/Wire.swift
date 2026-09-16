@@ -7,7 +7,7 @@ public enum RelayProtocolVersion {
     /// outlives the GUI, so a freshly built app routinely meets a daemon from
     /// the previous build. The mismatch is detected at handshake and the GUI
     /// restarts the daemon rather than misbehaving.
-    public static let current = 6
+    public static let current = 7
 }
 
 /// Requests the GUI sends to the daemon.

@@ -228,7 +228,12 @@ struct DockerPane: View {
                 }
             }
         }
-        .task(id: project.id) { model.refreshDocker(for: project.id) }
+        // Containers are started and stopped from Docker Desktop, from a
+        // terminal, and by whatever the project's own tooling does — none of
+        // which Relay is told about.
+        .refreshingWhileVisible(id: project.id, every: .seconds(5)) {
+            model.refreshDocker(for: project.id)
+        }
     }
 
     private var composeActions: some View {
@@ -343,8 +348,9 @@ struct HistoryPane: View {
                 }
             }
         }
-        .onAppear { model.loadConversations(for: project.id) }
-        .onChange(of: project.id) { _, _ in model.loadConversations(for: project.id) }
+        .refreshingWhileVisible(id: project.id, every: .seconds(10)) {
+            model.loadConversations(for: project.id)
+        }
     }
 
     private func row(_ conversation: Conversation) -> some View {

@@ -44,7 +44,9 @@ struct BranchesPane: View {
             guard ordered.indices.contains(focus.row) else { return }
             switchTo(ordered[focus.row])
         }
-        .onAppear { model.refreshBranches(for: project.id) }
+        .refreshingWhileVisible(id: project.id, every: .seconds(10)) {
+            model.refreshBranches(for: project.id)
+        }
     }
 
     private var header: some View {

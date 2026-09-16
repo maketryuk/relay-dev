@@ -89,7 +89,13 @@ public enum DockerProbe {
             status: entry.Status ?? "",
             publishedPorts: deduplicate(ports),
             composeProject: labels["com.docker.compose.project"],
-            composeWorkingDirectory: labels["com.docker.compose.project.working_dir"]
+            composeWorkingDirectory: labels["com.docker.compose.project.working_dir"],
+            // Compose records every file it was given, comma separated. The
+            // first is the one the rest override, and it is the one to run.
+            composeConfigFile: labels["com.docker.compose.project.config_files"]?
+                .split(separator: ",")
+                .first
+                .map { String($0).trimmingCharacters(in: .whitespaces) }
         )
     }
 

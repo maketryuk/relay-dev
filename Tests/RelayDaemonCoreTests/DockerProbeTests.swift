@@ -273,6 +273,29 @@ struct DockerLabelTests {
         #expect(labels["maintainer"] == "me")
     }
 
+    @Test("The file Compose was given is read off the container")
+    func readsTheConfigFile() {
+        // Compose records it on everything it creates, which makes it the
+        // answer to "which file is this stack" rather than a guess at it.
+        let payload = """
+        {"ID":"a","Names":"curator.php","State":"running","Status":"Up 2 hours",\
+        "Labels":"com.docker.compose.project=curator,com.docker.compose.project.config_files=/p/docker/docker-compose.local.yml,com.docker.compose.project.working_dir=/p/docker"}
+        """
+        let container = DockerProbe.parseContainers(payload).first
+        #expect(container?.composeConfigFile == "/p/docker/docker-compose.local.yml")
+        #expect(container?.composeWorkingDirectory == "/p/docker")
+        #expect(container?.composeProject == "curator")
+    }
+
+    @Test("Several files means the first, which the rest override")
+    func readsTheFirstOfSeveralConfigFiles() {
+        let payload = """
+        {"ID":"a","Names":"x","State":"running",\
+        "Labels":"com.docker.compose.project.config_files=/p/compose.yaml,/p/compose.override.yaml"}
+        """
+        #expect(DockerProbe.parseContainers(payload).first?.composeConfigFile == "/p/compose.yaml")
+    }
+
     @Test("A value containing an equals sign survives")
     func keepsValuesWithEquals() {
         #expect(DockerProbe.parseLabels("key=a=b")["key"] == "a=b")

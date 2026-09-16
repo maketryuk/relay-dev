@@ -18,6 +18,23 @@ public enum ComposeLocator {
         "docker-compose.yml",
     ]
 
+    /// Suffixes a project names its environments with, most local first.
+    ///
+    /// A stack split into `docker-compose.local.yml`, `.stage.yml` and
+    /// `.prod.yml` has no file under any of the names Compose looks for, which
+    /// is the other half of how "no configuration file provided" happens.
+    ///
+    /// Deliberately not every suffix that exists: the file this picks is the
+    /// one an Up button starts, and guessing at a name nobody recognised is how
+    /// a laptop ends up running a production stack. Anything else is left to be
+    /// run by hand, which is the safe side to be wrong on.
+    public static let localEnvironments = [
+        "local",
+        "dev",
+        "development",
+        "override",
+    ]
+
     /// Where people put it when it is not at the root.
     public static let searchedSubdirectories = [
         "docker",
@@ -40,12 +57,26 @@ public enum ComposeLocator {
     ) -> String? {
         let base = URL(fileURLWithPath: root)
         for directory in [base] + searchedSubdirectories.map(base.appendingPathComponent) {
-            for name in fileNames {
+            for name in candidateNames {
                 let candidate = directory.appendingPathComponent(name).path
                 if fileExists(candidate) { return candidate }
             }
         }
         return nil
+    }
+
+    /// Every name worth looking for, in the order they are preferred: the ones
+    /// Compose finds on its own first, then the environment a laptop wants.
+    static var candidateNames: [String] {
+        var names = fileNames
+        for environment in localEnvironments {
+            for name in fileNames {
+                let stem = (name as NSString).deletingPathExtension
+                let suffix = (name as NSString).pathExtension
+                names.append("\(stem).\(environment).\(suffix)")
+            }
+        }
+        return names
     }
 
     /// The directory Compose should run from, falling back to the project root

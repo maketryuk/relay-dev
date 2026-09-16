@@ -926,6 +926,9 @@ final class AppModel {
                 GitWorkingCopyReader.changes(at: path)
             }.value
             guard let self else { return }
+            let previous = self.gitChanges[projectID]
+            guard previous != copy else { return }
+
             if let copy {
                 self.gitChanges[projectID] = copy
             } else {
@@ -936,9 +939,12 @@ final class AppModel {
             self.expandedChanges.formIntersection(present)
             self.fileDiffs = self.fileDiffs.filter { present.contains($0.key) }
             for path in self.expandedChanges {
-                if let change = copy?.changes.first(where: { $0.path == path }) {
-                    self.loadDiff(change, in: projectID)
-                }
+                guard let change = copy?.changes.first(where: { $0.path == path }) else { continue }
+                // Only the files that actually moved. Re-reading an unchanged
+                // diff replaces it with an identical one and flashes its
+                // spinner, which while reading one is worse than being stale.
+                guard previous?.changes.first(where: { $0.path == path }) != change else { continue }
+                self.loadDiff(change, in: projectID)
             }
         }
     }
@@ -1815,6 +1821,10 @@ final class AppModel {
             guard case let .docker(snapshot)? = try? await self.client.send(
                 .dockerStatus(projectDirectory: project.rootPath)
             ) else { return }
+            // Asked for repeatedly now, so an answer identical to the last one
+            // must not be written: observation does not compare, it notifies,
+            // and the panel would redraw every few seconds for nothing.
+            guard self.dockerSnapshots[projectID] != snapshot else { return }
             self.dockerSnapshots[projectID] = snapshot
         }
     }
@@ -1823,16 +1833,13 @@ final class AppModel {
     /// interruptible, instead of disappearing into a background process.
     func runCompose(_ action: ComposeAction, in projectID: ProjectID) {
         guard let index = projects.firstIndex(where: { $0.id == projectID }) else { return }
-        // Where the compose file is, not where the project starts: a stack kept
-        // in `docker/` is common, and running from the root is exactly how
-        // "no configuration file provided" happens.
-        let directory = ComposeLocator.directory(forProjectAt: projects[index].rootPath)
+        let stack = composeStack(for: projectID, rootPath: projects[index].rootPath)
         launch(SessionSpec(
             projectID: projectID,
             kind: .custom,
             name: action.sessionName,
-            workingDirectory: directory,
-            command: ["docker", "compose"] + action.arguments
+            workingDirectory: stack.directory,
+            command: ["docker", "compose"] + stack.arguments + action.arguments
         ))
         // Give compose a moment to change state before asking about it.
         Task { [weak self] in
@@ -1840,6 +1847,47 @@ final class AppModel {
             self?.dockerSnapshots.removeValue(forKey: projectID)
             self?.refreshDocker(for: projectID)
         }
+    }
+
+    /// Which stack a Compose action should act on.
+    ///
+    /// What Docker recorded when it created the containers, in preference to
+    /// anything Relay could work out for itself: the panel is already showing
+    /// those containers, so a button beside them that starts a different stack
+    /// is worse than a button that does nothing.
+    ///
+    /// The file is always named rather than left to the working directory.
+    /// Compose looks for its own four names there, and a project that keeps
+    /// `docker-compose.local.yml` beside `.stage.yml` and `.prod.yml` has none
+    /// of them — which is exactly how "no configuration file provided" happens
+    /// in a project whose containers are visibly running.
+    private func composeStack(
+        for projectID: ProjectID,
+        rootPath: String
+    ) -> (directory: String, arguments: [String]) {
+        let running = dockerSnapshots[projectID]?.containers ?? []
+        if let container = running.first(where: { $0.composeConfigFile != nil }),
+           let file = container.composeConfigFile {
+            var arguments = ["--file", file]
+            // The name the running stack already answers to. Compose derives it
+            // from the file's directory otherwise, which for a stack kept in
+            // `docker/` is "docker" — a second stack beside the one on screen
+            // rather than the one it is showing.
+            if let name = container.composeProject, !name.isEmpty {
+                arguments += ["--project-name", name]
+            }
+            let directory = container.composeWorkingDirectory
+                ?? URL(fileURLWithPath: file).deletingLastPathComponent().path
+            return (directory, arguments)
+        }
+
+        guard let file = ComposeLocator.file(forProjectAt: rootPath) else {
+            // Nothing found and nothing running. The root is where a person
+            // would have tried it, so the error they get is the one they would
+            // have got themselves.
+            return (rootPath, [])
+        }
+        return (URL(fileURLWithPath: file).deletingLastPathComponent().path, ["--file", file])
     }
 
     func containerAction(_ action: ContainerAction, container: DockerContainer, in projectID: ProjectID) {
