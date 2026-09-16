@@ -49,7 +49,34 @@ public final class Localization {
 /// Exposed so tests can read the string tables that ship, rather than a copy
 /// that quietly drifts from them.
 public enum RelayUIResources {
-    public static let bundle = Bundle.module
+    public static let bundle = resolved
+
+    /// Found rather than trusted.
+    ///
+    /// `Bundle.module` traps when it cannot locate the resource bundle, and the
+    /// first thing that asks for a string is the menu bar, built during
+    /// `applicationWillFinishLaunching` — so an app that cannot find its string
+    /// table does not start with English labels, it dies before it has a
+    /// window, and the crash report blames a menu. The keys *are* the English
+    /// text, so there is always something readable to fall back to.
+    private static let resolved: Bundle = {
+        let name = "Relay_RelayUI.bundle"
+        let candidates = [
+            Bundle.main.resourceURL,
+            Bundle(for: BundleToken.self).resourceURL,
+            Bundle.main.bundleURL,
+            Bundle(for: BundleToken.self).bundleURL.deletingLastPathComponent(),
+        ]
+        for candidate in candidates.compactMap({ $0 }) {
+            if let bundle = Bundle(url: candidate.appendingPathComponent(name)) {
+                return bundle
+            }
+        }
+        return .main
+    }()
+
+    /// Only here to be asked which bundle it was compiled into.
+    private final class BundleToken {}
 }
 
 /// Looks a string up in Relay's tables.
@@ -88,12 +115,12 @@ public func relaySearchTerms(_ key: String) -> [String] {
 /// up as one of the most expensive things the interface did.
 @MainActor
 private func Self_bundle(for language: AppLanguage) -> Bundle {
-    guard let code = language.code else { return .module }
+    guard let code = language.code else { return RelayUIResources.bundle }
     if let cached = resolvedBundles[code] { return cached }
 
-    guard let path = Bundle.module.path(forResource: code, ofType: "lproj"),
+    guard let path = RelayUIResources.bundle.path(forResource: code, ofType: "lproj"),
           let bundle = Bundle(path: path)
-    else { return .module }
+    else { return RelayUIResources.bundle }
     resolvedBundles[code] = bundle
     return bundle
 }

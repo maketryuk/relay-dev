@@ -12,6 +12,7 @@ struct ProjectSettingsView: View {
     @State private var defaultAgent: SessionKind = .claude
     @State private var devCommand = ""
     @State private var editor = ""
+    @State private var todoMarkers = ""
     @State private var notificationsEnabled = true
     @State private var projectMuted = false
     @State private var iconPath: String?
@@ -54,6 +55,16 @@ struct ProjectSettingsView: View {
                     RelayTextField("code, cursor, zed…", text: $editor)
                 }
 
+                field("TODO markers") {
+                    VStack(alignment: .leading, spacing: Theme.Spacing.xsmall) {
+                        RelayTextField("TODO, FIXME, HACK", text: $todoMarkers)
+                        Text(relayLocalized("Words the TODO panel looks for in comments. Case sensitive; letters only."))
+                            .font(Theme.Typography.caption)
+                            .foregroundStyle(Theme.Palette.textTertiary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
                 field("Notifications") {
                     VStack(alignment: .leading, spacing: Theme.Spacing.small) {
                         Toggle(isOn: $notificationsEnabled) {
@@ -92,6 +103,9 @@ struct ProjectSettingsView: View {
                     updated.defaultAgent = defaultAgent
                     updated.defaultServiceCommand = devCommand.isEmpty ? nil : devCommand
                     updated.preferredEditor = editor.isEmpty ? nil : editor
+                    updated.todoMarkers = TodoScanner.markers(
+                        from: todoMarkers.components(separatedBy: ",")
+                    )
                     updated.iconPath = iconPath
                     model.updateProject(updated)
 
@@ -110,6 +124,7 @@ struct ProjectSettingsView: View {
             defaultAgent = project.defaultAgent
             devCommand = project.defaultServiceCommand ?? ""
             editor = project.preferredEditor ?? ""
+            todoMarkers = project.todoMarkers.joined(separator: ", ")
             iconPath = project.iconPath
             notificationsEnabled = model.notificationSettings.isEnabled
             projectMuted = model.notificationSettings.isMuted(project.id)
@@ -127,7 +142,7 @@ struct ProjectSettingsView: View {
                 status: .offline,
                 isSelected: true,
                 size: 48,
-                image: previewImage
+                artwork: previewArtwork
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -159,9 +174,11 @@ struct ProjectSettingsView: View {
         }
     }
 
-    private var previewImage: NSImage? {
+    private var previewArtwork: ProjectArtwork? {
         guard let path = iconPath else { return model.projectIcons[project.id] }
-        return ProjectIconLoader.read(path).flatMap(NSImage.init(data:))
+        return ProjectIconLoader.read(path)
+            .flatMap(NSImage.init(data:))
+            .flatMap(ProjectIconLoader.artwork(for:))
     }
 
     private var iconHint: String {

@@ -15,7 +15,7 @@ struct RightSidebarView: View {
                 tabStrip
                 RelayDivider()
                 content
-                if model.rightSidebarTab != .git {
+                if !model.rightSidebarTab.fillsPanel {
                     Spacer(minLength: 0)
                 }
             }
@@ -63,11 +63,13 @@ struct RightSidebarView: View {
     @ViewBuilder
     private var content: some View {
         switch model.rightSidebarTab {
-        // The panel scrolls its own list and keeps the commit box in view;
+        // These scroll their own list and keep the box at the bottom in view;
         // wrapped in the shared scroll view, the box would be somewhere below
-        // fifty files.
+        // fifty rows.
         case .git:
             GitPane(project: project)
+        case .todo:
+            TodoPane(project: project)
         default:
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -103,7 +105,7 @@ struct ServicesPane: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             SectionHeader(relayLocalized("Services"), trailing: {
-                IconButton(systemImage: "plus", help: "", size: 24) { model.toggleModal(.serviceEditor(projectID: project.id, serviceID: nil)) }
+                IconButton(systemImage: "plus", help: "", size: Theme.Metrics.action) { model.toggleModal(.serviceEditor(projectID: project.id, serviceID: nil)) }
                     .relayTooltip(relayLocalized("Add service"))
             })
 
@@ -132,26 +134,26 @@ struct ServicesPane: View {
         ) {
             HStack(spacing: 1) {
                 if url != nil {
-                    IconButton(systemImage: "arrow.up.forward.app", help: "", size: 24) {
+                    IconButton(systemImage: "arrow.up.forward.app", help: "", size: Theme.Metrics.action) {
                         model.openService(service, in: project.id)
                     }
                     .relayTooltip(String(format: relayLocalized("Open %@"), url?.absoluteString ?? ""))
                 }
 
                 if state.isActive {
-                    IconButton(systemImage: "arrow.clockwise", help: "", size: 24) {
+                    IconButton(systemImage: "arrow.clockwise", help: "", size: Theme.Metrics.action) {
                         model.restartService(service, in: project.id)
                     }
                     .relayTooltip(
                         relayLocalized("Restart"),
                         shortcut: service.isDefault ? model.binding(for: .restartDefaultService) : nil
                     )
-                    IconButton(systemImage: "stop.fill", help: "", size: 24) {
+                    IconButton(systemImage: "stop.fill", help: "", size: Theme.Metrics.action) {
                         model.stopService(service, in: project.id)
                     }
                     .relayTooltip(relayLocalized("Stop"))
                 } else {
-                    IconButton(systemImage: "play.fill", help: "", size: 24) {
+                    IconButton(systemImage: "play.fill", help: "", size: Theme.Metrics.action) {
                         model.startService(service, in: project.id)
                     }
                     .relayTooltip(
@@ -208,16 +210,32 @@ struct DockerPane: View {
 
         VStack(alignment: .leading, spacing: 1) {
             SectionHeader(snapshot?.composeProjectName.map { "Docker · \($0)" } ?? relayLocalized("Docker"), trailing: {
-                IconButton(systemImage: "arrow.clockwise", help: "", size: 24) {
-                    model.refreshDocker(for: project.id)
+                // On the header's own line rather than a strip below it: what
+                // these do is to the stack the header names, and a second row
+                // of buttons under a title is a toolbar for a section that has
+                // one already.
+                HStack(spacing: Theme.Spacing.xxsmall) {
+                    if snapshot?.isAvailable != false {
+                        ForEach(ComposeAction.allCases) { action in
+                            IconButton(
+                                systemImage: action.symbolName,
+                                help: action.localizedTitle,
+                                size: Theme.Metrics.action
+                            ) {
+                                model.runCompose(action, in: project.id)
+                            }
+                        }
+                    }
+                    IconButton(systemImage: "arrow.clockwise", help: "", size: Theme.Metrics.action) {
+                        model.refreshDocker(for: project.id)
+                    }
+                    .relayTooltip(relayLocalized("Refresh containers"))
                 }
-                .relayTooltip(relayLocalized("Refresh containers"))
             })
 
             if let snapshot, !snapshot.isAvailable {
                 unavailable(snapshot)
             } else {
-                composeActions
                 ForEach(snapshot?.containers ?? []) { container in
                     row(container)
                 }
@@ -269,20 +287,6 @@ struct DockerPane: View {
         }
     }
 
-    private var composeActions: some View {
-        HStack(spacing: Theme.Spacing.xsmall) {
-            ForEach(ComposeAction.allCases) { action in
-                IconButton(systemImage: action.symbolName, help: "", size: 28) {
-                    model.runCompose(action, in: project.id)
-                }
-                .relayTooltip(action.localizedTitle)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, Theme.Spacing.small)
-        .padding(.vertical, Theme.Spacing.xsmall)
-    }
-
     private func row(_ container: DockerContainer) -> some View {
         let isRunning = container.state.lowercased() == "running"
 
@@ -303,23 +307,23 @@ struct DockerPane: View {
         ) {
             HStack(spacing: 1) {
                 if let port = container.publishedPorts.first, port.url != nil {
-                    IconButton(systemImage: "arrow.up.forward.app", help: "", size: 24) {
+                    IconButton(systemImage: "arrow.up.forward.app", help: "", size: Theme.Metrics.action) {
                         model.openContainerPort(port)
                     }
                     .relayTooltip(String(format: relayLocalized("Open localhost:%d"), port.published))
                 }
 
                 if isRunning {
-                    IconButton(systemImage: "arrow.clockwise", help: "", size: 24) {
+                    IconButton(systemImage: "arrow.clockwise", help: "", size: Theme.Metrics.action) {
                         model.containerAction(.restart, container: container, in: project.id)
                     }
                     .relayTooltip(relayLocalized("Restart container"))
-                    IconButton(systemImage: "stop.fill", help: "", size: 24) {
+                    IconButton(systemImage: "stop.fill", help: "", size: Theme.Metrics.action) {
                         model.containerAction(.stop, container: container, in: project.id)
                     }
                     .relayTooltip(relayLocalized("Stop container"))
                 } else {
-                    IconButton(systemImage: "play.fill", help: "", size: 24) {
+                    IconButton(systemImage: "play.fill", help: "", size: Theme.Metrics.action) {
                         model.containerAction(.start, container: container, in: project.id)
                     }
                     .relayTooltip(relayLocalized("Start container"))
@@ -374,7 +378,7 @@ struct HistoryPane: View {
                 IconButton(
                     systemImage: "arrow.clockwise",
                     help: "",
-                    size: 24,
+                    size: Theme.Metrics.action,
                     isBusy: model.isLoadingConversations
                 ) {
                     model.loadConversations(for: project.id)
@@ -410,7 +414,7 @@ struct HistoryPane: View {
             action: { model.resume(conversation, in: project.id) },
             accessoryVisibility: .onHover
         ) {
-            IconButton(systemImage: "arrow.uturn.left", help: "", size: 24) {
+            IconButton(systemImage: "arrow.uturn.left", help: "", size: Theme.Metrics.action) {
                 model.resume(conversation, in: project.id)
             }
             .relayTooltip(relayLocalized("Resume"))

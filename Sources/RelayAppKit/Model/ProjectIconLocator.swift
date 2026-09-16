@@ -23,6 +23,14 @@ enum ProjectIconLocator {
         "src/app/icon.png",
         "src/app/favicon.ico",
 
+        // A native app's own icon, which is the project's mark by definition —
+        // it is the thing the Dock shows. A repository that builds one is not a
+        // site and has no favicon anywhere to find instead.
+        "Resources/AppIcon.icns",
+        "Resources/Icon.icns",
+        "AppIcon.icns",
+        "Icon.icns",
+
         // The conventional web roots.
         "public/apple-touch-icon.png",
         "public/favicon.svg",
@@ -39,6 +47,10 @@ enum ProjectIconLocator {
         "src/assets/favicon.png",
         "src/favicon.ico",
         "web/favicon.png",
+        "Resources/icon.png",
+        "Resources/icon.svg",
+        "Resources/logo.png",
+        "Resources/logo.svg",
 
         // Root, for sites served straight from the repository.
         "favicon.svg",

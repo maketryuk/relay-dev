@@ -5,6 +5,91 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## 0.3.0 — 2026-09-16
+
+### Added
+
+- **A TODO panel, after Git in the right-hand strip.** It searches the
+  project's comments for the words it marks unfinished work with — `TODO`,
+  `FIXME`, `HACK`, `XXX` and `BUG` unless the project says otherwise — and
+  lists what it finds with the file and line each one sits on. A note written
+  in a comment is written to be found later, and later never arrives, because
+  nobody greps their own codebase for the word.
+- **Notes can be handed to an agent.** Tick the ones that belong together,
+  write what should be done about them, and send it to the agent already
+  working or to a new one; it lands in the prompt unsent, the way a review
+  does, so it can be read over first. Each row also carries a button that
+  opens it in the project's editor, at its line.
+- **Which words count is a project setting.** A codebase that marks its work
+  some other way has no other way to be found. Set it in Project Settings, or
+  from the gear in the TODO panel itself — a list you are looking at is where
+  you notice it is looking for the wrong things. Both write the same setting,
+  so neither can go stale while the other is used.
+- **Projects that build a Mac app are drawn with their own icon.** The search
+  for a project's mark knew every way a website carries one and no way a native
+  app does, so a repository with an `AppIcon.icns` in `Resources` was shown as
+  two letters over a colour.
+
+### Fixed
+
+- **The app no longer dies when it cannot find its own string table.** Looking
+  a word up was the first thing the menu bar did, before any window existed,
+  and the lookup trapped rather than returned — so a bundle assembled or
+  unpacked wrong did not start in English, it crashed with a stack trace
+  blaming a menu. The keys are the English text, so there is always something
+  readable to fall back to. The build script now also refuses to assemble a
+  bundle without the strings in it.
+- **Every project tile has an outline.** It was drawn under the artwork rather
+  than over it, so any icon that filled its tile painted over the very line
+  meant to contain it — and those were the tiles that most needed one.
+- **The project rail draws every icon at one size.** The inset was the same for
+  every project and the artwork was not: an application icon fills its canvas
+  and a logo exported for a readme carries a third of its width in empty space,
+  so one was drawn half the size of the other. Artwork is now trimmed to what
+  it actually draws, and an icon that is a tile in its own right is drawn edge
+  to edge instead of on a plate inside a plate.
+- **The TODO list no longer shows the project its own test data.** A line of
+  code that quotes a comment — `"a.swift:9:// TODO: earlier"` in a fixture — was
+  read as the comment it quotes, so the panel filled with fragments ending in
+  stray quotes and brackets. A marker inside a string literal is a value, and
+  the search now says so — including inside a Swift raw string, whose whole
+  purpose is that nothing in it means anything.
+- **The TODO list no longer lurches when it is overscrolled.** Every row
+  carried Relay's own tooltip, which measures the control it is attached to and
+  reports its position as the list moves — a hundred of those talking at once
+  during a scroll is the scroll. Rows now use the system's tooltip, which costs
+  nothing, and are a uniform height, so the list no longer revises its guess
+  about how tall it is mid-gesture.
+- **Docker's stack controls sit on the section's own line.** Up, down, restart
+  and logs had a strip of their own under the heading, at a size nothing else
+  used — a toolbar for a section that already had one. They are now beside the
+  refresh button, at the size every other panel action is drawn at.
+- **Panel buttons are all one size.** The actions in the right-hand panels were
+  drawn at 18, 20, 22 and 24 points depending on where they had been added, and
+  the send button used a different glyph ratio again, so it read a size larger
+  than the button beside it.
+- **The ahead and behind counts are the same colour wherever they appear.** The
+  project tile drew commits to push in green and commits to pull in blue, and
+  the Git panel drew both in grey — the same two facts, stated twice, looking
+  like two different ones.
+- **The Git tab works from the moment the window opens.** It used to wait for
+  the session daemon to start and then for the first poll twelve seconds later,
+  and until both had happened it was disabled and claimed the project was not a
+  repository. Whether a project holds one is a question for the filesystem, and
+  it is now asked before anything else is started.
+
+### Documentation
+
+- **The readme says to move the app before opening it.** macOS runs a freshly
+  downloaded app from a temporary copy until it is moved, and that copy is
+  where it fails to find parts of itself. The step was missing, and it is not a
+  tidiness one.
+- **The readme installs the app instead of building it.** It opened with Xcode
+  version requirements and a `git clone`, which is a door most people will not
+  walk through to try something. It now points at the releases page; building
+  from source has moved to the development section, where it was always the
+  audience.
+
 ## 0.2.1 — 2026-09-16
 
 ### Changed

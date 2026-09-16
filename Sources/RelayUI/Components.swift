@@ -484,6 +484,8 @@ public struct SectionHeader<Trailing: View>: View {
                 .font(Theme.Typography.sectionHeader)
                 .tracking(0.7)
                 .foregroundStyle(Theme.Palette.textTertiary)
+                .lineLimit(1)
+                .truncationMode(.tail)
             Spacer(minLength: 0)
             trailing.opacity(isHovering ? 1 : 0.35)
         }

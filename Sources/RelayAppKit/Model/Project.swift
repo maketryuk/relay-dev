@@ -20,6 +20,10 @@ struct Project: Codable, Identifiable, Hashable {
     var pinnedSSHHosts: [String]
     /// Long-running processes this project knows how to start.
     var services: [ServiceDefinition]
+    /// The words the TODO panel searches this project's comments for. Almost
+    /// every codebase uses the same handful; the ones that have their own
+    /// vocabulary have no other way to be found.
+    var todoMarkers: [String]
 
     init(
         id: ProjectID = .generate(),
@@ -31,7 +35,8 @@ struct Project: Codable, Identifiable, Hashable {
         preferredEditor: String? = nil,
         iconPath: String? = nil,
         pinnedSSHHosts: [String] = [],
-        services: [ServiceDefinition] = []
+        services: [ServiceDefinition] = [],
+        todoMarkers: [String] = TodoScanner.defaultMarkers
     ) {
         self.id = id
         self.name = name
@@ -43,6 +48,7 @@ struct Project: Codable, Identifiable, Hashable {
         self.iconPath = iconPath
         self.pinnedSSHHosts = pinnedSSHHosts
         self.services = services
+        self.todoMarkers = todoMarkers
     }
 
     /// Decoding is tolerant of absent keys so a workspace written by an older
@@ -59,6 +65,8 @@ struct Project: Codable, Identifiable, Hashable {
         iconPath = try container.decodeIfPresent(String.self, forKey: .iconPath)
         pinnedSSHHosts = try container.decodeIfPresent([String].self, forKey: .pinnedSSHHosts) ?? []
         services = try container.decodeIfPresent([ServiceDefinition].self, forKey: .services) ?? []
+        todoMarkers = try container
+            .decodeIfPresent([String].self, forKey: .todoMarkers) ?? TodoScanner.defaultMarkers
     }
 
     var defaultService: ServiceDefinition? {

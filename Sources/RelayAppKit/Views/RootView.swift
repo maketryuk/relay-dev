@@ -209,7 +209,7 @@ struct ProjectOverviewPane: View {
                     status: model.aggregatedStatus(for: project.id),
                     isSelected: true,
                     size: 56,
-                    image: model.projectIcons[project.id]
+                    artwork: model.projectIcons[project.id]
                 )
                 Text(project.name)
                     .font(.system(size: 18, weight: .semibold))

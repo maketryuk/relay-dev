@@ -65,6 +65,11 @@ public enum Theme {
         // points is a column of fragments.
         public static let rightSidebarMaxWidth: CGFloat = 900
         public static let rowHeight: CGFloat = 30
+        /// Every button in a panel that does something to the row or the list
+        /// it sits in. One size, because they are one kind of control: a strip
+        /// of actions drawn at 18, 20, 22 and 24 reads as four different kinds
+        /// of importance, which is a claim none of them were making.
+        public static let action: CGFloat = 22
         public static let projectIconSize: CGFloat = 40
     }
 

@@ -10,7 +10,7 @@ public struct ProjectIcon: View {
     private let status: RuntimeStatus
     private let isSelected: Bool
     private let size: CGFloat
-    private let image: NSImage?
+    private let artwork: ProjectArtwork?
 
     @State private var isHovering = false
 
@@ -22,14 +22,14 @@ public struct ProjectIcon: View {
         size: CGFloat = Theme.Metrics.projectIconSize,
         /// The project's own artwork, when it has any. Initials are the
         /// fallback, not the design.
-        image: NSImage? = nil
+        artwork: ProjectArtwork? = nil
     ) {
         self.initials = initials
         self.tint = tint
         self.status = status
         self.isSelected = isSelected
         self.size = size
-        self.image = image
+        self.artwork = artwork
     }
 
     public var body: some View {
@@ -37,12 +37,16 @@ public struct ProjectIcon: View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .fill(background)
                 .frame(width: size, height: size)
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .strokeBorder(Color.white.opacity(isSelected ? 0.22 : 0.07), lineWidth: 1)
-                )
                 .overlay { mark }
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                // Last, and over the clip. Drawn before the artwork it was
+                // painted over by any icon that fills its tile edge to edge —
+                // which is every application icon, and exactly the tiles whose
+                // shape most needed containing.
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .strokeBorder(Color.white.opacity(borderOpacity), lineWidth: 1)
+                )
 
             if status != .offline {
                 // Inside the tile, not hanging off it. Drawing past your own
@@ -62,7 +66,10 @@ public struct ProjectIcon: View {
     /// A favicon is usually transparent and often nearly the colour of the app,
     /// so it keeps a plate behind it — muted, so the artwork stays the subject.
     private var background: AnyShapeStyle {
-        guard image == nil else {
+        // Artwork that is its own tile needs nothing behind it, and a plate
+        // under one draws a rounded square inside a rounded square.
+        guard artwork?.isFullBleed != true else { return AnyShapeStyle(Color.clear) }
+        guard artwork == nil else {
             return AnyShapeStyle(Theme.Palette.surfaceRaised.opacity(isSelected || isHovering ? 1 : 0.75))
         }
         return AnyShapeStyle(
@@ -76,17 +83,31 @@ public struct ProjectIcon: View {
 
     @ViewBuilder
     private var mark: some View {
-        if let image {
-            Image(nsImage: image)
+        if let artwork {
+            // The artwork arrives trimmed to what it actually draws, so the
+            // inset here is the whole margin and every project gets the same
+            // one. Before that, a mark exported with half its canvas empty was
+            // drawn half the size of one that filled it — with no setting
+            // between them to explain why.
+            Image(nsImage: artwork.image)
                 .resizable()
                 .interpolation(.high)
                 .aspectRatio(contentMode: .fit)
-                .padding(size * 0.16)
+                .padding(artwork.isFullBleed ? 0 : size * 0.1)
         } else {
             Text(initials)
                 .font(.system(size: size * 0.38, weight: .semibold, design: .rounded))
                 .foregroundStyle(Color.white.opacity(0.95))
         }
+    }
+
+    /// One hairline on every tile, whatever it is drawn with.
+    ///
+    /// A rail of icons that each end wherever their artwork happens to is a
+    /// rail with no column in it; the outline is what makes them one set of
+    /// things rather than several pictures.
+    private var borderOpacity: Double {
+        isSelected || isHovering ? 0.3 : 0.16
     }
 
     private var cornerRadius: CGFloat {
@@ -131,5 +152,21 @@ public enum ProjectAppearance {
             return String(first.prefix(2)).uppercased()
         }
         return "?"
+    }
+}
+
+/// A project's artwork, measured and ready to draw.
+public struct ProjectArtwork: Equatable {
+    public var image: NSImage
+    /// Whether the artwork is a tile in its own right — an application icon,
+    /// which brings its own shape and its own background. Those are drawn edge
+    /// to edge with nothing behind them; a mark on a transparent field is not,
+    /// and without a plate it would look stuck to the rail rather than sitting
+    /// on it.
+    public var isFullBleed: Bool
+
+    public init(image: NSImage, isFullBleed: Bool) {
+        self.image = image
+        self.isFullBleed = isFullBleed
     }
 }
