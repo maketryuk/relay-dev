@@ -5,7 +5,7 @@ asked for twice.
 
 ## Releases
 
-**Never tag or publish a release without being asked to.** Work lands on `main`
+**Never tag or publish a release without being asked to.** Work lands on `master`
 and accumulates under `## Unreleased` in `CHANGELOG.md`.
 
 ### What the numbers mean
@@ -41,16 +41,48 @@ question about nothing.
    Changed / Fixed grouping. Describe what changed for the person using the app,
    not which files moved. A fix entry says what was broken.
 3. **Tag** `vX.Y.Z` and push it.
-4. **Build the archive locally** with `./Scripts/build-app.sh`, which leaves
-   `build/Relay.app.zip` beside the bundle. It has to be built on a machine
-   holding the signing certificate: a CI runner produces an ad-hoc signature,
-   and replacing a properly signed copy with one breaks the app's identity with
-   macOS — every permission is asked for again.
-5. **Publish a GitHub release** on that tag with the changelog section as its
-   body, and attach `Relay.app.zip`. A tag with no notes tells nobody anything,
-   and a release with no archive is invisible to the in-app updater: it looks
-   for an asset whose name starts with `Relay` and ends in `.zip`, and a release
-   without one is treated as an announcement rather than an update.
+4. **Build the artefacts** with `./Scripts/release.sh`. It signs with Developer
+   ID, notarises with Apple, staples the ticket into the bundle, and leaves both
+   files in `build/release`: `Relay-X.Y.Z.app.zip`, which the in-app updater
+   downloads, and `Relay-X.Y.Z.dmg`, which a person downloads. It refuses a
+   dirty working tree, a missing changelog section and a missing certificate,
+   because each of those produces a release that is wrong in a way nobody
+   notices until it is installed.
+5. **Publish** with `./Scripts/release.sh --publish`, which creates the release
+   on the tag with the changelog section as its body and both files attached. A
+   tag with no notes tells nobody anything, and a release with no `.zip` is
+   invisible to the in-app updater: it looks for an asset whose name starts with
+   `Relay` and ends in `.zip`, and a release without one is treated as an
+   announcement rather than an update.
+
+### What a release has to be signed with
+
+Two things, set up once, without which step 4 stops before it builds anything:
+
+- A **Developer ID Application** certificate. Xcode → Settings → Accounts →
+  the team → Manage Certificates → + → Developer ID Application; for an
+  organisation only the account holder can create one. An *Apple Development*
+  certificate is not a substitute: it signs builds for the machine that made
+  them, every other Mac refuses them, and Apple will not notarise them.
+- **Notarisation credentials** stored in the keychain as `relay-notary` (or
+  whatever `RELAY_NOTARY_PROFILE` says), either from an Apple ID and an
+  app-specific password:
+  `xcrun notarytool store-credentials "relay-notary" --apple-id <id>
+  --team-id L79UA6HS32 --password <app-specific-password>`,
+  or from an App Store Connect API key:
+  `xcrun notarytool store-credentials "relay-notary" --key AuthKey_XXX.p8
+  --key-id XXXXXXXXXX --issuer <issuer-uuid>`.
+
+Both live on the machine that cuts releases, which is why this is not in CI: a
+runner has neither, and would quietly produce an ad-hoc signature that breaks
+the app's identity with macOS — every permission asked for again, and the
+in-app updater refusing the download as signed by someone else.
+
+Development builds are signed with the same Developer ID when it is present, so
+that switching between a local build and a released one does not look like a
+different app to macOS. They carry the hardened runtime too, so what is tested
+is what ships; only the timestamp Apple has to witness is left out, because it
+costs a round trip on every build.
 
 ## Daemon protocol
 

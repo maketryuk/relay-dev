@@ -73,21 +73,57 @@ printf 'APPL????' > "$APP/Contents/PkgInfo"
 # changes with every build, so each rebuild looked like a brand new app and the
 # folder-access prompts came back. A real certificate has a stable identity, so
 # the grant sticks.
+#
+# Developer ID first, and on a development build too: it is the certificate a
+# release is signed with, and signing local builds with a different one means
+# every switch between the two looks like a different app to macOS and asks for
+# every permission again.
+# `|| true` because no match is an answer, not a failure: under `set -o
+# pipefail` an empty grep would otherwise take the whole build down with it.
+find_identity() {
+  security find-identity -v -p codesigning 2>/dev/null \
+    | grep -m1 "$1" \
+    | sed -E 's/.*"(.*)"/\1/' || true
+}
+
+DISTRIBUTION="${RELAY_SIGN_FOR_DISTRIBUTION:-0}"
 IDENTITY="${RELAY_CODESIGN_IDENTITY:-}"
 if [ -z "$IDENTITY" ]; then
-  IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
-    | grep -m1 "Apple Development" \
-    | sed -E 's/.*"(.*)"/\1/')"
+  IDENTITY="$(find_identity "Developer ID Application")"
+fi
+if [ -z "$IDENTITY" ] && [ "$DISTRIBUTION" != "1" ]; then
+  IDENTITY="$(find_identity "Apple Development")"
+fi
+
+if [ "$DISTRIBUTION" = "1" ] && [ -z "$IDENTITY" ]; then
+  echo "error: distribution build needs a Developer ID Application certificate" >&2
+  echo "       An Apple Development certificate signs builds for this machine only:" >&2
+  echo "       every other Mac refuses them, notarisation included." >&2
+  echo "       Xcode → Settings → Accounts → Manage Certificates → + → Developer ID Application" >&2
+  exit 1
 fi
 
 if [ -n "$IDENTITY" ]; then
   echo "==> Signing as: $IDENTITY"
+  # The hardened runtime is what notarisation requires, and it is applied to
+  # development builds as well so that what is tested is what ships.
+  SIGN_FLAGS=(--force --options runtime --sign "$IDENTITY")
+  if [ "$DISTRIBUTION" = "1" ]; then
+    # A signature that outlives its certificate needs Apple to have witnessed
+    # when it was made. Only for a release, because it costs a round trip to
+    # Apple on every build.
+    SIGN_FLAGS+=(--timestamp)
+  else
+    SIGN_FLAGS+=(--timestamp=none)
+  fi
+
   # Nested binaries first, then the bundle, which is what --deep did badly.
-  codesign --force --timestamp=none --sign "$IDENTITY" "$APP/Contents/MacOS/relay-daemon"
+  codesign "${SIGN_FLAGS[@]}" "$APP/Contents/MacOS/relay-daemon"
   # SwiftPM resource bundles hold no executable code and codesign refuses them
   # outright ("bundle format unrecognized"); the outer signature seals them as
   # ordinary resources, which is what they are.
-  codesign --force --timestamp=none --sign "$IDENTITY" "$APP"
+  codesign "${SIGN_FLAGS[@]}" "$APP"
+  codesign --verify --strict --deep "$APP"
 else
   echo "==> Signing (ad-hoc — macOS will re-ask for permissions after each build)"
   echo "    Set RELAY_CODESIGN_IDENTITY, or install an Apple Development certificate."
