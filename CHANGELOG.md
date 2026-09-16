@@ -25,6 +25,16 @@ breaking change to stored data.
   one on screen. When nothing is running the search knows the environment
   suffixes too, preferring the local one and never a production file: the file
   this picks is the one the button starts.
+- **Relay reads containers from the engine itself rather than from the `docker`
+  command.** Every engine on a Mac serves an HTTP API on a unix socket, and
+  Relay now asks that directly — which means the panel fills for whichever
+  engine is actually running rather than for whichever one a CLI context points
+  at, without needing a `docker` binary on a PATH that a daemon launched by the
+  GUI never inherits, and without starting a process every few seconds for as
+  long as the panel is open. Docker Desktop, Colima, OrbStack and Rancher
+  Desktop are all looked for, as is an explicit `DOCKER_HOST`. Compose is
+  unchanged and still goes through the CLI: it is a client-side tool with no
+  presence in the engine's API at all.
 - **The Docker panel answered a closed engine with four lines about a socket
   path.** It is one thing — nothing is running — and it is now said in one
   line, with a button that starts what Relay found: Docker Desktop, or Colima

@@ -154,18 +154,43 @@ struct DockerAvailabilityTests {
         CommandResult(status: status, standardOutput: out, standardError: err)
     }
 
+    /// - Parameter engine: what the socket answers. Nil by default, which is
+    ///   "no engine is listening" and sends every test down the CLI path —
+    ///   never the machine the tests happen to be running on.
     private func snapshot(
         _ responses: [String: CommandResult],
         directory: String = "/Users/me/shop",
         dockerPath: String? = "/usr/local/bin/docker",
-        composeFiles: [String] = ["/Users/me/shop/docker-compose.yml"]
+        composeFiles: [String] = ["/Users/me/shop/docker-compose.yml"],
+        engine: [DockerContainer]? = nil
     ) -> DockerSnapshot {
         DockerProbe.snapshot(
             projectDirectory: directory,
             runner: FakeCommandRunner(results: responses),
             dockerPath: dockerPath,
-            fileExists: Set(composeFiles).contains
+            fileExists: Set(composeFiles).contains,
+            engineContainers: { engine }
         )
+    }
+
+    @Test("The engine's own socket is preferred to the CLI")
+    func socketBeatsTheCLI() {
+        // No CLI at all, and the panel still fills: the binary was never the
+        // thing that knew, only the thing that was asked.
+        let result = snapshot(
+            [:],
+            dockerPath: nil,
+            engine: [DockerContainer(
+                id: "a",
+                name: "shop-web-1",
+                state: "running",
+                composeProject: "shop",
+                composeWorkingDirectory: "/Users/me/shop"
+            )]
+        )
+        #expect(result.isAvailable)
+        #expect(result.absence == nil)
+        #expect(result.containers.map(\.name) == ["shop-web-1"])
     }
 
     @Test("A missing CLI is reported as the one thing Relay cannot fix")
