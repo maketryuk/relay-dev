@@ -25,6 +25,11 @@ breaking change to stored data.
   one on screen. When nothing is running the search knows the environment
   suffixes too, preferring the local one and never a production file: the file
   this picks is the one the button starts.
+- **A project's status dot was missing its right-hand side.** The tile drew it
+  three points outside its own frame, which works exactly as long as nothing
+  laying the tile out clips — and the tile carries a context menu, which does.
+  The dot sits inside the tile now, where the ring around it was already doing
+  the job of separating it from the artwork.
 - **Panels showed what was true when they were opened.** Containers are started
   in Docker Desktop, files are written by agents, branches are checked out in a
   terminal — none of which Relay is told about, so the Docker panel, the review

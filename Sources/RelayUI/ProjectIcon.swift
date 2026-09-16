@@ -45,8 +45,12 @@ public struct ProjectIcon: View {
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
 
             if status != .offline {
+                // Inside the tile, not hanging off it. Drawing past your own
+                // frame works only for as long as nothing above you clips, and
+                // the tile carries a context menu, which does — the dot lost
+                // its right-hand side to a straight vertical edge. The ring is
+                // what separates it from the artwork it now sits on.
                 StatusDot(status: status, size: 8, showsRing: true)
-                    .offset(x: 3, y: 3)
             }
         }
         .frame(width: size, height: size)
