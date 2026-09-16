@@ -45,6 +45,7 @@ struct ServiceEditorView: View {
                         .foregroundStyle(Theme.Palette.textSecondary)
                 }
                 .toggleStyle(.switch)
+                .clickable()
             }
             .padding(.horizontal, ModalSurface<EmptyView, EmptyView>.horizontalInset)
             .padding(.vertical, ModalSurface<EmptyView, EmptyView>.verticalInset)

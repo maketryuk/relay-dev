@@ -356,6 +356,9 @@ public struct RelayTextField: View {
             RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
                 .strokeBorder(isFocused ? Theme.Palette.accent.opacity(0.7) : Theme.Palette.border, lineWidth: 1)
         )
+        // The field is the plate, not the run of glyphs inside it: clicking the
+        // padding puts the caret in, so the padding has to say so too.
+        .relayPointer(.text)
     }
 }
 
@@ -392,6 +395,9 @@ public struct InlineRenameField: View {
                 .foregroundStyle(Theme.Palette.textPrimary)
                 .focused($isFocused)
                 .onSubmit(commit)
+                // On the field alone: the two buttons beside it are not text,
+                // and a caret over a checkmark is a lie.
+                .relayPointer(.text)
 
             IconButton(
                 systemImage: "checkmark",
@@ -485,6 +491,9 @@ public struct SectionHeader<Trailing: View>: View {
         .padding(.vertical, 2)
         .frame(minHeight: 28)
         .contentShape(Rectangle())
+        // A header that collapses its section is a control; one that only
+        // labels it is not, and must not claim to be.
+        .clickable(onToggle != nil)
         .onHover { isHovering = $0 }
         .onTapGesture { onToggle?() }
     }

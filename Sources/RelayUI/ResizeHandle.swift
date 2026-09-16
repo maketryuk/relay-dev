@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Where a divider lands for a given drag.
@@ -99,6 +100,12 @@ public struct ResizeHandle: View {
     /// Deliberately an overlay: it reaches past the line into the panes either
     /// side without taking any space of its own, so turning a divider into a
     /// handle does not move anything.
+    /// Only for holding the pointer through a drag; the shape on hover is the
+    /// declared one.
+    private var draggingCursor: NSCursor {
+        orientation == .vertical ? .resizeLeftRight : .resizeUpDown
+    }
+
     private var grabArea: some View {
         Rectangle()
             .fill(.clear)
@@ -107,7 +114,7 @@ public struct ResizeHandle: View {
                 width: orientation == .vertical ? Self.hitSize : nil,
                 height: orientation == .horizontal ? Self.hitSize : nil
             )
-            .relayCursor(orientation == .vertical ? .resizeLeftRight : .resizeUpDown)
+            .relayPointer(orientation == .vertical ? .resizesColumns : .resizesRows)
             .onHover { isHovering = $0 }
             .gesture(
                 // Measured against the window, never against this view. In the
@@ -121,6 +128,12 @@ public struct ResizeHandle: View {
                             isDragging = true
                             onBegin()
                         }
+                        // Cursor rectangles are only consulted while the mouse
+                        // is up, so a pointer that outruns the divider mid-drag
+                        // reverts to the arrow. Setting it per event costs
+                        // nothing and needs no undoing: the next move over the
+                        // window restores whatever the rectangles say.
+                        draggingCursor.set()
                         onDrag(orientation == .vertical ? value.translation.width : value.translation.height)
                     }
                     .onEnded { _ in

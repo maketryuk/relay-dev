@@ -8,7 +8,38 @@ struct PaletteCommand: Identifiable {
     let title: String
     let subtitle: String
     let systemImage: String
+    /// What the query is matched against, most significant first: the title as
+    /// every shipped language words it, then the subtitle. A command is looked
+    /// for by name, and which language that name is in is the searcher's
+    /// business, not the interface's.
+    let searchTerms: [String]
     let run: () -> Void
+
+    /// - Parameters:
+    ///   - titleKey: the untranslated title, which is also the key it is
+    ///     looked up under.
+    ///   - titleArguments: what fills the placeholders, in every language at
+    ///     once — a session called "Dev" has to be findable whichever side of
+    ///     the verb its language puts it on.
+    @MainActor
+    init(
+        id: String,
+        titleKey: String,
+        titleArguments: [CVarArg] = [],
+        subtitle: String,
+        systemImage: String,
+        run: @escaping () -> Void
+    ) {
+        let wordings = relaySearchTerms(titleKey).map { wording in
+            titleArguments.isEmpty ? wording : String(format: wording, arguments: titleArguments)
+        }
+        self.id = id
+        title = wordings.first ?? titleKey
+        self.subtitle = subtitle
+        self.systemImage = systemImage
+        searchTerms = subtitle.isEmpty ? wordings : wordings + [subtitle]
+        self.run = run
+    }
 }
 
 /// Keyboard-first entry point to everything. Deliberately free of any AI or
@@ -65,12 +96,17 @@ struct CommandPaletteView: View {
         }
         .padding(.horizontal, Theme.Spacing.medium)
         .padding(.vertical, Theme.Spacing.medium)
+        .relayPointer(.text)
     }
 
     private var results: some View {
-        ScrollView {
+        // Held once per redraw: scoring every command against every reading of
+        // the query is not something to do twice for the same list.
+        let commands = filteredCommands
+
+        return ScrollView {
             VStack(spacing: 1) {
-                ForEach(Array(filteredCommands.enumerated()), id: \.element.id) { index, command in
+                ForEach(Array(commands.enumerated()), id: \.element.id) { index, command in
                     row(command, isHighlighted: index == highlightedIndex)
                         .clickable()
                         .onTapGesture {
@@ -78,7 +114,7 @@ struct CommandPaletteView: View {
                             close()
                         }
                 }
-                if filteredCommands.isEmpty {
+                if commands.isEmpty {
                     Text(relayLocalized("No matching commands"))
                         .font(Theme.Typography.rowSecondary)
                         .foregroundStyle(Theme.Palette.textTertiary)
@@ -91,7 +127,7 @@ struct CommandPaletteView: View {
         .background(
             // Arrow-key navigation without stealing focus from the text field.
             KeyCaptureView(
-                onMoveDown: { highlightedIndex = min(highlightedIndex + 1, max(filteredCommands.count - 1, 0)) },
+                onMoveDown: { highlightedIndex = min(highlightedIndex + 1, max(commands.count - 1, 0)) },
                 onMoveUp: { highlightedIndex = max(highlightedIndex - 1, 0) },
                 onEscape: close
             )
@@ -125,13 +161,29 @@ struct CommandPaletteView: View {
 
     // MARK: - Commands
 
+    /// Ranked, not merely filtered: with a query that reaches a command through
+    /// a translation or a keyboard layout, the order the commands were built in
+    /// says nothing about which one was meant.
     private var filteredCommands: [PaletteCommand] {
         let all = allCommands
-        let trimmed = query.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !trimmed.isEmpty else { return all }
-        return all.filter {
-            $0.title.lowercased().contains(trimmed) || $0.subtitle.lowercased().contains(trimmed)
+        let search = RelaySearchQuery(query)
+        guard !search.isEmpty else { return all }
+
+        var ranked: [RankedCommand] = []
+        for (position, command) in all.enumerated() {
+            guard let score = search.score(command.searchTerms) else { continue }
+            ranked.append(RankedCommand(position: position, score: score, command: command))
         }
+        // Position breaks ties, so equally good matches keep the order the
+        // palette lists them in rather than an arbitrary one.
+        ranked.sort { $0.score == $1.score ? $0.position < $1.position : $0.score > $1.score }
+        return ranked.map(\.command)
+    }
+
+    private struct RankedCommand {
+        let position: Int
+        let score: Int
+        let command: PaletteCommand
     }
 
     private var allCommands: [PaletteCommand] {
@@ -141,7 +193,8 @@ struct CommandPaletteView: View {
             for preset in model.sessionPresets {
                 commands.append(PaletteCommand(
                     id: "new-\(preset.id)",
-                    title: String(format: relayLocalized("New %@ Session"), preset.name),
+                    titleKey: "New %@ Session",
+                    titleArguments: [preset.name],
                     subtitle: preset.subtitle,
                     systemImage: preset.kind.symbolName
                 ) {
@@ -150,43 +203,43 @@ struct CommandPaletteView: View {
             }
             commands.append(PaletteCommand(
                 id: "reveal",
-                title: relayLocalized("Open Project in Finder"),
+                titleKey: "Open Project in Finder",
                 subtitle: project.displayPath,
                 systemImage: "folder"
             ) { model.revealInFinder(project) })
             commands.append(PaletteCommand(
                 id: "editor",
-                title: relayLocalized("Open Project in Editor"),
+                titleKey: "Open Project in Editor",
                 subtitle: project.displayPath,
                 systemImage: "chevron.left.forwardslash.chevron.right"
             ) { model.openInEditor(project) })
             commands.append(PaletteCommand(
                 id: "settings",
-                title: relayLocalized("Project Settings"),
+                titleKey: "Project Settings",
                 subtitle: project.name,
                 systemImage: "gearshape"
             ) { model.openProjectSettings() })
             commands.append(PaletteCommand(
                 id: "branches",
-                title: relayLocalized("Switch Branch"),
+                titleKey: "Switch Branch",
                 subtitle: model.gitStatuses[project.id]?.branch ?? relayLocalized("Git"),
                 systemImage: "arrow.triangle.branch"
             ) { model.pickBranch(in: project.id) })
             commands.append(PaletteCommand(
                 id: "review-changes",
-                title: relayLocalized("Review Changes"),
+                titleKey: "Review Changes",
                 subtitle: project.displayPath,
                 systemImage: "doc.text.magnifyingglass"
             ) { model.reviewChanges(in: project.id) })
             commands.append(PaletteCommand(
                 id: "ports-window",
-                title: relayLocalized("Ports"),
+                titleKey: "Ports",
                 subtitle: relayLocalized("Everything listening on this Mac"),
                 systemImage: "point.3.filled.connected.trianglepath.dotted"
             ) { model.toggleModal(.ports) })
             commands.append(PaletteCommand(
                 id: "app-settings",
-                title: relayLocalized("Settings"),
+                titleKey: "Settings",
                 subtitle: relayLocalized("Shortcuts, notifications and more"),
                 systemImage: "slider.horizontal.3"
             ) { model.toggleModal(.settings) })
@@ -196,20 +249,23 @@ struct CommandPaletteView: View {
                 if state.isActive {
                     commands.append(PaletteCommand(
                         id: "stop-\(service.id)",
-                        title: String(format: relayLocalized("Stop %@"), service.name),
+                        titleKey: "Stop %@",
+                        titleArguments: [service.name],
                         subtitle: service.command,
                         systemImage: "stop.fill"
                     ) { model.stopService(service, in: project.id) })
                     commands.append(PaletteCommand(
                         id: "restart-\(service.id)",
-                        title: String(format: relayLocalized("Restart %@"), service.name),
+                        titleKey: "Restart %@",
+                        titleArguments: [service.name],
                         subtitle: service.command,
                         systemImage: "arrow.clockwise"
                     ) { model.restartService(service, in: project.id) })
                 } else {
                     commands.append(PaletteCommand(
                         id: "start-\(service.id)",
-                        title: String(format: relayLocalized("Start %@"), service.name),
+                        titleKey: "Start %@",
+                        titleArguments: [service.name],
                         subtitle: service.command,
                         systemImage: "play.fill"
                     ) { model.startService(service, in: project.id) })
@@ -217,7 +273,8 @@ struct CommandPaletteView: View {
                 if model.url(of: service, in: project.id) != nil {
                     commands.append(PaletteCommand(
                         id: "open-\(service.id)",
-                        title: String(format: relayLocalized("Open %@ URL"), service.name),
+                        titleKey: "Open %@ URL",
+                        titleArguments: [service.name],
                         subtitle: model.url(of: service, in: project.id)?.absoluteString ?? "",
                         systemImage: "arrow.up.forward.app"
                     ) { model.openService(service, in: project.id) })
@@ -227,7 +284,8 @@ struct CommandPaletteView: View {
             for port in model.ports where port.url != nil {
                 commands.append(PaletteCommand(
                     id: "port-\(port.id)",
-                    title: String(format: relayLocalized("Open port %d"), port.port),
+                    titleKey: "Open port %d",
+                    titleArguments: [port.port],
                     subtitle: port.ownerName ?? port.processName,
                     systemImage: "point.3.filled.connected.trianglepath.dotted"
                 ) { model.openPort(port) })
@@ -239,7 +297,8 @@ struct CommandPaletteView: View {
             for host in hosts.pinned + hosts.others {
                 commands.append(PaletteCommand(
                     id: "ssh-\(host.alias)",
-                    title: String(format: relayLocalized("Connect SSH: %@"), host.alias),
+                    titleKey: "Connect SSH: %@",
+                    titleArguments: [host.alias],
                     subtitle: host.displayTarget,
                     systemImage: "network"
                 ) { model.connectSSH(host, in: project.id) })
@@ -249,7 +308,8 @@ struct CommandPaletteView: View {
         for project in model.projects {
             commands.append(PaletteCommand(
                 id: "switch-\(project.id.rawValue)",
-                title: String(format: relayLocalized("Switch to %@"), project.name),
+                titleKey: "Switch to %@",
+                titleArguments: [project.name],
                 subtitle: project.displayPath,
                 systemImage: "square.stack.3d.up"
             ) { model.selectProject(project.id) })
@@ -259,8 +319,9 @@ struct CommandPaletteView: View {
             for session in model.sessions(in: projectID) {
                 commands.append(PaletteCommand(
                     id: "focus-\(session.id.rawValue)",
-                    title: String(format: relayLocalized("Focus %@"), model.label(for: session)),
-                    subtitle: session.status.displayName,
+                    titleKey: "Focus %@",
+                    titleArguments: [model.label(for: session)],
+                    subtitle: session.status.localizedName,
                     systemImage: session.kind.symbolName
                 ) { model.selectSession(session.id) })
             }

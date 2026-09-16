@@ -250,7 +250,9 @@ struct TerminalPane: View {
         }
         .contentShape(Rectangle())
         // The header is the pane's handle: drag it onto another pane to move
-        // this terminal there, the way a tab bar works.
+        // this terminal there, the way a tab bar works. The open hand is the
+        // only thing that says so before the drag.
+        .relayPointer(.draggable)
         .sessionDragSource(session.id, model: model)
     }
 

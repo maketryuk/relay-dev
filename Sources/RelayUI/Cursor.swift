@@ -7,32 +7,87 @@ import SwiftUI
 /// until you click it; a divider that can be dragged has to say so before the
 /// drag, not during it.
 ///
-/// Built on AppKit's cursor rectangles rather than on `NSCursor.push()` in an
-/// `onHover`: a push has to be balanced by exactly one pop, and a view that
-/// disappears, scrolls away or never sees the exit event leaves the whole
-/// window holding the wrong cursor. A cursor rectangle is state the window
-/// rebuilds for itself, so the worst a mistake can do is show the arrow.
+/// Named by what the thing underneath does rather than by which glyph appears,
+/// because the glyph is not ours to choose: macOS draws its own idea of "this
+/// resizes a column", and it has changed what that looks like more than once.
+public enum RelayPointer: Sendable {
+    /// Anything that responds to a click.
+    case clickable
+    /// A caret goes here.
+    case text
+    /// A handle, before it is picked up.
+    case draggable
+    case resizesColumns
+    case resizesRows
+}
+
 public extension View {
     /// - Parameter isActive: false leaves the arrow alone, which is what a
     ///   disabled control wants — it is not clickable, and saying it is would
     ///   be a lie the pointer tells before the click does nothing.
-    func relayCursor(_ cursor: NSCursor, isActive: Bool = true) -> some View {
-        background(CursorArea(cursor: isActive ? cursor : nil))
+    func relayPointer(_ pointer: RelayPointer, isActive: Bool = true) -> some View {
+        modifier(PointerShape(pointer: pointer, isActive: isActive, honoursEnabled: false))
     }
 
     /// The hand, for anything that responds to a click. A view that has been
     /// `.disabled(…)` keeps the arrow without being told twice.
     func clickable(_ isActive: Bool = true) -> some View {
-        modifier(ClickableCursor(isActive: isActive))
+        modifier(PointerShape(pointer: .clickable, isActive: isActive, honoursEnabled: true))
     }
 }
 
-private struct ClickableCursor: ViewModifier {
+/// Two implementations of one promise.
+///
+/// From macOS 15 SwiftUI states the pointer itself, which is the only version
+/// that composes with SwiftUI's own layout and hit-testing: it follows the view
+/// as it moves, scrolls and disappears, and it knows which of two overlapping
+/// views is in front.
+///
+/// Before that there is only AppKit's cursor rectangle — a rectangle the window
+/// keeps on a view's behalf, measured in that view's coordinates at the moment
+/// it was registered, which is why it has to be invalidated by hand every time
+/// the view is laid out. It is used on macOS 14 and nowhere else.
+private struct PointerShape: ViewModifier {
     @Environment(\.isEnabled) private var isEnabled
-    let isActive: Bool
 
+    let pointer: RelayPointer
+    let isActive: Bool
+    /// `clickable` is the one that follows `.disabled(…)`; an I-beam over a
+    /// read-only field is still the truth.
+    let honoursEnabled: Bool
+
+    private var isShown: Bool { isActive && (isEnabled || !honoursEnabled) }
+
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content.relayCursor(.pointingHand, isActive: isActive && isEnabled)
+        if #available(macOS 15.0, *) {
+            content.pointerStyle(isShown ? pointer.style : nil)
+        } else {
+            content.background(CursorArea(cursor: isShown ? pointer.cursor : nil))
+        }
+    }
+}
+
+private extension RelayPointer {
+    @available(macOS 15.0, *)
+    var style: PointerStyle {
+        switch self {
+        case .clickable: .link
+        case .text: .horizontalText
+        case .draggable: .grabIdle
+        case .resizesColumns: .columnResize
+        case .resizesRows: .rowResize
+        }
+    }
+
+    var cursor: NSCursor {
+        switch self {
+        case .clickable: .pointingHand
+        case .text: .iBeam
+        case .draggable: .openHand
+        case .resizesColumns: .resizeLeftRight
+        case .resizesRows: .resizeUpDown
+        }
     }
 }
 
