@@ -5,3 +5,20 @@ build/
 *.xcodeproj
 *.xcworkspace
 DerivedData/
+
+# Editors. Each person's own; none of it describes the project.
+.idea/
+*.iml
+.vscode/
+
+# Signing and notarisation credentials. A key committed once is a key that has
+# to be revoked, and the whole app's identity with it.
+*.p12
+*.cer
+*.certSigningRequest
+AuthKey_*.p8
+
+# Local environment
+.env
+.env.*
+!.env.example
