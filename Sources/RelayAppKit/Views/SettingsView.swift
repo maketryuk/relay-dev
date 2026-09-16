@@ -96,6 +96,24 @@ struct SettingsView: View {
 struct GeneralSettingsPane: View {
     @Environment(AppModel.self) private var model
 
+    /// Written without a trailing zero, since half a point is a real setting
+    /// and `12.0 pt` reads like a rounding error.
+    private var sizeLabel: String {
+        let size = model.terminalFontSize
+        return String(format: size == size.rounded() ? "%.0f pt" : "%.1f pt", size)
+    }
+
+    /// Says that the GPU path is running only once a terminal is actually on
+    /// it. Before that there is nothing to report — a machine that cannot
+    /// manage Metal is indistinguishable from one with no terminal open yet,
+    /// and guessing between them would put a claim on screen rather than a
+    /// reading.
+    private var rendererDetail: String {
+        model.terminalUsesGPURendering && model.isDrawingTerminalsOnGPU
+            ? relayLocalized("Drawing on the GPU")
+            : relayLocalized("What keeps a long scroll smooth. Turn it off if the terminal draws wrongly")
+    }
+
     var body: some View {
         SettingsScroll(title: relayLocalized("General")) {
             SettingsGroup(relayLocalized("Appearance")) {
@@ -113,6 +131,34 @@ struct GeneralSettingsPane: View {
                     }
                     .labelsHidden()
                     .frame(width: 160)
+                }
+            }
+
+            SettingsGroup(relayLocalized("Terminal")) {
+                SettingsRow(
+                    title: relayLocalized("Text size"),
+                    detail: relayLocalized("Applies to every terminal at once")
+                ) {
+                    HStack(spacing: Theme.Spacing.xsmall) {
+                        Text(verbatim: sizeLabel)
+                            .font(Theme.Typography.rowSecondary)
+                            .foregroundStyle(Theme.Palette.textSecondary)
+                            .monospacedDigit()
+                        RelayButton("−") { model.stepTerminalFontSize(by: -1) }
+                        RelayButton("+") { model.stepTerminalFontSize(by: 1) }
+                        RelayButton(relayLocalized("Reset")) { model.resetTerminalFontSize() }
+                    }
+                }
+                SettingsRow(
+                    title: relayLocalized("Draw on the GPU"),
+                    detail: rendererDetail
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { model.terminalUsesGPURendering },
+                        set: { model.setTerminalUsesGPURendering($0) }
+                    ))
+                    .toggleStyle(.switch)
+                    .labelsHidden()
                 }
             }
 

@@ -15,7 +15,9 @@ struct RightSidebarView: View {
                 tabStrip
                 RelayDivider()
                 content
-                Spacer(minLength: 0)
+                if model.rightSidebarTab != .git {
+                    Spacer(minLength: 0)
+                }
             }
             .frame(width: model.rightSidebarWidth)
             .background(Theme.Palette.sidebar)
@@ -60,17 +62,25 @@ struct RightSidebarView: View {
 
     @ViewBuilder
     private var content: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                switch model.rightSidebarTab {
-                case .services: ServicesPane(project: project)
-                case .docker: DockerPane(project: project)
-                case .history: HistoryPane(project: project)
-                case .git, .files: comingSoon(model.rightSidebarTab)
+        switch model.rightSidebarTab {
+        // The panel scrolls its own list and keeps the commit box in view;
+        // wrapped in the shared scroll view, the box would be somewhere below
+        // fifty files.
+        case .git:
+            GitPane(project: project)
+        default:
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    switch model.rightSidebarTab {
+                    case .services: ServicesPane(project: project)
+                    case .docker: DockerPane(project: project)
+                    case .history: HistoryPane(project: project)
+                    default: comingSoon(model.rightSidebarTab)
+                    }
                 }
+                .padding(.horizontal, Theme.Spacing.small)
+                .padding(.vertical, Theme.Spacing.small)
             }
-            .padding(.horizontal, Theme.Spacing.small)
-            .padding(.vertical, Theme.Spacing.small)
         }
     }
 

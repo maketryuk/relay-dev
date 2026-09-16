@@ -70,6 +70,7 @@ struct ProjectRailView: View {
                 isSelected: isSelected,
                 image: model.projectIcons[project.id]
             )
+            .clickable()
             .onTapGesture { model.selectProject(project.id) }
             .relayTooltip(
                 project.name,
@@ -113,6 +114,7 @@ struct ProjectRailView: View {
                 )
         }
         .buttonStyle(.plain)
+        .clickable()
         .relayTooltip(relayLocalized("Add project"), shortcut: model.binding(for: .addProject), edge: .trailing)
     }
 

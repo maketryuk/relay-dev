@@ -322,14 +322,22 @@ struct RightSidebarTabTests {
     @Test("Planned tabs are shown but disabled rather than hidden")
     func plannedTabsAreDisabled() {
         // Hiding them would misrepresent where the app is going; half-working
-        // ones would be worse.
+        // ones would be worse. A tab stops being planned when there is
+        // something behind it — Git did, and says so here rather than leaving a
+        // built panel described as coming soon.
         #expect(RightSidebarTab.services.isAvailable)
         #expect(RightSidebarTab.docker.isAvailable)
         #expect(RightSidebarTab.history.isAvailable)
-        #expect(!RightSidebarTab.git.isAvailable)
+        #expect(RightSidebarTab.git.isAvailable)
         #expect(!RightSidebarTab.files.isAvailable)
-        #expect(!RightSidebarTab.git.comingSoonDescription.isEmpty)
         #expect(!RightSidebarTab.files.comingSoonDescription.isEmpty)
+    }
+
+    @Test("A tab that is built promises nothing")
+    func builtTabsHaveNoPromise() {
+        for tab in RightSidebarTab.allCases where tab.isAvailable {
+            #expect(tab.comingSoonDescription.isEmpty)
+        }
     }
 
     @Test("Tabs round-trip through their stored identifier")

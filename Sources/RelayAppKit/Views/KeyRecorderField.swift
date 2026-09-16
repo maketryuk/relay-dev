@@ -49,6 +49,7 @@ struct KeyRecorderField: View {
                 )
         }
         .contentShape(Rectangle())
+        .clickable()
         .onHover { isHovering = $0 }
         .onTapGesture { isRecording.toggle() }
         .help(conflictsWith.isEmpty ? "" : "Also used by \(conflictsWith.map(\.title).joined(separator: ", "))")

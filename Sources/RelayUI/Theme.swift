@@ -61,7 +61,9 @@ public enum Theme {
         public static let sidebarMaxWidth: CGFloat = 380
         public static let rightSidebarWidth: CGFloat = 300
         public static let rightSidebarMinWidth: CGFloat = 240
-        public static let rightSidebarMaxWidth: CGFloat = 480
+        // Wide enough for a diff: the Git panel draws code, and code at 480
+        // points is a column of fragments.
+        public static let rightSidebarMaxWidth: CGFloat = 900
         public static let rowHeight: CGFloat = 30
         public static let projectIconSize: CGFloat = 40
     }

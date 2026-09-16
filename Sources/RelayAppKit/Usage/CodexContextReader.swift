@@ -18,11 +18,13 @@ enum CodexContextReader {
     static func read(
         workingDirectory: String,
         startedAt: Date,
+        conversationID: String? = nil,
         sessions: URL = sessionsDirectory
     ) -> SessionContext? {
         guard let log = rollout(
             forDirectory: workingDirectory,
             startedAt: startedAt,
+            conversationID: conversationID,
             sessions: sessions
         ) else { return nil }
         return parse(TranscriptTail.objects(in: log), measuredAt: TranscriptTail.modificationDate(of: log))
@@ -32,10 +34,13 @@ enum CodexContextReader {
     ///
     /// Codex records the working directory and its own start time in the log's
     /// first line, so the match is on what the session *is* rather than on when
-    /// a file happened to be touched.
+    /// a file happened to be touched. A resumed conversation is named by the
+    /// command that resumed it, and is then looked up by that name — its rollout
+    /// is older than the session, which is exactly what the time match rejects.
     static func rollout(
         forDirectory path: String,
         startedAt: Date,
+        conversationID: String? = nil,
         sessions: URL = sessionsDirectory
     ) -> URL? {
         let keys: [URLResourceKey] = [.contentModificationDateKey]
@@ -50,6 +55,15 @@ enum CodexContextReader {
             .sorted { (TranscriptTail.modificationDate(of: $0) ?? .distantPast)
                 > (TranscriptTail.modificationDate(of: $1) ?? .distantPast) }
             .prefix(searchDepth)
+
+        if let conversationID {
+            // The identifier is in the file's name, so the common case costs a
+            // string comparison; reading the heads is for a naming scheme that
+            // changes under us.
+            let named = logs.first { $0.lastPathComponent.contains(conversationID) }
+                ?? logs.first { CodexConversationReader.sessionIdentifier(of: $0) == conversationID }
+            if let named { return named }
+        }
 
         // Codex records its own start time, so the match is on the session
         // rather than on which file was touched last. No fallback: attributing

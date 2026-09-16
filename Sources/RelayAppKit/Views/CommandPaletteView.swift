@@ -72,6 +72,7 @@ struct CommandPaletteView: View {
             VStack(spacing: 1) {
                 ForEach(Array(filteredCommands.enumerated()), id: \.element.id) { index, command in
                     row(command, isHighlighted: index == highlightedIndex)
+                        .clickable()
                         .onTapGesture {
                             command.run()
                             close()
@@ -166,6 +167,18 @@ struct CommandPaletteView: View {
                 systemImage: "gearshape"
             ) { model.openProjectSettings() })
             commands.append(PaletteCommand(
+                id: "branches",
+                title: relayLocalized("Switch Branch"),
+                subtitle: model.gitStatuses[project.id]?.branch ?? relayLocalized("Git"),
+                systemImage: "arrow.triangle.branch"
+            ) { model.pickBranch(in: project.id) })
+            commands.append(PaletteCommand(
+                id: "review-changes",
+                title: relayLocalized("Review Changes"),
+                subtitle: project.displayPath,
+                systemImage: "doc.text.magnifyingglass"
+            ) { model.reviewChanges(in: project.id) })
+            commands.append(PaletteCommand(
                 id: "ports-window",
                 title: relayLocalized("Ports"),
                 subtitle: relayLocalized("Everything listening on this Mac"),
@@ -246,7 +259,7 @@ struct CommandPaletteView: View {
             for session in model.sessions(in: projectID) {
                 commands.append(PaletteCommand(
                     id: "focus-\(session.id.rawValue)",
-                    title: String(format: relayLocalized("Focus %@"), session.displayName),
+                    title: String(format: relayLocalized("Focus %@"), model.label(for: session)),
                     subtitle: session.status.displayName,
                     systemImage: session.kind.symbolName
                 ) { model.selectSession(session.id) })

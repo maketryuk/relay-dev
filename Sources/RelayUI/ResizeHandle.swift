@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// Where a divider lands for a given drag.
@@ -40,8 +39,9 @@ public enum ResizeMath {
 
 /// The one draggable divider in the app.
 ///
-/// A hairline until the pointer reaches it, then the accent and a resize
-/// cursor. Every divider the user can move goes through this — the sidebars and
+/// A hairline until the pointer reaches it, then the accent; the resize cursor
+/// comes from a cursor rectangle, which the window rebuilds for itself rather
+/// than from a push that has to be balanced by exactly one pop. Every divider the user can move goes through this — the sidebars and
 /// the splits were each drawing and handling their own, and only one of them
 /// had a hover state.
 ///
@@ -68,7 +68,6 @@ public struct ResizeHandle: View {
 
     @State private var isHovering = false
     @State private var isDragging = false
-    @State private var hasPushedCursor = false
 
     public init(
         orientation: Orientation,
@@ -108,7 +107,8 @@ public struct ResizeHandle: View {
                 width: orientation == .vertical ? Self.hitSize : nil,
                 height: orientation == .horizontal ? Self.hitSize : nil
             )
-            .onHover(perform: updateCursor)
+            .relayCursor(orientation == .vertical ? .resizeLeftRight : .resizeUpDown)
+            .onHover { isHovering = $0 }
             .gesture(
                 // Measured against the window, never against this view. In the
                 // local space the handle moves with the pointer, so the pointer
@@ -126,27 +126,8 @@ public struct ResizeHandle: View {
                     .onEnded { _ in
                         isDragging = false
                         onEnd()
-                        if !isHovering { releaseCursor() }
                     }
             )
     }
 
-    private func updateCursor(_ hovering: Bool) {
-        isHovering = hovering
-        if hovering {
-            guard !hasPushedCursor else { return }
-            hasPushedCursor = true
-            (orientation == .vertical ? NSCursor.resizeLeftRight : NSCursor.resizeUpDown).push()
-        } else if !isDragging {
-            releaseCursor()
-        }
-    }
-
-    /// Guarded, because popping a cursor that was never pushed unbalances the
-    /// stack for everything else in the window.
-    private func releaseCursor() {
-        guard hasPushedCursor else { return }
-        hasPushedCursor = false
-        NSCursor.pop()
-    }
 }

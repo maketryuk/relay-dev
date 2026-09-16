@@ -363,3 +363,93 @@ struct ConversationTests {
         #expect(CodexConversationReader.firstUserMessage(in: objects) == "add a status bar")
     }
 }
+
+@Suite("Resuming a conversation")
+struct ResumedConversationTests {
+    @Test("The command says which conversation is being picked back up")
+    func readsTheIdentifier() {
+        #expect(ResumedConversation.identifier(in: ["claude", "--resume", "abc-123"], kind: .claude) == "abc-123")
+        #expect(ResumedConversation.identifier(in: ["claude", "-r", "abc-123"], kind: .claude) == "abc-123")
+        #expect(ResumedConversation.identifier(in: ["codex", "resume", "abc-123"], kind: .codex) == "abc-123")
+    }
+
+    @Test("A command that names no conversation names none")
+    func withoutAnIdentifier() {
+        // `--continue` and `--last` pick one themselves, and which one they
+        // picked is not written down anywhere Relay can read.
+        #expect(ResumedConversation.identifier(in: ["claude", "--continue"], kind: .claude) == nil)
+        #expect(ResumedConversation.identifier(in: ["codex", "resume", "--last"], kind: .codex) == nil)
+        #expect(ResumedConversation.identifier(in: ["claude"], kind: .claude) == nil)
+        #expect(ResumedConversation.identifier(in: ["zsh", "-l"], kind: .shell) == nil)
+    }
+
+    @Test("A resumed Claude conversation is found by name, however old its transcript")
+    func findsAResumedClaudeTranscript() throws {
+        // The transcript of a resumed conversation is always older than the
+        // session reading it — `--resume` appends to the file the earlier
+        // conversation left behind — so matching on when the file appeared
+        // finds nothing, and the pane with the most history behind it is the
+        // one that shows no context figure at all.
+        let projects = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("relay-projects-\(UUID().uuidString)", isDirectory: true)
+        let folder = projects.appendingPathComponent("-Users-me-shop")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: projects) }
+
+        let identifier = "0b1d4c66-1f2e-4b7a-9d55-2f6a0c3b8e41"
+        try "{}\n".write(
+            to: folder.appendingPathComponent("\(identifier).jsonl"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        // Started after the transcript was written, which is the whole point.
+        let startedAt = Date().addingTimeInterval(3_600)
+        #expect(ClaudeContextReader.transcript(
+            forDirectory: "/Users/me/shop",
+            startedAt: startedAt,
+            projects: projects
+        ) == nil)
+
+        let found = ClaudeContextReader.transcript(
+            forDirectory: "/Users/me/shop",
+            startedAt: startedAt,
+            conversationID: identifier,
+            projects: projects
+        )
+        #expect(found?.lastPathComponent == "\(identifier).jsonl")
+    }
+
+    @Test("A resumed Codex conversation is found by the name in its rollout")
+    func findsAResumedCodexRollout() throws {
+        let sessions = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("relay-codex-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: sessions, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: sessions) }
+
+        let identifier = "7c8f3017-154f-4f1d-8b5b-3701555ecf11"
+        let meta = """
+        {"type":"session_meta","payload":{"cwd":"/Users/me/shop","timestamp":"2026-09-15T09:57:00.937Z"}}
+        """
+        try "\(meta)\n".write(
+            to: sessions.appendingPathComponent("rollout-2026-09-15T09-57-00-\(identifier).jsonl"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let startedAt = Date().addingTimeInterval(3_600)
+        #expect(CodexContextReader.rollout(
+            forDirectory: "/Users/me/shop",
+            startedAt: startedAt,
+            sessions: sessions
+        ) == nil)
+
+        let found = CodexContextReader.rollout(
+            forDirectory: "/Users/me/shop",
+            startedAt: startedAt,
+            conversationID: identifier,
+            sessions: sessions
+        )
+        #expect(found?.lastPathComponent.contains(identifier) == true)
+    }
+}

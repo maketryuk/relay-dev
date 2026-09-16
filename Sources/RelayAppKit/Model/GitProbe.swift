@@ -105,6 +105,58 @@ enum GitProbe {
 
 /// Blocking helper for short-lived CLI calls. Never call from the main thread.
 enum Shell {
+    /// What a command left behind, whatever it thought of itself.
+    ///
+    /// `run` treats a non-zero exit as no answer at all, which is right for a
+    /// probe. Some commands answer *with* a non-zero status — `git diff
+    /// --no-index` exits 1 precisely when it found a difference — and some fail
+    /// with a message worth showing the user.
+    struct Result: Sendable {
+        var status: Int32
+        var output: String
+        var error: String
+
+        var succeeded: Bool { status == 0 }
+    }
+
+    static func capture(_ executable: String, arguments: [String], timeout: TimeInterval = 5) -> Result? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+
+        let out = Pipe()
+        let err = Pipe()
+        process.standardOutput = out
+        process.standardError = err
+
+        do {
+            try process.run()
+        } catch {
+            return nil
+        }
+
+        // Both pipes are drained before waiting: a child that fills one while
+        // nobody reads the other deadlocks, and git is happy to write megabytes
+        // to either.
+        let outputData = out.fileHandleForReading.readDataToEndOfFile()
+        let errorData = err.fileHandleForReading.readDataToEndOfFile()
+
+        let deadline = Date().addingTimeInterval(timeout)
+        while process.isRunning, Date() < deadline {
+            usleep(20_000)
+        }
+        if process.isRunning {
+            process.terminate()
+            return nil
+        }
+
+        return Result(
+            status: process.terminationStatus,
+            output: String(decoding: outputData, as: UTF8.self),
+            error: String(decoding: errorData, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+    }
+
     @discardableResult
     static func run(_ executable: String, arguments: [String], timeout: TimeInterval = 5) -> String? {
         let process = Process()

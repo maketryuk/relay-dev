@@ -9,31 +9,74 @@ import SwiftTerm
 /// The renderer is the only piece of terminal machinery that lives in the GUI;
 /// the PTY it mirrors belongs to the daemon. That split is what lets the window
 /// close without killing anything, and it is why `TerminalEngine`-level details
-/// stay behind this one class — swapping SwiftTerm for libghostty later means
-/// rewriting this file and nothing else.
+/// stay behind this class and its view subclass — swapping SwiftTerm for
+/// libghostty later means rewriting the two of them and nothing else.
+/// The terminal text size, and what stepping it means.
+///
+/// Apart from the model so the arithmetic can be read and tested without an
+/// application around it.
+enum TerminalZoom {
+    /// The size the terminal is read at until the user says otherwise.
+    static let defaultSize: CGFloat = 12.5
+    /// Small enough to fit a wide diff, large enough to read across the room.
+    static let range: ClosedRange<CGFloat> = 8 ... 28
+
+    static func stepped(_ size: CGFloat, by delta: CGFloat) -> CGFloat {
+        min(max(size + delta, range.lowerBound), range.upperBound)
+    }
+}
+
 @MainActor
 final class TerminalSurface: NSObject, @preconcurrency TerminalViewDelegate {
     let sessionID: SessionID
-    let terminalView: TerminalView
+    let terminalView: RelayTerminalView
+
+    /// Changing it re-flows the terminal, which resizes the PTY through the
+    /// delegate the same way dragging the window does.
+    var fontSize: CGFloat {
+        didSet {
+            guard fontSize != oldValue else { return }
+            applyFont()
+        }
+    }
+
+    var usesAcceleratedRendering: Bool {
+        didSet { terminalView.prefersAcceleratedRendering = usesAcceleratedRendering }
+    }
+
+    /// What the renderer settled on, which is not always what was asked for.
+    var isDrawingOnGPU: Bool { terminalView.isUsingMetalRenderer }
 
     private weak var client: DaemonClient?
     private var pendingOutput = Data()
     private var isFlushScheduled = false
 
-    init(sessionID: SessionID, client: DaemonClient) {
+    init(
+        sessionID: SessionID,
+        client: DaemonClient,
+        fontSize: CGFloat = TerminalZoom.defaultSize,
+        usesAcceleratedRendering: Bool = true
+    ) {
         self.sessionID = sessionID
         self.client = client
-        terminalView = TerminalView(frame: CGRect(x: 0, y: 0, width: 800, height: 480))
+        self.fontSize = fontSize
+        self.usesAcceleratedRendering = usesAcceleratedRendering
+        terminalView = RelayTerminalView(frame: CGRect(x: 0, y: 0, width: 800, height: 480))
         super.init()
 
         terminalView.terminalDelegate = self
         terminalView.allowMouseReporting = true
         terminalView.optionAsMetaKey = true
+        terminalView.prefersAcceleratedRendering = usesAcceleratedRendering
         applyAppearance()
     }
 
+    private func applyFont() {
+        terminalView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+    }
+
     private func applyAppearance() {
-        terminalView.font = NSFont.monospacedSystemFont(ofSize: 12.5, weight: .regular)
+        applyFont()
         terminalView.nativeBackgroundColor = NSColor(srgbRed: 0x08 / 255, green: 0x09 / 255, blue: 0x0A / 255, alpha: 1)
         terminalView.nativeForegroundColor = NSColor(srgbRed: 0xE8 / 255, green: 0xEC / 255, blue: 0xEE / 255, alpha: 1)
         terminalView.caretColor = NSColor(srgbRed: 0x4C / 255, green: 0x8D / 255, blue: 1, alpha: 1)

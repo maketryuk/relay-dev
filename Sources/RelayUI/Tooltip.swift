@@ -58,6 +58,11 @@ public struct RelayTooltipModifier: ViewModifier {
     private let label: String
     private let shortcut: String?
     private let edge: Edge
+    /// For a control whose answer is already on screen — the panel it opens
+    /// being up, say. Kept as a parameter rather than left to the caller's `if`,
+    /// because a conditional modifier gives the control a new identity and it
+    /// loses its hover state mid-gesture.
+    private let isEnabled: Bool
 
     @Environment(\.tooltipPresenter) private var presenter
     @State private var identity = UUID()
@@ -68,10 +73,11 @@ public struct RelayTooltipModifier: ViewModifier {
     /// enough to feel like an answer rather than a delay.
     private static let delay = Duration.milliseconds(400)
 
-    public init(label: String, shortcut: String?, edge: Edge) {
+    public init(label: String, shortcut: String?, edge: Edge, isEnabled: Bool = true) {
         self.label = label
         self.shortcut = shortcut
         self.edge = edge
+        self.isEnabled = isEnabled
     }
 
     public func body(content: Content) -> some View {
@@ -87,10 +93,15 @@ public struct RelayTooltipModifier: ViewModifier {
             .onPreferenceChange(TooltipAnchorKey.self) { frame in
                 anchor = frame
             }
+            .onChange(of: isEnabled) { _, enabled in
+                guard !enabled else { return }
+                revealTask?.cancel()
+                presenter?.dismiss(id: identity)
+            }
             .onHover { hovering in
                 revealTask?.cancel()
                 guard let presenter else { return }
-                guard hovering else {
+                guard hovering, isEnabled else {
                     presenter.dismiss(id: identity)
                     return
                 }
@@ -239,8 +250,13 @@ private struct TooltipSizeKey: PreferenceKey {
 public extension View {
     /// Attaches a dark hover label, optionally showing the keystroke that does
     /// the same thing. Requires a `TooltipLayer` at the root of the window.
-    func relayTooltip(_ label: String, shortcut: String? = nil, edge: Edge = .bottom) -> some View {
-        modifier(RelayTooltipModifier(label: label, shortcut: shortcut, edge: edge))
+    func relayTooltip(
+        _ label: String,
+        shortcut: String? = nil,
+        edge: Edge = .bottom,
+        isEnabled: Bool = true
+    ) -> some View {
+        modifier(RelayTooltipModifier(label: label, shortcut: shortcut, edge: edge, isEnabled: isEnabled))
     }
 
     /// Installs the tooltip coordinate space and the layer that draws them.

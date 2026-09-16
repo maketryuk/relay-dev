@@ -89,6 +89,7 @@ struct TitleBar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .clickable()
         .onHover { isSearchHovering = $0 }
         .animation(.easeOut(duration: 0.12), value: isSearchHovering)
     }
@@ -108,8 +109,18 @@ struct TitleBar: View {
             if let projectID = model.selectedProjectID,
                let git = model.gitStatuses[projectID],
                git.hasDiff {
-                DiffBadge(insertions: git.insertions, deletions: git.deletions)
-                    .padding(.trailing, Theme.Spacing.xsmall)
+                Button {
+                    model.reviewChanges(in: projectID)
+                } label: {
+                    DiffBadge(insertions: git.insertions, deletions: git.deletions)
+                }
+                .buttonStyle(.plain)
+                .clickable()
+                .relayTooltip(
+                    relayLocalized("Review Changes"),
+                    shortcut: model.binding(for: .reviewChanges)
+                )
+                .padding(.trailing, Theme.Spacing.xsmall)
             }
 
             IconButton(systemImage: "gearshape", help: "", size: 24) {

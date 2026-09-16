@@ -44,6 +44,7 @@ struct InboxPopover: View {
             if model.unreadNotificationCount > 0 {
                 Button(relayLocalized("Mark all read")) { model.markAllNotificationsRead() }
                     .buttonStyle(.plain)
+                    .clickable()
                     .font(Theme.Typography.caption)
                     .foregroundStyle(Theme.Palette.accent)
             }
@@ -86,6 +87,7 @@ struct InboxPopover: View {
         .background(item.isRead ? Color.clear : Theme.Palette.surfaceRaised.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
         .contentShape(Rectangle())
+        .clickable()
         .onTapGesture {
             model.openNotification(item)
             model.isInboxOpen = false

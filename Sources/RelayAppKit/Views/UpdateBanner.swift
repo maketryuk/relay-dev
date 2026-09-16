@@ -57,6 +57,7 @@ struct UpdateBanner: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .clickable()
     }
 
     private func progressPill(fraction: Double?, text: String) -> some View {

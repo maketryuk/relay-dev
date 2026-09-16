@@ -7,6 +7,69 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Changed
+
+- **Releases are signed with Developer ID and notarised by Apple.** Until now a
+  build carried a development certificate, which signs an app for the machine
+  that made it: every other Mac refused to open it without being talked round in
+  System Settings. `./Scripts/release.sh` now builds, signs, notarises and
+  staples, and produces both the archive the in-app updater downloads and a disk
+  image to drag into Applications. Because the signing identity changes, macOS
+  will ask once more for the permissions it has already been given.
+
+### Added
+
+- **Review what an agent changed without leaving Relay.** The Git panel lists
+  the working copy — conflicts, staged, and everything still in flight — and
+  `⌘G` opens the review window: files on the left, the diff of the one you
+  picked on the right, with staging, unstaging, discarding and committing where
+  you are already looking. Discarding asks first, because for an untracked file
+  it means deleting it.
+- **Terminals draw on the GPU.** Scrolling a full window of text was redrawing
+  every glyph on the CPU, which is exactly the work a graphics card exists for;
+  the same scroll now costs a fraction of it. A machine that cannot manage it
+  falls back to the old path on its own, and the switch is in Settings →
+  General → Terminal for one that can but should not.
+- **`⇧↩` starts a new line instead of sending the prompt.** A terminal sends a
+  bare carriage return for Return whatever is held down with it, so an agent
+  cannot tell the two apart — which is why other terminals have to be
+  configured by hand. Relay sends the sequence that means "another line" itself,
+  and leaves the keystroke alone for a program that has asked to see modifiers
+  on its own.
+- **The terminal text size can be changed**, with `⌘+`, `⌘-` and `⌘0` for the
+  size it started at, in the View menu, and in Settings. It applies to every
+  terminal at once and survives a relaunch.
+
+### Fixed
+
+- **The pointer never changed shape.** Every button, row and tab kept the arrow,
+  so nothing on screen admitted to being clickable until it was clicked, and the
+  resize cursor on the dividers appeared only sometimes — it was pushed onto a
+  stack that a SwiftUI redraw could quietly unbalance. Cursors are now cursor
+  rectangles, which the window rebuilds for itself.
+- **The context line under a terminal went missing.** The readers were pointed
+  at the panes as they were a moment *before* the session was shown, so the
+  terminal in front of you was never the one being read — the figure appeared
+  for whatever had been on screen previously. They now follow the panes as they
+  change, and a newly shown terminal is read at once rather than at the next
+  ten-second tick.
+- **A freshly started agent had no context line at all**, while the pane beside
+  it had one — which reads as a broken pane rather than as a session nobody has
+  spoken to yet. The row is now under every agent terminal, showing a dash until
+  there is something to read: the CLI writes its transcript as it answers, so
+  before the first reply the figure exists nowhere to be read from.
+- **The context bar's tooltip appeared in the middle of the terminal.** The bar
+  is a strip the width of the pane, but only its left end is drawn on — and the
+  button underneath ran the whole width, so the label describing the numbers
+  floated above the empty half, and a click on blank strip opened the panel. The
+  control is now as wide as what it shows, and says nothing at all while the
+  panel it opens is already up.
+- **A resumed conversation showed no context figure.** Resuming appends to the
+  transcript the earlier conversation left behind, so the file is always older
+  than the session reading it, and Relay — which matches a session to the
+  transcript that began alongside it — found nothing. The command says which
+  conversation it is resuming, and that is now what is looked up.
+
 ## 0.1.0 — 2026-09-15
 
 The first release.

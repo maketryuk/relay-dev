@@ -23,6 +23,10 @@ final class TerminalSurfaceCache {
 
     var cachedSessionIDs: [SessionID] { useOrder }
 
+    /// Every renderer currently alive, for the settings that apply to all of
+    /// them at once — the text size is one terminal's appearance in name only.
+    var all: [TerminalSurface] { useOrder.compactMap { surfaces[$0] } }
+
     func existing(_ sessionID: SessionID) -> TerminalSurface? {
         surfaces[sessionID]
     }

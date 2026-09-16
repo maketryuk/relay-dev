@@ -28,6 +28,35 @@ final class AppModel {
     private(set) var sessionOrder: [SessionID] = []
     private(set) var connectionState: ConnectionState = .connecting
     private(set) var gitStatuses: [ProjectID: GitStatus] = [:]
+    /// What has changed in each project's working copy.
+    ///
+    /// Read only while something is looking: the list costs a process, and it
+    /// is on screen in two places only — the Git panel and the review window.
+    private(set) var gitChanges: [ProjectID: GitWorkingCopy] = [:]
+    /// Which files are open in the panel, and what has been read for them.
+    private(set) var expandedChanges: Set<String> = []
+    private(set) var fileDiffs: [String: FileDiff] = [:]
+    private(set) var loadingDiffs: Set<String> = []
+    /// How many unchanged lines each open file is showing around its changes.
+    /// Raised when the reader asks to see further.
+    private(set) var diffContext: [String: Int] = [:]
+    /// Remarks left on lines, waiting to be handed to an agent.
+    private(set) var reviewComments: [ReviewComment] = []
+    /// Branches of each project, read when the switcher is opened.
+    private(set) var branches: [ProjectID: [GitBranch]] = [:]
+    private(set) var projectsReadingBranches: Set<ProjectID> = []
+    /// Text meant for a session that is still starting up.
+    ///
+    /// An agent's prompt does not exist for the first second or two of its
+    /// life, and anything typed into the terminal before it does is swallowed
+    /// by whatever the CLI prints over it.
+    @ObservationIgnored private var queuedInput: [SessionID: String] = [:]
+    /// Kept on the model rather than in the panel, so switching tabs to look at
+    /// something does not throw away a half-written message.
+    var commitMessage = ""
+    private(set) var isCommitting = false
+    /// A remote command in flight, named so the panel can say which.
+    private(set) var runningRemoteCommand: GitActions.Remote?
     private(set) var projectFacts: [ProjectID: ProjectFacts] = [:]
     /// The image each project is drawn with, once it has been read.
     ///
@@ -56,8 +85,20 @@ final class AppModel {
     private(set) var checksForUpdates = true
     private(set) var showsStatusBar = true
     private(set) var usageBarDetail: UsageDetail = .compact
+    /// How large the terminals are drawn, in points.
+    private(set) var terminalFontSize = Double(TerminalZoom.defaultSize)
+    /// Whether terminals are drawn on the GPU. On by default, because scrolling
+    /// a full window of text is what the CPU path is worst at; a machine where
+    /// it cannot be had falls back on its own, and the switch is here for one
+    /// where it can be had but should not.
+    private(set) var terminalUsesGPURendering = true
     var isUsagePopoverOpen = false
-    private(set) var paneLayouts: [ProjectID: PaneNode] = [:]
+    private(set) var paneLayouts: [ProjectID: PaneNode] = [:] {
+        // Splitting, dropping and closing all move a terminal on screen without
+        // going through the selection, and the context readers follow what is
+        // on screen.
+        didSet { watchContextForVisiblePanes() }
+    }
     var rightSidebarTab: RightSidebarTab = .services
 
     // MARK: - Selection and UI
@@ -134,6 +175,9 @@ final class AppModel {
         checksForUpdates = state.checksForUpdates
         showsStatusBar = state.showsStatusBar
         usageBarDetail = state.usageBarDetail
+        terminalFontSize = state.terminalFontSize
+        terminalUsesGPURendering = state.terminalUsesGPURendering
+        reviewComments = state.reviewComments
         paneLayouts = Dictionary(uniqueKeysWithValues: state.paneLayouts.map {
             (ProjectID(rawValue: $0.key), $0.value)
         })
@@ -269,6 +313,7 @@ final class AppModel {
         case let .sessionUpdated(snapshot):
             let previous = sessions[snapshot.id]
             SessionMerge.merging(snapshot, into: &sessions, closing: closingSessionIDs)
+            flushQueuedInput(for: snapshot)
             if let previous {
                 notifyIfNeeded(previous: previous.status, snapshot: snapshot)
                 if previous.exitCode == nil, snapshot.exitCode != nil {
@@ -385,6 +430,20 @@ final class AppModel {
         NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: project.rootPath)
     }
 
+    /// Opens one file the way the project opens files: the editor it names, or
+    /// whatever macOS would open it with.
+    func openFileInEditor(_ path: String, in project: Project) {
+        let url = URL(fileURLWithPath: project.rootPath).appendingPathComponent(path)
+        if let editor = project.preferredEditor, !editor.isEmpty {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+            process.arguments = [editor, url.path]
+            try? process.run()
+            return
+        }
+        NSWorkspace.shared.open(url)
+    }
+
     func openInEditor(_ project: Project) {
         if let editor = project.preferredEditor, !editor.isEmpty {
             let process = Process()
@@ -397,6 +456,11 @@ final class AppModel {
     }
 
     // MARK: - Sessions
+
+    /// What a session is called on screen, made unmistakable among its peers.
+    func label(for session: SessionSnapshot) -> String {
+        SessionNaming.labels(for: sessions(in: session.projectID))[session.id] ?? session.displayName
+    }
 
     func sessions(in projectID: ProjectID) -> [SessionSnapshot] {
         sessionOrder.compactMap { sessions[$0] }.filter { $0.projectID == projectID }
@@ -442,7 +506,11 @@ final class AppModel {
 
     /// Starts a session from a preset, naming it after the preset rather than
     /// the bare kind so "Claude · ask first" is distinguishable in the list.
-    func createSession(from preset: SessionPreset, in projectID: ProjectID) {
+    func createSession(
+        from preset: SessionPreset,
+        in projectID: ProjectID,
+        thenType pendingInput: String? = nil
+    ) {
         guard let project = project(projectID) else { return }
         let name = SessionNaming.nextName(
             base: preset.name,
@@ -454,7 +522,7 @@ final class AppModel {
             name: name,
             workingDirectory: project.rootPath,
             command: preset.command
-        ))
+        ), pendingInput: pendingInput)
     }
 
     func createSession(kind: SessionKind, in projectID: ProjectID, command: [String] = []) {
@@ -476,7 +544,7 @@ final class AppModel {
         launch(spec)
     }
 
-    private func launch(_ spec: SessionSpec, selecting: Bool = true) {
+    private func launch(_ spec: SessionSpec, selecting: Bool = true, pendingInput: String? = nil) {
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -490,6 +558,7 @@ final class AppModel {
                 if !self.sessionOrder.contains(snapshot.id) {
                     self.sessionOrder.append(snapshot.id)
                 }
+                if let pendingInput { self.queuedInput[snapshot.id] = pendingInput }
                 // A background service must not yank the user out of the
                 // terminal they are working in.
                 if selecting { self.selectSession(snapshot.id) }
@@ -506,12 +575,16 @@ final class AppModel {
     func selectSession(_ id: SessionID) {
         selectedSessionID = id
         surfaceCache.touch(id)
-        watchContextForVisiblePanes()
         if let projectID = sessions[id]?.projectID {
             showInFocusedPane(id, projectID: projectID)
             lastActiveSessionByProject[projectID.rawValue] = id.rawValue
             persist()
         }
+        // After the pane has been given its session, not before: asked any
+        // earlier, the layout still describes what was on screen a moment ago
+        // and the terminal the user just opened is the one nobody reads a
+        // context figure for.
+        watchContextForVisiblePanes()
         _ = surface(for: id)
     }
 
@@ -779,7 +852,12 @@ final class AppModel {
             return existing
         }
 
-        let surface = TerminalSurface(sessionID: sessionID, client: client)
+        let surface = TerminalSurface(
+            sessionID: sessionID,
+            client: client,
+            fontSize: CGFloat(terminalFontSize),
+            usesAcceleratedRendering: terminalUsesGPURendering
+        )
         for evicted in surfaceCache.store(surface, for: sessionID, keeping: selectedSessionID) {
             client.post(.detach(evicted))
         }
@@ -826,6 +904,355 @@ final class AppModel {
                 self.gitStatuses.removeValue(forKey: projectID)
             }
         }
+    }
+
+    // MARK: - Working copy
+
+    /// The default number of unchanged lines around a change, which is what
+    /// `git diff` shows and what a first look wants.
+    static let diffContextLines = 3
+    /// What "show me the rest of the file" asks for. Larger than any file worth
+    /// reading in a panel, and cheaper than asking git how long the file is.
+    static let fullDiffContextLines = 100_000
+
+    func changes(in projectID: ProjectID) -> GitWorkingCopy {
+        gitChanges[projectID] ?? GitWorkingCopy()
+    }
+
+    func refreshChanges(for projectID: ProjectID) {
+        guard let path = project(projectID)?.rootPath else { return }
+        Task { [weak self] in
+            let copy = await Task.detached(priority: .utility) {
+                GitWorkingCopyReader.changes(at: path)
+            }.value
+            guard let self else { return }
+            if let copy {
+                self.gitChanges[projectID] = copy
+            } else {
+                self.gitChanges.removeValue(forKey: projectID)
+            }
+            // A file that is no longer changed has no diff to keep open.
+            let present = Set((copy?.changes ?? []).map(\.path))
+            self.expandedChanges.formIntersection(present)
+            self.fileDiffs = self.fileDiffs.filter { present.contains($0.key) }
+            for path in self.expandedChanges {
+                if let change = copy?.changes.first(where: { $0.path == path }) {
+                    self.loadDiff(change, in: projectID)
+                }
+            }
+        }
+    }
+
+    /// Opens the panel where the working copy lives.
+    ///
+    /// Not a window over the app: reading a diff is something you do *while*
+    /// working, with the terminal that produced it still on screen.
+    func reviewChanges(in projectID: ProjectID) {
+        // Set rather than toggled: `⌘G` means "show me the changes", and a
+        // second press while they are showing must not be the way to hide them.
+        rightSidebarTab = .git
+        isRightSidebarVisible = true
+        // A diff in a 300-point column is a column of fragments. The panel is
+        // widened to something a line of code fits in, and never narrowed:
+        // a width the user chose themselves is not ours to overrule.
+        if rightSidebarWidth < Self.reviewWidth {
+            rightSidebarWidth = Self.reviewWidth
+        }
+        refreshChanges(for: projectID)
+        persist()
+    }
+
+    /// Wide enough for a line of code with its gutter.
+    static let reviewWidth: Double = 520
+
+    func isExpanded(_ change: GitChange) -> Bool {
+        expandedChanges.contains(change.path)
+    }
+
+    func toggleExpansion(of change: GitChange, in projectID: ProjectID) {
+        if expandedChanges.contains(change.path) {
+            expandedChanges.remove(change.path)
+        } else {
+            expandedChanges.insert(change.path)
+            loadDiff(change, in: projectID)
+        }
+    }
+
+    /// Re-reads one file with every unchanged line included.
+    func expandContext(of change: GitChange, in projectID: ProjectID) {
+        diffContext[change.path] = Self.fullDiffContextLines
+        loadDiff(change, in: projectID)
+    }
+
+    func isShowingWholeFile(_ change: GitChange) -> Bool {
+        diffContext[change.path] == Self.fullDiffContextLines
+    }
+
+    private func loadDiff(_ change: GitChange, in projectID: ProjectID) {
+        guard let root = project(projectID)?.rootPath else { return }
+        let context = diffContext[change.path] ?? Self.diffContextLines
+        loadingDiffs.insert(change.path)
+        Task { [weak self] in
+            let diff = await Task.detached(priority: .userInitiated) {
+                GitWorkingCopyReader.diff(at: root, change: change, context: context)
+            }.value
+            guard let self else { return }
+            self.loadingDiffs.remove(change.path)
+            self.fileDiffs[change.path] = diff
+        }
+    }
+
+    // MARK: - Staging and committing
+
+    /// The tick beside a file: on means the change is in the index and would be
+    /// carried by the next commit.
+    func setStaged(_ change: GitChange, _ staged: Bool, in projectID: ProjectID) {
+        perform(in: projectID, title: relayLocalized("Could not stage")) { root in
+            staged
+                ? GitActions.stage([change.path], at: root)
+                : GitActions.unstage([change.path], at: root)
+        }
+    }
+
+    func setAllStaged(_ staged: Bool, in projectID: ProjectID) {
+        // No path list: by the time a second click arrives the list on screen
+        // describes the index as it was before the first one.
+        perform(in: projectID, title: relayLocalized("Could not stage")) { root in
+            staged ? GitActions.stageAll(at: root) : GitActions.unstageAll(at: root)
+        }
+    }
+
+    func discard(_ change: GitChange, in projectID: ProjectID) {
+        perform(in: projectID, title: relayLocalized("Could not discard")) { root in
+            GitActions.discard(change, at: root)
+        }
+    }
+
+    /// Commits what is ticked, and pushes it when asked in the same breath.
+    func commitStagedChanges(in projectID: ProjectID, andPush push: Bool = false) {
+        let message = commitMessage
+        guard !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        isCommitting = true
+        perform(in: projectID, title: relayLocalized("Could not commit")) { root in
+            if let failure = GitActions.commit(message: message, at: root) { return failure }
+            guard push else { return nil }
+            return GitActions.run(.push, at: root)
+        } onSuccess: { [weak self] in
+            self?.commitMessage = ""
+        }
+    }
+
+    func run(_ command: GitActions.Remote, in projectID: ProjectID) {
+        runningRemoteCommand = command
+        perform(
+            in: projectID,
+            title: String(format: relayLocalized("%@ failed"), relayLocalized(command.title))
+        ) { root in
+            GitActions.run(command, at: root)
+        } onSuccess: { [weak self] in
+            self?.present(ToastContent(
+                kind: .success,
+                title: relayLocalized(command.title),
+                message: relayLocalized("Done")
+            ))
+        }
+    }
+
+    /// Hands over what was waiting, once there is a prompt to hand it to.
+    ///
+    /// The status is the signal: Relay already works out when an agent has
+    /// stopped printing and is waiting for a person, which is exactly the
+    /// moment its prompt will keep what is typed into it.
+    private func flushQueuedInput(for snapshot: SessionSnapshot) {
+        guard let text = queuedInput[snapshot.id] else { return }
+        guard snapshot.status == .waiting || snapshot.status == .idle else { return }
+        queuedInput.removeValue(forKey: snapshot.id)
+        type(text, into: snapshot.id)
+    }
+
+    // MARK: - Branches
+
+    func isLoadingBranches(_ projectID: ProjectID) -> Bool {
+        projectsReadingBranches.contains(projectID)
+    }
+
+    func refreshBranches(for projectID: ProjectID) {
+        guard let path = project(projectID)?.rootPath else { return }
+        projectsReadingBranches.insert(projectID)
+        Task { [weak self] in
+            let found = await Task.detached(priority: .userInitiated) {
+                GitWorkingCopyReader.branches(at: path)
+            }.value
+            guard let self else { return }
+            self.projectsReadingBranches.remove(projectID)
+            self.branches[projectID] = found
+        }
+    }
+
+    /// Opens the branch switcher, reading the list while it appears.
+    func pickBranch(in projectID: ProjectID) {
+        presentModal(.branches(projectID))
+        refreshBranches(for: projectID)
+    }
+
+    func branches(in projectID: ProjectID) -> [GitBranch] {
+        branches[projectID] ?? []
+    }
+
+    func switchBranch(to name: String, creating: Bool = false, in projectID: ProjectID) {
+        perform(
+            in: projectID,
+            title: String(format: relayLocalized("Could not switch to %@"), name)
+        ) { root in
+            GitActions.switchTo(name, creating: creating, at: root)
+        } onSuccess: { [weak self] in
+            self?.refreshBranches(for: projectID)
+        }
+    }
+
+    // MARK: - Review comments
+
+    /// The notes on one project, which is all a window ever shows.
+    func comments(in projectID: ProjectID) -> [ReviewComment] {
+        reviewComments.filter { $0.projectID == projectID }
+    }
+
+    func comments(for path: String, in projectID: ProjectID) -> [ReviewComment] {
+        reviewComments.filter { $0.projectID == projectID && $0.path == path }
+    }
+
+    func comment(on path: String, line: Int?, code: String, text: String, in projectID: ProjectID) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        reviewComments.append(ReviewComment(
+            projectID: projectID,
+            path: path,
+            line: line,
+            code: code,
+            text: trimmed
+        ))
+        persist()
+    }
+
+    func removeComment(_ comment: ReviewComment) {
+        reviewComments.removeAll { $0.id == comment.id }
+        persist()
+    }
+
+    func clearComments(in projectID: ProjectID) {
+        reviewComments.removeAll { $0.projectID == projectID }
+        persist()
+    }
+
+    /// The agents a review can be handed to: every one whose process is still
+    /// there to receive it.
+    ///
+    /// Judged by the process rather than by the status, because `finished`
+    /// describes the agent's *turn* — it has answered and is waiting at its
+    /// prompt, which is the state you most want to send a review into.
+    func agentsForReview(in projectID: ProjectID) -> [SessionSnapshot] {
+        sessions(in: projectID).filter { $0.kind.isAgent && $0.exitCode == nil }
+    }
+
+    /// The one a review would go to without being asked.
+    func agentForReview(in projectID: ProjectID) -> SessionSnapshot? {
+        if let selected = selectedSessionID.flatMap({ sessions[$0] }), selected.kind.isAgent {
+            return selected
+        }
+        return agentsForReview(in: projectID).first
+    }
+
+    func updateComment(_ comment: ReviewComment, text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let index = reviewComments.firstIndex(where: { $0.id == comment.id })
+        else { return }
+        reviewComments[index].text = trimmed
+        persist()
+    }
+
+    /// Types the notes into an agent's prompt, and stops there.
+    ///
+    /// Deliberately not submitted: a review is something to read over before
+    /// sending, and an agent that starts work while the last remark is still
+    /// being typed is worse than one that waits to be told.
+    func send(_ comments: [ReviewComment], to sessionID: SessionID) {
+        guard !comments.isEmpty else { return }
+        // Selected first, so the terminal exists to be asked how it wants its
+        // text before anything is typed into it.
+        selectSession(sessionID)
+        type(ReviewCommentTranscript.compose(comments), into: sessionID)
+        focusTerminal()
+        remove(comments)
+    }
+
+    /// Types text into a session the way a paste arrives.
+    ///
+    /// A bare newline at a prompt means "send this", so a review of three lines
+    /// would be three half-written messages. A program that has turned on
+    /// bracketed paste is saying it can tell a paste from typing, and then the
+    /// whole thing lands in the prompt as one piece — which is what pasting a
+    /// review into it by hand would do.
+    private func type(_ text: String, into sessionID: SessionID) {
+        let terminal = surfaceCache.existing(sessionID)?.terminalView.getTerminal()
+        guard terminal?.bracketedPasteMode == true else {
+            client.post(.input(sessionID, Data(text.utf8)))
+            return
+        }
+        let pasted = "\u{1B}[200~" + text + "\u{1B}[201~"
+        client.post(.input(sessionID, Data(pasted.utf8)))
+    }
+
+    /// Starts an agent and hands it the notes as soon as it is listening.
+    func send(_ comments: [ReviewComment], toNewSessionFrom preset: SessionPreset, in projectID: ProjectID) {
+        guard !comments.isEmpty else { return }
+        createSession(
+            from: preset,
+            in: projectID,
+            thenType: ReviewCommentTranscript.compose(comments)
+        )
+        remove(comments)
+    }
+
+    private func remove(_ comments: [ReviewComment]) {
+        let sent = Set(comments.map(\.id))
+        reviewComments.removeAll { sent.contains($0.id) }
+        persist()
+    }
+
+    /// Runs one git action off the main thread and folds the result back in:
+    /// the lists are re-read either way, and a refusal is shown rather than
+    /// swallowed.
+    private func perform(
+        in projectID: ProjectID,
+        title: String,
+        action: @escaping @Sendable (String) -> String?,
+        onSuccess: (@MainActor () -> Void)? = nil
+    ) {
+        guard let root = project(projectID)?.rootPath else { return }
+        Task { [weak self] in
+            let failure = await Task.detached(priority: .userInitiated) {
+                action(root)
+            }.value
+            guard let self else { return }
+            self.isCommitting = false
+            self.runningRemoteCommand = nil
+            if let failure {
+                self.present(ToastContent(kind: .error, title: title, message: Self.summarised(failure)))
+            } else {
+                onSuccess?()
+            }
+            self.refreshChanges(for: projectID)
+            self.refreshGit(for: projectID)
+        }
+    }
+
+    /// Git can refuse at length — one line per path it did not like. A toast
+    /// that fills the window is read as "something broke" rather than as what
+    /// broke, so it says the first of it and stops.
+    static func summarised(_ message: String, lines limit: Int = 4) -> String {
+        let lines = message.split(separator: "\n", omittingEmptySubsequences: true)
+        guard lines.count > limit else { return message }
+        return lines.prefix(limit).joined(separator: "\n") + "\n…"
     }
 
     private func refreshAllProjectFacts() {
@@ -890,6 +1317,45 @@ final class AppModel {
         showsStatusBar = visible
         persist()
         if visible { usage.start() } else { usage.stop() }
+    }
+
+    /// Whether the terminals on screen ended up on the GPU.
+    ///
+    /// Asked of the renderers rather than remembered: the setting is what the
+    /// user wants, and a machine is free to refuse it. Nothing on screen yet
+    /// means there is nothing to report either way.
+    var isDrawingTerminalsOnGPU: Bool {
+        surfaceCache.all.contains { $0.isDrawingOnGPU }
+    }
+
+    /// Steps the terminal text size, the way every other reader does it.
+    ///
+    /// One size for every terminal rather than per session: the size is how the
+    /// user reads, not something about a particular conversation.
+    func stepTerminalFontSize(by delta: Double) {
+        setTerminalFontSize(Double(TerminalZoom.stepped(CGFloat(terminalFontSize), by: CGFloat(delta))))
+    }
+
+    func resetTerminalFontSize() {
+        setTerminalFontSize(Double(TerminalZoom.defaultSize))
+    }
+
+    private func setTerminalFontSize(_ size: Double) {
+        guard size != terminalFontSize else { return }
+        terminalFontSize = size
+        for surface in surfaceCache.all {
+            surface.fontSize = CGFloat(size)
+        }
+        persist()
+    }
+
+    func setTerminalUsesGPURendering(_ enabled: Bool) {
+        guard enabled != terminalUsesGPURendering else { return }
+        terminalUsesGPURendering = enabled
+        for surface in surfaceCache.all {
+            surface.usesAcceleratedRendering = enabled
+        }
+        persist()
     }
 
     func setUsageBarDetail(_ detail: UsageDetail) {
@@ -1040,7 +1506,9 @@ final class AppModel {
         case .docker:
             projectFacts[project.id]?.hasDocker == true
                 || dockerSnapshots[project.id]?.containers.isEmpty == false
-        case .git, .files:
+        case .git:
+            gitStatuses[project.id] != nil
+        case .files:
             false
         }
     }
@@ -1048,6 +1516,8 @@ final class AppModel {
     func tabTooltip(_ tab: RightSidebarTab, for project: Project) -> String {
         guard !isTabAvailable(tab, for: project) else { return tab.title }
         switch tab {
+        case .git:
+            return "\(tab.title) — " + relayLocalized("not a git repository")
         case .docker:
             return projectsCheckingDocker.contains(project.id)
                 ? relayLocalized("Docker — checking…")
@@ -1616,6 +2086,9 @@ final class AppModel {
             checksForUpdates: checksForUpdates,
             showsStatusBar: showsStatusBar,
             usageBarDetail: usageBarDetail,
+            terminalFontSize: terminalFontSize,
+            terminalUsesGPURendering: terminalUsesGPURendering,
+            reviewComments: reviewComments,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
         store.scheduleSave(state)
@@ -1640,6 +2113,9 @@ final class AppModel {
             checksForUpdates: checksForUpdates,
             showsStatusBar: showsStatusBar,
             usageBarDetail: usageBarDetail,
+            terminalFontSize: terminalFontSize,
+            terminalUsesGPURendering: terminalUsesGPURendering,
+            reviewComments: reviewComments,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
         store.saveNow(state)

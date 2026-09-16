@@ -27,6 +27,9 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     case openSSHHosts
     case toggleRightSidebar
     case toggleLeftSidebar
+    case increaseTerminalFontSize
+    case decreaseTerminalFontSize
+    case resetTerminalFontSize
 
     case newShell
     case newClaude
@@ -42,6 +45,9 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
 
     case startDefaultService
     case restartDefaultService
+
+    case reviewChanges
+    case switchBranch
 
     case nextProject
     case previousProject
@@ -59,6 +65,9 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .openSSHHosts: "SSH Hosts"
         case .toggleRightSidebar: "Toggle Project Panel"
         case .toggleLeftSidebar: "Toggle Sessions Sidebar"
+        case .increaseTerminalFontSize: "Increase Font Size"
+        case .decreaseTerminalFontSize: "Decrease Font Size"
+        case .resetTerminalFontSize: "Reset Font Size"
         case .newShell: "New Shell"
         case .newClaude: "New Claude Session"
         case .newCodex: "New Codex Session"
@@ -72,6 +81,8 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .focusNextPane: "Focus Next Pane"
         case .startDefaultService: "Start Dev Service"
         case .restartDefaultService: "Restart Dev Service"
+        case .reviewChanges: "Review Changes"
+        case .switchBranch: "Switch Branch"
         case .nextProject: "Next Project"
         case .previousProject: "Previous Project"
         case .addProject: "Add Project"
@@ -83,12 +94,14 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     var category: ShortcutCategory {
         switch self {
         case .commandPalette, .openSettings, .togglePorts, .openSSHHosts,
-             .toggleRightSidebar, .toggleLeftSidebar: .application
+             .toggleRightSidebar, .toggleLeftSidebar,
+             .increaseTerminalFontSize, .decreaseTerminalFontSize, .resetTerminalFontSize: .application
         case .newShell, .newClaude, .newCodex, .closeSession, .renameSession,
              .nextSession, .previousSession, .focusTerminal,
              .splitRight, .splitDown, .focusNextPane: .sessions
         case .startDefaultService, .restartDefaultService: .services
-        case .nextProject, .previousProject, .addProject, .revealProject, .projectSettings: .projects
+        case .nextProject, .previousProject, .addProject, .revealProject,
+             .projectSettings, .reviewChanges, .switchBranch: .projects
         }
     }
 
@@ -103,6 +116,12 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .openSSHHosts: KeyBinding("s", [.command, .shift])
         case .toggleRightSidebar: KeyBinding("b", [.command, .option])
         case .toggleLeftSidebar: KeyBinding("b", .command)
+        // `⌘+` rather than `⌘=`, because that is what the key is called on the
+        // menu everywhere else; `⌘=` reaches the same command through a hidden
+        // twin, since it is the same physical key without the Shift.
+        case .increaseTerminalFontSize: KeyBinding("+", .command)
+        case .decreaseTerminalFontSize: KeyBinding("-", .command)
+        case .resetTerminalFontSize: KeyBinding("0", .command)
         case .newShell: KeyBinding("t", .command)
         case .newClaude: KeyBinding("c", [.command, .shift])
         case .newCodex: KeyBinding("x", [.command, .shift])
@@ -121,6 +140,12 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         // menu, and still rebindable.
         case .startDefaultService: nil
         case .restartDefaultService: KeyBinding("r", [.command, .option])
+        // `⌘G` is "find again" in a document app; Relay has no find, and
+        // this is the thing you reach for as often.
+        case .reviewChanges: KeyBinding("g", .command)
+        // Deliberately unbound: it is one palette entry away, and the letters
+        // left on `⌘` are worth more to things done many times an hour.
+        case .switchBranch: nil
         case .nextProject: KeyBinding("down", [.command, .option])
         case .previousProject: KeyBinding("up", [.command, .option])
         case .addProject: KeyBinding("n", [.command, .shift])

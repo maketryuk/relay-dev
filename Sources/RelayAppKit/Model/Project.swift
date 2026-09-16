@@ -114,6 +114,14 @@ struct WorkspaceState: Codable {
     /// stored under changed with the meaning, so a value written when it
     /// meant something else is ignored rather than honoured.
     var usageBarDetail: UsageDetail
+    /// How large the terminals are drawn, in points.
+    var terminalFontSize: Double
+    /// Whether terminals are drawn on the GPU.
+    var terminalUsesGPURendering: Bool
+    /// Review notes that have not been handed to an agent yet. Kept because
+    /// they are work — a window that loses an afternoon of remarks to a restart
+    /// is a window nobody writes remarks in.
+    var reviewComments: [ReviewComment]
     /// Terminal arrangement per project, so a split survives a relaunch the
     /// way the sessions in it do.
     var paneLayouts: [String: PaneNode]
@@ -139,6 +147,9 @@ struct WorkspaceState: Codable {
         checksForUpdates: Bool = true,
         showsStatusBar: Bool = true,
         usageBarDetail: UsageDetail = .compact,
+        terminalFontSize: Double = 12.5,
+        terminalUsesGPURendering: Bool = true,
+        reviewComments: [ReviewComment] = [],
         paneLayouts: [String: PaneNode] = [:]
     ) {
         self.version = version
@@ -161,6 +172,9 @@ struct WorkspaceState: Codable {
         self.checksForUpdates = checksForUpdates
         self.showsStatusBar = showsStatusBar
         self.usageBarDetail = usageBarDetail
+        self.terminalFontSize = terminalFontSize
+        self.terminalUsesGPURendering = terminalUsesGPURendering
+        self.reviewComments = reviewComments
         self.paneLayouts = paneLayouts
     }
 
@@ -188,6 +202,10 @@ struct WorkspaceState: Codable {
         checksForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checksForUpdates) ?? true
         showsStatusBar = try container.decodeIfPresent(Bool.self, forKey: .showsStatusBar) ?? true
         usageBarDetail = try container.decodeIfPresent(UsageDetail.self, forKey: .usageBarDetail) ?? .compact
+        terminalFontSize = try container.decodeIfPresent(Double.self, forKey: .terminalFontSize) ?? 12.5
+        terminalUsesGPURendering = try container
+            .decodeIfPresent(Bool.self, forKey: .terminalUsesGPURendering) ?? true
+        reviewComments = try container.decodeIfPresent([ReviewComment].self, forKey: .reviewComments) ?? []
         paneLayouts = try container.decodeIfPresent([String: PaneNode].self, forKey: .paneLayouts) ?? [:]
     }
 }
