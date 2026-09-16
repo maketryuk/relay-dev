@@ -170,8 +170,29 @@ public enum DockerProbe {
         projectDirectory: String,
         runner: some CommandRunning = SystemCommandRunner(),
         dockerPath: String? = locateDockerCLI(),
-        fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
+        fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) },
+        /// The engine asked directly. Injected so a test never depends on what
+        /// happens to be running on the machine running it.
+        engineContainers: () -> [DockerContainer]? = { DockerEngineAPI.listContainers() }
     ) -> DockerSnapshot {
+        let projectName = URL(fileURLWithPath: projectDirectory).lastPathComponent
+
+        // The engine's own socket first. It answers for whichever engine is
+        // actually running rather than for whichever one a CLI context points
+        // at, it needs no binary on a PATH the daemon never inherited, and it
+        // costs no process — which matters when the panel asks every few
+        // seconds for as long as it is open.
+        if let containers = engineContainers() {
+            return matching(
+                containers,
+                projectName: projectName,
+                projectDirectory: projectDirectory,
+                runner: runner,
+                dockerPath: dockerPath,
+                fileExists: fileExists
+            )
+        }
+
         guard let dockerPath else {
             // The one Relay genuinely cannot help with. It shows containers; it
             // does not carry an engine, and pretending otherwise with a button
@@ -182,8 +203,6 @@ public enum DockerProbe {
                 absence: .notInstalled
             )
         }
-
-        let projectName = URL(fileURLWithPath: projectDirectory).lastPathComponent
 
         guard let listing = runner.run(
             dockerPath,
@@ -217,8 +236,28 @@ public enum DockerProbe {
             )
         }
 
-        let all = parseContainers(listing.standardOutput)
+        return matching(
+            parseContainers(listing.standardOutput),
+            projectName: projectName,
+            projectDirectory: projectDirectory,
+            runner: runner,
+            dockerPath: dockerPath,
+            fileExists: fileExists
+        )
+    }
 
+    /// Which of the machine's containers belong to the project in front of you.
+    ///
+    /// Shared by both ways of asking, because the answer has nothing to do with
+    /// how the list was obtained.
+    private static func matching(
+        _ all: [DockerContainer],
+        projectName: String,
+        projectDirectory: String,
+        runner: some CommandRunning,
+        dockerPath: String?,
+        fileExists: (String) -> Bool
+    ) -> DockerSnapshot {
         // A container belongs to the project if Compose was run from anywhere
         // inside it. Matching the project root exactly is not enough: putting
         // the stack in `<project>/docker` is extremely common, and the Compose
@@ -250,7 +289,12 @@ public enum DockerProbe {
         // create, which also reports stopped services. The file is named
         // explicitly because Compose looks in the working directory otherwise,
         // and a stack kept in `docker/` would never be found.
-        guard let composeFile = ComposeLocator.file(forProjectAt: projectDirectory, fileExists: fileExists) else {
+        guard let dockerPath,
+              let composeFile = ComposeLocator.file(forProjectAt: projectDirectory, fileExists: fileExists)
+        else {
+            // Either there is no file to read or no CLI to read it with:
+            // Compose is a client-side tool and has no presence in the engine's
+            // API, so this is the one question the socket cannot answer.
             return DockerSnapshot(isAvailable: true, composeProjectName: projectName, containers: [])
         }
         guard let compose = runner.run(
