@@ -35,6 +35,13 @@ struct ReorderableColumn<ID: Hashable, Row: View>: View {
         var translation: CGFloat
         var sourceIndex: Int
         var targetIndex: Int
+        /// The middles of every row, as they were when the row was taken hold
+        /// of. A snapshot rather than a reading: the offsets move the rows
+        /// while the drag is happening, so measuring them then would be
+        /// measuring the drag's own output.
+        var midpoints: [CGFloat]
+        /// The held row's height, which is the size of the gap it leaves.
+        var height: CGFloat
     }
 
     var body: some View {
@@ -79,9 +86,8 @@ struct ReorderableColumn<ID: Hashable, Row: View>: View {
     private func offset(at index: Int, id: ID) -> CGFloat {
         guard let drag else { return 0 }
         if drag.id == id { return drag.translation }
-        guard let height = frames[drag.id]?.height else { return 0 }
 
-        let gap = height + spacing
+        let gap = drag.height + spacing
         if drag.targetIndex > drag.sourceIndex, index > drag.sourceIndex, index <= drag.targetIndex {
             return -gap
         }
@@ -89,19 +95,6 @@ struct ReorderableColumn<ID: Hashable, Row: View>: View {
             return gap
         }
         return 0
-    }
-
-    /// Where the row would land: whichever row's middle the held one is
-    /// nearest to, which is the rule that makes the swap happen as the two
-    /// pass each other.
-    private func target(for id: ID, sourceIndex: Int, translation: CGFloat) -> Int {
-        guard let frame = frames[id] else { return sourceIndex }
-        let centre = frame.midY + translation
-
-        let distances = ids.enumerated().compactMap { index, candidate in
-            frames[candidate].map { (index: index, distance: abs($0.midY - centre)) }
-        }
-        return distances.min { $0.distance < $1.distance }?.index ?? sourceIndex
     }
 
     // MARK: - The gesture
@@ -112,16 +105,35 @@ struct ReorderableColumn<ID: Hashable, Row: View>: View {
         // the pointer moves.
         DragGesture(minimumDistance: 4, coordinateSpace: .named(space))
             .onChanged { value in
-                guard let sourceIndex = ids.firstIndex(of: id) else { return }
-                let translation = value.translation.height
+                guard let current = begin(id) else { return }
                 drag = Drag(
                     id: id,
-                    translation: translation,
-                    sourceIndex: sourceIndex,
-                    targetIndex: target(for: id, sourceIndex: sourceIndex, translation: translation)
+                    translation: value.translation.height,
+                    sourceIndex: current.sourceIndex,
+                    targetIndex: ColumnReorder.targetIndex(
+                        sourceIndex: current.sourceIndex,
+                        pointer: value.location.y,
+                        midpoints: current.midpoints
+                    ),
+                    midpoints: current.midpoints,
+                    height: current.height
                 )
             }
             .onEnded { _ in commit() }
+    }
+
+    /// The geometry this drag works from: the one already taken if it is
+    /// underway, or a fresh snapshot if this is the press that starts it.
+    private func begin(_ id: ID) -> (sourceIndex: Int, midpoints: [CGFloat], height: CGFloat)? {
+        if let drag, drag.id == id {
+            return (drag.sourceIndex, drag.midpoints, drag.height)
+        }
+        guard let sourceIndex = ids.firstIndex(of: id) else { return nil }
+        // Every row, or none: a list half measured would put rows in an order
+        // derived from zeroes.
+        let rectangles = ids.compactMap { frames[$0] }
+        guard rectangles.count == ids.count, let held = frames[id] else { return nil }
+        return (sourceIndex, rectangles.map(\.midY), held.height)
     }
 
     private func commit() {
@@ -140,5 +152,23 @@ struct ReorderableColumn<ID: Hashable, Row: View>: View {
             ids[drag.targetIndex],
             drag.targetIndex > drag.sourceIndex ? .after : .before
         )
+    }
+}
+
+/// Where a held row lands.
+///
+/// Stated as "after every row whose middle the pointer has passed", which is
+/// the rule that makes one row of travel move one place. Comparing the held
+/// row's own centre against every centre *including its own* does not: its own
+/// is the nearest one until the pointer has gone a whole row, and with three
+/// rows that made the middle position unreachable from either end.
+enum ColumnReorder {
+    static func targetIndex(sourceIndex: Int, pointer: CGFloat, midpoints: [CGFloat]) -> Int {
+        guard !midpoints.isEmpty else { return sourceIndex }
+        var target = 0
+        for (index, midpoint) in midpoints.enumerated() where index != sourceIndex && midpoint < pointer {
+            target += 1
+        }
+        return min(target, midpoints.count - 1)
     }
 }
