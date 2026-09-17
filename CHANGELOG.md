@@ -5,6 +5,16 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Changed
+
+- **Opening the diff leaves the panel the width it was.** It used to widen the
+  right-hand panel to fit a line of code, which is a reasonable width and not
+  ours to impose: the panel is dragged to a size on purpose, and a button that
+  moves the window's furniture as a side effect of showing something is a
+  button nobody can predict.
+
 ## 0.3.0 — 2026-09-16
 
 ### Added

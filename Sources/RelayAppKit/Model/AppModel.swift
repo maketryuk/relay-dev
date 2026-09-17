@@ -1031,18 +1031,14 @@ final class AppModel {
         // second press while they are showing must not be the way to hide them.
         rightSidebarTab = .git
         isRightSidebarVisible = true
-        // A diff in a 300-point column is a column of fragments. The panel is
-        // widened to something a line of code fits in, and never narrowed:
-        // a width the user chose themselves is not ours to overrule.
-        if rightSidebarWidth < Self.reviewWidth {
-            rightSidebarWidth = Self.reviewWidth
-        }
+        // The panel used to widen itself here, on the grounds that a diff in a
+        // narrow column is a column of fragments. It is — but the panel is
+        // dragged to a width on purpose, and a button that resizes the window's
+        // furniture as a side effect of showing something is a button nobody
+        // can predict. Narrow is the user's to fix, and theirs to keep.
         refreshChanges(for: projectID)
         persist()
     }
-
-    /// Wide enough for a line of code with its gutter.
-    static let reviewWidth: Double = 520
 
     func isExpanded(_ change: GitChange) -> Bool {
         expandedChanges.contains(change.path)
