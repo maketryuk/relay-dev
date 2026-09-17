@@ -293,9 +293,15 @@ struct GitTransferPane: View {
                     .monospacedDigit()
             }
             if let status, status.isDirty, direction == .pull {
-                Text(relayLocalized("The working copy has changes"))
+                // Amber only when it is a problem. With `--autostash` on it is
+                // not one, and what will happen to the changes is worth
+                // saying rather than warning about.
+                let isStashing = transfer?.options.contains(.autostash) ?? false
+                Text(relayLocalized(isStashing
+                    ? "Uncommitted changes are set aside and put back"
+                    : "The working copy has changes"))
                     .font(Theme.Typography.rowSecondary)
-                    .foregroundStyle(Theme.Palette.statusWaiting)
+                    .foregroundStyle(isStashing ? Theme.Palette.textTertiary : Theme.Palette.statusWaiting)
             }
             if transfer?.isDetached == true {
                 Text(relayLocalized("You are not on a branch"))

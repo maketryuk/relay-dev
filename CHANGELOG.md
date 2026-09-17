@@ -23,7 +23,9 @@ breaking change to stored data.
   and `--no-verify`; a push offers `--force-with-lease`, `--tags`,
   `--set-upstream` and `--no-verify`. Whatever the chosen flags rule out goes
   grey rather than quietly unticking itself, so which flag is in the way is
-  visible. A push also lists the commits it would send, and says when the
+  visible. A pull sets uncommitted work aside and puts it back, which is what
+  every other client does and what git will not do unasked — it refuses to
+  pull at all while anything is uncommitted. A push also lists the commits it would send, and says when the
   remote has no such branch yet. Force pushing lives here now rather than in
   the menu, because it is worth seeing spelled out; it is always with a lease,
   so it refuses when the remote has moved since you last fetched.

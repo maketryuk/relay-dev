@@ -181,7 +181,14 @@ struct GitTransfer: Equatable, Sendable {
         var options: Set<Option> = []
         switch direction {
         case .pull:
-            options = [.rebase]
+            // `--autostash` as well as `--rebase`, because without it a pull
+            // with anything uncommitted in the tree does not happen at all:
+            // git refuses with "cannot pull with rebase: You have unstaged
+            // changes", which is a refusal to do the thing that was asked for
+            // on the grounds of something nobody was asked about. Every other
+            // client stashes and puts it back; git can do it in one flag, and
+            // it keeps the staged half staged.
+            options = [.rebase, .autostash]
         case .push:
             if status?.upstream == nil { options = [.setUpstream] }
         }

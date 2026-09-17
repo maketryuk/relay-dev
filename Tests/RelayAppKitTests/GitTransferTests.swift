@@ -30,7 +30,7 @@ struct GitTransferTests {
         )
         #expect(transfer.remote == "upstream")
         #expect(transfer.branch == "feature")
-        #expect(transfer.commandLine == "git pull --rebase upstream feature")
+        #expect(transfer.commandLine == "git pull --rebase --autostash upstream feature")
     }
 
     @Test("A branch with no upstream is pushed to the first remote, and told to follow it")
@@ -88,6 +88,16 @@ struct GitTransferTests {
         #expect(!transfer.options.contains(.fastForwardOnly))
     }
 
+    @Test("A pull happens even with work in the tree")
+    func pullSetsChangesAside() {
+        // git refuses to pull with rebase while anything is uncommitted, which
+        // is a refusal to do what was asked about something nobody asked. The
+        // flag that makes it happen anyway is on from the start.
+        let transfer = GitTransfer.initial(direction: .pull, status: status(), remotes: ["origin"])
+        #expect(transfer.options.contains(.autostash))
+        #expect(transfer.arguments.contains("--autostash"))
+    }
+
     @Test("What the chosen options rule out is shown as unavailable")
     func availabilityFollowsWhatIsChosen() {
         var transfer = GitTransfer.initial(direction: .pull, status: status(), remotes: ["origin"])
@@ -136,7 +146,7 @@ struct GitTransferTests {
         transfer.set(.rebase, false)
         transfer.set(.squash, true)
         transfer.set(.noVerify, true)
-        #expect(transfer.commandLine == "git pull --squash --no-verify origin master")
+        #expect(transfer.commandLine == "git pull --squash --autostash --no-verify origin master")
     }
 
     @Test("Flags keep their order, whatever order they were chosen in")
@@ -163,7 +173,7 @@ struct GitTransferTests {
         // A push flag left in the set by a panel that switched direction must
         // not be sent to `git pull`, which would refuse the whole command.
         transfer.options.insert(.forceWithLease)
-        #expect(transfer.commandLine == "git pull --rebase origin master")
+        #expect(transfer.commandLine == "git pull --rebase --autostash origin master")
     }
 }
 
