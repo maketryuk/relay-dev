@@ -2544,8 +2544,13 @@ final class AppModel {
 
     // MARK: - Persistence
 
-    func persist() {
-        let state = WorkspaceState(
+    /// Everything worth remembering, in one place.
+    ///
+    /// One reader rather than one per caller: a field added to the state and
+    /// forgotten in the second copy is a setting that survives a debounced save
+    /// and vanishes on quit, which is the sort of bug nobody thinks to look for.
+    private func snapshotState() -> WorkspaceState {
+        WorkspaceState(
             projects: projects,
             lastActiveProjectID: selectedProjectID?.rawValue,
             lastActiveSessionByProject: lastActiveSessionByProject,
@@ -2568,33 +2573,13 @@ final class AppModel {
             reviewComments: reviewComments,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
         )
-        store.scheduleSave(state)
+    }
+
+    func persist() {
+        store.scheduleSave(snapshotState())
     }
 
     func persistImmediately() {
-        let state = WorkspaceState(
-            projects: projects,
-            lastActiveProjectID: selectedProjectID?.rawValue,
-            lastActiveSessionByProject: lastActiveSessionByProject,
-            sidebarWidth: sidebarWidth,
-            rightSidebarWidth: rightSidebarWidth,
-            collapsedSections: Array(collapsedSections),
-            notifications: notificationSettings,
-            shortcuts: shortcutSettings,
-            presets: presets,
-            sessionHistory: sessionHistory,
-            isRightSidebarVisible: isRightSidebarVisible,
-            isLeftSidebarVisible: isLeftSidebarVisible,
-            rightSidebarTab: rightSidebarTab.rawValue,
-            language: language,
-            checksForUpdates: checksForUpdates,
-            showsStatusBar: showsStatusBar,
-            usageBarDetail: usageBarDetail,
-            terminalFontSize: terminalFontSize,
-            terminalUsesGPURendering: terminalUsesGPURendering,
-            reviewComments: reviewComments,
-            paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
-        )
-        store.saveNow(state)
+        store.saveNow(snapshotState())
     }
 }
