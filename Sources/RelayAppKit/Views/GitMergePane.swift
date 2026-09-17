@@ -20,7 +20,6 @@ struct GitMergePane: View {
     /// Whether the text above came from the file rather than from nowhere.
     @State private var isLoaded = false
     @State private var conflict = 0
-    @State private var sync = ScrollSync()
     /// What is still in dispute in the result, and where.
     ///
     /// Parsed when the text changes rather than every time the panel draws:
@@ -136,29 +135,11 @@ struct GitMergePane: View {
 
     private var panes: some View {
         HStack(spacing: 0) {
-            pane(
-                title: ourTitle,
-                tint: Theme.Palette.statusError,
-                text: .constant(original?.version(.ours) ?? ""),
-                isEditable: false,
-                tints: [:]
-            )
+            revision(title: ourTitle, tint: Theme.Palette.statusError, text: original?.version(.ours) ?? "")
             RelayDivider(axis: .vertical)
-            pane(
-                title: relayLocalized("Result"),
-                tint: Theme.Palette.accent,
-                text: $result,
-                isEditable: true,
-                tints: tints
-            )
+            editor
             RelayDivider(axis: .vertical)
-            pane(
-                title: theirTitle,
-                tint: Theme.Palette.statusFinished,
-                text: .constant(original?.version(.theirs) ?? ""),
-                isEditable: false,
-                tints: [:]
-            )
+            revision(title: theirTitle, tint: Theme.Palette.statusFinished, text: original?.version(.theirs) ?? "")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -174,41 +155,68 @@ struct GitMergePane: View {
         original?.hunks.first?.theirLabel ?? relayLocalized("theirs")
     }
 
-    private func pane(
-        title: String,
-        tint: Color,
-        text: Binding<String>,
-        isEditable: Bool,
-        tints: [Int: Color]
-    ) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: Theme.Spacing.xsmall) {
-                Text(verbatim: title)
-                    .font(Theme.Typography.caption)
-                    .foregroundStyle(tint)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Spacer(minLength: 0)
+    /// One side, read-only, drawn by SwiftUI.
+    ///
+    /// Not a text view: three of those side by side are three AppKit views
+    /// inside one SwiftUI layout, and SwiftUI gives each its own full-size
+    /// compositing layer — the later ones covered the earlier ones, so two of
+    /// the three panes were simply not on screen. Nothing here needs editing,
+    /// and text that cannot be typed into does not need a text view.
+    private func revision(title: String, tint: Color, text: String) -> some View {
+        let lines = text.components(separatedBy: "\n")
+
+        return VStack(spacing: 0) {
+            paneHeader(title, tint: tint)
+            ScrollView([.vertical, .horizontal], showsIndicators: true) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(verbatim: "\(index + 1)")
+                                .font(Theme.Typography.mono)
+                                .foregroundStyle(Theme.Palette.textTertiary)
+                                .frame(width: 28, alignment: .trailing)
+                            Text(verbatim: line.isEmpty ? " " : line)
+                                .font(Theme.Typography.mono)
+                                .foregroundStyle(Theme.Palette.textPrimary)
+                                .textSelection(.enabled)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.vertical, 1)
+                    }
+                }
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            .padding(.horizontal, Theme.Spacing.small)
-            .padding(.vertical, 5)
-            .background(Theme.Palette.sidebar)
-
-            RelayDivider()
-
-            CodeTextView(
-                text: text,
-                isEditable: isEditable,
-                tints: tints,
-                // The three scroll together, since the same passage is at the
-                // same height in all of them.
-                sync: sync
-            )
-            // An `NSScrollView` has no size of its own to offer, so it is told
-            // to take the room rather than asked how much it would like.
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .defaultScrollAnchor(.topLeading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(Theme.Palette.base)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// The middle: the one pane that is typed into, and so the one AppKit view
+    /// in the panel.
+    private var editor: some View {
+        VStack(spacing: 0) {
+            paneHeader(relayLocalized("Result"), tint: Theme.Palette.accent)
+            CodeTextView(text: $result, isEditable: true, tints: tints)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func paneHeader(_ title: String, tint: Color) -> some View {
+        HStack(spacing: Theme.Spacing.xsmall) {
+            Text(verbatim: title)
+                .font(Theme.Typography.caption)
+                .foregroundStyle(tint)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, Theme.Spacing.small)
+        .padding(.vertical, 5)
+        .background(Theme.Palette.sidebar)
     }
 
     // MARK: - Footer

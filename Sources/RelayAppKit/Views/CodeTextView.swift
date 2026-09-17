@@ -34,7 +34,6 @@ struct CodeTextView: NSViewRepresentable {
         Self.setText(text, in: made.text, fontSize: fontSize)
 
         context.coordinator.textView = made.text
-        context.coordinator.ruler = made.ruler
         context.coordinator.applyTints(tints)
         sync?.adopt(made.scroll)
         return made.scroll
@@ -65,16 +64,24 @@ struct CodeTextView: NSViewRepresentable {
         textView.textStorage?.setAttributedString(attributed)
     }
 
-    static func make(fontSize: CGFloat) -> (scroll: NSScrollView, text: NSTextView, ruler: LineNumberRuler) {
-        let unbounded = CGFloat.greatestFiniteMagnitude
-        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
-        textView.minSize = NSSize(width: 0, height: 0)
-        textView.maxSize = NSSize(width: unbounded, height: unbounded)
-        textView.autoresizingMask = [.width]
-        textView.textContainer?.containerSize = NSSize(width: 0, height: unbounded)
-        textView.textContainer?.widthTracksTextView = true
-        textView.isVerticallyResizable = true
-        textView.isHorizontallyResizable = false
+    static func make(fontSize: CGFloat) -> (scroll: NSScrollView, text: NSTextView) {
+        // AppKit's own factory, and then nothing but styling. Built by hand —
+        // frame, `minSize`, `maxSize`, a container size — the view came out in
+        // TextKit 1 and, inside a hosting view, drew nothing at all: no
+        // rendering subviews, a ruler counting lines beside an empty panel.
+        // Asking for `layoutManager` is what puts a text view back into
+        // TextKit 1, so nothing here or in the ruler may mention it.
+        let scrollView = NSTextView.scrollableTextView()
+        scrollView.drawsBackground = true
+        scrollView.backgroundColor = NSColor(Theme.Palette.base)
+        scrollView.hasVerticalScroller = true
+        scrollView.autohidesScrollers = true
+        scrollView.borderType = .noBorder
+        scrollView.focusRingType = .none
+
+        guard let textView = scrollView.documentView as? NSTextView else {
+            return (scrollView, NSTextView())
+        }
 
         textView.isRichText = false
         textView.allowsUndo = true
@@ -84,28 +91,17 @@ struct CodeTextView: NSViewRepresentable {
         textView.isAutomaticTextReplacementEnabled = false
         textView.isContinuousSpellCheckingEnabled = false
         textView.isGrammarCheckingEnabled = false
+        textView.focusRingType = .none
         textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         textView.textColor = NSColor(Theme.Palette.textPrimary)
         textView.typingAttributes = attributes(fontSize: fontSize)
         textView.backgroundColor = NSColor(Theme.Palette.base)
         textView.insertionPointColor = NSColor(Theme.Palette.accent)
         textView.drawsBackground = true
-        textView.textContainerInset = NSSize(width: 6, height: 6)
+        textView.textContainerInset = NSSize(width: 8, height: 6)
+        textView.textContainer?.lineFragmentPadding = 2
 
-        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
-        scrollView.documentView = textView
-        scrollView.hasVerticalScroller = true
-        scrollView.hasHorizontalScroller = false
-        scrollView.drawsBackground = true
-        scrollView.backgroundColor = NSColor(Theme.Palette.base)
-        scrollView.borderType = .noBorder
-
-        let ruler = LineNumberRuler(textView: textView)
-        scrollView.verticalRulerView = ruler
-        scrollView.hasVerticalRuler = true
-        scrollView.rulersVisible = true
-
-        return (scrollView, textView, ruler)
+        return (scrollView, textView)
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
@@ -131,7 +127,6 @@ struct CodeTextView: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextViewDelegate {
         private let text: Binding<String>
         weak var textView: NSTextView?
-        weak var ruler: LineNumberRuler?
 
         init(text: Binding<String>) {
             self.text = text
@@ -140,7 +135,6 @@ struct CodeTextView: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             text.wrappedValue = textView.string
-            ruler?.needsDisplay = true
         }
 
         /// Paints the conflicting lines, so where the disagreement is can be
@@ -173,58 +167,20 @@ struct CodeTextView: NSViewRepresentable {
     }
 }
 
-/// The margin down the left with the line numbers in it.
-final class LineNumberRuler: NSRulerView {
-    init(textView: NSTextView) {
-        super.init(scrollView: textView.enclosingScrollView, orientation: .verticalRuler)
-        clientView = textView
-        ruleThickness = 34
-    }
-
-    @available(*, unavailable)
-    required init(coder: NSCoder) {
-        fatalError("not used")
-    }
-
-    override func drawHashMarksAndLabels(in rect: NSRect) {
-        guard let textView = clientView as? NSTextView,
-              let layoutManager = textView.layoutManager,
-              let container = textView.textContainer
-        else { return }
-
-        NSColor(Theme.Palette.sidebar).setFill()
-        rect.fill()
-
-        let font = NSFont.monospacedSystemFont(ofSize: 9.5, weight: .regular)
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: NSColor(Theme.Palette.textTertiary),
-        ]
-
-        let text = textView.string as NSString
-        let visible = layoutManager.glyphRange(forBoundingRect: textView.visibleRect, in: container)
-        var line = 1
-        var index = 0
-
-        while index < text.length {
-            let lineRange = text.lineRange(for: NSRange(location: index, length: 0))
-            if NSLocationInRange(lineRange.location, visible) || NSMaxRange(visible) == lineRange.location {
-                let glyphRange = layoutManager.glyphRange(forCharacterRange: lineRange, actualCharacterRange: nil)
-                let bounds = layoutManager.boundingRect(forGlyphRange: glyphRange, in: container)
-                let y = bounds.minY + textView.textContainerInset.height - textView.visibleRect.origin.y
-                let label = "\(line)" as NSString
-                let size = label.size(withAttributes: attributes)
-                label.draw(
-                    at: NSPoint(x: ruleThickness - size.width - 6, y: y + (bounds.height - size.height) / 2),
-                    withAttributes: attributes
-                )
-            }
-            line += 1
-            index = NSMaxRange(lineRange)
-            if lineRange.length == 0 { break }
-        }
-    }
-}
+/// What a text view in here will not tolerate, learned the hard way.
+///
+/// Line numbers were tried twice and are not here. An `NSRulerView` comes
+/// dressed in a banner with an `NSVisualEffectView` inside it, and that
+/// material inside a SwiftUI hosting view wrecked the compositing of
+/// everything around it: the panel's own header, its toolbar and an entire
+/// pane were drawn and then covered over — three separate "the panes are
+/// blank" reports came from that one view. A plain view added *inside* the
+/// text view instead stops TextKit 2 drawing the text at all.
+///
+/// So the editable pane has no numbers for now, and the read-only panes
+/// beside it draw their own in SwiftUI, where they cost nothing. What would
+/// work here is a view outside the text view entirely, kept in step with the
+/// layout — worth doing when there is a reason beyond symmetry.
 
 /// Keeps several scroll views at the same offset.
 ///

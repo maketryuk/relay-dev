@@ -13,33 +13,35 @@ struct CodeTextViewTests {
     @Test("Text put into the view occupies room on screen")
     func textIsLaidOut() throws {
         let made = CodeTextView.make(fontSize: 11.5)
+        made.scroll.frame = NSRect(x: 0, y: 0, width: 300, height: 200)
+        made.scroll.layoutSubtreeIfNeeded()
         CodeTextView.setText("one\ntwo\nthree\nfour", in: made.text, fontSize: 11.5)
 
-        let container = try #require(made.text.textContainer)
-        let layout = try #require(made.text.layoutManager)
-        layout.ensureLayout(for: container)
-
-        #expect(container.size.width > 0)
-        let used = layout.usedRect(for: container)
-        #expect(used.width > 0)
-        #expect(used.height > 0)
+        // Asked of TextKit 2, deliberately: reaching for `layoutManager` is
+        // what drops a text view back into TextKit 1, where it drew nothing at
+        // all inside a hosting view.
+        let layout = try #require(made.text.textLayoutManager)
+        layout.ensureLayout(for: layout.documentRange)
+        let used = layout.usageBoundsForTextContainer
+        #expect(used.width > 0, Comment(rawValue: "used \(used)"))
+        #expect(used.height > 0, Comment(rawValue: "used \(used)"))
     }
 
     @Test("The view grows with what is in it")
     func heightFollowsTheContent() throws {
-        let short = CodeTextView.make(fontSize: 11.5)
-        short.text.string = "one"
-        let tall = CodeTextView.make(fontSize: 11.5)
-        tall.text.string = String(repeating: "line\n", count: 40)
-
-        for made in [short, tall] {
-            let container = try #require(made.text.textContainer)
-            made.text.layoutManager?.ensureLayout(for: container)
+        func height(of text: String) throws -> CGFloat {
+            let made = CodeTextView.make(fontSize: 11.5)
+            made.scroll.frame = NSRect(x: 0, y: 0, width: 300, height: 200)
+            made.scroll.layoutSubtreeIfNeeded()
+            CodeTextView.setText(text, in: made.text, fontSize: 11.5)
+            let layout = try #require(made.text.textLayoutManager)
+            layout.ensureLayout(for: layout.documentRange)
+            return layout.usageBoundsForTextContainer.height
         }
 
-        let shortHeight = short.text.layoutManager?.usedRect(for: short.text.textContainer!).height ?? 0
-        let tallHeight = tall.text.layoutManager?.usedRect(for: tall.text.textContainer!).height ?? 0
-        #expect(tallHeight > shortHeight * 10)
+        let short = try height(of: "one")
+        let tall = try height(of: String(repeating: "line\n", count: 40))
+        #expect(tall > short * 10, Comment(rawValue: "short \(short), tall \(tall)"))
     }
 
     @Test("What is put in the view is painted")
