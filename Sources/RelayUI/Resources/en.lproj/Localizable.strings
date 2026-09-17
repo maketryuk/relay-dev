@@ -49,6 +49,7 @@
 "as of %@" = "as of %@";
 "Asks GitHub for the newest release; nothing about you is sent" = "Asks GitHub for the newest release; nothing about you is sent";
 "At least one marker is needed" = "At least one marker is needed";
+"Automatic" = "Automatic";
 "Back" = "Back";
 "Binary file" = "Binary file";
 "Branches" = "Branches";
@@ -62,6 +63,8 @@
 "Checks out a local branch that follows it" = "Checks out a local branch that follows it";
 "Choose Folder…" = "Choose Folder…";
 "Choose…" = "Choose…";
+"Claude Code records the model without saying which window it runs with" = "Claude Code records the model without saying which window it runs with";
+"Claude context window" = "Claude context window";
 "Claude · ask first" = "Claude · ask first";
 "Claude" = "Claude";
 "Clear all" = "Clear all";

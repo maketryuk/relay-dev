@@ -49,6 +49,7 @@
 "as of %@" = "по состоянию на %@";
 "Asks GitHub for the newest release; nothing about you is sent" = "Спрашивает у GitHub о новом релизе; ничего о вас не отправляется";
 "At least one marker is needed" = "Нужен хотя бы один маркер";
+"Automatic" = "Автоматически";
 "Back" = "Назад";
 "Binary file" = "Двоичный файл";
 "Branches" = "Ветки";
@@ -62,6 +63,8 @@
 "Checks out a local branch that follows it" = "Создаст локальную ветку, следящую за ней";
 "Choose Folder…" = "Выбрать папку…";
 "Choose…" = "Выбрать…";
+"Claude Code records the model without saying which window it runs with" = "Claude Code записывает модель, но не говорит, с каким окном она работает";
+"Claude context window" = "Окно контекста Claude";
 "Claude · ask first" = "Claude · спрашивать";
 "Claude" = "Claude";
 "Clear all" = "Очистить всё";

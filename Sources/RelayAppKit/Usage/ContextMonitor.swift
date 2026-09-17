@@ -15,6 +15,15 @@ final class ContextMonitor {
 
     private(set) var contexts: [SessionID: SessionContext] = [:]
 
+    /// What the user says their Claude sessions run with. Automatic leaves the
+    /// window to be worked out, which is what it was before there was a choice.
+    var claudeWindow: ContextWindowPreference = .automatic {
+        didSet {
+            guard claudeWindow != oldValue else { return }
+            Task { [weak self] in await self?.refresh() }
+        }
+    }
+
     private var task: Task<Void, Never>?
     private var watched: [SessionSnapshot] = []
 
@@ -53,13 +62,18 @@ final class ContextMonitor {
     }
 
     func refresh() async {
+        let preferredWindow = claudeWindow.tokens
         let targets = watched.map {
             (
                 id: $0.id,
                 kind: $0.kind,
                 directory: $0.workingDirectory,
                 startedAt: $0.startedAt,
-                conversationID: ResumedConversation.identifier(in: $0.command, kind: $0.kind)
+                conversationID: ResumedConversation.identifier(in: $0.command, kind: $0.kind),
+                // The command outranks the setting: a session started with a
+                // model argument is running that model, whatever the setting
+                // says about the others.
+                declaredWindow: ClaudeModelWindow.declared(byCommand: $0.command) ?? preferredWindow
             )
         }
         guard !targets.isEmpty else { return }
@@ -69,10 +83,11 @@ final class ContextMonitor {
             for target in targets {
                 let context: SessionContext? = switch target.kind {
                 case .claude:
-                    ClaudeContextReader.read(
-                        workingDirectory: target.directory,
+                    Self.claudeContext(
+                        directory: target.directory,
                         startedAt: target.startedAt,
-                        conversationID: target.conversationID
+                        conversationID: target.conversationID,
+                        declaredWindow: target.declaredWindow
                     )
                 case .codex:
                     CodexContextReader.read(
@@ -89,5 +104,40 @@ final class ContextMonitor {
         }.value
 
         contexts = found
+    }
+
+    /// The transcript reading, widened by what the project is known to run.
+    ///
+    /// Only where nothing was declared: evidence of the model a project last
+    /// billed tokens against is enough to stop a 1M session reading as 64% full
+    /// at 127K, and not enough to overrule someone who said outright which
+    /// window they are on.
+    /// Not on the main actor: it reads two files, and it is called from the
+    /// same detached task the other readers are.
+    private nonisolated static func claudeContext(
+        directory: String,
+        startedAt: Date,
+        conversationID: String?,
+        declaredWindow: Int?
+    ) -> SessionContext? {
+        guard var context = ClaudeContextReader.read(
+            workingDirectory: directory,
+            startedAt: startedAt,
+            conversationID: conversationID,
+            declaredWindow: declaredWindow
+        ) else { return nil }
+
+        // Nothing to widen once the reading itself has outgrown the smaller
+        // window, and the file this consults is large enough not to be read for
+        // an answer that cannot change.
+        guard !context.isWindowDeclared,
+              context.window != ContextWindow.known.last,
+              let model = context.model
+        else { return context }
+        context.window = ContextWindow.widening(
+            context.window,
+            toAtLeast: ClaudeModelWindow.lastUsed(forModel: model, directory: directory)
+        )
+        return context
     }
 }

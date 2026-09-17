@@ -16,6 +16,10 @@ breaking change to stored data.
 - **⌘⌫ clears the line in a terminal.** ⌘ never reaches the program running
   there, so the one deletion shortcut every other field on macOS answers did
   nothing at all.
+- **Relay can be told which context window Claude sessions run with.** General
+  settings, beside the text size. Claude Code records which model answered but
+  not whether it was the long-context variant of it, so a 1M session read as
+  though it were on 200K until more than 200K had been put in it.
 
 ### Fixed
 
@@ -25,6 +29,10 @@ breaking change to stored data.
   the agents in them died on the way. A daemon with sessions in it is kept now,
   scrollback and all; the changeover finishes by itself once the last session is
   closed.
+- **A 127K conversation on the 1M window no longer reads as 64% full.** Where
+  nothing states the window, Relay now takes the model the project last ran as
+  evidence of which variant it is on, and a model named on the command line as
+  the answer outright.
 
 ## 0.3.2 — 2026-09-17
 

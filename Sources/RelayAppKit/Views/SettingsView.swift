@@ -151,6 +151,24 @@ struct GeneralSettingsPane: View {
                     }
                 }
                 SettingsRow(
+                    title: relayLocalized("Claude context window"),
+                    detail: relayLocalized(
+                        "Claude Code records the model without saying which window it runs with"
+                    )
+                ) {
+                    Picker("", selection: Binding(
+                        get: { model.claudeContextWindow },
+                        set: { model.setClaudeContextWindow($0) }
+                    )) {
+                        ForEach(ContextWindowPreference.allCases) { preference in
+                            Text(preference.displayName).tag(preference)
+                        }
+                    }
+                    .labelsHidden()
+                    .clickable()
+                    .frame(width: 160)
+                }
+                SettingsRow(
                     title: relayLocalized("Draw on the GPU"),
                     detail: rendererDetail
                 ) {

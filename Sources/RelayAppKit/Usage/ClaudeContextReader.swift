@@ -24,6 +24,7 @@ enum ClaudeContextReader {
         workingDirectory: String,
         startedAt: Date,
         conversationID: String? = nil,
+        declaredWindow: Int? = nil,
         projects: URL = projectsDirectory
     ) -> SessionContext? {
         guard let transcript = transcript(
@@ -32,7 +33,11 @@ enum ClaudeContextReader {
             conversationID: conversationID,
             projects: projects
         ) else { return nil }
-        return parse(TranscriptTail.objects(in: transcript), measuredAt: TranscriptTail.modificationDate(of: transcript))
+        return parse(
+            TranscriptTail.objects(in: transcript),
+            measuredAt: TranscriptTail.modificationDate(of: transcript),
+            declaredWindow: declaredWindow
+        )
     }
 
     /// The session's own transcript.
@@ -94,7 +99,11 @@ enum ClaudeContextReader {
 
     /// The last assistant turn is the only one that matters: it records what was
     /// in the window when it was sent, which is what is in the window now.
-    static func parse(_ objects: [[String: Any]], measuredAt: Date?) -> SessionContext? {
+    static func parse(
+        _ objects: [[String: Any]],
+        measuredAt: Date?,
+        declaredWindow: Int? = nil
+    ) -> SessionContext? {
         let turns = objects.compactMap { object -> (message: [String: Any], usage: [String: Any])? in
             guard object["type"] as? String == "assistant",
                   let message = object["message"] as? [String: Any],
@@ -121,8 +130,8 @@ enum ClaudeContextReader {
 
         return SessionContext(
             tokens: tokens,
-            window: ContextWindow.resolve(observed: tokens, declared: nil),
-            isWindowDeclared: false,
+            window: ContextWindow.resolve(observed: tokens, declared: declaredWindow),
+            isWindowDeclared: declaredWindow != nil,
             model: last.message["model"] as? String,
             slices: slices,
             measuredAt: measuredAt

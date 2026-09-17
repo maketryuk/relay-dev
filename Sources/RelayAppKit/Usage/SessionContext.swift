@@ -59,6 +59,42 @@ struct SessionContext: Equatable, Sendable {
     }
 }
 
+/// What the user says their Claude sessions run with.
+///
+/// A setting, because nothing on disk answers it outright: Claude Code records
+/// the model without the suffix that tells its long-context variant apart, so a
+/// session on the 1M window is indistinguishable from one on 200K until more
+/// than 200K has been put in it. Automatic is right for most people most of the
+/// time and never claims a window larger than it can show was used; this is
+/// here for the person who knows which one they picked.
+enum ContextWindowPreference: String, Codable, CaseIterable, Sendable, Identifiable {
+    /// Inferred: whatever the evidence supports, never less than what has
+    /// already been sent.
+    case automatic
+    case standard
+    case long
+
+    var id: String { rawValue }
+
+    /// The window this says outright, or nil to work it out.
+    var tokens: Int? {
+        switch self {
+        case .automatic: nil
+        case .standard: 200_000
+        case .long: ClaudeModelWindow.long
+        }
+    }
+
+    @MainActor
+    var displayName: String {
+        switch self {
+        case .automatic: relayLocalized("Automatic")
+        case .standard: "200K"
+        case .long: "1M"
+        }
+    }
+}
+
 /// Works out how large a context window is when nobody says.
 ///
 /// Codex states its window outright. Claude Code does not record one anywhere,
@@ -74,6 +110,17 @@ enum ContextWindow {
         if let declared, declared > 0 { return declared }
         guard observed > 0 else { return nil }
         return known.first { $0 >= observed } ?? known.last
+    }
+
+    /// Takes a wider window on evidence, never a narrower one.
+    ///
+    /// Evidence — which model the project last ran — can say that a window is
+    /// larger than the smallest one that fits, and cannot say that it is
+    /// smaller than what has already been put in it.
+    static func widening(_ window: Int?, toAtLeast candidate: Int?) -> Int? {
+        guard let candidate, candidate > 0 else { return window }
+        guard let window else { return candidate }
+        return max(window, candidate)
     }
 }
 

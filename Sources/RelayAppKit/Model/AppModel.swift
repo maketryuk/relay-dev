@@ -114,6 +114,8 @@ final class AppModel {
     private(set) var checksForUpdates = true
     private(set) var showsStatusBar = true
     private(set) var usageBarDetail: UsageDetail = .compact
+    /// Which window Claude sessions are taken to run with.
+    private(set) var claudeContextWindow: ContextWindowPreference = .automatic
     /// How large the terminals are drawn, in points.
     private(set) var terminalFontSize = Double(TerminalZoom.defaultSize)
     /// Whether terminals are drawn on the GPU. On by default, because scrolling
@@ -207,6 +209,8 @@ final class AppModel {
         checksForUpdates = state.checksForUpdates
         showsStatusBar = state.showsStatusBar
         usageBarDetail = state.usageBarDetail
+        claudeContextWindow = state.claudeContextWindow
+        context.claudeWindow = state.claudeContextWindow
         terminalFontSize = state.terminalFontSize
         terminalUsesGPURendering = state.terminalUsesGPURendering
         reviewComments = state.reviewComments
@@ -1629,6 +1633,15 @@ final class AppModel {
         updates.install()
     }
 
+    /// Says which window Claude sessions run with, for the cases nothing on
+    /// disk can answer.
+    func setClaudeContextWindow(_ preference: ContextWindowPreference) {
+        guard claudeContextWindow != preference else { return }
+        claudeContextWindow = preference
+        context.claudeWindow = preference
+        persist()
+    }
+
     func setShowsStatusBar(_ visible: Bool) {
         showsStatusBar = visible
         persist()
@@ -2608,6 +2621,7 @@ final class AppModel {
             checksForUpdates: checksForUpdates,
             showsStatusBar: showsStatusBar,
             usageBarDetail: usageBarDetail,
+            claudeContextWindow: claudeContextWindow,
             terminalFontSize: terminalFontSize,
             terminalUsesGPURendering: terminalUsesGPURendering,
             reviewComments: reviewComments,

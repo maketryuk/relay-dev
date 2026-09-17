@@ -94,6 +94,21 @@ struct WorkspaceStoreTests {
         #expect(WorkspaceStore(url: url).load().sessionOrder.isEmpty)
     }
 
+    @Test("The window Claude sessions are taken to run with is remembered")
+    func contextWindowPreferenceRoundTrips() throws {
+        let directory = try TemporaryDirectory()
+        let url = directory.url.appendingPathComponent("workspace.json")
+
+        WorkspaceStore(url: url).saveNow(WorkspaceState(claudeContextWindow: .long))
+        #expect(WorkspaceStore(url: url).load().claudeContextWindow == .long)
+
+        // A workspace written before there was a choice works it out, which is
+        // what it did before the setting existed.
+        let older = directory.url.appendingPathComponent("older.json")
+        try #"{"version":1,"projects":[]}"#.write(to: older, atomically: true, encoding: .utf8)
+        #expect(WorkspaceStore(url: older).load().claudeContextWindow == .automatic)
+    }
+
     @Test("A corrupt file is quarantined and startup still succeeds")
     func corruptFileIsQuarantined() throws {
         let directory = try TemporaryDirectory()

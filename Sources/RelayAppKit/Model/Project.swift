@@ -125,6 +125,9 @@ struct WorkspaceState: Codable {
     /// stored under changed with the meaning, so a value written when it
     /// meant something else is ignored rather than honoured.
     var usageBarDetail: UsageDetail
+    /// Which window Claude sessions are taken to run with, since the CLI
+    /// records the model without the suffix that would say.
+    var claudeContextWindow: ContextWindowPreference
     /// How large the terminals are drawn, in points.
     var terminalFontSize: Double
     /// Whether terminals are drawn on the GPU.
@@ -159,6 +162,7 @@ struct WorkspaceState: Codable {
         checksForUpdates: Bool = true,
         showsStatusBar: Bool = true,
         usageBarDetail: UsageDetail = .compact,
+        claudeContextWindow: ContextWindowPreference = .automatic,
         terminalFontSize: Double = 12.5,
         terminalUsesGPURendering: Bool = true,
         reviewComments: [ReviewComment] = [],
@@ -185,6 +189,7 @@ struct WorkspaceState: Codable {
         self.checksForUpdates = checksForUpdates
         self.showsStatusBar = showsStatusBar
         self.usageBarDetail = usageBarDetail
+        self.claudeContextWindow = claudeContextWindow
         self.terminalFontSize = terminalFontSize
         self.terminalUsesGPURendering = terminalUsesGPURendering
         self.reviewComments = reviewComments
@@ -216,6 +221,8 @@ struct WorkspaceState: Codable {
         checksForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checksForUpdates) ?? true
         showsStatusBar = try container.decodeIfPresent(Bool.self, forKey: .showsStatusBar) ?? true
         usageBarDetail = try container.decodeIfPresent(UsageDetail.self, forKey: .usageBarDetail) ?? .compact
+        claudeContextWindow = try container
+            .decodeIfPresent(ContextWindowPreference.self, forKey: .claudeContextWindow) ?? .automatic
         terminalFontSize = try container.decodeIfPresent(Double.self, forKey: .terminalFontSize) ?? 12.5
         terminalUsesGPURendering = try container
             .decodeIfPresent(Bool.self, forKey: .terminalUsesGPURendering) ?? true
