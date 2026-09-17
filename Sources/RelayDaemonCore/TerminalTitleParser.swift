@@ -87,13 +87,50 @@ public struct TerminalTitleParser: Sendable {
         return Self.sanitise(text)
     }
 
+    /// The glyphs a CLI puts at the front of its title while it is thinking.
+    ///
+    /// Claude Code advances one of these with every frame of its spinner, so
+    /// the title arrives ten times a second with a different first character —
+    /// and the name of the session twitched wherever it was shown. What the
+    /// session is doing is already said twice over by the status dot and the
+    /// state line, so the frame carries nothing here that is not noise.
+    static let spinnerScalars: Set<Unicode.Scalar> = [
+        "·", "•", "∙", "*", "∗", "✢", "✳", "✶", "✷", "✻", "✽",
+        "◐", "◓", "◑", "◒", "◜", "◝", "◞", "◟", "⏳", "⌛",
+    ]
+
+    /// Braille cells, which is what most other spinners are made of.
+    private static func isBraille(_ scalar: Unicode.Scalar) -> Bool {
+        (0x2800 ... 0x28FF).contains(Int(scalar.value))
+    }
+
+    /// Drops a leading spinner frame, and only a leading spinner frame.
+    ///
+    /// The space after it is what makes this safe: a frame is always followed
+    /// by one, while a title that genuinely begins with such a character —
+    /// `*.swift`, say — is not, and keeps it.
+    static func strippingSpinner(_ title: String) -> String {
+        var remainder = Substring(title)
+        while let first = remainder.unicodeScalars.first,
+              spinnerScalars.contains(first) || isBraille(first) {
+            let afterGlyph = remainder.dropFirst()
+            guard let next = afterGlyph.first, next.isWhitespace else { break }
+            let rest = afterGlyph.drop(while: \.isWhitespace)
+            guard !rest.isEmpty else { break }
+            remainder = rest
+        }
+        return String(remainder)
+    }
+
     /// Strips control characters and rejects titles that carry no information.
     static func sanitise(_ raw: String) -> String? {
-        let cleaned = raw
-            .unicodeScalars
-            .filter { !$0.properties.isDefaultIgnorableCodePoint && ($0.value >= 0x20 || $0 == " ") }
-            .reduce(into: "") { $0.unicodeScalars.append($1) }
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleaned = strippingSpinner(
+            raw
+                .unicodeScalars
+                .filter { !$0.properties.isDefaultIgnorableCodePoint && ($0.value >= 0x20 || $0 == " ") }
+                .reduce(into: "") { $0.unicodeScalars.append($1) }
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        )
 
         guard !cleaned.isEmpty else { return nil }
         guard cleaned.count <= maximumTitleLength else {

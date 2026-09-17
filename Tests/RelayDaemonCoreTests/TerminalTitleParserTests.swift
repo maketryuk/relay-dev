@@ -76,7 +76,9 @@ struct TerminalTitleParserTests {
 
     @Test("Unicode titles survive")
     func unicodeTitle() {
-        #expect(title("\u{1B}]0;✳ Claude — рефакторинг\u{07}") == "✳ Claude — рефакторинг")
+        // About the bytes, not about the spinner: the frame this used to carry
+        // is now stripped on purpose, which `TerminalTitleSpinnerTests` owns.
+        #expect(title("\u{1B}]0;Claude — рефакторинг\u{07}") == "Claude — рефакторинг")
     }
 
     @Test("An over-long title is truncated instead of filling the sidebar")
@@ -95,5 +97,30 @@ struct TerminalTitleParserTests {
         #expect(parser.consume(Data(("\u{1B}]0;" + String(repeating: "y", count: 5000)).utf8)) == nil)
         // The parser recovers for the next well-formed sequence.
         #expect(parser.consume(Data("\u{1B}]0;recovered\u{07}".utf8)) == "recovered")
+    }
+}
+
+@Suite("Titles that animate")
+struct TerminalTitleSpinnerTests {
+    @Test("A spinner frame at the front is not part of the name")
+    func spinnerIsStripped() {
+        // Claude Code writes `<frame> <what it is doing>` and advances the
+        // frame ten times a second, so the name flickered wherever it was
+        // shown — in the sidebar, in the pane header, in the window title.
+        #expect(TerminalTitleParser.sanitise("✳ Fix the session loss") == "Fix the session loss")
+        #expect(TerminalTitleParser.sanitise("· Fix the session loss") == "Fix the session loss")
+        #expect(TerminalTitleParser.sanitise("✽  Fix the session loss") == "Fix the session loss")
+        #expect(TerminalTitleParser.sanitise("⠹ npm run build") == "npm run build")
+    }
+
+    @Test("A title that merely begins with one of those characters keeps it")
+    func onlyAFrameIsStripped() {
+        // The space is what tells them apart: a frame is always followed by
+        // one, and `*.swift` is not.
+        #expect(TerminalTitleParser.sanitise("*.swift") == "*.swift")
+        #expect(TerminalTitleParser.sanitise("·config") == "·config")
+        // Nothing but a frame is left alone, since stripping it leaves nothing
+        // to show.
+        #expect(TerminalTitleParser.sanitise("✳") == "✳")
     }
 }
