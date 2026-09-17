@@ -2073,7 +2073,7 @@ final class AppModel {
         guard !isTabAvailable(tab, for: project) else { return tab.title }
         switch tab {
         case .git:
-            return "\(tab.title) — " + relayLocalized("not a git repository")
+            return "\(tab.title) — " + relayLocalized("not a git repository. Click to look again.")
         case .docker:
             return projectsCheckingDocker.contains(project.id)
                 ? relayLocalized("Docker — checking…")
@@ -2085,6 +2085,16 @@ final class AppModel {
 
     func isCheckingDocker(_ projectID: ProjectID) -> Bool {
         projectsCheckingDocker.contains(projectID)
+    }
+
+    /// Looks for a repository again in a project whose Git tab is off.
+    ///
+    /// The same reason the Docker tab can be asked again: a project is often
+    /// adopted before `git init` or a clone has happened in it, and an
+    /// answer from that moment is not worth keeping for the life of the app.
+    func recheckGit(for projectID: ProjectID) {
+        refreshGit(for: projectID)
+        refreshChanges(for: projectID)
     }
 
     /// Asks Docker again for a project whose tab came up empty.
@@ -2162,14 +2172,18 @@ final class AppModel {
         persist()
     }
 
+    /// Picks a tab, and never un-picks one.
+    ///
+    /// Clicking the tab that is already open used to close the panel, which is
+    /// a second meaning for one target: the click that means "show me the
+    /// changes" and the click that means "take the panel away" were the same
+    /// gesture, and the one nobody intended happened whenever the panel was
+    /// already showing what was asked for. Closing it is the toggle in the
+    /// title bar, and its shortcut.
     func selectRightSidebarTab(_ tab: RightSidebarTab) {
         guard let project = selectedProject, isTabAvailable(tab, for: project) else { return }
-        if rightSidebarTab == tab, isRightSidebarVisible {
-            isRightSidebarVisible = false
-        } else {
-            rightSidebarTab = tab
-            isRightSidebarVisible = true
-        }
+        rightSidebarTab = tab
+        isRightSidebarVisible = true
         persist()
     }
 

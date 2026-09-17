@@ -48,6 +48,15 @@ breaking change to stored data.
 
 ### Changed
 
+- **A tab in the right-hand panel no longer closes it.** Clicking the tab that
+  was already open took the panel away, which made one target mean two things —
+  and the meaning nobody intended is the one that happened whenever the panel
+  was already showing what was asked for. The toggle in the title bar, and its
+  shortcut, still close it.
+- **A Git tab that says "not a repository" can be asked again.** Answered once
+  when the project was adopted, it stayed answered for the life of the app —
+  which is wrong for a folder that has been cloned or `git init`-ed since.
+  Clicking it looks again, the way the Docker tab already did.
 - **The Session and Project menus no longer list nine numbered entries.**
   `Session 1` through `Session 9` were there to carry ⌘1…⌘9, which macOS can
   only attach to a menu item; they filled half of each menu and named nothing.

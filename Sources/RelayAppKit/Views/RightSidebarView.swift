@@ -38,9 +38,10 @@ struct RightSidebarView: View {
     private func tabButton(_ tab: RightSidebarTab) -> some View {
         let isAvailable = model.isTabAvailable(tab, for: project)
         let isSelected = model.rightSidebarTab == tab && model.isRightSidebarVisible
-        // A Docker tab that found nothing is off, not finished: containers get
-        // started after the project is opened, and clicking is how you ask.
-        let isRetryable = tab == .docker && !isAvailable
+        // A tab that found nothing is off, not finished: containers get
+        // started and repositories get cloned after a project is opened, and
+        // clicking is how you ask again.
+        let isRetryable = !isAvailable && (tab == .docker || tab == .git)
 
         return IconButton(
             systemImage: tab.symbolName,
@@ -53,6 +54,8 @@ struct RightSidebarView: View {
         ) {
             if isAvailable {
                 model.selectRightSidebarTab(tab)
+            } else if tab == .git {
+                model.recheckGit(for: project.id)
             } else if isRetryable {
                 model.recheckDocker(for: project.id)
             }

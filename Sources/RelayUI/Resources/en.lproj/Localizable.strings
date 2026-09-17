@@ -275,7 +275,7 @@
 "No textual difference" = "No textual difference";
 "No upstream" = "No upstream";
 "Not a directive: %@" = "Not a directive: %@";
-"not a git repository" = "not a git repository";
+"not a git repository. Click to look again." = "not a git repository. Click to look again.";
 "Not a repository" = "Not a repository";
 "Not in the agent — the passphrase is asked for on every connection." = "Not in the agent — the passphrase is asked for on every connection.";
 "Not set" = "Not set";

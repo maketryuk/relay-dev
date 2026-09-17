@@ -275,7 +275,7 @@
 "No textual difference" = "Текстовых отличий нет";
 "No upstream" = "Без upstream";
 "Not a directive: %@" = "Это не директива: %@";
-"not a git repository" = "не git-репозиторий";
+"not a git repository. Click to look again." = "не git-репозиторий. Нажмите, чтобы проверить снова.";
 "Not a repository" = "Не репозиторий";
 "Not in the agent — the passphrase is asked for on every connection." = "Нет в агенте — passphrase спрашивают при каждом подключении.";
 "Not set" = "Не задано";
