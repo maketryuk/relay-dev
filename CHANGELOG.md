@@ -37,6 +37,15 @@ breaking change to stored data.
   not whether it was the long-context variant of it, so a 1M session read as
   though it were on 200K until more than 200K had been put in it.
 
+- **Conflicts are resolved in Relay.** When a pull stops on a conflict the panel
+  that answers it opens by itself: the conflicted files, and for each passage
+  the two versions git could not reconcile, named by git's own labels — which
+  side is "mine" reverses between a merge and a rebase, so the app does not
+  pretend to know. Take either side or keep both, per passage rather than per
+  file, mark the file resolved, and the footer finishes the rebase, merge,
+  cherry-pick or revert — or aborts it. A half-answered file keeps its markers,
+  so nothing can be committed by accident.
+
 ### Changed
 
 - **The Session and Project menus no longer list nine numbered entries.**

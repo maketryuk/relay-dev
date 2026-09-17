@@ -158,6 +158,44 @@ enum GitActions {
         run(["-C", root, "switch"] + (creating ? ["-c", branch] : [branch]), at: root)
     }
 
+    /// Writes a file that has been resolved and stages it.
+    ///
+    /// Staging is half the resolution: git decides that a conflict is settled
+    /// when the path is in the index, and a file edited but not added leaves
+    /// the rebase stopped with nothing to continue from.
+    static func resolve(_ path: String, contents: String, at root: String) -> String? {
+        let url = URL(fileURLWithPath: root).appendingPathComponent(path)
+        do {
+            try contents.write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            return error.localizedDescription
+        }
+        return stage([path], at: root)
+    }
+
+    /// Finishes whatever the repository is in the middle of.
+    ///
+    /// Each operation is finished by its own command: a rebase by
+    /// `--continue`, a merge by the commit it was going to make. Offering the
+    /// wrong one leaves the repository exactly where it was.
+    static func finish(_ operation: GitMergeState.Operation, at root: String) -> String? {
+        switch operation {
+        case .rebase: run(["rebase", "--continue"], at: root)
+        case .merge: run(["commit", "--no-edit"], at: root)
+        case .cherryPick: run(["cherry-pick", "--continue"], at: root)
+        case .revert: run(["revert", "--continue"], at: root)
+        }
+    }
+
+    static func abort(_ operation: GitMergeState.Operation, at root: String) -> String? {
+        switch operation {
+        case .rebase: run(["rebase", "--abort"], at: root)
+        case .merge: run(["merge", "--abort"], at: root)
+        case .cherryPick: run(["cherry-pick", "--abort"], at: root)
+        case .revert: run(["revert", "--abort"], at: root)
+        }
+    }
+
     static func commit(message: String, at root: String) -> String? {
         let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
@@ -203,7 +241,8 @@ enum GitActions {
         run(remote.arguments, at: root)
     }
 
-    /// One command against the remote, spelled out by the caller.
+    /// One command that must not stop to ask anybody anything, spelled out by
+    /// the caller.
     ///
     /// The timeout is long enough for a fetch over a slow link and short
     /// enough that a prompt for a password — which cannot be answered here —
@@ -220,9 +259,14 @@ enum GitActions {
     ) -> String? {
         var arguments = arguments
         if !interactive {
-            // A remote that wants credentials must fail rather than wait: there
-            // is no terminal here to type them into.
-            arguments = ["-c", "core.askPass=", "-c", "credential.interactive=never"] + arguments
+            // A remote that wants credentials must fail rather than wait, and
+            // neither may anything stop to open an editor: there is no
+            // terminal here to type into either of them.
+            arguments = [
+                "-c", "core.askPass=",
+                "-c", "credential.interactive=never",
+                "-c", "core.editor=true",
+            ] + arguments
         }
         guard let result = Shell.capture(
             GitWorkingCopyReader.executable,

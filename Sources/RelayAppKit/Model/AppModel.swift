@@ -79,6 +79,12 @@ final class AppModel {
     private(set) var isCommitting = false
     /// A remote command in flight, named so the panel can say which.
     private(set) var runningRemoteCommand: GitActions.Remote?
+    /// What each project's repository is in the middle of, read alongside the
+    /// working copy.
+    private(set) var mergeStates: [ProjectID: GitMergeState] = [:]
+    /// Conflicted files as they are on disk, parsed into the sides a person
+    /// has to choose between. Keyed by project and path.
+    private(set) var conflicts: [String: GitConflictFile] = [:]
     /// The pull or push the transfer panel is running, if any.
     private(set) var runningTransfer: GitTransfer?
     /// The remotes each project has, read when the transfer panel opens.
@@ -1109,6 +1115,10 @@ final class AppModel {
             let copy = await Task.detached(priority: .utility) {
                 GitWorkingCopyReader.changes(at: path)
             }.value
+            let merge = await Task.detached(priority: .utility) {
+                GitMergeStateReader.read(at: path)
+            }.value
+            self?.mergeStates[projectID] = merge
             guard let self else { return }
             let previous = self.gitChanges[projectID]
             guard previous != copy else { return }
@@ -1319,10 +1329,17 @@ final class AppModel {
             title: String(
                 format: relayLocalized("%@ failed"),
                 relayLocalized(transfer.direction == .pull ? "Pull" : "Push")
-            )
-        ) { root in
-            GitActions.run(arguments, at: root)
-        } onSuccess: { [weak self] in
+            ),
+            action: { root in
+                GitActions.run(arguments, at: root)
+            },
+            onFailure: { [weak self] in
+                // A pull that stops on a conflict has not failed so much as
+                // asked a question, and the panel that answers it is more use
+                // than the message saying it was asked.
+                self?.presentConflictsIfAny(in: projectID)
+            }
+        ) { [weak self] in
             self?.present(ToastContent(
                 kind: .success,
                 title: transfer.commandLine,
@@ -1332,6 +1349,93 @@ final class AppModel {
         }
         // Both ends of it moved: what is outgoing, and which branches exist.
         refreshBranches(for: projectID)
+    }
+
+    // MARK: - Conflicts
+
+    func mergeState(in projectID: ProjectID) -> GitMergeState {
+        mergeStates[projectID] ?? GitMergeState(operation: nil)
+    }
+
+    func conflict(_ path: String, in projectID: ProjectID) -> GitConflictFile? {
+        conflicts[key(projectID, path)]
+    }
+
+    /// Opens the panel that resolves what is conflicted.
+    func resolveConflicts(in projectID: ProjectID) {
+        presentModal(.conflicts(projectID))
+        refreshChanges(for: projectID)
+    }
+
+    /// Reads one conflicted file from disk and splits it at its markers.
+    func loadConflict(_ path: String, in projectID: ProjectID) {
+        guard let root = project(projectID)?.rootPath else { return }
+        let identifier = key(projectID, path)
+        Task { [weak self] in
+            let parsed = await Task.detached(priority: .userInitiated) { () -> GitConflictFile? in
+                let url = URL(fileURLWithPath: root).appendingPathComponent(path)
+                guard let contents = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+                return GitConflictFile.parse(contents)
+            }.value
+            guard let self else { return }
+            if let parsed {
+                self.conflicts[identifier] = parsed
+            } else {
+                self.conflicts.removeValue(forKey: identifier)
+            }
+        }
+    }
+
+    /// Writes a file with every conflict in it answered, and stages it.
+    func resolveConflict(
+        _ path: String,
+        in projectID: ProjectID,
+        choosing choices: [Int: GitConflictChoice]
+    ) {
+        guard let file = conflict(path, in: projectID) else { return }
+        let contents = file.resolved(with: choices)
+        let identifier = key(projectID, path)
+        perform(
+            in: projectID,
+            title: String(format: relayLocalized("Could not resolve %@"), path)
+        ) { root in
+            GitActions.resolve(path, contents: contents, at: root)
+        } onSuccess: { [weak self] in
+            self?.conflicts.removeValue(forKey: identifier)
+        }
+    }
+
+    /// Finishes the rebase, merge or cherry-pick once nothing is conflicted.
+    func finishMergeOperation(in projectID: ProjectID) {
+        guard let operation = mergeState(in: projectID).operation else { return }
+        perform(
+            in: projectID,
+            title: relayLocalized("Could not continue")
+        ) { root in
+            GitActions.finish(operation, at: root)
+        } onSuccess: { [weak self] in
+            self?.conflicts.removeAll()
+            self?.refreshChanges(for: projectID)
+            // Gone, if it went: the panel has nothing left to show and a
+            // dialog that stays open over a finished rebase invites a second
+            // one.
+            if self?.mergeState(in: projectID).isInProgress != true {
+                self?.dismissModal()
+            }
+        }
+    }
+
+    func abortMergeOperation(in projectID: ProjectID) {
+        guard let operation = mergeState(in: projectID).operation else { return }
+        perform(
+            in: projectID,
+            title: relayLocalized("Could not abort")
+        ) { root in
+            GitActions.abort(operation, at: root)
+        } onSuccess: { [weak self] in
+            self?.conflicts.removeAll()
+            self?.dismissModal()
+        }
     }
 
     /// Hands over what was waiting, once there is a prompt to hand it to.
@@ -1625,6 +1729,7 @@ final class AppModel {
         in projectID: ProjectID,
         title: String,
         action: @escaping @Sendable (String) -> String?,
+        onFailure: (@MainActor () -> Void)? = nil,
         onSuccess: (@MainActor () -> Void)? = nil
     ) {
         guard let root = project(projectID)?.rootPath else { return }
@@ -1638,11 +1743,34 @@ final class AppModel {
             self.runningTransfer = nil
             if let failure {
                 self.present(ToastContent(kind: .error, title: title, message: Self.summarised(failure)))
+                onFailure?()
             } else {
                 onSuccess?()
             }
             self.refreshChanges(for: projectID)
             self.refreshGit(for: projectID)
+        }
+    }
+
+    /// Opens the conflict panel when the repository has been left mid-operation.
+    ///
+    /// Read rather than inferred from the command that failed: a pull can fail
+    /// for a dozen reasons that leave nothing to resolve, and the repository
+    /// itself is the only thing that knows which happened.
+    private func presentConflictsIfAny(in projectID: ProjectID) {
+        guard let root = project(projectID)?.rootPath else { return }
+        Task { [weak self] in
+            let state = await Task.detached(priority: .userInitiated) {
+                GitMergeStateReader.read(at: root)
+            }.value
+            let copy = await Task.detached(priority: .userInitiated) {
+                GitWorkingCopyReader.changes(at: root)
+            }.value
+            guard let self else { return }
+            self.mergeStates[projectID] = state
+            if let copy { self.gitChanges[projectID] = copy }
+            guard state.isInProgress || !(copy?.conflicted.isEmpty ?? true) else { return }
+            self.presentModal(.conflicts(projectID))
         }
     }
 

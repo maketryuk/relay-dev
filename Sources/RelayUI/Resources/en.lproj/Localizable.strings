@@ -14,6 +14,7 @@
 "%d branches" = "%d branches";
 "%d changed" = "%d changed";
 "%d commits to push" = "%d commits to push";
+"%d conflicted" = "%d conflicted";
 "%d picked" = "%d picked";
 "%d unmodified lines" = "%d unmodified lines";
 "%d unread" = "%d unread";
@@ -22,6 +23,7 @@
 "A port is a number between 1 and 65535." = "A port is a number between 1 and 65535.";
 "A project file tree and an editor with linting will live here." = "A project file tree and an editor with linting will live here.";
 "A session, service or container exited with an error" = "A session, service or container exited with an error";
+"Abort" = "Abort";
 "About" = "About";
 "Add a local directory to start running agents, shells and dev servers in one place." = "Add a local directory to start running agents, shells and dev servers in one place.";
 "Add a marker…" = "Add a marker…";
@@ -66,6 +68,7 @@
 "Check for updates" = "Check for updates";
 "Check now" = "Check now";
 "Checks out a local branch that follows it" = "Checks out a local branch that follows it";
+"Cherry-pick in progress" = "Cherry-pick in progress";
 "Choose Folder…" = "Choose Folder…";
 "Choose…" = "Choose…";
 "Claude Code records the model without saying which window it runs with" = "Claude Code records the model without saying which window it runs with";
@@ -94,10 +97,12 @@
 "Commits, branch switching and diffs will live here." = "Commits, branch switching and diffs will live here.";
 "Compact" = "Compact";
 "conflict" = "conflict";
+"Conflicts in the working copy" = "Conflicts in the working copy";
 "Connect SSH: %@" = "Connect SSH: %@";
 "Connect" = "Connect";
 "Connected — sessions keep running when Relay is closed" = "Connected — sessions keep running when Relay is closed";
 "Context" = "Context";
+"Continue" = "Continue";
 "Conversations" = "Conversations";
 "Copy" = "Copy";
 "Copy Container Name" = "Copy Container Name";
@@ -105,10 +110,13 @@
 "Copy path" = "Copy path";
 "Copy session ID" = "Copy session ID";
 "Copy URL" = "Copy URL";
+"Could not abort" = "Could not abort";
 "Could not attach to the session" = "Could not attach to the session";
 "Could not commit" = "Could not commit";
+"Could not continue" = "Could not continue";
 "Could not discard" = "Could not discard";
 "Could not reach the session daemon" = "Could not reach the session daemon";
+"Could not resolve %@" = "Could not resolve %@";
 "Could not stage" = "Could not stage";
 "Could not start" = "Could not start";
 "Could not stop the process" = "Could not stop the process";
@@ -162,6 +170,7 @@
 "Every %d days" = "Every %d days";
 "Every %d hours" = "Every %d hours";
 "Every %d minutes" = "Every %d minutes";
+"Everything has been resolved and staged." = "Everything has been resolved and staged.";
 "Everything listening on this Mac" = "Everything listening on this Mac";
 "exited %@" = "exited %@";
 "Exited with an error" = "Exited with an error";
@@ -208,6 +217,7 @@
 "it was signed by someone else" = "it was signed by someone else";
 "its signature is not valid" = "its signature is not valid";
 "Jump by number" = "Jump by number";
+"Keep both" = "Keep both";
 "Key" = "Key";
 "Key unlocked" = "Key unlocked";
 "Language" = "Language";
@@ -224,6 +234,8 @@
 "Make this branch follow the one it is pushed to" = "Make this branch follow the one it is pushed to";
 "Makes this branch follow the one it is pushed to" = "Makes this branch follow the one it is pushed to";
 "Mark all read" = "Mark all read";
+"Mark resolved" = "Mark resolved";
+"Merge in progress" = "Merge in progress";
 "Merge only if it can be fast-forwarded" = "Merge only if it can be fast-forwarded";
 "Merge, but do not commit the result" = "Merge, but do not commit the result";
 "Model" = "Model";
@@ -251,6 +263,7 @@
 "No containers for this project. Press Up to start the stack." = "No containers for this project. Press Up to start the stack.";
 "No host matches “%@”." = "No host matches “%@”.";
 "No hosts configured" = "No hosts configured";
+"No markers left in this file — mark it resolved." = "No markers left in this file — mark it resolved.";
 "No match" = "No match";
 "No matching commands" = "No matching commands";
 "No port matches “%@”." = "No port matches “%@”.";
@@ -268,6 +281,7 @@
 "Not set" = "Not set";
 "Notes" = "Notes";
 "Nothing changed" = "Nothing changed";
+"Nothing is conflicted" = "Nothing is conflicted";
 "Nothing is listening" = "Nothing is listening";
 "Nothing left to do" = "Nothing left to do";
 "Nothing selected" = "Nothing selected";
@@ -335,6 +349,7 @@
 "Re-read the working copy" = "Re-read the working copy";
 "Reading…" = "Reading…";
 "Reasoning" = "Reasoning";
+"Rebase in progress" = "Rebase in progress";
 "Rebase the current branch on top of incoming changes" = "Rebase the current branch on top of incoming changes";
 "Reconnect" = "Reconnect";
 "Refresh containers" = "Refresh containers";
@@ -365,6 +380,8 @@
 "Reset" = "Reset";
 "Resets in %@" = "Resets in %@";
 "resets in %@" = "resets in %@";
+"Resolve conflicts" = "Resolve conflicts";
+"Resolve conflicts…" = "Resolve conflicts…";
 "Restart %@" = "Restart %@";
 "Restart container" = "Restart container";
 "Restart Dev Service" = "Restart Dev Service";
@@ -376,6 +393,7 @@
 "Retry" = "Retry";
 "Reveal Owner Session" = "Reveal Owner Session";
 "Reveal" = "Reveal";
+"Revert in progress" = "Revert in progress";
 "Review Changes" = "Review Changes";
 "Root path" = "Root path";
 "Run a command…" = "Run a command…";
@@ -490,6 +508,7 @@
 "Too large to show" = "Too large to show";
 "Turn everything off without losing your other choices" = "Turn everything off without losing your other choices";
 "Uncommitted changes are set aside and put back" = "Uncommitted changes are set aside and put back";
+"Undo" = "Undo";
 "Unlock" = "Unlock";
 "Unlock Key" = "Unlock Key";
 "Unlock once" = "Unlock once";

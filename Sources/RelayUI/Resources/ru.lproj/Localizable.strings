@@ -14,6 +14,7 @@
 "%d branches" = "Веток: %d";
 "%d changed" = "изменено: %d";
 "%d commits to push" = "%d коммитов к отправке";
+"%d conflicted" = "с конфликтами: %d";
 "%d picked" = "выбрано: %d";
 "%d unmodified lines" = "Неизменённых строк: %d";
 "%d unread" = "непрочитанных: %d";
@@ -22,6 +23,7 @@
 "A port is a number between 1 and 65535." = "Порт — число от 1 до 65535.";
 "A project file tree and an editor with linting will live here." = "Здесь появится дерево файлов проекта и редактор с линтером.";
 "A session, service or container exited with an error" = "Сессия, сервис или контейнер завершились с ошибкой";
+"Abort" = "Прервать";
 "About" = "О программе";
 "Add a local directory to start running agents, shells and dev servers in one place." = "Добавьте локальную папку, чтобы запускать агентов, терминалы и dev-серверы в одном месте.";
 "Add a marker…" = "Добавить маркер…";
@@ -66,6 +68,7 @@
 "Check for updates" = "Проверка обновлений";
 "Check now" = "Проверить";
 "Checks out a local branch that follows it" = "Создаст локальную ветку, следящую за ней";
+"Cherry-pick in progress" = "Идёт cherry-pick";
 "Choose Folder…" = "Выбрать папку…";
 "Choose…" = "Выбрать…";
 "Claude Code records the model without saying which window it runs with" = "Claude Code записывает модель, но не говорит, с каким окном она работает";
@@ -94,10 +97,12 @@
 "Commits, branch switching and diffs will live here." = "Здесь появятся коммиты, переключение веток и diff.";
 "Compact" = "Компактно";
 "conflict" = "конфликт";
+"Conflicts in the working copy" = "Конфликты в рабочей копии";
 "Connect SSH: %@" = "Подключиться по SSH: %@";
 "Connect" = "Подключиться";
 "Connected — sessions keep running when Relay is closed" = "Подключено — сессии работают и при закрытом Relay";
 "Context" = "Контекст";
+"Continue" = "Продолжить";
 "Conversations" = "Разговоры";
 "Copy" = "Копировать";
 "Copy Container Name" = "Скопировать имя контейнера";
@@ -105,10 +110,13 @@
 "Copy path" = "Скопировать путь";
 "Copy session ID" = "Скопировать ID сессии";
 "Copy URL" = "Скопировать URL";
+"Could not abort" = "Не удалось прервать";
 "Could not attach to the session" = "Не удалось подключиться к сессии";
 "Could not commit" = "Не удалось закоммитить";
+"Could not continue" = "Не удалось продолжить";
 "Could not discard" = "Не удалось отменить изменения";
 "Could not reach the session daemon" = "Не удалось связаться с демоном сессий";
+"Could not resolve %@" = "Не удалось разрешить %@";
 "Could not stage" = "Не удалось добавить в индекс";
 "Could not start" = "Не удалось запустить";
 "Could not stop the process" = "Не удалось остановить процесс";
@@ -162,6 +170,7 @@
 "Every %d days" = "Каждые %d дней";
 "Every %d hours" = "Каждые %d часов";
 "Every %d minutes" = "Каждые %d минут";
+"Everything has been resolved and staged." = "Всё разрешено и добавлено в индекс.";
 "Everything listening on this Mac" = "Всё, что слушает на этом Mac";
 "exited %@" = "код выхода %@";
 "Exited with an error" = "Завершилась с ошибкой";
@@ -208,6 +217,7 @@
 "it was signed by someone else" = "она подписана кем-то другим";
 "its signature is not valid" = "её подпись недействительна";
 "Jump by number" = "Переход по номеру";
+"Keep both" = "Оставить оба";
 "Key" = "Ключ";
 "Key unlocked" = "Ключ разблокирован";
 "Language" = "Язык";
@@ -224,6 +234,8 @@
 "Make this branch follow the one it is pushed to" = "Ветка начнёт следить за той, куда её отправили";
 "Makes this branch follow the one it is pushed to" = "Ветка начнёт следить за той, куда её отправили";
 "Mark all read" = "Отметить всё прочитанным";
+"Mark resolved" = "Отметить разрешённым";
+"Merge in progress" = "Идёт merge";
 "Merge only if it can be fast-forwarded" = "Слить только если получится fast-forward";
 "Merge, but do not commit the result" = "Слить, но не коммитить результат";
 "Model" = "Модель";
@@ -251,6 +263,7 @@
 "No containers for this project. Press Up to start the stack." = "Для этого проекта нет контейнеров. Нажмите «Запустить», чтобы поднять стек.";
 "No host matches “%@”." = "Нет хостов по запросу «%@».";
 "No hosts configured" = "Хосты не настроены";
+"No markers left in this file — mark it resolved." = "В файле не осталось маркеров — отметьте его разрешённым.";
 "No match" = "Ничего не найдено";
 "No matching commands" = "Команды не найдены";
 "No port matches “%@”." = "Нет портов по запросу «%@».";
@@ -268,6 +281,7 @@
 "Not set" = "Не задано";
 "Notes" = "Заметки";
 "Nothing changed" = "Изменений нет";
+"Nothing is conflicted" = "Конфликтов нет";
 "Nothing is listening" = "Никто не слушает";
 "Nothing left to do" = "Ничего не осталось";
 "Nothing selected" = "Ничего не выбрано";
@@ -335,6 +349,7 @@
 "Re-read the working copy" = "Перечитать рабочую копию";
 "Reading…" = "Читаю…";
 "Reasoning" = "Рассуждение";
+"Rebase in progress" = "Идёт rebase";
 "Rebase the current branch on top of incoming changes" = "Переложить текущую ветку поверх пришедших изменений";
 "Reconnect" = "Переподключиться";
 "Refresh containers" = "Обновить контейнеры";
@@ -365,6 +380,8 @@
 "Reset" = "Сбросить";
 "resets in %@" = "сбрасывается через %@";
 "Resets in %@" = "Сброс через %@";
+"Resolve conflicts" = "Разрешить конфликты";
+"Resolve conflicts…" = "Разрешить конфликты…";
 "Restart %@" = "Перезапустить %@";
 "Restart container" = "Перезапустить контейнер";
 "Restart Dev Service" = "Перезапустить dev-сервис";
@@ -376,6 +393,7 @@
 "Retry" = "Повторить";
 "Reveal Owner Session" = "Показать сессию-владельца";
 "Reveal" = "Показать";
+"Revert in progress" = "Идёт revert";
 "Review Changes" = "Посмотреть изменения";
 "Root path" = "Путь к папке";
 "Run a command…" = "Выполнить команду…";
@@ -490,6 +508,7 @@
 "Too large to show" = "Слишком большой для показа";
 "Turn everything off without losing your other choices" = "Выключить всё, не теряя остальные настройки";
 "Uncommitted changes are set aside and put back" = "Незакоммиченные изменения отложатся и вернутся";
+"Undo" = "Отменить";
 "Unlock" = "Разблокировать";
 "Unlock Key" = "Разблокировать ключ";
 "Unlock once" = "Разблокировать один раз";

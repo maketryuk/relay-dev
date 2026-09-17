@@ -185,6 +185,13 @@ struct GitPane: View {
             } label: {
                 Label(relayLocalized("Fetch"), systemImage: "arrow.triangle.2.circlepath")
             }
+            if !changes.conflicted.isEmpty || model.mergeState(in: project.id).isInProgress {
+                Button {
+                    model.resolveConflicts(in: project.id)
+                } label: {
+                    Label(relayLocalized("Resolve conflicts…"), systemImage: "exclamationmark.triangle")
+                }
+            }
             Divider()
             Button(relayLocalized("Stage all")) { model.setAllStaged(true, in: project.id) }
             Button(relayLocalized("Unstage all")) { model.setAllStaged(false, in: project.id) }
