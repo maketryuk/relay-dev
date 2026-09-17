@@ -7,6 +7,63 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Added
+
+- **SSH hosts can be added, edited and deleted from the list.** Until now the
+  panel could only read `~/.ssh/config` and connect to what it found there, so
+  every new machine meant leaving the app for an editor. The list now carries a
+  plus, and every row a pencil and a bin.
+- **Edits go into the config OpenSSH itself reads.** A host added in Relay is a
+  host `ssh` reaches from any terminal, and a host edited in Relay is edited
+  where it was already written — including in a file pulled in by `Include`,
+  which is where a work machine usually keeps them. Nothing is kept in a list
+  of Relay's own, because a second place to look is a second place to be wrong.
+- **The rest of the file is left exactly as it was.** Only the lines of the
+  block being changed are rewritten, so comments, blank lines, the order of
+  directives and somebody's preference for `Hostname` over `HostName` all
+  survive. Directives Relay has no field for — `ControlMaster`,
+  `ServerAliveInterval`, anything — are shown in a text box and written back
+  untouched, so the editor cannot become a way of deleting what it does not
+  understand. Before the first write, a copy of the file is kept beside it as
+  `config.relay-backup`.
+
+- **The config file itself is one click away.** A form is the quick way to add
+  a machine; it is not the way to write a `Match` block or move twenty hosts
+  around. The list now opens `~/.ssh/config` in a Relay session with whatever
+  `$EDITOR` says, and a host's context menu opens it at that host's own block.
+  Neither replaces the other: the form knows what a host usually needs, the
+  file knows everything else.
+- **A key's passphrase is asked for once, in a dialog, and then never again.**
+  The prompt people actually meet is not the server's password but their own
+  key's. The host editor now shows which key the host would authenticate with
+  and whether `ssh-agent` is holding it; when it is not, one button opens a
+  sheet, and what is typed there goes straight to `ssh-add
+  --apple-use-keychain`. From then on the login keychain remembers it and `ssh`
+  reads it back by itself — Relay is not in the loop at all, and never was:
+  the passphrase is never written to a file, never passed as an argument and
+  never put in the environment, each of which any other process of this user
+  could read. A second button offers the `Host *` settings that make that
+  survive a restart.
+
+### Fixed
+
+- **Restarting a session starts the same session again.** It was rebuilt from
+  the kind alone, so everything else was thrown away: an SSH connection came
+  back as a bare `ssh` answering with its usage message, an agent started with
+  arguments came back without them, a session opened in a subdirectory came
+  back in the project root under a new name, and a service came back as an
+  ordinary terminal its own panel no longer recognised. The daemon knew all of
+  it the whole time; the button simply never asked.
+- **An SSH session no longer reports the branch of the Mac it was started
+  from.** Every session row carried the project's git branch and diff, so a
+  connection to somebody else's server sat under `master +589 −36` — true about
+  the wrong computer. An SSH row now says where it is connected instead,
+  `user@host` as the configuration spells it.
+- **Connecting to a host closes the host list.** It started the session and
+  then stayed open in front of it, so every connection ended with dismissing a
+  panel that had already done its job. The command palette and the branch list
+  have always closed themselves on the way out; this one had not.
+
 ### Changed
 
 - **Opening the diff leaves the panel the width it was.** It used to widen the

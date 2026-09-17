@@ -76,8 +76,7 @@ struct Project: Codable, Identifiable, Hashable {
     var url: URL { URL(fileURLWithPath: rootPath) }
 
     var displayPath: String {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        return rootPath.hasPrefix(home) ? "~" + rootPath.dropFirst(home.count) : rootPath
+        HomeRelativePath.abbreviating(rootPath)
     }
 
     mutating func togglePin(sshHost alias: String) {

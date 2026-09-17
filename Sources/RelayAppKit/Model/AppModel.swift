@@ -86,6 +86,13 @@ final class AppModel {
     /// only from a task — never while a view is drawing.
     private(set) var projectIcons: [ProjectID: ProjectArtwork] = [:]
     private(set) var sshHosts: [SSHHost] = []
+    /// The host a confirmation dialog is currently asking about.
+    var sshHostPendingDeletion: SSHHost?
+    /// Fingerprints the ssh-agent is holding, or nil when there is no agent.
+    private(set) var sshAgentKeys: Set<String>?
+    /// Whether `Host *` already carries the settings that make a passphrase be
+    /// asked for once.
+    private(set) var sshUsesKeychain = false
     private(set) var ports: [ListeningPort] = []
     private(set) var isRefreshingPorts = false
     /// Development ports only, by default: an unfiltered list is mostly macOS.
@@ -670,6 +677,17 @@ final class AppModel {
 
     func terminateSession(_ id: SessionID) {
         client.post(.terminate(id))
+    }
+
+    /// Starts the session again the way it was started the first time.
+    ///
+    /// Read from the snapshot, which carries the command and the directory the
+    /// daemon was given, rather than rebuilt from the kind — the kind alone
+    /// does not know which host an SSH session was connected to.
+    func restartSession(_ id: SessionID) {
+        guard let session = sessions[id] else { return }
+        closeSession(id)
+        launch(SessionRestart.spec(for: session))
     }
 
     /// Stops the process if needed and drops the session from the workspace.
@@ -2282,10 +2300,79 @@ final class AppModel {
         let configURL = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".ssh/config", isDirectory: false)
         Task { [weak self] in
-            let hosts = await Task.detached(priority: .utility) {
-                SSHConfigParser.parse(rootConfig: configURL)
+            let loaded = await Task.detached(priority: .utility) {
+                let hosts = SSHConfigParser.parse(rootConfig: configURL)
+                return (hosts, SSHConfigStore.hasKeychainDefaults(rootConfig: configURL))
             }.value
-            self?.sshHosts = hosts
+            self?.sshHosts = loaded.0
+            self?.sshUsesKeychain = loaded.1
+        }
+    }
+
+    /// Asks the agent what it is already holding.
+    ///
+    /// Relay never sees a passphrase: knowing which keys are unlocked is enough
+    /// to say whether connecting will stop to ask for one.
+    func refreshSSHAgent() {
+        Task { [weak self] in
+            let keys = await Task.detached(priority: .utility) { SSHAgent.loadedFingerprints() }.value
+            self?.sshAgentKeys = keys
+        }
+    }
+
+    /// Unlocks the key with a passphrase the user just typed, off the main
+    /// thread because it runs `ssh-add` and waits for it.
+    ///
+    /// The passphrase is passed along and dropped; what remembers it is the
+    /// login keychain, and what reads it back on the next connection is `ssh`.
+    func unlockSSHKey(
+        at path: String,
+        passphrase: String,
+        completion: @escaping (SSHAgent.UnlockResult) -> Void
+    ) {
+        Task { [weak self] in
+            let result = await Task.detached(priority: .userInitiated) {
+                SSHAgent.add(keyAt: path, passphrase: passphrase)
+            }.value
+            if case .added = result {
+                self?.refreshSSHAgent()
+                self?.present(ToastContent(
+                    kind: .success,
+                    title: relayLocalized("Key unlocked"),
+                    message: relayLocalized("It is in the agent and the keychain; ssh will not ask again.")
+                ))
+            }
+            completion(result)
+        }
+    }
+
+    /// Opens the configuration in a session, at the block if one is named.
+    ///
+    /// The form covers the fields most hosts need; the file covers everything
+    /// else, and there is no reason to make somebody leave the app to reach it.
+    func openSSHConfig(atLine line: Int? = nil) {
+        guard let projectID = selectedProjectID, let project = project(projectID) else { return }
+        let spec = SessionSpec(
+            projectID: projectID,
+            kind: .shell,
+            name: SessionNaming.nextName(base: "ssh config", existing: sessions(in: projectID).map(\.name)),
+            workingDirectory: project.rootPath,
+            command: [
+                "/bin/sh", "-c",
+                TerminalEditorCommand.opening(SSHConfigStore.rootConfig.path, atLine: line),
+            ]
+        )
+        launch(spec)
+        // The editor it opens is behind every panel that led here.
+        modalStack = []
+    }
+
+    func enableSSHKeychain() {
+        do {
+            try SSHConfigStore.enableKeychainDefaults()
+            loadSSHHosts()
+        } catch {
+            presentSSHFailure(error)
         }
     }
 
@@ -2323,6 +2410,62 @@ final class AppModel {
             command: ["ssh", host.alias]
         )
         launch(spec)
+    }
+
+    /// Every alias already spoken for, so the editor can say which one.
+    func sshAliases(excluding host: SSHHost?) -> Set<String> {
+        Set(sshHosts.map(\.alias)).subtracting(host.map { [$0.alias] } ?? [])
+    }
+
+    /// Writes the host into the user's own configuration, adding a block when
+    /// `host` is nil and patching the one it came from otherwise.
+    func saveSSHHost(_ draft: SSHHostDraft, replacing host: SSHHost?) {
+        do {
+            if let host, let definition = host.definitions.first {
+                try SSHConfigStore.update(draft, at: definition, previousAlias: host.alias)
+                renameSSHPins(from: host.alias, to: draft.alias.trimmingCharacters(in: .whitespaces))
+            } else {
+                try SSHConfigStore.add(draft)
+            }
+            loadSSHHosts()
+            dismissModal()
+        } catch {
+            presentSSHFailure(error)
+        }
+    }
+
+    func deleteSSHHost(_ host: SSHHost) {
+        do {
+            try SSHConfigStore.remove(alias: host.alias, from: host.definitions)
+            renameSSHPins(from: host.alias, to: nil)
+            loadSSHHosts()
+        } catch {
+            presentSSHFailure(error)
+        }
+    }
+
+    /// A pin is a reference to an alias, so an alias that moves takes its pins
+    /// with it and an alias that goes takes them away.
+    private func renameSSHPins(from previous: String, to alias: String?) {
+        guard previous != alias else { return }
+        for project in projects where project.pinnedSSHHosts.contains(previous) {
+            var updated = project
+            updated.pinnedSSHHosts = updated.pinnedSSHHosts.compactMap { $0 == previous ? alias : $0 }
+            updateProject(updated)
+        }
+    }
+
+    private func presentSSHFailure(_ error: Error) {
+        let failure = error as? SSHConfigStore.Failure
+        present(ToastContent(
+            kind: .error,
+            title: relayLocalized("Could not write the SSH config"),
+            message: [failure?.path, failure?.reason ?? error.localizedDescription]
+                .compactMap { $0 }
+                .joined(separator: " — "),
+            duration: nil,
+            key: "ssh-config-write"
+        ))
     }
 
     // MARK: - Sections

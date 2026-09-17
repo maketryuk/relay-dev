@@ -803,3 +803,52 @@ public struct Chip<Content: View>: View {
         isSelected ? Theme.Palette.accent.opacity(0.7) : .clear
     }
 }
+
+// MARK: - RelayTextEditor
+
+/// Several lines of plain text, dressed as a `RelayTextField`.
+///
+/// For the places where the content is a small piece of a file rather than a
+/// value: one directive per line, in the file's own words, so a form cannot
+/// become a way of deleting what it has no field for.
+public struct RelayTextEditor: View {
+    private let placeholder: String
+    @Binding private var text: String
+    private let minHeight: CGFloat
+
+    @FocusState private var isFocused: Bool
+
+    public init(_ placeholder: String, text: Binding<String>, minHeight: CGFloat = 72) {
+        self.placeholder = placeholder
+        _text = text
+        self.minHeight = minHeight
+    }
+
+    public var body: some View {
+        ZStack(alignment: .topLeading) {
+            if text.isEmpty {
+                Text(placeholder)
+                    .font(Theme.Typography.mono)
+                    .foregroundStyle(Theme.Palette.textTertiary)
+                    .padding(.horizontal, Theme.Spacing.small + 2)
+                    .padding(.vertical, 8)
+                    .allowsHitTesting(false)
+            }
+            TextEditor(text: $text)
+                .font(Theme.Typography.mono)
+                .foregroundStyle(Theme.Palette.textPrimary)
+                .focused($isFocused)
+                .scrollContentBackground(.hidden)
+                .padding(.horizontal, Theme.Spacing.small - 2)
+                .padding(.vertical, 4)
+        }
+        .frame(minHeight: minHeight, alignment: .topLeading)
+        .background(Theme.Palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
+                .strokeBorder(isFocused ? Theme.Palette.accent.opacity(0.7) : Theme.Palette.border, lineWidth: 1)
+        )
+        .relayPointer(.text)
+    }
+}

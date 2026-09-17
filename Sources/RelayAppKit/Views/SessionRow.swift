@@ -93,7 +93,24 @@ struct SessionRow: View {
 
     @ViewBuilder
     private var footerLine: some View {
-        if let git = model.gitStatuses[session.projectID] {
+        if session.kind == .ssh {
+            // The branch and the diff belong to the Mac Relay runs on, and this
+            // session is not on it: `master +589 −36` beside a connection to
+            // somebody else's server is true about the wrong computer. Where
+            // the connection goes is the thing worth the same line.
+            if let destination {
+                HStack(spacing: Theme.Spacing.xsmall) {
+                    Image(systemName: "arrow.up.forward")
+                        .font(.system(size: 9))
+                        .foregroundStyle(Theme.Palette.textTertiary)
+                    Text(destination)
+                        .font(Theme.Typography.caption)
+                        .foregroundStyle(Theme.Palette.textTertiary)
+                        .lineLimit(1)
+                    Spacer(minLength: Theme.Spacing.xsmall)
+                }
+            }
+        } else if let git = model.gitStatuses[session.projectID] {
             HStack(spacing: Theme.Spacing.xsmall) {
                 Image(systemName: "arrow.triangle.branch")
                     .font(.system(size: 9))
@@ -110,6 +127,13 @@ struct SessionRow: View {
                 }
             }
         }
+    }
+
+    /// `user@host:port` as the configuration spells it, falling back to the
+    /// alias when the host has since been renamed or removed.
+    private var destination: String? {
+        guard let alias = SSHDestination.alias(inCommand: session.command) else { return nil }
+        return model.sshHosts.first { $0.alias == alias }?.displayTarget ?? alias
     }
 
     /// The state line: what the session is doing, or how it ended.

@@ -223,10 +223,7 @@ struct TerminalPane: View {
                 .relayTooltip(relayLocalized("Split Down"), shortcut: model.binding(for: .splitDown))
 
                 IconButton(systemImage: "arrow.clockwise", help: "") {
-                    model.closeSession(session.id)
-                    if let projectID = model.selectedProjectID {
-                        model.createSession(kind: session.kind, in: projectID)
-                    }
+                    model.restartSession(session.id)
                 }
                 .relayTooltip(relayLocalized("Restart session"))
             }

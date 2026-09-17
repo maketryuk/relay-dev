@@ -42,6 +42,17 @@ struct SSHPane: View {
                 model.togglePin(host, in: projectID)
             })
         }
+        actions.append(RowAction(
+            id: "edit",
+            systemImage: "pencil",
+            label: relayLocalized("Edit Host")
+        ) { model.presentModal(.sshHostEditor(alias: host.alias)) })
+        actions.append(RowAction(
+            id: "delete",
+            systemImage: "trash",
+            label: relayLocalized("Delete Host"),
+            tint: Theme.Palette.statusError
+        ) { model.sshHostPendingDeletion = host })
         return actions
     }
 
@@ -66,6 +77,26 @@ struct SSHPane: View {
             focusedActions[focus.action].run()
         }
         .onAppear { model.loadSSHHosts() }
+        .confirmationDialog(
+            relayLocalized("Delete this host?"),
+            isPresented: Binding(
+                get: { model.sshHostPendingDeletion != nil },
+                set: { if !$0 { model.sshHostPendingDeletion = nil } }
+            ),
+            presenting: model.sshHostPendingDeletion
+        ) { host in
+            Button(relayLocalized("Delete Host"), role: .destructive) {
+                model.deleteSSHHost(host)
+                model.sshHostPendingDeletion = nil
+            }
+            Button(relayLocalized("Cancel"), role: .cancel) { model.sshHostPendingDeletion = nil }
+        } message: { host in
+            Text(verbatim: String(
+                format: relayLocalized("The block naming %@ is removed from %@."),
+                host.alias,
+                host.definitions.first.map { HomeRelativePath.abbreviating($0.file) } ?? "~/.ssh/config"
+            ))
+        }
     }
 
     private var header: some View {
@@ -75,6 +106,12 @@ struct SSHPane: View {
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
                 Spacer()
+                IconButton(systemImage: "doc.text", help: "", size: 24) { model.openSSHConfig() }
+                    .relayTooltip(relayLocalized("Edit the config file"))
+                IconButton(systemImage: "plus", help: "", size: 24) {
+                    model.presentModal(.sshHostEditor(alias: nil))
+                }
+                .relayTooltip(relayLocalized("New Host"))
                 IconButton(systemImage: "arrow.clockwise", help: "", size: 24) { model.loadSSHHosts() }
                     .relayTooltip(relayLocalized("Reload config"))
             }
@@ -91,13 +128,27 @@ struct SSHPane: View {
         let others = groups.others.filter { matches($0) }
 
         if pinned.isEmpty, others.isEmpty {
-            EmptyStateView(
-                systemImage: "network",
-                title: model.sshHosts.isEmpty ? "No hosts configured" : "No match",
-                message: model.sshHosts.isEmpty
-                    ? "Relay reads ~/.ssh/config, including Include directives. Nothing there yet."
-                    : "No host matches “\(query)”."
-            )
+            VStack(spacing: Theme.Spacing.medium) {
+                EmptyStateView(
+                    systemImage: "network",
+                    title: model.sshHosts.isEmpty ? "No hosts configured" : "No match",
+                    message: model.sshHosts.isEmpty
+                        ? "Relay reads ~/.ssh/config, including Include directives. Nothing there yet."
+                        : "No host matches “\(query)”."
+                )
+                .fixedSize(horizontal: false, vertical: true)
+                if model.sshHosts.isEmpty {
+                    HStack(spacing: Theme.Spacing.small) {
+                        RelayButton(relayLocalized("New Host"), systemImage: "plus", kind: .primary) {
+                            model.presentModal(.sshHostEditor(alias: nil))
+                        }
+                        RelayButton(relayLocalized("Edit the config file"), kind: .secondary) {
+                            model.openSSHConfig()
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             KeyboardScrollingList(
                 focusedRow: focus.row,
@@ -170,11 +221,24 @@ struct SSHPane: View {
                     model.togglePin(host, in: projectID)
                 }
             }
+            Divider()
+            Button(relayLocalized("Edit Host")) { model.presentModal(.sshHostEditor(alias: host.alias)) }
+            if let definition = host.definitions.first {
+                Button(relayLocalized("Open in the config file")) {
+                    model.openSSHConfig(atLine: definition.lines.lowerBound + 1)
+                }
+            }
+            Button(relayLocalized("Delete Host"), role: .destructive) {
+                model.sshHostPendingDeletion = host
+            }
         }
     }
 
     private func connect(_ host: SSHHost) {
         guard let projectID = model.selectedProjectID else { return }
         model.connectSSH(host, in: projectID)
+        // Connecting is what the list is for, not a step in using it: the
+        // session it opens is behind the panel that opened it.
+        model.dismissModal()
     }
 }

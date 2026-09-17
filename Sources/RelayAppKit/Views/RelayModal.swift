@@ -21,6 +21,10 @@ enum RelayModal: Identifiable, Hashable {
     case serviceEditor(projectID: ProjectID, serviceID: String?)
     /// A nil preset is a new one.
     case presetEditor(presetID: String?)
+    /// A nil alias is a host that does not exist yet.
+    case sshHostEditor(alias: String?)
+    /// Asks once for the passphrase of the key at this path.
+    case sshKeyUnlock(keyPath: String)
 
     /// Identified by what it is, not by what it holds: the panel looks the
     /// current object up from the model every time it draws, so it cannot end
@@ -35,6 +39,8 @@ enum RelayModal: Identifiable, Hashable {
         case let .projectSettings(projectID): "project-settings:\(projectID.rawValue)"
         case let .serviceEditor(projectID, serviceID): "service:\(projectID.rawValue):\(serviceID ?? "new")"
         case let .presetEditor(presetID): "preset:\(presetID ?? "new")"
+        case let .sshHostEditor(alias): "ssh-host:\(alias ?? "new")"
+        case let .sshKeyUnlock(keyPath): "ssh-key:\(keyPath)"
         }
     }
 
@@ -51,6 +57,9 @@ enum RelayModal: Identifiable, Hashable {
             relayLocalized(serviceID == nil ? "New Service" : "Edit Service")
         case let .presetEditor(presetID):
             relayLocalized(presetID == nil ? "New Preset" : "Edit Preset")
+        case let .sshHostEditor(alias):
+            relayLocalized(alias == nil ? "New Host" : "Edit Host")
+        case .sshKeyUnlock: relayLocalized("Unlock Key")
         }
     }
 
@@ -64,6 +73,8 @@ enum RelayModal: Identifiable, Hashable {
         case .projectSettings: CGSize(width: 520, height: 600)
         case .serviceEditor: CGSize(width: 480, height: 500)
         case .presetEditor: CGSize(width: 540, height: 580)
+        case .sshHostEditor: CGSize(width: 540, height: 620)
+        case .sshKeyUnlock: CGSize(width: 440, height: 340)
         }
     }
 }
@@ -127,6 +138,12 @@ struct ModalHost: View {
             PresetEditorView(preset: presetID.flatMap { identifier in
                 model.presets.first { $0.id == identifier }
             })
+        case let .sshHostEditor(alias):
+            SSHHostEditorView(host: alias.flatMap { identifier in
+                model.sshHosts.first { $0.alias == identifier }
+            })
+        case let .sshKeyUnlock(keyPath):
+            SSHKeyUnlockView(keyPath: keyPath)
         }
     }
 
@@ -135,7 +152,8 @@ struct ModalHost: View {
     private var hasOwnSurface: Bool {
         switch modal {
         case .ports, .sshHosts, .settings, .branches: false
-        case .addProject, .projectSettings, .serviceEditor, .presetEditor: true
+        case .addProject, .projectSettings, .serviceEditor, .presetEditor, .sshHostEditor, .sshKeyUnlock:
+            true
         }
     }
 }
