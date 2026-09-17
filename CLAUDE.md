@@ -102,6 +102,31 @@ The team is what has to hold, not the certificate. Moving later to a Developer
 ID issued under the same team keeps every existing install updating; moving to
 one under a different team does not, and everybody has to install by hand once.
 
+## Working in Relay while working on Relay
+
+`make dev-install` builds **Relay Dev**, which stands beside the released app
+instead of replacing it. Work in Relay; build in Relay Dev.
+
+They are two identities, not two copies. Everything that would let them reach
+each other is keyed by `RelayFlavour`: the bundle identifier, the name, the
+Application Support directory, the socket, the log, and whether the updater is
+allowed to run at all. `RELAY_FLAVOUR=dev` is read by the build script, the
+install script and the code alike, so the bundle and what runs inside it cannot
+disagree.
+
+Two copies of one identity does not work, and the reason is worth knowing. The
+client retires a daemon whose binary is not the one it shipped with — right for
+a single app, since a new build must not talk to old code. But the daemon hash
+changes on **every** build, signature and all, so a development app sharing the
+socket would shut down the daemon the released one is using, and every session
+being worked in dies with it. They would also share one `workspace.json`, where
+the last writer wins.
+
+The daemon cannot read its own flavour: it is a bare executable inside
+`Contents/MacOS` with no bundle identifier, so `DaemonLauncher` puts it in the
+environment. A daemon started by hand is the released one, which is the safe
+default for `make daemon`.
+
 ## Daemon protocol
 
 `RelayProtocolVersion.current` must be bumped whenever the message set changes.

@@ -1,4 +1,4 @@
-.PHONY: build app run install daemon clean logs test
+.PHONY: build app run install dev dev-install daemon clean logs test
 
 build:
 	swift build
@@ -11,6 +11,15 @@ run: app
 
 install: app
 	./Scripts/install.sh
+
+# The build that stands beside the released app instead of replacing it: its
+# own identity, its own daemon, its own workspace. Work in Relay, build in
+# Relay Dev, and neither can end the other's sessions.
+dev:
+	RELAY_FLAVOUR=dev ./Scripts/build-app.sh release
+
+dev-install: dev
+	RELAY_FLAVOUR=dev ./Scripts/install.sh
 
 test:
 	swift test

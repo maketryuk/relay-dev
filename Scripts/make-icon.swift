@@ -45,8 +45,35 @@ struct RelayMarkShape: Shape {
     }
 }
 
+/// The two builds, told apart at a glance.
+///
+/// Relay Dev sits in the same Dock as Relay, at sixteen points, where the only
+/// thing anyone reads is the colour of the tile. A tinted ring would be
+/// invisible there; the tile is the whole difference.
+enum IconFlavour {
+    case release
+    case development
+
+    var tile: Color {
+        switch self {
+        case .release: .black
+        // The amber the app already uses for "waiting on you", darkened enough
+        // that a white mark still sits on it.
+        case .development: Color(red: 0.42, green: 0.28, blue: 0.04)
+        }
+    }
+
+    var fileName: String {
+        switch self {
+        case .release: "AppIcon"
+        case .development: "AppIconDev"
+        }
+    }
+}
+
 struct IconTile: View {
     let side: CGFloat
+    var flavour: IconFlavour = .release
 
     var body: some View {
         // Apple's grid: the tile occupies 824 of a 1024 canvas, leaving the
@@ -63,7 +90,7 @@ struct IconTile: View {
         ZStack {
             Color.clear
             RoundedRectangle(cornerRadius: tileSide * 0.2237, style: .continuous)
-                .fill(.black)
+                .fill(flavour.tile)
                 .overlay(
                     RoundedRectangle(cornerRadius: tileSide * 0.2237, style: .continuous)
                         .strokeBorder(Color.white.opacity(0.10), lineWidth: max(0.5, side * 0.004))
@@ -110,13 +137,16 @@ struct IconTile: View {
 }
 
 let outputDirectory = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "Resources")
-let iconset = outputDirectory.appendingPathComponent("AppIcon.iconset")
+let flavour: IconFlavour = CommandLine.arguments.count > 2 && CommandLine.arguments[2].hasPrefix("dev")
+    ? .development
+    : .release
+let iconset = outputDirectory.appendingPathComponent("\(flavour.fileName).iconset")
 try? FileManager.default.removeItem(at: iconset)
 try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
 
 @MainActor
 func render(size: Int) -> Data? {
-    let renderer = ImageRenderer(content: IconTile(side: CGFloat(size)))
+    let renderer = ImageRenderer(content: IconTile(side: CGFloat(size), flavour: flavour))
     renderer.scale = 1
     guard let image = renderer.nsImage,
           let tiff = image.tiffRepresentation,

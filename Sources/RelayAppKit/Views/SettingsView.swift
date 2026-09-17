@@ -425,7 +425,7 @@ struct AboutPane: View {
             HStack(spacing: Theme.Spacing.medium) {
                 RelayMark(size: 48)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(verbatim: "Relay")
+                    Text(verbatim: RelayFlavour.current.displayName)
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(Theme.Palette.textPrimary)
                     Text(verbatim: AppInfo.version)
@@ -436,33 +436,16 @@ struct AboutPane: View {
             }
             .padding(.bottom, Theme.Spacing.small)
 
-            SettingsGroup(relayLocalized("Updates")) {
-                SettingsRow(
-                    title: relayLocalized("Check for updates"),
-                    detail: updateDetail
-                ) {
-                    HStack(spacing: Theme.Spacing.small) {
-                        if case let .available(release) = model.updates.state {
-                            RelayButton(
-                                String(format: relayLocalized("Install %@"), release.version.description),
-                                kind: .primary
-                            ) { model.updates.install() }
-                        } else {
-                            RelayButton(relayLocalized("Check now")) { model.updates.check() }
-                        }
-                    }
-                }
-                SettingsRow(
-                    title: relayLocalized("Check automatically"),
-                    detail: relayLocalized("Asks GitHub for the newest release; nothing about you is sent")
-                ) {
-                    Toggle("", isOn: Binding(
-                        get: { model.checksForUpdates },
-                        set: { model.setChecksForUpdates($0) }
-                    ))
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-                    .clickable()
+            if RelayFlavour.current.allowsUpdates {
+                updates
+            } else {
+                SettingsGroup(relayLocalized("Updates")) {
+                    SettingsRow(
+                        title: relayLocalized("This build updates by being rebuilt"),
+                        detail: relayLocalized(
+                            "A development build stands beside the released one; it does not replace itself with it."
+                        )
+                    ) { EmptyView() }
                 }
             }
 
@@ -476,8 +459,39 @@ struct AboutPane: View {
             }
         }
     }
-}
 
+    private var updates: some View {
+        SettingsGroup(relayLocalized("Updates")) {
+            SettingsRow(
+                title: relayLocalized("Check for updates"),
+                detail: updateDetail
+            ) {
+                HStack(spacing: Theme.Spacing.small) {
+                    if case let .available(release) = model.updates.state {
+                        RelayButton(
+                            String(format: relayLocalized("Install %@"), release.version.description),
+                            kind: .primary
+                        ) { model.updates.install() }
+                    } else {
+                        RelayButton(relayLocalized("Check now")) { model.updates.check() }
+                    }
+                }
+            }
+            SettingsRow(
+                title: relayLocalized("Check automatically"),
+                detail: relayLocalized("Asks GitHub for the newest release; nothing about you is sent")
+            ) {
+                Toggle("", isOn: Binding(
+                    get: { model.checksForUpdates },
+                    set: { model.setChecksForUpdates($0) }
+                ))
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .clickable()
+            }
+        }
+    }
+}
 private extension AboutPane {
     var updateDetail: String {
         switch model.updates.state {

@@ -14,6 +14,7 @@
 "%d picked" = "%d picked";
 "%d unmodified lines" = "%d unmodified lines";
 "%d unread" = "%d unread";
+"A development build stands beside the released one; it does not replace itself with it." = "A development build stands beside the released one; it does not replace itself with it.";
 "A host needs a name to be connected by." = "A host needs a name to be connected by.";
 "A port is a number between 1 and 65535." = "A port is a number between 1 and 65535.";
 "A project file tree and an editor with linting will live here." = "A project file tree and an editor with linting will live here.";
@@ -437,6 +438,7 @@
 "The update check failed: HTTP %d" = "The update check failed: HTTP %d";
 "The working copy matches the last commit." = "The working copy matches the last commit.";
 "This block also names: %@" = "This block also names: %@";
+"This build updates by being rebuilt" = "This build updates by being rebuilt";
 "This is the newest release" = "This is the newest release";
 "This project" = "This project";
 "this project" = "this project";
