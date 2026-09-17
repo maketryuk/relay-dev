@@ -3,6 +3,46 @@
 Conventions for this repository. They exist so the same things do not have to be
 asked for twice.
 
+## Commits
+
+- **The subject is a sentence about what changed for the person using Relay**,
+  in the imperative and without a prefix: `Let the project header be typed into
+  while a session runs`. No type, no scope, no ticket — this history is read by
+  people rather than parsed by a generator, and `fix(ui):` says nothing the
+  sentence does not. The one exception is a release, which is `Relay X.Y.Z`.
+- **The body is prose, and it is about why.** What was wrong, what the mechanism
+  turned out to be, what the fix costs and what it gives up. The changelog entry
+  is one line for the user; the commit is the whole account, and it is where the
+  reasoning that would go stale in a comment belongs.
+- **English only**, subject and body, whatever language the work was discussed
+  in.
+- **One concern per commit.** A fix noticed along the way gets its own commit
+  rather than being folded into the feature — a mixed commit cannot be reverted,
+  and splitting costs nothing.
+- **Committing is asked for, never assumed**, the same as tagging and pushing.
+
+## Before finishing
+
+- **`swift build` and `swift test` both green, and shown.** A change that
+  compiles in an editor and has never been run is unverified; saying it works is
+  then a guess. A warning counts as a failure — a release build has none, so a
+  warning introduced here is a release that cannot be cut.
+- **A phrase the interface shows goes into both string tables in the same
+  change.** `Tests/RelayAppKitTests/LocalizationTests.swift` reads every
+  `relayLocalized` call in the tree and fails on one with no entry, because a
+  missing translation is invisible: it shows English in a Russian window and
+  nothing anywhere says so.
+- **A doc is part of the change, not a follow-up** — `docs/` and this file are
+  corrected in the same commit as the code they describe.
+- **No plan, contract or checklist documents.** Nothing named `plan.md`,
+  `TASKS.md` or `api-contract.md`, and no third place to look: what the code
+  does belongs beside it in a comment and in a test that fails when the answer
+  changes, and what is left to do belongs in `docs/ROADMAP.md`.
+- **Nothing is built, installed or launched to look at unless it was asked
+  for.** `make dev-install` and starting a daemon by hand have consequences
+  outside the checkout — another copy of the app, another process holding a
+  socket — and the evidence for a change is the build and the tests.
+
 ## Releases
 
 **Never tag or publish a release without being asked to.** Work lands on `master`
