@@ -150,12 +150,54 @@ struct GitConflictFile: Equatable, Sendable {
         String(line.dropFirst(marker.count)).trimmingCharacters(in: .whitespaces)
     }
 
+    /// Which lines of the written-out file belong to what.
+    ///
+    /// The editor tints the two sides of a conflict rather than asking anyone
+    /// to read markers, and it can only do that if it is told which lines they
+    /// are — which is known here and nowhere else.
+    struct LineMap: Equatable, Sendable {
+        var ours: [Int] = []
+        var theirs: [Int] = []
+        var markers: [Int] = []
+
+        var isEmpty: Bool { ours.isEmpty && theirs.isEmpty && markers.isEmpty }
+    }
+
     /// The file as it would be written, with every conflict answered.
     ///
     /// A conflict with no answer keeps its markers, so a file that is half
     /// resolved is still a file git will not let anyone commit by accident.
     func resolved(with choices: [Int: GitConflictChoice]) -> String {
+        write(choices).text
+    }
+
+    /// The same, with the line numbers of everything still in dispute.
+    func written(with choices: [Int: GitConflictChoice]) -> (text: String, map: LineMap) {
+        write(choices)
+    }
+
+    /// The whole file as one side has it: what that side wrote, and everything
+    /// neither side touched.
+    ///
+    /// This is what makes a three-pane merge possible — the two revisions in
+    /// full, rather than the fragments between the markers.
+    func version(_ side: GitConflictChoice) -> String {
         var lines: [String] = []
+        for segment in segments {
+            switch segment {
+            case let .settled(text): lines.append(contentsOf: text)
+            case let .conflict(hunk): lines.append(contentsOf: hunk.lines(for: side))
+            }
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    /// One emitter, so the text and the map of it cannot describe different
+    /// files.
+    private func write(_ choices: [Int: GitConflictChoice]) -> (text: String, map: LineMap) {
+        var lines: [String] = []
+        var map = LineMap()
+
         for segment in segments {
             switch segment {
             case let .settled(text):
@@ -163,20 +205,26 @@ struct GitConflictFile: Equatable, Sendable {
             case let .conflict(hunk):
                 if let choice = choices[hunk.id] {
                     lines.append(contentsOf: hunk.lines(for: choice))
-                } else {
-                    lines.append("\(Self.ourMarker) \(hunk.ourLabel)")
-                    lines.append(contentsOf: hunk.ours)
-                    if let base = hunk.base {
-                        lines.append("\(Self.baseMarker) base")
-                        lines.append(contentsOf: base)
-                    }
-                    lines.append(Self.separator)
-                    lines.append(contentsOf: hunk.theirs)
-                    lines.append("\(Self.theirMarker) \(hunk.theirLabel)")
+                    continue
                 }
+                map.markers.append(lines.count)
+                lines.append("\(Self.ourMarker) \(hunk.ourLabel)")
+                map.ours.append(contentsOf: lines.count ..< lines.count + hunk.ours.count)
+                lines.append(contentsOf: hunk.ours)
+                if let base = hunk.base {
+                    map.markers.append(lines.count)
+                    lines.append("\(Self.baseMarker) base")
+                    lines.append(contentsOf: base)
+                }
+                map.markers.append(lines.count)
+                lines.append(Self.separator)
+                map.theirs.append(contentsOf: lines.count ..< lines.count + hunk.theirs.count)
+                lines.append(contentsOf: hunk.theirs)
+                map.markers.append(lines.count)
+                lines.append("\(Self.theirMarker) \(hunk.theirLabel)")
             }
         }
-        return lines.joined(separator: "\n")
+        return (lines.joined(separator: "\n"), map)
     }
 }
 

@@ -96,6 +96,42 @@ struct GitConflictTests {
         """)
     }
 
+    @Test("Each side's whole file can be reconstructed")
+    func wholeVersions() {
+        // What a three-pane merge needs: the two revisions in full, not the
+        // fragments between the markers.
+        let file = GitConflictFile.parse(twoWay)
+        #expect(file.version(.ours) == """
+        context above
+        ours line
+        context below
+        """)
+        #expect(file.version(.theirs) == """
+        context above
+        theirs line
+        context below
+        """)
+    }
+
+    @Test("The text and the map of it describe the same file")
+    func lineMapMatchesTheText() {
+        let file = GitConflictFile.parse(twoWay)
+        let written = file.written(with: [:])
+        let lines = written.text.components(separatedBy: "\n")
+
+        // Line 0 is context, 1 is the marker, 2 is ours, 3 the separator,
+        // 4 theirs, 5 the closing marker, 6 context.
+        #expect(written.map.ours == [2])
+        #expect(written.map.theirs == [4])
+        #expect(written.map.markers == [1, 3, 5])
+        #expect(lines[2] == "ours line")
+        #expect(lines[4] == "theirs line")
+        #expect(lines[1].hasPrefix("<<<<<<<"))
+
+        // Answered, there is nothing left to point at.
+        #expect(file.written(with: [0: .ours]).map.isEmpty)
+    }
+
     @Test("A file with no markers is not a conflict")
     func plainFile() {
         let file = GitConflictFile.parse("one\ntwo\n")

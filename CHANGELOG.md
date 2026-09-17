@@ -38,13 +38,16 @@ breaking change to stored data.
   though it were on 200K until more than 200K had been put in it.
 
 - **Conflicts are resolved in Relay.** When a pull stops on a conflict the panel
-  that answers it opens by itself: the conflicted files, and for each passage
-  the two versions git could not reconcile, named by git's own labels — which
-  side is "mine" reverses between a merge and a rebase, so the app does not
-  pretend to know. Take either side or keep both, per passage rather than per
-  file, mark the file resolved, and the footer finishes the rebase, merge,
-  cherry-pick or revert — or aborts it. A half-answered file keeps its markers,
-  so nothing can be committed by accident.
+  that answers it opens by itself: the conflicted files, what each side did to
+  each of them, and three ways out — take ours, take theirs, or open the file in
+  a merge of three panes. The panes are what each side wrote and, between them,
+  what is going to be committed: an editor, because the answer to a conflict is
+  often a line from each rather than either as written. Taking a side is a
+  shortcut for an edit; the conflicting passages are tinted, the three panes
+  scroll together, and Apply is refused until nothing is left in dispute. The
+  footer then finishes the rebase, merge, cherry-pick or revert — or aborts it.
+  The two sides keep git's own names, `HEAD` and the commit being replayed,
+  because which of them is "mine" reverses between a merge and a rebase.
 
 ### Changed
 

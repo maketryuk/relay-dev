@@ -173,6 +173,14 @@ enum GitActions {
         return stage([path], at: root)
     }
 
+    /// Takes one side of a conflicted path whole, and stages the result.
+    static func acceptSide(_ flag: String, of path: String, at root: String) -> String? {
+        if let failure = run(["checkout", flag, "--", path], at: root) {
+            return failure
+        }
+        return stage([path], at: root)
+    }
+
     /// Finishes whatever the repository is in the middle of.
     ///
     /// Each operation is finished by its own command: a rebase by

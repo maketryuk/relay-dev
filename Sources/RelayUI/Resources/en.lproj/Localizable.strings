@@ -25,6 +25,10 @@
 "A session, service or container exited with an error" = "A session, service or container exited with an error";
 "Abort" = "Abort";
 "About" = "About";
+"Accept left" = "Accept left";
+"Accept ours" = "Accept ours";
+"Accept right" = "Accept right";
+"Accept theirs" = "Accept theirs";
 "Add a local directory to start running agents, shells and dev servers in one place." = "Add a local directory to start running agents, shells and dev servers in one place.";
 "Add a marker…" = "Add a marker…";
 "Add a preset" = "Add a preset";
@@ -35,6 +39,7 @@
 "Add" = "Add";
 "Add to agent and Keychain" = "Add to agent and Keychain";
 "Add to Host *" = "Add to Host *";
+"Added" = "Added";
 "Add…" = "Add…";
 "After a restart the agent is empty again. AddKeysToAgent and UseKeychain in Host * let macOS answer for the key." = "After a restart the agent is empty again. AddKeysToAgent and UseKeychain in Host * let macOS answer for the key.";
 "Agent is waiting for you" = "Agent is waiting for you";
@@ -50,6 +55,7 @@
 "Application" = "Application";
 "Applies immediately, no restart needed" = "Applies immediately, no restart needed";
 "Applies to every terminal at once" = "Applies to every terminal at once";
+"Apply" = "Apply";
 "Arguments" = "Arguments";
 "as of %@" = "as of %@";
 "Asks GitHub for the newest release; nothing about you is sent" = "Asks GitHub for the newest release; nothing about you is sent";
@@ -97,6 +103,7 @@
 "Commits, branch switching and diffs will live here." = "Commits, branch switching and diffs will live here.";
 "Compact" = "Compact";
 "conflict" = "conflict";
+"Conflict %d of %d" = "Conflict %d of %d";
 "Conflicts in the working copy" = "Conflicts in the working copy";
 "Connect SSH: %@" = "Connect SSH: %@";
 "Connect" = "Connect";
@@ -134,6 +141,7 @@
 "Delete" = "Delete";
 "Delete Host" = "Delete Host";
 "Delete this host?" = "Delete this host?";
+"Deleted" = "Deleted";
 "Detailed" = "Detailed";
 "Dev command" = "Dev command";
 "development build" = "development build";
@@ -170,6 +178,7 @@
 "Every %d days" = "Every %d days";
 "Every %d hours" = "Every %d hours";
 "Every %d minutes" = "Every %d minutes";
+"Every conflict has to be answered first" = "Every conflict has to be answered first";
 "Everything has been resolved and staged." = "Everything has been resolved and staged.";
 "Everything listening on this Mac" = "Everything listening on this Mac";
 "exited %@" = "exited %@";
@@ -178,6 +187,7 @@
 "Exited" = "Exited";
 "Failed" = "Failed";
 "Fetch" = "Fetch";
+"File" = "File";
 "Files" = "Files";
 "Filled in once the agent has answered" = "Filled in once the agent has answered";
 "Filter by alias or host" = "Filter by alias or host";
@@ -235,10 +245,13 @@
 "Makes this branch follow the one it is pushed to" = "Makes this branch follow the one it is pushed to";
 "Mark all read" = "Mark all read";
 "Mark resolved" = "Mark resolved";
+"Merge" = "Merge";
 "Merge in progress" = "Merge in progress";
 "Merge only if it can be fast-forwarded" = "Merge only if it can be fast-forwarded";
 "Merge, but do not commit the result" = "Merge, but do not commit the result";
+"Merge…" = "Merge…";
 "Model" = "Model";
+"Modified" = "Modified";
 "Mute this project" = "Mute this project";
 "Muted projects" = "Muted projects";
 "Name" = "Name";
@@ -254,6 +267,7 @@
 "New Shell" = "New Shell";
 "new" = "new";
 "Newly cached" = "Newly cached";
+"Next" = "Next";
 "Next Project" = "Next Project";
 "Next Session" = "Next Session";
 "No" = "No";
@@ -283,6 +297,7 @@
 "Nothing changed" = "Nothing changed";
 "Nothing is conflicted" = "Nothing is conflicted";
 "Nothing is listening" = "Nothing is listening";
+"Nothing left in dispute" = "Nothing left in dispute";
 "Nothing left to do" = "Nothing left to do";
 "Nothing selected" = "Nothing selected";
 "Nothing to push — the remote branch is already here." = "Nothing to push — the remote branch is already here.";
@@ -312,6 +327,7 @@
 "Options" = "Options";
 "Other directives" = "Other directives";
 "Other hosts" = "Other hosts";
+"ours" = "ours";
 "Output" = "Output";
 "Overwrite the remote branch, refusing if it moved since you last fetched" = "Overwrite the remote branch, refusing if it moved since you last fetched";
 "Overwrites the remote branch, but refuses if it moved since you last fetched" = "Overwrites the remote branch, but refuses if it moved since you last fetched";
@@ -389,6 +405,7 @@
 "restart" = "restart";
 "Restart" = "Restart";
 "Restore default" = "Restore default";
+"Result" = "Result";
 "Resume" = "Resume";
 "Retry" = "Retry";
 "Reveal Owner Session" = "Reveal Owner Session";
@@ -475,6 +492,8 @@
 "Switch Branch" = "Switch Branch";
 "Switch branch" = "Switch branch";
 "Switch to %@" = "Switch to %@";
+"Take left" = "Take left";
+"Take right" = "Take right";
 "Terminal" = "Terminal";
 "Terminate" = "Terminate";
 "Text size" = "Text size";
@@ -493,6 +512,7 @@
 "The update check failed: HTTP %d" = "The update check failed: HTTP %d";
 "The working copy has changes" = "The working copy has changes";
 "The working copy matches the last commit." = "The working copy matches the last commit.";
+"theirs" = "theirs";
 "There is no git repository in this project." = "There is no git repository in this project.";
 "This block also names: %@" = "This block also names: %@";
 "This build updates by being rebuilt" = "This build updates by being rebuilt";
@@ -537,6 +557,7 @@
 "Work finished" = "Work finished";
 "Working" = "Working";
 "Workspace" = "Workspace";
+"Writes the file and stages it" = "Writes the file and stages it";
 "Yes" = "Yes";
 "You are not on a branch" = "You are not on a branch";
 "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project";

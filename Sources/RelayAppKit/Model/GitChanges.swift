@@ -58,6 +58,24 @@ struct GitChange: Equatable, Sendable, Identifiable {
     /// not which half of it has been staged.
     var insertions = 0
     var deletions = 0
+    /// For a conflict, what each side did to the file: `UU` is both modified,
+    /// `DU` deleted by us, `UA` added by them. Both letters mean `conflicted`
+    /// as far as the rest of the app is concerned, which is why what they
+    /// actually say is kept here as well — a list that cannot tell a file
+    /// deleted on one side from one edited on both is a list that cannot
+    /// explain the choice it is asking for.
+    var unmergedCode: (ours: GitFileState, theirs: GitFileState)?
+
+    static func == (lhs: GitChange, rhs: GitChange) -> Bool {
+        lhs.path == rhs.path
+            && lhs.originalPath == rhs.originalPath
+            && lhs.index == rhs.index
+            && lhs.worktree == rhs.worktree
+            && lhs.insertions == rhs.insertions
+            && lhs.deletions == rhs.deletions
+            && lhs.unmergedCode?.ours == rhs.unmergedCode?.ours
+            && lhs.unmergedCode?.theirs == rhs.unmergedCode?.theirs
+    }
 
     var id: String { path }
 
@@ -163,7 +181,10 @@ enum GitStatusParser {
                     path: path,
                     originalPath: original,
                     index: kind == "u" ? .conflicted : GitFileState(porcelainCode: codes[0]),
-                    worktree: kind == "u" ? .conflicted : GitFileState(porcelainCode: codes[1])
+                    worktree: kind == "u" ? .conflicted : GitFileState(porcelainCode: codes[1]),
+                    unmergedCode: kind == "u"
+                        ? (GitFileState(porcelainCode: codes[0]), GitFileState(porcelainCode: codes[1]))
+                        : nil
                 ))
             default:
                 // `!` is an ignored file, which is only listed when asked for.

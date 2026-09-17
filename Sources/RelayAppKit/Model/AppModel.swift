@@ -1405,6 +1405,34 @@ final class AppModel {
         }
     }
 
+    /// Takes one side of a conflicted file whole.
+    ///
+    /// `git checkout --ours` rather than a rewrite: for a file deleted on one
+    /// side there is no text to choose between, and for one both sides merely
+    /// edited it is the same answer said in git's own words.
+    func acceptSide(_ side: GitConflictChoice, of path: String, in projectID: ProjectID) {
+        guard side != .both else { return }
+        perform(
+            in: projectID,
+            title: String(format: relayLocalized("Could not resolve %@"), path)
+        ) { root in
+            GitActions.acceptSide(side == .ours ? "--ours" : "--theirs", of: path, at: root)
+        }
+    }
+
+    /// Writes what the merge panes ended up with, and stages it.
+    func applyMerge(_ contents: String, to path: String, in projectID: ProjectID) {
+        perform(
+            in: projectID,
+            title: String(format: relayLocalized("Could not resolve %@"), path)
+        ) { root in
+            GitActions.resolve(path, contents: contents, at: root)
+        } onSuccess: { [weak self] in
+            self?.conflicts.removeValue(forKey: self?.key(projectID, path) ?? "")
+            self?.dismissModal()
+        }
+    }
+
     /// Finishes the rebase, merge or cherry-pick once nothing is conflicted.
     func finishMergeOperation(in projectID: ProjectID) {
         guard let operation = mergeState(in: projectID).operation else { return }
