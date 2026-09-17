@@ -39,10 +39,13 @@ enum ProjectDiscovery {
         let packageManager = detectPackageManager(in: directory)
         facts.packageManager = packageManager
 
+        // The name is the folder's, and only the folder's. `package.json` is
+        // written by a scaffold and almost never edited afterwards, so what it
+        // says is `nuxt-app`, `vite-project`, `my-app` — a name that belongs to
+        // the tool that made the directory rather than to the project in it.
+        // The folder is what the user chose, it is unique on their disk, and it
+        // is what the path printed under the name already says.
         if let package = readPackageJSON(in: directory) {
-            if let name = package["name"] as? String, !name.isEmpty {
-                facts.suggestedName = name
-            }
             if let scripts = package["scripts"] as? [String: Any],
                let script = devScriptCandidates.first(where: { scripts[$0] != nil }) {
                 facts.devCommand = "\(packageManager ?? "npm") run \(script)"

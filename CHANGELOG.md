@@ -5,6 +5,18 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Fixed
+
+- **A project is called what its folder is called.** A directory named
+  `botica-web` was added as `nuxt-app`, because `package.json` was allowed to
+  overrule the folder — and what `package.json` says is what the scaffold wrote
+  there: every Nuxt app is `nuxt-app`, every Vite one `vite-project`, until
+  somebody edits it, and nobody does. The name and the path beneath it
+  disagreed on the same screen. Projects already added keep the name they have;
+  Project Settings renames them.
+
 ## 0.3.1 — 2026-09-17
 
 ### Added
