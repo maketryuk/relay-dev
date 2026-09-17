@@ -12,6 +12,7 @@ struct ProjectSidebarView: View {
     let project: Project
 
     @State private var renameText = ""
+    @State private var rowFrames = RowFrames()
     @State private var isShowingNewSessionMenu = false
     @State private var isRenamingProject = false
     @State private var projectNameDraft = ""
@@ -122,6 +123,7 @@ struct ProjectSidebarView: View {
                     }
                     .padding(.horizontal, Theme.Spacing.small)
                     .padding(.vertical, Theme.Spacing.small)
+                    .reorderSpace(RowReorder.sessionSpace)
                 }
             }
         }
@@ -170,9 +172,22 @@ struct ProjectSidebarView: View {
                     model.renamingSessionID = session.id
                 }
             )
-            .opacity(model.draggingSessionID == session.id ? 0.4 : 1)
-            .sessionDragSource(session.id, model: model)
-            .sessionReorderTarget(session.id, model: model)
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Radius.medium, style: .continuous)
+                    .strokeBorder(
+                        model.draggingSessionID == session.id ? Theme.Palette.accent : .clear,
+                        lineWidth: 1
+                    )
+            )
+            .reorderRow(
+                id: session.id.rawValue,
+                in: RowReorder.sessionSpace,
+                frames: rowFrames,
+                onDrag: { point in
+                    RowReorder.session(session.id, to: point, frames: rowFrames, model: model)
+                },
+                onEnd: { model.endRowDrag() }
+            )
             .contextMenu {
                 Button(relayLocalized("Rename…")) {
                     renameText = session.displayName
