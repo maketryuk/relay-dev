@@ -16,12 +16,30 @@ struct ProjectDiscoveryTests {
         #expect(!facts.hasDocker)
     }
 
-    @Test("package.json supplies the project name")
-    func nameFromPackageJSON() throws {
+    @Test("A scaffold's idea of the name does not become the project's")
+    func scaffoldNameIsIgnored() throws {
+        // What `package.json` says is what the generator put there: every Nuxt
+        // app is `nuxt-app` until somebody edits it, and nobody does.
+        let directory = try TemporaryDirectory()
+        try directory.write(#"{"name": "nuxt-app"}"#, to: "package.json")
+        #expect(
+            ProjectDiscovery.inspect(path: directory.url.path).suggestedName
+                == directory.url.lastPathComponent
+        )
+    }
+
+    @Test("Nor does a name worth having")
+    func scopedNameIsIgnoredToo() throws {
+        // `@acme/storefront` inside a folder called `web` is what this costs,
+        // and it costs one rename in Project Settings. The alternative is a
+        // rule that is right sometimes, which is harder to predict than a rule
+        // that is plain.
         let directory = try TemporaryDirectory()
         try directory.write(#"{"name": "@acme/storefront"}"#, to: "package.json")
-        let facts = ProjectDiscovery.inspect(path: directory.url.path)
-        #expect(facts.suggestedName == "@acme/storefront")
+        #expect(
+            ProjectDiscovery.inspect(path: directory.url.path).suggestedName
+                == directory.url.lastPathComponent
+        )
     }
 
     @Test(
@@ -106,12 +124,5 @@ struct ProjectDiscoveryTests {
         let facts = ProjectDiscovery.inspect(path: directory.url.path)
         #expect(facts.suggestedName == directory.url.lastPathComponent)
         #expect(facts.devCommand == nil)
-    }
-
-    @Test("An empty name in package.json is ignored")
-    func emptyNameIgnored() throws {
-        let directory = try TemporaryDirectory()
-        try directory.write(#"{"name": ""}"#, to: "package.json")
-        #expect(ProjectDiscovery.inspect(path: directory.url.path).suggestedName == directory.url.lastPathComponent)
     }
 }
