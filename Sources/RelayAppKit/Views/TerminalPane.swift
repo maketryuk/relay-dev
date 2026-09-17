@@ -34,7 +34,7 @@ struct TerminalHostView: NSViewRepresentable {
         // lands wherever the last redraw happened to leave it.
         guard isFocused else { return }
         DispatchQueue.main.async {
-            surface.focus()
+            surface.focusUnlessEditingElsewhere()
         }
     }
 }

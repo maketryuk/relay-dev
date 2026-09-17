@@ -7,8 +7,24 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Changed
+
+- **The project header is two lines, not one crowded one.** The name has the
+  whole width to itself; the path and the two buttons share the line below,
+  since a path can be truncated and a button cannot. Renaming used to happen in
+  a field about a word wide, squeezed between the name and the icons.
+- **One click on the project name renames it.** It took two, which is a gesture
+  nobody guesses at and nothing on that line competes for.
+
 ### Fixed
 
+- **Renaming anything while a session runs is possible again.** The focused
+  terminal claimed the keyboard on every redraw, and a redraw happens on every
+  change to the model — so with an agent writing output, the caret was pulled
+  out of the field several times a second and the name could not be typed. The
+  terminal now takes the keyboard only when nothing else in the window is
+  taking text; clicking the terminal still works, because that asks outright
+  rather than as a side effect of drawing.
 - **A project is called what its folder is called.** A directory named
   `botica-web` was added as `nuxt-app`, because `package.json` was allowed to
   overrule the folder — and what `package.json` says is what the scaffold wrote
