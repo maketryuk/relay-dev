@@ -53,6 +53,12 @@ breaking change to stored data.
   that hash changes on every build, so launching a freshly built app shut down
   the daemon holding every session that was being worked in.
 
+- **The first project is added from the middle of the window.** With nothing
+  in it, the only thing to do was a plus at the foot of an empty strip — the
+  smallest target on screen for the one action available. The welcome pane
+  carries the button now, and the rail grows its own back once there is
+  something to add to.
+
 ### Fixed
 
 - **Restarting a session starts the same session again.** It was rebuilt from
