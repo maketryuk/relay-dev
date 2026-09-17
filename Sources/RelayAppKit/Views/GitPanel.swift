@@ -12,7 +12,6 @@ struct GitPane: View {
     let project: Project
 
     @State private var pendingDiscard: GitChange?
-    @State private var isConfirmingForcePush = false
     @State private var areNotesExpanded = true
 
     private var changes: GitWorkingCopy { model.changes(in: project.id) }
@@ -63,17 +62,6 @@ struct GitPane: View {
             Text(change.worktree == .untracked
                 ? String(format: relayLocalized("%@ will be deleted. This cannot be undone."), change.path)
                 : String(format: relayLocalized("%@ will go back to the last committed version."), change.path))
-        }
-        .confirmationDialog(
-            relayLocalized("Force push?"),
-            isPresented: $isConfirmingForcePush
-        ) {
-            Button(relayLocalized("Force push"), role: .destructive) {
-                model.run(.pushWithLease, in: project.id)
-            }
-            Button(relayLocalized("Cancel"), role: .cancel) {}
-        } message: {
-            Text(relayLocalized("This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand."))
         }
     }
 
@@ -178,16 +166,24 @@ struct GitPane: View {
 
     private var commandMenu: some View {
         Menu {
-            ForEach(GitActions.Remote.allCases) { command in
-                Button {
-                    if command.needsConfirmation {
-                        isConfirmingForcePush = true
-                    } else {
-                        model.run(command, in: project.id)
-                    }
-                } label: {
-                    Label(relayLocalized(command.title), systemImage: command.symbolName)
-                }
+            // The three dots are the difference: a pull and a push open the
+            // panel that says where they are going, since the last answer is
+            // not always this one — and a force push has to be seen before it
+            // happens. Fetch asks nothing and changes nothing here.
+            Button {
+                model.planTransfer(.pull, in: project.id)
+            } label: {
+                Label(relayLocalized("Pull…"), systemImage: "arrow.down")
+            }
+            Button {
+                model.planTransfer(.push, in: project.id)
+            } label: {
+                Label(relayLocalized("Push…"), systemImage: "arrow.up")
+            }
+            Button {
+                model.run(.fetch, in: project.id)
+            } label: {
+                Label(relayLocalized("Fetch"), systemImage: "arrow.triangle.2.circlepath")
             }
             Divider()
             Button(relayLocalized("Stage all")) { model.setAllStaged(true, in: project.id) }

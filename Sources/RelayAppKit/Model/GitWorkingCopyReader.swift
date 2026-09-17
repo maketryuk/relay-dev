@@ -166,52 +166,50 @@ enum GitActions {
 
     /// The commands that talk to the remote, which is why each is slower and
     /// each can fail in a way worth reading.
+    ///
+    /// Only the two that need nothing said about them. A pull and a push are
+    /// asked about first — which remote, which branch, and whether the remote
+    /// branch is to be overwritten — and `GitTransfer` is what that question
+    /// produces.
     enum Remote: String, CaseIterable, Identifiable, Sendable {
-        case pullRebase
         case push
-        case pushWithLease
         case fetch
 
         var id: String { rawValue }
 
         var title: String {
             switch self {
-            case .pullRebase: "Pull (rebase)"
             case .push: "Push"
-            case .pushWithLease: "Force push (with lease)"
             case .fetch: "Fetch"
             }
         }
 
         var symbolName: String {
             switch self {
-            case .pullRebase: "arrow.down"
             case .push: "arrow.up"
-            case .pushWithLease: "exclamationmark.arrow.triangle.2.circlepath"
             case .fetch: "arrow.triangle.2.circlepath"
             }
         }
 
-        /// Force pushing can destroy someone else's work, so it is asked about
-        /// rather than done; `--force-with-lease` at least refuses when the
-        /// remote has moved since it was last seen.
-        var needsConfirmation: Bool { self == .pushWithLease }
-
         var arguments: [String] {
             switch self {
-            case .pullRebase: ["pull", "--rebase"]
             case .push: ["push"]
-            case .pushWithLease: ["push", "--force-with-lease"]
             case .fetch: ["fetch", "--prune"]
             }
         }
     }
 
     static func run(_ remote: Remote, at root: String) -> String? {
-        // Long enough for a fetch over a slow link, short enough that a prompt
-        // for a password — which cannot be answered here — does not hang the
-        // panel forever.
-        run(["-C", root] + remote.arguments, at: root, timeout: 120, interactive: false)
+        run(remote.arguments, at: root)
+    }
+
+    /// One command against the remote, spelled out by the caller.
+    ///
+    /// The timeout is long enough for a fetch over a slow link and short
+    /// enough that a prompt for a password — which cannot be answered here —
+    /// does not hang the panel forever.
+    static func run(_ arguments: [String], at root: String) -> String? {
+        run(["-C", root] + arguments, at: root, timeout: 120, interactive: false)
     }
 
     private static func run(

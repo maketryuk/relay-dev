@@ -79,6 +79,15 @@ final class AppModel {
     private(set) var isCommitting = false
     /// A remote command in flight, named so the panel can say which.
     private(set) var runningRemoteCommand: GitActions.Remote?
+    /// The pull or push the transfer panel is running, if any.
+    private(set) var runningTransfer: GitTransfer?
+    /// The remotes each project has, read when the transfer panel opens.
+    private(set) var remotes: [ProjectID: [String]] = [:]
+    /// What `HEAD` has that the chosen remote branch does not, and the ref that
+    /// was asked about — so the panel can tell "nothing to push" from an answer
+    /// about some other branch.
+    private(set) var outgoing: [String: [GitCommitSummary]] = [:]
+    private(set) var refsWithNoRemoteBranch: Set<String> = []
     private(set) var projectFacts: [ProjectID: ProjectFacts] = [:]
     /// The image each project is drawn with, once it has been read.
     ///
@@ -1247,6 +1256,96 @@ final class AppModel {
         }
     }
 
+    /// Opens the panel that asks where a pull or a push is going.
+    ///
+    /// Asked rather than done, because the answer is not always the last one:
+    /// a branch can be pushed somewhere other than its upstream, and a force
+    /// push is a thing to see spelled out before it happens.
+    func planTransfer(_ direction: GitTransfer.Direction, in projectID: ProjectID) {
+        presentModal(.gitTransfer(projectID: projectID, direction: direction))
+        refreshRemotes(for: projectID)
+        refreshBranches(for: projectID)
+    }
+
+    func refreshRemotes(for projectID: ProjectID) {
+        guard let path = project(projectID)?.rootPath else { return }
+        Task { [weak self] in
+            let found = await Task.detached(priority: .userInitiated) {
+                GitTransferReader.remotes(at: path)
+            }.value
+            self?.remotes[projectID] = found
+        }
+    }
+
+    func remotes(in projectID: ProjectID) -> [String] {
+        remotes[projectID] ?? []
+    }
+
+    /// Whether the answer is known, as against known to be empty: a repository
+    /// with no remote and one that has not been asked yet need different
+    /// things said about them.
+    func hasReadRemotes(_ projectID: ProjectID) -> Bool {
+        remotes[projectID] != nil
+    }
+
+    /// The commits a push would send, for the ref it would send them to.
+    func outgoingCommits(in projectID: ProjectID, against ref: String) -> [GitCommitSummary]? {
+        outgoing[key(projectID, ref)]
+    }
+
+    /// True when the remote has no such branch yet, so a push would create it.
+    func remoteBranchIsNew(in projectID: ProjectID, ref: String) -> Bool {
+        refsWithNoRemoteBranch.contains(key(projectID, ref))
+    }
+
+    func loadOutgoingCommits(in projectID: ProjectID, against ref: String) {
+        guard let path = project(projectID)?.rootPath else { return }
+        let identifier = key(projectID, ref)
+        Task { [weak self] in
+            let found = await Task.detached(priority: .utility) {
+                GitTransferReader.outgoing(at: path, against: ref)
+            }.value
+            guard let self else { return }
+            if let found {
+                self.outgoing[identifier] = found
+                self.refsWithNoRemoteBranch.remove(identifier)
+            } else {
+                // git refused the range, which for a well-formed ref means it
+                // does not know that branch.
+                self.outgoing.removeValue(forKey: identifier)
+                self.refsWithNoRemoteBranch.insert(identifier)
+            }
+        }
+    }
+
+    private func key(_ projectID: ProjectID, _ ref: String) -> String {
+        "\(projectID.rawValue)\t\(ref)"
+    }
+
+    /// Runs what the panel was holding.
+    func run(_ transfer: GitTransfer, in projectID: ProjectID) {
+        runningTransfer = transfer
+        let arguments = transfer.arguments
+        perform(
+            in: projectID,
+            title: String(
+                format: relayLocalized("%@ failed"),
+                relayLocalized(transfer.direction == .pull ? "Pull" : "Push")
+            )
+        ) { root in
+            GitActions.run(arguments, at: root)
+        } onSuccess: { [weak self] in
+            self?.present(ToastContent(
+                kind: .success,
+                title: transfer.commandLine,
+                message: relayLocalized("Done")
+            ))
+            self?.dismissModal()
+        }
+        // Both ends of it moved: what is outgoing, and which branches exist.
+        refreshBranches(for: projectID)
+    }
+
     /// Hands over what was waiting, once there is a prompt to hand it to.
     ///
     /// The status is the signal: Relay already works out when an agent has
@@ -1548,6 +1647,7 @@ final class AppModel {
             guard let self else { return }
             self.isCommitting = false
             self.runningRemoteCommand = nil
+            self.runningTransfer = nil
             if let failure {
                 self.present(ToastContent(kind: .error, title: title, message: Self.summarised(failure)))
             } else {

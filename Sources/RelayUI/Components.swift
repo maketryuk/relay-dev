@@ -804,6 +804,60 @@ public struct Chip<Content: View>: View {
     }
 }
 
+// MARK: - Checkbox
+
+/// A small square with a label, for the settings that come in sets.
+///
+/// A switch says "this feature is on"; a checkbox says "this one of several is
+/// chosen", and a column of switches beside a list of flags is a column of
+/// oversized furniture. Drawn rather than taken from AppKit so it sits at the
+/// size the row needs and in the palette around it.
+public struct RelayCheckbox<Label: View>: View {
+    private let isOn: Bool
+    private let action: () -> Void
+    private let label: Label
+
+    @State private var isHovering = false
+
+    public init(isOn: Bool, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
+        self.isOn = isOn
+        self.action = action
+        self.label = label()
+    }
+
+    public var body: some View {
+        Button(action: action) {
+            HStack(spacing: Theme.Spacing.small) {
+                box
+                label
+                Spacer(minLength: 0)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .clickable()
+        .onHover { isHovering = $0 }
+        .animation(.easeOut(duration: 0.1), value: isOn)
+    }
+
+    private var box: some View {
+        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+            .fill(isOn ? Theme.Palette.accent : (isHovering ? Theme.Palette.surfaceHover : Theme.Palette.surface))
+            .frame(width: 15, height: 15)
+            .overlay(
+                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                    .strokeBorder(isOn ? Theme.Palette.accent : Theme.Palette.border, lineWidth: 1)
+            )
+            .overlay {
+                if isOn {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Color.white)
+                }
+            }
+    }
+}
+
 // MARK: - RelayTextEditor
 
 /// Several lines of plain text, dressed as a `RelayTextField`.

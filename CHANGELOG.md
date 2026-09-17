@@ -13,6 +13,17 @@ breaking change to stored data.
   a tile in the rail, or a session in the sidebar, and the rest move aside as
   you go, so where it will land is where it already is. The arrangement is
   remembered — sessions outlive the window, so their order does now too.
+- **Pull and push ask where they are going.** The Git panel's menu opens a
+  panel where the remote, the branch and the flags are one row reading as the
+  command they spell, with that command written out underneath. A pull offers
+  `--rebase`, `--ff-only`, `--no-ff`, `--squash`, `--no-commit`, `--autostash`
+  and `--no-verify`; a push offers `--force-with-lease`, `--tags`,
+  `--set-upstream` and `--no-verify`. Whatever the chosen flags rule out goes
+  grey rather than quietly unticking itself, so which flag is in the way is
+  visible. A push also lists the commits it would send, and says when the
+  remote has no such branch yet. Force pushing lives here now rather than in
+  the menu, because it is worth seeing spelled out; it is always with a lease,
+  so it refuses when the remote has moved since you last fetched.
 - **⌘⌫ clears the line in a terminal.** ⌘ never reaches the program running
   there, so the one deletion shortcut every other field on macOS answers did
   nothing at all.

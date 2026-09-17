@@ -2,6 +2,7 @@
 "%@ completed its work." = "%@ завершил работу.";
 "%@ failed" = "Сбой: %@";
 "%@ finished" = "Завершено: %@";
+"%@ has no branch called %@ yet; pushing creates it." = "На %@ ещё нет ветки %@ — отправка её создаст.";
 "%@ is available" = "Доступна версия %@";
 "%@ is declared in more than one block; this edits the first." = "%@ описан более чем в одном блоке; правится первый.";
 "%@ is not running." = "%@ не запущен.";
@@ -9,8 +10,10 @@
 "%@ needs you" = "%@ ждёт вас";
 "%@ will be deleted. This cannot be undone." = "%@ будет удалён. Это необратимо.";
 "%@ will go back to the last committed version." = "%@ вернётся к последней закоммиченной версии.";
+"%d behind" = "Позади на %d";
 "%d branches" = "Веток: %d";
 "%d changed" = "изменено: %d";
+"%d commits to push" = "%d коммитов к отправке";
 "%d picked" = "выбрано: %d";
 "%d unmodified lines" = "Неизменённых строк: %d";
 "%d unread" = "непрочитанных: %d";
@@ -54,6 +57,8 @@
 "Binary file" = "Двоичный файл";
 "Branches" = "Ветки";
 "Built-in" = "Встроенный";
+"Bypass the pre-merge and commit message hooks" = "Пропустить хуки pre-merge и commit-msg";
+"Bypass the pre-push hook" = "Пропустить хук pre-push";
 "Cached" = "Из кэша";
 "Cancel" = "Отмена";
 "Case sensitive; letters only." = "Регистр важен, только буквы.";
@@ -85,6 +90,7 @@
 "Commit and Push" = "Коммит и push";
 "Commit message" = "Описание коммита";
 "Commit" = "Коммит";
+"Commits" = "Коммиты";
 "Commits, branch switching and diffs will live here." = "Здесь появятся коммиты, переключение веток и diff.";
 "Compact" = "Компактно";
 "conflict" = "конфликт";
@@ -108,6 +114,8 @@
 "Could not stop the process" = "Не удалось остановить процесс";
 "Could not switch to %@" = "Не удалось переключиться на %@";
 "Could not write the SSH config" = "Не удалось записать конфигурацию SSH";
+"Create a merge commit even if it can be fast-forwarded" = "Создать коммит слияния, даже если возможен fast-forward";
+"Create a single commit for all pulled changes" = "Создать один коммит на все пришедшие изменения";
 "Create branch “%@”" = "Создать ветку «%@»";
 "Custom command" = "Своя команда";
 "CUSTOM COMMAND" = "СВОЯ КОМАНДА";
@@ -213,7 +221,11 @@
 "Look again" = "Обновить";
 "Looking for containers…" = "Ищем контейнеры…";
 "Looking…" = "Проверяем…";
+"Make this branch follow the one it is pushed to" = "Ветка начнёт следить за той, куда её отправили";
+"Makes this branch follow the one it is pushed to" = "Ветка начнёт следить за той, куда её отправили";
 "Mark all read" = "Отметить всё прочитанным";
+"Merge only if it can be fast-forwarded" = "Слить только если получится fast-forward";
+"Merge, but do not commit the result" = "Слить, но не коммитить результат";
 "Model" = "Модель";
 "Mute this project" = "Отключить для этого проекта";
 "Muted projects" = "Отключённые проекты";
@@ -234,6 +246,7 @@
 "Next Session" = "Следующая сессия";
 "No" = "Нет";
 "No %@ comments in this project." = "В проекте нет комментариев %@.";
+"No branch" = "Нет ветки";
 "No branch matches “%@”." = "Ни одна ветка не подходит под «%@».";
 "No containers for this project. Press Up to start the stack." = "Для этого проекта нет контейнеров. Нажмите «Запустить», чтобы поднять стек.";
 "No host matches “%@”." = "Нет хостов по запросу «%@».";
@@ -243,12 +256,14 @@
 "No port matches “%@”." = "Нет портов по запросу «%@».";
 "No process on this Mac is accepting TCP connections right now." = "Сейчас ни один процесс на этом Mac не принимает TCP-подключения.";
 "No projects yet" = "Пока нет проектов";
+"No remote" = "Нет удалённого";
 "No sessions yet" = "Пока нет сессий";
 "No ssh-agent is running, so every connection asks for the passphrase." = "ssh-agent не запущен, поэтому passphrase спрашивают при каждом подключении.";
 "No textual difference" = "Текстовых отличий нет";
 "No upstream" = "Без upstream";
 "Not a directive: %@" = "Это не директива: %@";
 "not a git repository" = "не git-репозиторий";
+"Not a repository" = "Не репозиторий";
 "Not in the agent — the passphrase is asked for on every connection." = "Нет в агенте — passphrase спрашивают при каждом подключении.";
 "Not set" = "Не задано";
 "Notes" = "Заметки";
@@ -256,6 +271,7 @@
 "Nothing is listening" = "Никто не слушает";
 "Nothing left to do" = "Ничего не осталось";
 "Nothing selected" = "Ничего не выбрано";
+"Nothing to push — the remote branch is already here." = "Отправлять нечего — удалённая ветка уже здесь.";
 "Nothing to show" = "Показывать нечего";
 "Nothing yet. Agents waiting on you, failures and finished work land here." = "Пока пусто. Сюда попадают агенты, ждущие вас, сбои и завершённая работа.";
 "Notifications" = "Уведомления";
@@ -279,9 +295,12 @@
 "Open URL" = "Открыть URL";
 "Open" = "Открыть";
 "OpenCode" = "OpenCode";
+"Options" = "Параметры";
 "Other directives" = "Прочие директивы";
 "Other hosts" = "Другие хосты";
 "Output" = "Ответ";
+"Overwrite the remote branch, refusing if it moved since you last fetched" = "Перезаписать ветку на удалённом; откажется, если она сдвинулась после вашего fetch";
+"Overwrites the remote branch, but refuses if it moved since you last fetched" = "Перезапишет ветку на удалённом, но откажется, если она сдвинулась после вашего fetch";
 "Passphrase" = "Парольная фраза";
 "Past conversations with Claude and Codex in this project appear here, wherever they were started." = "Здесь появляются прошлые разговоры с Claude и Codex в этом проекте — где бы они ни были начаты.";
 "Pin to current project" = "Закрепить за текущим проектом";
@@ -304,16 +323,23 @@
 "Projects: %d" = "Проектов: %d";
 "Protocol" = "Протокол";
 "Proxy jump" = "Промежуточный хост";
+"Pull" = "Забрать";
 "Pull (rebase)" = "Pull (rebase)";
+"Pull into %@" = "Забрать в %@";
+"Pull…" = "Забрать…";
 "Push" = "Push";
+"Push %@" = "Отправить %@";
+"Push…" = "Отправить…";
 "Quick switching" = "Быстрое переключение";
 "Re-read branches" = "Перечитать ветки";
 "Re-read the working copy" = "Перечитать рабочую копию";
 "Reading…" = "Читаю…";
 "Reasoning" = "Рассуждение";
+"Rebase the current branch on top of incoming changes" = "Переложить текущую ветку поверх пришедших изменений";
 "Reconnect" = "Переподключиться";
 "Refresh containers" = "Обновить контейнеры";
 "Refresh usage" = "Обновить лимиты";
+"Refuses rather than making a merge commit" = "Откажется, вместо коммита слияния";
 "Relay cannot replace itself at %@." = "Relay не может заменить себя по пути %@.";
 "Relay cannot see the releases. A private repository needs to be public for updates to work." = "Relay не видит релизы. Для обновлений репозиторий должен быть публичным.";
 "Relay did not start this process" = "Relay не запускал этот процесс";
@@ -330,6 +356,7 @@
 "Remove" = "Удалить";
 "Rename Session" = "Переименовать сессию";
 "Rename…" = "Переименовать…";
+"Replays your commits on top of theirs instead of merging" = "Переложит ваши коммиты поверх их, вместо слияния";
 "reported an error" = "сообщил об ошибке";
 "Rescan now" = "Пересканировать";
 "Reset All" = "Сбросить всё";
@@ -358,6 +385,7 @@
 "Run" = "Запустить";
 "Running sessions are unaffected. Reconnecting restores them." = "Запущенные сессии не затронуты — переподключение их вернёт.";
 "Running" = "Работает";
+"Running…" = "Выполняется…";
 "Runs in %@ through your shell." = "Запускается в %@ через вашу оболочку.";
 "Runs through your shell in the project root." = "Запускается через ваш шелл в корне проекта.";
 "Runtime" = "Среда выполнения";
@@ -370,8 +398,10 @@
 "Search sessions, services, hosts…" = "Поиск: сессии, сервисы, хосты…";
 "Send notes to" = "Отправить заметки в";
 "Send notes" = "Отправить заметки";
+"Send tags along with the commits" = "Отправить теги вместе с коммитами";
 "Send to" = "Отправить";
 "Send to an agent" = "Отправить агенту";
+"Sends tags along with the commits" = "Отправит теги вместе с коммитами";
 "Services" = "Сервисы";
 "Session daemon disconnected" = "Демон сессий отключился";
 "Session daemon is shutting down" = "Демон сессий останавливается";
@@ -385,6 +415,8 @@
 "Sessions sidebar" = "Панель сессий";
 "Sessions you finish appear here, with what ran and how it ended." = "Завершённые сессии появятся здесь — что запускалось и чем закончилось.";
 "Sessions" = "Сессии";
+"Set uncommitted changes aside for the pull and put them back after" = "Отложить незакоммиченные изменения на время и вернуть их после";
+"Sets uncommitted changes aside for the pull and puts them back after" = "Отложит незакоммиченные изменения на время и вернёт их после";
 "Settings" = "Настройки";
 "Shell" = "Терминал";
 "shippingbox" = "shippingbox";
@@ -441,7 +473,9 @@
 "The host to connect through first." = "Хост, через который идёт подключение.";
 "The only notification that plays a sound" = "Единственное уведомление со звуком";
 "The update check failed: HTTP %d" = "Проверка обновлений не удалась: HTTP %d";
+"The working copy has changes" = "В рабочей копии есть изменения";
 "The working copy matches the last commit." = "Рабочая копия совпадает с последним коммитом.";
+"There is no git repository in this project." = "В этом проекте нет git-репозитория.";
 "This block also names: %@" = "Этот блок также описывает: %@";
 "This build updates by being rebuilt" = "Эта сборка обновляется пересборкой";
 "This is the newest release" = "Это самый свежий релиз";
@@ -484,5 +518,6 @@
 "Working" = "Работает";
 "Workspace" = "Рабочее пространство";
 "Yes" = "Да";
+"You are not on a branch" = "Вы не на ветке";
 "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 выбирает сессию, ⌥⌘1…⌥⌘9 — проект";
 /* Relay — Russian */

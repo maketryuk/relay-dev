@@ -2,6 +2,7 @@
 "%@ completed its work." = "%@ completed its work.";
 "%@ failed" = "%@ failed";
 "%@ finished" = "%@ finished";
+"%@ has no branch called %@ yet; pushing creates it." = "%@ has no branch called %@ yet; pushing creates it.";
 "%@ is available" = "%@ is available";
 "%@ is declared in more than one block; this edits the first." = "%@ is declared in more than one block; this edits the first.";
 "%@ is not running." = "%@ is not running.";
@@ -9,8 +10,10 @@
 "%@ needs you" = "%@ needs you";
 "%@ will be deleted. This cannot be undone." = "%@ will be deleted. This cannot be undone.";
 "%@ will go back to the last committed version." = "%@ will go back to the last committed version.";
+"%d behind" = "%d behind";
 "%d branches" = "%d branches";
 "%d changed" = "%d changed";
+"%d commits to push" = "%d commits to push";
 "%d picked" = "%d picked";
 "%d unmodified lines" = "%d unmodified lines";
 "%d unread" = "%d unread";
@@ -54,6 +57,8 @@
 "Binary file" = "Binary file";
 "Branches" = "Branches";
 "Built-in" = "Built-in";
+"Bypass the pre-merge and commit message hooks" = "Bypass the pre-merge and commit message hooks";
+"Bypass the pre-push hook" = "Bypass the pre-push hook";
 "Cached" = "Cached";
 "Cancel" = "Cancel";
 "Case sensitive; letters only." = "Case sensitive; letters only.";
@@ -85,6 +90,7 @@
 "Commit and Push" = "Commit and Push";
 "Commit message" = "Commit message";
 "Commit" = "Commit";
+"Commits" = "Commits";
 "Commits, branch switching and diffs will live here." = "Commits, branch switching and diffs will live here.";
 "Compact" = "Compact";
 "conflict" = "conflict";
@@ -108,6 +114,8 @@
 "Could not stop the process" = "Could not stop the process";
 "Could not switch to %@" = "Could not switch to %@";
 "Could not write the SSH config" = "Could not write the SSH config";
+"Create a merge commit even if it can be fast-forwarded" = "Create a merge commit even if it can be fast-forwarded";
+"Create a single commit for all pulled changes" = "Create a single commit for all pulled changes";
 "Create branch “%@”" = "Create branch “%@”";
 "Custom command" = "Custom command";
 "CUSTOM COMMAND" = "CUSTOM COMMAND";
@@ -213,7 +221,11 @@
 "Look again" = "Look again";
 "Looking for containers…" = "Looking for containers…";
 "Looking…" = "Looking…";
+"Make this branch follow the one it is pushed to" = "Make this branch follow the one it is pushed to";
+"Makes this branch follow the one it is pushed to" = "Makes this branch follow the one it is pushed to";
 "Mark all read" = "Mark all read";
+"Merge only if it can be fast-forwarded" = "Merge only if it can be fast-forwarded";
+"Merge, but do not commit the result" = "Merge, but do not commit the result";
 "Model" = "Model";
 "Mute this project" = "Mute this project";
 "Muted projects" = "Muted projects";
@@ -234,6 +246,7 @@
 "Next Session" = "Next Session";
 "No" = "No";
 "No %@ comments in this project." = "No %@ comments in this project.";
+"No branch" = "No branch";
 "No branch matches “%@”." = "No branch matches “%@”.";
 "No containers for this project. Press Up to start the stack." = "No containers for this project. Press Up to start the stack.";
 "No host matches “%@”." = "No host matches “%@”.";
@@ -243,12 +256,14 @@
 "No port matches “%@”." = "No port matches “%@”.";
 "No process on this Mac is accepting TCP connections right now." = "No process on this Mac is accepting TCP connections right now.";
 "No projects yet" = "No projects yet";
+"No remote" = "No remote";
 "No sessions yet" = "No sessions yet";
 "No ssh-agent is running, so every connection asks for the passphrase." = "No ssh-agent is running, so every connection asks for the passphrase.";
 "No textual difference" = "No textual difference";
 "No upstream" = "No upstream";
 "Not a directive: %@" = "Not a directive: %@";
 "not a git repository" = "not a git repository";
+"Not a repository" = "Not a repository";
 "Not in the agent — the passphrase is asked for on every connection." = "Not in the agent — the passphrase is asked for on every connection.";
 "Not set" = "Not set";
 "Notes" = "Notes";
@@ -256,6 +271,7 @@
 "Nothing is listening" = "Nothing is listening";
 "Nothing left to do" = "Nothing left to do";
 "Nothing selected" = "Nothing selected";
+"Nothing to push — the remote branch is already here." = "Nothing to push — the remote branch is already here.";
 "Nothing to show" = "Nothing to show";
 "Nothing yet. Agents waiting on you, failures and finished work land here." = "Nothing yet. Agents waiting on you, failures and finished work land here.";
 "NOTIFICATIONS" = "NOTIFICATIONS";
@@ -279,9 +295,12 @@
 "Open URL" = "Open URL";
 "Open" = "Open";
 "OpenCode" = "OpenCode";
+"Options" = "Options";
 "Other directives" = "Other directives";
 "Other hosts" = "Other hosts";
 "Output" = "Output";
+"Overwrite the remote branch, refusing if it moved since you last fetched" = "Overwrite the remote branch, refusing if it moved since you last fetched";
+"Overwrites the remote branch, but refuses if it moved since you last fetched" = "Overwrites the remote branch, but refuses if it moved since you last fetched";
 "Passphrase" = "Passphrase";
 "Past conversations with Claude and Codex in this project appear here, wherever they were started." = "Past conversations with Claude and Codex in this project appear here, wherever they were started.";
 "Pin to current project" = "Pin to current project";
@@ -304,16 +323,23 @@
 "Projects: %d" = "Projects: %d";
 "Protocol" = "Protocol";
 "Proxy jump" = "Proxy jump";
+"Pull" = "Pull";
 "Pull (rebase)" = "Pull (rebase)";
+"Pull into %@" = "Pull into %@";
+"Pull…" = "Pull…";
 "Push" = "Push";
+"Push %@" = "Push %@";
+"Push…" = "Push…";
 "Quick switching" = "Quick switching";
 "Re-read branches" = "Re-read branches";
 "Re-read the working copy" = "Re-read the working copy";
 "Reading…" = "Reading…";
 "Reasoning" = "Reasoning";
+"Rebase the current branch on top of incoming changes" = "Rebase the current branch on top of incoming changes";
 "Reconnect" = "Reconnect";
 "Refresh containers" = "Refresh containers";
 "Refresh usage" = "Refresh usage";
+"Refuses rather than making a merge commit" = "Refuses rather than making a merge commit";
 "Relay cannot replace itself at %@." = "Relay cannot replace itself at %@.";
 "Relay cannot see the releases. A private repository needs to be public for updates to work." = "Relay cannot see the releases. A private repository needs to be public for updates to work.";
 "Relay did not start this process" = "Relay did not start this process";
@@ -330,6 +356,7 @@
 "Remove" = "Remove";
 "Rename Session" = "Rename Session";
 "Rename…" = "Rename…";
+"Replays your commits on top of theirs instead of merging" = "Replays your commits on top of theirs instead of merging";
 "reported an error" = "reported an error";
 "Rescan now" = "Rescan now";
 "Reset All" = "Reset All";
@@ -358,6 +385,7 @@
 "Run" = "Run";
 "Running sessions are unaffected. Reconnecting restores them." = "Running sessions are unaffected. Reconnecting restores them.";
 "Running" = "Running";
+"Running…" = "Running…";
 "Runs in %@ through your shell." = "Runs in %@ through your shell.";
 "Runs through your shell in the project root." = "Runs through your shell in the project root.";
 "Runtime" = "Runtime";
@@ -370,8 +398,10 @@
 "Search sessions, services, hosts…" = "Search sessions, services, hosts…";
 "Send notes to" = "Send notes to";
 "Send notes" = "Send notes";
+"Send tags along with the commits" = "Send tags along with the commits";
 "Send to" = "Send to";
 "Send to an agent" = "Send to an agent";
+"Sends tags along with the commits" = "Sends tags along with the commits";
 "Services" = "Services";
 "Session daemon disconnected" = "Session daemon disconnected";
 "Session daemon is shutting down" = "Session daemon is shutting down";
@@ -385,6 +415,8 @@
 "Sessions sidebar" = "Sessions sidebar";
 "Sessions you finish appear here, with what ran and how it ended." = "Sessions you finish appear here, with what ran and how it ended.";
 "Sessions" = "Sessions";
+"Set uncommitted changes aside for the pull and put them back after" = "Set uncommitted changes aside for the pull and put them back after";
+"Sets uncommitted changes aside for the pull and puts them back after" = "Sets uncommitted changes aside for the pull and puts them back after";
 "Settings" = "Settings";
 "Shell" = "Shell";
 "shippingbox" = "shippingbox";
@@ -441,7 +473,9 @@
 "The host to connect through first." = "The host to connect through first.";
 "The only notification that plays a sound" = "The only notification that plays a sound";
 "The update check failed: HTTP %d" = "The update check failed: HTTP %d";
+"The working copy has changes" = "The working copy has changes";
 "The working copy matches the last commit." = "The working copy matches the last commit.";
+"There is no git repository in this project." = "There is no git repository in this project.";
 "This block also names: %@" = "This block also names: %@";
 "This build updates by being rebuilt" = "This build updates by being rebuilt";
 "This is the newest release" = "This is the newest release";
@@ -484,5 +518,6 @@
 "Working" = "Working";
 "Workspace" = "Workspace";
 "Yes" = "Yes";
+"You are not on a branch" = "You are not on a branch";
 "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project";
 /* Relay — English is the source language; the key is the English text. */

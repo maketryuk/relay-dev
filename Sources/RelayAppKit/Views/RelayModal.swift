@@ -15,6 +15,8 @@ enum RelayModal: Identifiable, Hashable {
     /// Somewhere to switch branches from, reachable by typing as well as by
     /// clicking the branch name.
     case branches(ProjectID)
+    /// Where a pull or a push is going, before it goes there.
+    case gitTransfer(projectID: ProjectID, direction: GitTransfer.Direction)
     case addProject
     case projectSettings(ProjectID)
     /// A nil service is a new one.
@@ -34,6 +36,7 @@ enum RelayModal: Identifiable, Hashable {
         case .ports: "ports"
         case .sshHosts: "ssh"
         case let .branches(projectID): "branches:\(projectID.rawValue)"
+        case let .gitTransfer(projectID, direction): "git-\(direction.rawValue):\(projectID.rawValue)"
         case .settings: "settings"
         case .addProject: "add-project"
         case let .projectSettings(projectID): "project-settings:\(projectID.rawValue)"
@@ -50,6 +53,8 @@ enum RelayModal: Identifiable, Hashable {
         case .ports: relayLocalized("Ports")
         case .sshHosts: relayLocalized("SSH Hosts")
         case .branches: relayLocalized("Branches")
+        case let .gitTransfer(_, direction):
+            relayLocalized(direction == .pull ? "Pull" : "Push")
         case .settings: relayLocalized("Settings")
         case .addProject: relayLocalized("Add Project")
         case .projectSettings: relayLocalized("Project Settings")
@@ -68,6 +73,8 @@ enum RelayModal: Identifiable, Hashable {
         case .ports: CGSize(width: 640, height: 560)
         case .sshHosts: CGSize(width: 560, height: 540)
         case .branches: CGSize(width: 520, height: 520)
+        case let .gitTransfer(_, direction):
+            CGSize(width: 580, height: direction == .pull ? 430 : 580)
         case .settings: CGSize(width: 760, height: 580)
         case .addProject: CGSize(width: 480, height: 460)
         case .projectSettings: CGSize(width: 520, height: 600)
@@ -119,6 +126,10 @@ struct ModalHost: View {
             if let project = model.project(projectID) {
                 BranchesPane(project: project)
             }
+        case let .gitTransfer(projectID, direction):
+            if let project = model.project(projectID) {
+                GitTransferPane(project: project, direction: direction)
+            }
         case .settings: SettingsView()
         case .addProject: AddProjectSheet()
         case let .projectSettings(projectID):
@@ -152,7 +163,8 @@ struct ModalHost: View {
     private var hasOwnSurface: Bool {
         switch modal {
         case .ports, .sshHosts, .settings, .branches: false
-        case .addProject, .projectSettings, .serviceEditor, .presetEditor, .sshHostEditor, .sshKeyUnlock:
+        case .addProject, .projectSettings, .serviceEditor, .presetEditor, .sshHostEditor, .sshKeyUnlock,
+             .gitTransfer:
             true
         }
     }
