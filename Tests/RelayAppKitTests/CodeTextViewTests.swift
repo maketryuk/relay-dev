@@ -13,7 +13,7 @@ struct CodeTextViewTests {
     @Test("Text put into the view occupies room on screen")
     func textIsLaidOut() throws {
         let made = CodeTextView.make(fontSize: 11.5)
-        made.text.string = "one\ntwo\nthree\nfour"
+        CodeTextView.setText("one\ntwo\nthree\nfour", in: made.text, fontSize: 11.5)
 
         let container = try #require(made.text.textContainer)
         let layout = try #require(made.text.layoutManager)
@@ -40,6 +40,45 @@ struct CodeTextViewTests {
         let shortHeight = short.text.layoutManager?.usedRect(for: short.text.textContainer!).height ?? 0
         let tallHeight = tall.text.layoutManager?.usedRect(for: tall.text.textContainer!).height ?? 0
         #expect(tallHeight > shortHeight * 10)
+    }
+
+    @Test("What is put in the view is painted")
+    func textIsPainted() throws {
+        // The last question the merge panes left: the string is set, the
+        // layout says it occupies room — is anything actually drawn? Asked of
+        // the pixels, since nothing else will say.
+        let made = CodeTextView.make(fontSize: 12)
+        CodeTextView.setText(
+            String(repeating: "wide line of text\n", count: 8),
+            in: made.text,
+            fontSize: 12
+        )
+        made.scroll.frame = NSRect(x: 0, y: 0, width: 300, height: 200)
+        made.scroll.layoutSubtreeIfNeeded()
+
+        let image = try #require(made.scroll.bitmapImageRepForCachingDisplay(in: made.scroll.bounds))
+        made.scroll.cacheDisplay(in: made.scroll.bounds, to: image)
+
+        // Light pixels, not merely several colours: counting colours passed
+        // while the text was being drawn black on black, with the ruler's own
+        // shade making up the second colour. The text is the only light thing
+        // in this palette, so its presence is a question about brightness.
+        var lightPixels = 0
+        var brightest = 0.0
+        var sampled = 0
+        for x in stride(from: 40, to: 280, by: 2) {
+            for y in stride(from: 10, to: 180, by: 2) {
+                guard let colour = image.colorAt(x: x, y: y)?
+                    .usingColorSpace(.deviceRGB) else { continue }
+                sampled += 1
+                let brightness = (colour.redComponent + colour.greenComponent + colour.blueComponent) / 3
+                brightest = max(brightest, brightness)
+                if brightness > 0.4 { lightPixels += 1 }
+            }
+        }
+        let report = "\(lightPixels) light of \(sampled) sampled, brightest \(brightest), "
+            + "text frame \(made.text.frame), visible \(made.scroll.documentVisibleRect)"
+        #expect(lightPixels > 20, Comment(rawValue: report))
     }
 
     @Test("A tinted line is the one that gets the colour")

@@ -138,7 +138,7 @@ struct GitConflictPane: View {
     }
 
     private func merge(_ path: String) {
-        model.presentModal(.merge(projectID: project.id, path: path))
+        model.openMerge(path, in: project.id)
     }
 
     // MARK: - Footer

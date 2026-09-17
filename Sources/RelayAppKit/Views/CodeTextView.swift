@@ -15,10 +15,14 @@ struct CodeTextView: NSViewRepresentable {
     /// where it is without markers having to be read.
     var tints: [Int: Color] = [:]
     var fontSize: CGFloat = 11.5
-    /// Called when the view scrolls, so a pane beside it can follow.
-    var onScroll: ((CGFloat) -> Void)?
-    /// Where this view should be scrolled to, when something else is leading.
-    var scrollOffset: CGFloat?
+    /// Panes that scroll together, if this is one of them.
+    ///
+    /// Held by AppKit rather than driven from SwiftUI state: a scroll that
+    /// wrote to state re-rendered the pane, which scrolled the others, which
+    /// wrote to state — and the notification arrives on the next turn of the
+    /// run loop, so the "this was me" flag guarded nothing. The panel came up
+    /// blank because it never stopped updating.
+    var sync: ScrollSync?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text)
@@ -27,12 +31,12 @@ struct CodeTextView: NSViewRepresentable {
     func makeNSView(context: Context) -> NSScrollView {
         let made = Self.make(fontSize: fontSize)
         made.text.delegate = context.coordinator
-        made.text.string = text
+        Self.setText(text, in: made.text, fontSize: fontSize)
 
         context.coordinator.textView = made.text
         context.coordinator.ruler = made.ruler
-        context.coordinator.observe(made.scroll, onScroll: onScroll)
         context.coordinator.applyTints(tints)
+        sync?.adopt(made.scroll)
         return made.scroll
     }
 
@@ -43,6 +47,24 @@ struct CodeTextView: NSViewRepresentable {
     /// and no container size is laid out into nothing — and says nothing about
     /// it: the ruler still draws its line numbers, which is how this showed up,
     /// as four numbers floating in an empty black panel.
+    /// How the text is drawn.
+    ///
+    /// Attributed rather than assigned as a plain string: both are drawn the
+    /// same — a text view applies its own `textColor` to storage that carries
+    /// none — but the font and colour then live in one place instead of two,
+    /// and what is typed into the view is styled by the same attributes.
+    static func attributes(fontSize: CGFloat) -> [NSAttributedString.Key: Any] {
+        [
+            .font: NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular),
+            .foregroundColor: NSColor(Theme.Palette.textPrimary),
+        ]
+    }
+
+    static func setText(_ text: String, in textView: NSTextView, fontSize: CGFloat) {
+        let attributed = NSAttributedString(string: text, attributes: attributes(fontSize: fontSize))
+        textView.textStorage?.setAttributedString(attributed)
+    }
+
     static func make(fontSize: CGFloat) -> (scroll: NSScrollView, text: NSTextView, ruler: LineNumberRuler) {
         let unbounded = CGFloat.greatestFiniteMagnitude
         let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
@@ -64,6 +86,7 @@ struct CodeTextView: NSViewRepresentable {
         textView.isGrammarCheckingEnabled = false
         textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         textView.textColor = NSColor(Theme.Palette.textPrimary)
+        textView.typingAttributes = attributes(fontSize: fontSize)
         textView.backgroundColor = NSColor(Theme.Palette.base)
         textView.insertionPointColor = NSColor(Theme.Palette.accent)
         textView.drawsBackground = true
@@ -87,7 +110,6 @@ struct CodeTextView: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
-        context.coordinator.onScroll = onScroll
         textView.isEditable = isEditable
         textView.isSelectable = true
 
@@ -96,20 +118,13 @@ struct CodeTextView: NSViewRepresentable {
         // is the editor throwing their work's history away mid-sentence.
         if textView.string != text {
             let selected = textView.selectedRange()
-            textView.string = text
+            Self.setText(text, in: textView, fontSize: fontSize)
             textView.setSelectedRange(NSRange(
                 location: min(selected.location, text.utf16.count),
                 length: 0
             ))
         }
         context.coordinator.applyTints(tints)
-
-        if let scrollOffset, abs(scrollView.contentView.bounds.origin.y - scrollOffset) > 1 {
-            context.coordinator.isFollowing = true
-            scrollView.contentView.scroll(to: NSPoint(x: 0, y: scrollOffset))
-            scrollView.reflectScrolledClipView(scrollView.contentView)
-            context.coordinator.isFollowing = false
-        }
     }
 
     @MainActor
@@ -117,10 +132,6 @@ struct CodeTextView: NSViewRepresentable {
         private let text: Binding<String>
         weak var textView: NSTextView?
         weak var ruler: LineNumberRuler?
-        var onScroll: ((CGFloat) -> Void)?
-        /// True while this view is being scrolled to match another, so the
-        /// two do not push each other back and forth for ever.
-        var isFollowing = false
 
         init(text: Binding<String>) {
             self.text = text
@@ -130,25 +141,6 @@ struct CodeTextView: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             text.wrappedValue = textView.string
             ruler?.needsDisplay = true
-        }
-
-        func observe(_ scrollView: NSScrollView, onScroll: ((CGFloat) -> Void)?) {
-            self.onScroll = onScroll
-            scrollView.contentView.postsBoundsChangedNotifications = true
-            // The clip view is held rather than read off the notification:
-            // an `NSNotification` is not `Sendable`, and what is wanted from
-            // it is one number that the view itself can be asked for.
-            let clip = scrollView.contentView
-            NotificationCenter.default.addObserver(
-                forName: NSView.boundsDidChangeNotification,
-                object: clip,
-                queue: .main
-            ) { [weak self] _ in
-                MainActor.assumeIsolated {
-                    guard let self, !self.isFollowing else { return }
-                    self.onScroll?(clip.bounds.origin.y)
-                }
-            }
         }
 
         /// Paints the conflicting lines, so where the disagreement is can be
@@ -230,6 +222,47 @@ final class LineNumberRuler: NSRulerView {
             line += 1
             index = NSMaxRange(lineRange)
             if lineRange.length == 0 { break }
+        }
+    }
+}
+
+/// Keeps several scroll views at the same offset.
+///
+/// The same passage sits at the same height in all three panes of a merge, so
+/// scrolling one and not the others is a way of comparing the wrong lines.
+/// Deliberately AppKit down to the ground: no SwiftUI state changes, therefore
+/// no re-rendering, therefore no loop between a scroll and the layout that
+/// caused it. The reentrancy flag works here because the notification is taken
+/// synchronously — a queue would deliver it after the flag was already down.
+@MainActor
+final class ScrollSync {
+    private var views: [NSScrollView] = []
+    private var isSyncing = false
+
+    func adopt(_ scrollView: NSScrollView) {
+        guard !views.contains(scrollView) else { return }
+        views.append(scrollView)
+        let clip = scrollView.contentView
+        clip.postsBoundsChangedNotifications = true
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(boundsChanged(_:)),
+            name: NSView.boundsDidChangeNotification,
+            object: clip
+        )
+    }
+
+    @objc
+    private func boundsChanged(_ notification: Notification) {
+        guard !isSyncing, let clip = notification.object as? NSClipView else { return }
+        isSyncing = true
+        defer { isSyncing = false }
+
+        let offset = clip.bounds.origin.y
+        for view in views where view.contentView !== clip {
+            guard abs(view.contentView.bounds.origin.y - offset) > 0.5 else { continue }
+            view.contentView.scroll(to: NSPoint(x: view.contentView.bounds.origin.x, y: offset))
+            view.reflectScrolledClipView(view.contentView)
         }
     }
 }

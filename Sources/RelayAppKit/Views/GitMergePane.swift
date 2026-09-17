@@ -17,32 +17,58 @@ struct GitMergePane: View {
     /// What will be written. Starts as the file git left behind, markers and
     /// all, and is whittled down by taking sides or by typing.
     @State private var result = ""
-    @State private var original: GitConflictFile?
+    /// Whether the text above came from the file rather than from nowhere.
+    @State private var isLoaded = false
     @State private var conflict = 0
-    @State private var scroll: CGFloat?
+    @State private var sync = ScrollSync()
+    /// What is still in dispute in the result, and where.
+    ///
+    /// Parsed when the text changes rather than every time the panel draws:
+    /// the panes ask for this to know what to tint, and re-reading the file on
+    /// every frame of a scroll is work nobody asked for.
+    @State private var pending = GitConflictFile(segments: [])
+    @State private var tints: [Int: Color] = [:]
 
-    /// The conflicts still in the result, re-read from it after every change:
-    /// the text is what is true, and choices recorded beside it would drift
-    /// from it the moment anybody typed.
-    private var pending: GitConflictFile { GitConflictFile.parse(result) }
     private var isResolved: Bool { !pending.hasConflicts }
+    /// The file as git left it, which is what the two side panes show.
+    private var original: GitConflictFile? { model.conflict(path, in: project.id) }
 
     var body: some View {
         ModalSurface(path, onDismiss: { model.dismissModal() }) {
             VStack(spacing: 0) {
-                toolbar
-                RelayDivider()
-                panes
+                if !isLoaded {
+                    // Only ever seen if the panel is reached with nothing
+                    // loaded: the model reads the file before opening it.
+                    EmptyStateView(
+                        systemImage: "doc.text",
+                        title: relayLocalized("Reading…"),
+                        message: ""
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    toolbar
+                    RelayDivider()
+                    panes
+                }
             }
         } footer: {
             footer
         }
+        // The model reads the file, so the first frame this panel draws
+        // already has it: a panel that fills in a moment after it opens cannot
+        // be told apart from a broken one.
+        .onChange(of: model.conflictText(path, in: project.id) ?? "", initial: true) { _, text in
+            guard !isLoaded, !text.isEmpty else { return }
+            result = text
+            isLoaded = true
+            reread()
+        }
+        .onChange(of: result) { _, _ in reread() }
         .task {
-            guard let root = model.project(project.id)?.rootPath else { return }
-            let url = URL(fileURLWithPath: root).appendingPathComponent(path)
-            let contents = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
-            result = contents
-            original = GitConflictFile.parse(contents)
+            // Belt and braces: the panel can be reached with nothing loaded —
+            // reopened after a reload, say — and then it asks for itself.
+            guard model.conflictText(path, in: project.id) == nil else { return }
+            model.loadConflict(path, in: project.id)
         }
     }
 
@@ -79,6 +105,19 @@ struct GitMergePane: View {
         return String(format: relayLocalized("Conflict %d of %d"), current, count)
     }
 
+    /// Re-reads the result: what is left in dispute, and which lines to tint.
+    private func reread() {
+        let parsed = GitConflictFile.parse(result)
+        let map = parsed.written(with: [:]).map
+        var painted: [Int: Color] = [:]
+        for line in map.ours { painted[line] = Theme.Palette.statusError.opacity(0.18) }
+        for line in map.theirs { painted[line] = Theme.Palette.statusFinished.opacity(0.18) }
+        for line in map.markers { painted[line] = Theme.Palette.statusWaiting.opacity(0.16) }
+        pending = parsed
+        tints = painted
+        conflict = min(conflict, max(parsed.hunks.count - 1, 0))
+    }
+
     /// Answers one conflict by rewriting the text, which is where the truth is
     /// kept: an edit by hand and a click on "take left" have to be the same
     /// kind of change or they cannot be mixed.
@@ -110,7 +149,7 @@ struct GitMergePane: View {
                 tint: Theme.Palette.accent,
                 text: $result,
                 isEditable: true,
-                tints: resultTints
+                tints: tints
             )
             RelayDivider(axis: .vertical)
             pane(
@@ -133,15 +172,6 @@ struct GitMergePane: View {
 
     private var theirTitle: String {
         original?.hunks.first?.theirLabel ?? relayLocalized("theirs")
-    }
-
-    private var resultTints: [Int: Color] {
-        let map = pending.written(with: [:]).map
-        var tints: [Int: Color] = [:]
-        for line in map.ours { tints[line] = Theme.Palette.statusError.opacity(0.18) }
-        for line in map.theirs { tints[line] = Theme.Palette.statusFinished.opacity(0.18) }
-        for line in map.markers { tints[line] = Theme.Palette.statusWaiting.opacity(0.16) }
-        return tints
     }
 
     private func pane(
@@ -172,8 +202,7 @@ struct GitMergePane: View {
                 tints: tints,
                 // The three scroll together, since the same passage is at the
                 // same height in all of them.
-                onScroll: { offset in scroll = offset },
-                scrollOffset: scroll
+                sync: sync
             )
             // An `NSScrollView` has no size of its own to offer, so it is told
             // to take the room rather than asked how much it would like.

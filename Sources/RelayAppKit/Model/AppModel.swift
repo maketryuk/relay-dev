@@ -85,6 +85,10 @@ final class AppModel {
     /// Conflicted files as they are on disk, parsed into the sides a person
     /// has to choose between. Keyed by project and path.
     private(set) var conflicts: [String: GitConflictFile] = [:]
+    /// The same files as text, exactly as git left them: what the merge panel
+    /// starts from, and the one thing a reconstruction cannot promise to be
+    /// byte for byte.
+    private(set) var conflictTexts: [String: String] = [:]
     /// The pull or push the transfer panel is running, if any.
     private(set) var runningTransfer: GitTransfer?
     /// The remotes each project has, read when the transfer panel opens.
@@ -169,7 +173,7 @@ final class AppModel {
     private(set) var focusTerminalRequest = 0
 
     private let client = DaemonClient()
-    private let store = WorkspaceStore()
+    private let store: WorkspaceStore
     private var lastActiveSessionByProject: [String: String] = [:]
     @ObservationIgnored private let surfaceCache = TerminalSurfaceCache(limit: maxCachedSurfaces)
     private var eventTask: Task<Void, Never>?
@@ -206,6 +210,14 @@ final class AppModel {
     private static let maxCachedSurfaces = 8
 
     // MARK: - Lifecycle
+
+    /// The workspace file is a parameter so that a test can be given one of
+    /// its own. Everything else about the model is either runtime state or
+    /// read from the daemon, which a test starts for itself; this was the one
+    /// thing that reached out and wrote to the developer's own app.
+    init(store: WorkspaceStore = WorkspaceStore()) {
+        self.store = store
+    }
 
     func bootstrap() async {
         let state = store.load()
@@ -1361,6 +1373,20 @@ final class AppModel {
         conflicts[key(projectID, path)]
     }
 
+    func conflictText(_ path: String, in projectID: ProjectID) -> String? {
+        conflictTexts[key(projectID, path)]
+    }
+
+    /// Opens the merge panes for one file, having read it first.
+    ///
+    /// Read here rather than by the panel: a view that fetches its own subject
+    /// draws once with nothing in it, and a panel that opens empty and fills
+    /// in a moment later is indistinguishable from one that is broken.
+    func openMerge(_ path: String, in projectID: ProjectID) {
+        loadConflict(path, in: projectID)
+        presentModal(.merge(projectID: projectID, path: path))
+    }
+
     /// Opens the panel that resolves what is conflicted.
     func resolveConflicts(in projectID: ProjectID) {
         presentModal(.conflicts(projectID))
@@ -1372,16 +1398,18 @@ final class AppModel {
         guard let root = project(projectID)?.rootPath else { return }
         let identifier = key(projectID, path)
         Task { [weak self] in
-            let parsed = await Task.detached(priority: .userInitiated) { () -> GitConflictFile? in
+            let parsed = await Task.detached(priority: .userInitiated) { () -> (text: String, file: GitConflictFile)? in
                 let url = URL(fileURLWithPath: root).appendingPathComponent(path)
                 guard let contents = try? String(contentsOf: url, encoding: .utf8) else { return nil }
-                return GitConflictFile.parse(contents)
+                return (contents, GitConflictFile.parse(contents))
             }.value
             guard let self else { return }
             if let parsed {
-                self.conflicts[identifier] = parsed
+                self.conflicts[identifier] = parsed.file
+                self.conflictTexts[identifier] = parsed.text
             } else {
                 self.conflicts.removeValue(forKey: identifier)
+                self.conflictTexts.removeValue(forKey: identifier)
             }
         }
     }
@@ -1428,8 +1456,11 @@ final class AppModel {
         ) { root in
             GitActions.resolve(path, contents: contents, at: root)
         } onSuccess: { [weak self] in
-            self?.conflicts.removeValue(forKey: self?.key(projectID, path) ?? "")
-            self?.dismissModal()
+            guard let self else { return }
+            let identifier = self.key(projectID, path)
+            self.conflicts.removeValue(forKey: identifier)
+            self.conflictTexts.removeValue(forKey: identifier)
+            self.dismissModal()
         }
     }
 
