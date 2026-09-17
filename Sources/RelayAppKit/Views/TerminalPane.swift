@@ -190,7 +190,8 @@ struct TerminalPane: View {
                 // Beats the status text to the remaining room: which terminal
                 // this is matters more than what it is doing.
                 .layoutPriority(1)
-                .help(relayLocalized("Double-click the session in the sidebar to rename it"))
+                .frame(maxWidth: Theme.Metrics.sessionTitleWidth, alignment: .leading)
+                .relayTooltip(model.label(for: session), edge: .bottom)
 
             StatusDot(status: session.status)
             if detail.showsStatusText {

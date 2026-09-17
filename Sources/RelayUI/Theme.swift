@@ -52,6 +52,13 @@ public enum Theme {
     }
 
     public enum Metrics {
+        /// How much room a session's name gets before it is cut short.
+        ///
+        /// An agent names itself after what it is doing, which can be a
+        /// sentence — and a sentence across the top of a pane pushes the
+        /// status, the pid and the controls out of the row it shares. The rest
+        /// of it is a hover away.
+        public static let sessionTitleWidth: CGFloat = 320
         public static let titleBarHeight: CGFloat = 38
         public static let statusBarHeight: CGFloat = 26
         public static let contextBarHeight: CGFloat = 22

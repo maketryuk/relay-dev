@@ -79,6 +79,10 @@ struct SessionRow: View {
                 .font(Theme.Typography.row)
                 .foregroundStyle(isSelected ? Theme.Palette.textPrimary : Theme.Palette.textSecondary)
                 .lineLimit(1)
+                .truncationMode(.tail)
+                // The sidebar is narrow and an agent's name is a sentence, so
+                // what is on the row is usually the first half of it.
+                .relayTooltip(model.label(for: session), edge: .trailing)
 
             Spacer(minLength: Theme.Spacing.xsmall)
 
