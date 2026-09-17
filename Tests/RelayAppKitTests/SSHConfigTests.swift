@@ -440,3 +440,23 @@ struct WorkspaceCompatibilityTests {
         #expect(state.version == 1)
     }
 }
+
+@Suite("SSH session destination")
+struct SSHDestinationTests {
+    @Test("The host is read back out of the command Relay started")
+    func readsTheAlias() {
+        #expect(SSHDestination.alias(inCommand: ["ssh", "staging"]) == "staging")
+    }
+
+    @Test("A command Relay did not write has no answer")
+    func refusesToGuess() {
+        // `ssh` has two dozen options that take a value, so the first thing
+        // that is not a flag is as likely to be a port as a host. A session row
+        // naming the wrong machine is worse than one naming none.
+        #expect(SSHDestination.alias(inCommand: ["ssh", "-p", "2222", "staging"]) == nil)
+        #expect(SSHDestination.alias(inCommand: ["ssh", "staging", "uptime"]) == nil)
+        #expect(SSHDestination.alias(inCommand: ["ssh"]) == nil)
+        #expect(SSHDestination.alias(inCommand: ["mosh", "staging"]) == nil)
+        #expect(SSHDestination.alias(inCommand: []) == nil)
+    }
+}

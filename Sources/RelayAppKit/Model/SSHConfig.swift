@@ -1,5 +1,40 @@
 import Foundation
 
+/// One `Keyword value` line as a block spells it.
+struct SSHDirective: Hashable, Sendable {
+    /// Lower-cased, because OpenSSH does not care about the case and neither
+    /// should anything comparing two of these.
+    var keyword: String
+    /// The keyword as the file writes it. A config that says `Hostname` is not
+    /// wrong, and an editor that shows it back as `hostname` is correcting
+    /// somebody's spelling for no reason.
+    var spelling: String
+    var value: String
+
+    init(keyword: String, value: String, spelling: String? = nil) {
+        self.keyword = keyword
+        self.value = value
+        self.spelling = spelling ?? keyword
+    }
+}
+
+/// Where a host is written down.
+///
+/// Relay edits the block it found rather than regenerating the file, so it has
+/// to remember which file that block came from and which lines it occupied.
+struct SSHHostDefinition: Hashable, Sendable {
+    var file: URL
+    /// Zero-based and half-open: the `Host` line through the last directive
+    /// belonging to it. Trailing blank lines and comments are left out, since a
+    /// comment sitting above the next `Host` belongs to that one.
+    var lines: Range<Int>
+    /// Every alias the block names. Editing it touches all of them.
+    var patterns: [String]
+    /// What this block says, as opposed to what the host inherits from a
+    /// wildcard block elsewhere in the file.
+    var directives: [SSHDirective]
+}
+
 /// One connectable entry from the user's OpenSSH configuration.
 struct SSHHost: Identifiable, Hashable, Sendable {
     var alias: String
@@ -7,6 +42,11 @@ struct SSHHost: Identifiable, Hashable, Sendable {
     var user: String?
     var port: Int?
     var identityFile: String?
+    var proxyJump: String?
+    var forwardAgent: Bool?
+    /// The blocks naming this alias outright, in file order. Usually one; more
+    /// than one is legal, and OpenSSH reads them all, so Relay has to as well.
+    var definitions: [SSHHostDefinition] = []
 
     var id: String { alias }
 
@@ -18,6 +58,7 @@ struct SSHHost: Identifiable, Hashable, Sendable {
         if let port, port != 22 { target += ":\(port)" }
         return target
     }
+
 }
 
 /// Filesystem access used while parsing, injected so the parser can be tested
@@ -62,7 +103,14 @@ enum SSHConfigParser {
         var patterns: [String]
         /// Preserved in file order because OpenSSH takes the *first* value it
         /// obtains for each keyword, not the last.
-        var settings: [(keyword: String, value: String)]
+        var settings: [SSHDirective]
+        var file: URL
+        var headerLine: Int
+        /// The last line that is a directive of this block, so that a comment
+        /// introducing the next host is not swallowed by the previous one.
+        var endLine: Int
+
+        var lines: Range<Int> { headerLine ..< endLine + 1 }
     }
 
     private static let maxIncludeDepth = 8
@@ -75,6 +123,7 @@ enum SSHConfigParser {
         var visited: Set<String> = [url.standardizedFileURL.path]
         let blocks = parseBlocks(
             contents: contents,
+            file: url,
             directory: url.deletingLastPathComponent(),
             fileSystem: fileSystem,
             visited: &visited,
@@ -87,21 +136,30 @@ enum SSHConfigParser {
 
     private static func parseBlocks(
         contents: String,
+        file: URL,
         directory: URL,
         fileSystem: some SSHConfigFileSystem,
         visited: inout Set<String>,
-        depth: Int
+        depth: Int,
+        followingIncludes: Bool = true
     ) -> [Block] {
         var blocks: [Block] = []
         var current: Block?
 
-        for rawLine in contents.split(separator: "\n", omittingEmptySubsequences: false) {
-            guard let (keyword, value) = tokenise(String(rawLine)) else { continue }
+        let rawLines = contents.split(separator: "\n", omittingEmptySubsequences: false)
+        for (index, rawLine) in rawLines.enumerated() {
+            guard let (keyword, value) = directive(in: String(rawLine)) else { continue }
 
             switch keyword.lowercased() {
             case "host":
                 if let existing = current { blocks.append(existing) }
-                current = Block(patterns: splitPatterns(value), settings: [])
+                current = Block(
+                    patterns: patterns(in: value),
+                    settings: [],
+                    file: file,
+                    headerLine: index,
+                    endLine: index
+                )
 
             case "match":
                 // Match blocks are conditional on runtime state Relay cannot
@@ -110,8 +168,8 @@ enum SSHConfigParser {
                 current = nil
 
             case "include":
-                guard depth < maxIncludeDepth else { continue }
-                for pattern in splitPatterns(value) {
+                guard followingIncludes, depth < maxIncludeDepth else { continue }
+                for pattern in patterns(in: value) {
                     for included in fileSystem.resolve(include: pattern, relativeTo: directory) {
                         let key = included.standardizedFileURL.path
                         // Guard against a config that includes itself.
@@ -119,6 +177,7 @@ enum SSHConfigParser {
                         visited.insert(key)
                         let nested = parseBlocks(
                             contents: text,
+                            file: included,
                             directory: included.deletingLastPathComponent(),
                             fileSystem: fileSystem,
                             visited: &visited,
@@ -135,7 +194,10 @@ enum SSHConfigParser {
                 }
 
             default:
-                current?.settings.append((keyword.lowercased(), value))
+                current?.settings.append(
+                    SSHDirective(keyword: keyword.lowercased(), value: value, spelling: keyword)
+                )
+                current?.endLine = index
             }
         }
 
@@ -144,7 +206,10 @@ enum SSHConfigParser {
     }
 
     /// Splits `Keyword value`, `Keyword=value` and quoted forms.
-    private static func tokenise(_ line: String) -> (String, String)? {
+    ///
+    /// Returns the keyword as written, because the writer puts lines back the
+    /// way it found them and a config that spells it `Hostname` is not wrong.
+    static func directive(in line: String) -> (keyword: String, value: String)? {
         var text = line
         if let commentIndex = text.firstIndex(of: "#") {
             text = String(text[text.startIndex ..< commentIndex])
@@ -168,11 +233,63 @@ enum SSHConfigParser {
         return String(value.dropFirst().dropLast())
     }
 
-    private static func splitPatterns(_ value: String) -> [String] {
+    static func patterns(in value: String) -> [String] {
         value
             .split(whereSeparator: { $0 == " " || $0 == "\t" })
             .map { unquote(String($0)) }
             .filter { !$0.isEmpty }
+    }
+
+    /// OpenSSH's `yes`/`no`, and nothing at all when the value is neither.
+    static func flag(_ value: String) -> Bool? {
+        switch value.lowercased() {
+        case "yes", "true": true
+        case "no", "false": false
+        default: nil
+        }
+    }
+
+    /// Every block in one file, without following `Include` and without
+    /// merging anything.
+    ///
+    /// Hosts are what the list needs; this is what editing needs when the block
+    /// is not a host at all — `Host *`, where the defaults live.
+    static func blocks(in contents: String, file: URL) -> [SSHHostDefinition] {
+        var visited: Set<String> = []
+        return parseBlocks(
+            contents: contents,
+            file: file,
+            directory: file.deletingLastPathComponent(),
+            fileSystem: DefaultSSHConfigFileSystem(),
+            visited: &visited,
+            depth: 0,
+            followingIncludes: false
+        ).map {
+            SSHHostDefinition(file: $0.file, lines: $0.lines, patterns: $0.patterns, directives: $0.settings)
+        }
+    }
+
+    /// Every block the configuration reaches, `Include` and all.
+    ///
+    /// For asking what the whole configuration already says, as opposed to
+    /// `blocks(in:file:)`, which asks what one file says because one file is
+    /// what gets edited.
+    static func blocks(
+        rootConfig url: URL,
+        fileSystem: some SSHConfigFileSystem = DefaultSSHConfigFileSystem()
+    ) -> [SSHHostDefinition] {
+        guard let contents = fileSystem.read(url) else { return [] }
+        var visited: Set<String> = [url.standardizedFileURL.path]
+        return parseBlocks(
+            contents: contents,
+            file: url,
+            directory: url.deletingLastPathComponent(),
+            fileSystem: fileSystem,
+            visited: &visited,
+            depth: 0
+        ).map {
+            SSHHostDefinition(file: $0.file, lines: $0.lines, patterns: $0.patterns, directives: $0.settings)
+        }
     }
 
     // MARK: - Resolution
@@ -204,10 +321,26 @@ enum SSHConfigParser {
                     case "user": host.user = setting.value
                     case "port": host.port = Int(setting.value)
                     case "identityfile": host.identityFile = setting.value
+                    case "proxyjump": host.proxyJump = setting.value
+                    case "forwardagent": host.forwardAgent = flag(setting.value)
                     default: break
                     }
                 }
             }
+
+            // Only a block that names the alias outright can be edited as this
+            // host: rewriting `Host *` because one of the hosts it covers was
+            // renamed would change every other host with it.
+            host.definitions = blocks
+                .filter { $0.patterns.contains(alias) }
+                .map { block in
+                    SSHHostDefinition(
+                        file: block.file,
+                        lines: block.lines,
+                        patterns: block.patterns,
+                        directives: block.settings
+                    )
+                }
             return host
         }
     }
@@ -257,6 +390,24 @@ enum SSHConfigParser {
             }
         }
         return table[patternCharacters.count][valueCharacters.count]
+    }
+}
+
+/// Which machine an SSH session is on.
+///
+/// Read back out of the command the session was started with, because that is
+/// the only record of it: the name can be changed by hand, and the working
+/// directory belongs to the Mac rather than to the far end.
+enum SSHDestination {
+    /// Only the exact shape Relay writes is read back.
+    ///
+    /// Anything else would have to be parsed, and `ssh` has two dozen options
+    /// that take a value of their own — in `ssh -p 2222 host` the first thing
+    /// that is not a flag is the port. A label that names the wrong machine is
+    /// worse than no label, so an unfamiliar command simply has no answer.
+    static func alias(inCommand command: [String]) -> String? {
+        guard command.count == 2, command[0] == "ssh", !command[1].hasPrefix("-") else { return nil }
+        return command[1]
     }
 }
 
