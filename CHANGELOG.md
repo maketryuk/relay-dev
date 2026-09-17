@@ -5,6 +5,17 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Fixed
+
+- **Updating no longer ends every session.** The sessions live in a daemon that
+  outlives the app, and the app used to retire any daemon that was not the one
+  it shipped with — which after an update is always true, so the terminals and
+  the agents in them died on the way. A daemon with sessions in it is kept now,
+  scrollback and all; the changeover finishes by itself once the last session is
+  closed.
+
 ## 0.3.2 — 2026-09-17
 
 ### Changed

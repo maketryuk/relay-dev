@@ -25,11 +25,23 @@ final class DaemonClient: @unchecked Sendable {
     private var pending: [UInt64: CheckedContinuation<DaemonReply, Error>] = [:]
     private var subscribers: [UInt64: AsyncStream<DaemonEvent>.Continuation] = [:]
     private var nextSubscriberID: UInt64 = 1
+    private var inheritedDaemon = false
     private let encoder = MessageFraming.makeEncoder()
     private let decoder = MessageFraming.makeDecoder()
 
     /// Fired when the socket drops so the UI can show a reconnect affordance.
     var onDisconnect: (@Sendable () -> Void)?
+
+    /// True while this client is talking to a daemon left behind by an earlier
+    /// build, kept alive because it still holds sessions.
+    ///
+    /// The update replaces the app and restarts it; the daemon carries on, and
+    /// with it every terminal and every agent. Reading this is how the UI can
+    /// say so, and how it knows to finish the changeover once the last session
+    /// is gone.
+    var isInheritedDaemon: Bool {
+        lock.withLock { inheritedDaemon }
+    }
 
     /// A fresh stream of daemon events for one consumer.
     ///
@@ -71,15 +83,44 @@ final class DaemonClient: @unchecked Sendable {
             // Protocol compatibility is not enough. The daemon outlives the GUI
             // on purpose, so a rebuilt app usually finds the *previous* build's
             // daemon still running — with all of its old behaviour intact, and
-            // no wire-format change to give it away.
-            if let expected = bundledDaemonIdentity(), let identity, identity != expected {
+            // no wire-format change to give it away. What happens next depends
+            // on whether anything would be destroyed by replacing it.
+            let expected = bundledDaemonIdentity()
+            // Only asked for when the answer can change the decision: it is a
+            // round trip, and the daemon this build started needs no inquest.
+            let supervised = identity == expected ? 0 : (try? await listSessions().count) ?? 0
+
+            switch DaemonSuccession.decide(
+                daemonIdentity: identity,
+                bundledIdentity: expected,
+                supervisedSessions: supervised
+            ) {
+            case .keep:
+                lock.withLock { inheritedDaemon = false }
+            case .retire:
                 try await retireIncompatibleDaemon()
                 _ = try await openConnection()
+                lock.withLock { inheritedDaemon = false }
+            case .inherit:
+                lock.withLock { inheritedDaemon = true }
             }
         } catch let error as DaemonError where error.code == "protocol_mismatch" {
+            // No choice here: a daemon that cannot decode what this build sends
+            // is of no use to the sessions inside it either.
             try await retireIncompatibleDaemon()
             _ = try await openConnection()
+            lock.withLock { inheritedDaemon = false }
         }
+    }
+
+    /// Shuts the daemon down and connects to the one this build ships with.
+    ///
+    /// Sessions the old daemon holds end with it, so this is only ever called
+    /// when there are none left to lose.
+    func replaceDaemon() async throws {
+        try await retireIncompatibleDaemon()
+        _ = try await openConnection()
+        lock.withLock { inheritedDaemon = false }
     }
 
     private func bundledDaemonIdentity() -> String? {

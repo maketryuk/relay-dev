@@ -471,7 +471,7 @@ struct AboutPane: View {
                         RelayButton(
                             String(format: relayLocalized("Install %@"), release.version.description),
                             kind: .primary
-                        ) { model.updates.install() }
+                        ) { model.installUpdate() }
                     } else {
                         RelayButton(relayLocalized("Check now")) { model.updates.check() }
                     }

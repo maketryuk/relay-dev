@@ -7,11 +7,10 @@ import Foundation
 /// each other is keyed by this — the socket, the workspace, the log, and the
 /// identity macOS hangs privacy permissions on.
 ///
-/// Without it they share one daemon, and the client retires a daemon whose
+/// Without it they share one daemon, and the client takes over a daemon whose
 /// binary is not the one it shipped with. That is right for a single app and
-/// ruinous for two: every rebuild of the development app would shut down the
-/// daemon the released one is using, and every session being worked in dies
-/// with it.
+/// ruinous for two: every rebuild of the development app would claim the daemon
+/// the released one is using, and the sessions being worked in with it.
 public enum RelayFlavour: String, Sendable, CaseIterable {
     case release
     case development

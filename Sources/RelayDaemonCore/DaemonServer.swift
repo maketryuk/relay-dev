@@ -81,7 +81,14 @@ public final class DaemonServer: @unchecked Sendable {
         }
         try listener.start()
         self.listener = listener
-        DaemonLog.shared.write("daemon \(Self.version) listening on \(socketURL.path)")
+        // Read now rather than at the first handshake. An update deletes the
+        // bundle this daemon was started from while it keeps running, and a
+        // hash taken afterwards is "unknown" — which reads to the new GUI as a
+        // daemon it cannot identify, exactly when it is deciding whether the
+        // sessions inside it can be kept.
+        DaemonLog.shared.write(
+            "daemon \(Self.version) (\(BuildIdentity.current)) listening on \(socketURL.path)"
+        )
         scheduleIdleShutdownCheck()
     }
 

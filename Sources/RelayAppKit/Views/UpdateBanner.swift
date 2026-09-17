@@ -16,7 +16,7 @@ struct UpdateBanner: View {
                 systemImage: "arrow.down.circle.fill",
                 text: String(format: relayLocalized("%@ available"), release.version.description),
                 tint: Theme.Palette.accent
-            ) { model.updates.install() }
+            ) { model.installUpdate() }
                 .relayTooltip(relayLocalized("Download and restart into the new version"))
 
         case let .downloading(_, fraction):

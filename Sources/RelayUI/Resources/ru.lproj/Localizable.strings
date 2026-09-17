@@ -318,6 +318,7 @@
 "Relay reads the git branch, package manager and dev command it finds." = "Relay определит git-ветку, пакетный менеджер и dev-команду.";
 "Relay reads ~/.ssh/config, including Include directives. Nothing there yet." = "Relay читает ~/.ssh/config вместе с директивами Include. Пока там пусто.";
 "Relay" = "Relay";
+"Relay takes over supervising them once they are closed." = "Relay возьмёт их под управление, когда они будут закрыты.";
 "Reload config" = "Перечитать конфиг";
 "Remote" = "Удалённые";
 "Remove from Workspace" = "Убрать из рабочего пространства";
@@ -375,6 +376,7 @@
 "Session name" = "Название сессии";
 "Session presets" = "Пресеты сессий";
 "Session unavailable" = "Сессия недоступна";
+"Sessions from the previous version kept running" = "Сессии предыдущей версии продолжают работать";
 "Sessions it was supervising have ended." = "Сессии, которыми он управлял, завершены.";
 "Sessions live in a background daemon and survive quitting the app" = "Сессии живут в фоновом демоне и переживают выход из приложения";
 "Sessions sidebar" = "Панель сессий";

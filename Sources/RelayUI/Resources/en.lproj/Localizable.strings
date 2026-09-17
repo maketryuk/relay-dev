@@ -318,6 +318,7 @@
 "Relay reads the git branch, package manager and dev command it finds." = "Relay reads the git branch, package manager and dev command it finds.";
 "Relay reads ~/.ssh/config, including Include directives. Nothing there yet." = "Relay reads ~/.ssh/config, including Include directives. Nothing there yet.";
 "Relay" = "Relay";
+"Relay takes over supervising them once they are closed." = "Relay takes over supervising them once they are closed.";
 "Reload config" = "Reload config";
 "Remote" = "Remote";
 "Remove from Workspace" = "Remove from Workspace";
@@ -375,6 +376,7 @@
 "Session name" = "Session name";
 "Session presets" = "Session presets";
 "Session unavailable" = "Session unavailable";
+"Sessions from the previous version kept running" = "Sessions from the previous version kept running";
 "Sessions it was supervising have ended." = "Sessions it was supervising have ended.";
 "Sessions live in a background daemon and survive quitting the app" = "Sessions live in a background daemon and survive quitting the app";
 "Sessions sidebar" = "Sessions sidebar";

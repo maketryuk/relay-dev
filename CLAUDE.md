@@ -155,12 +155,22 @@ install script and the code alike, so the bundle and what runs inside it cannot
 disagree.
 
 Two copies of one identity does not work, and the reason is worth knowing. The
-client retires a daemon whose binary is not the one it shipped with — right for
+client replaces a daemon whose binary is not the one it shipped with — right for
 a single app, since a new build must not talk to old code. But the daemon hash
 changes on **every** build, signature and all, so a development app sharing the
-socket would shut down the daemon the released one is using, and every session
-being worked in dies with it. They would also share one `workspace.json`, where
-the last writer wins.
+socket would take over the daemon the released one is using. They would also
+share one `workspace.json`, where the last writer wins.
+
+What happens to the sessions in a daemon that is not ours is decided by
+`DaemonSuccession`: an idle one is shut down and replaced at once, and one with
+sessions in it is **inherited** — kept, scrollback and all, until the last
+session closes, at which point the changeover finishes on its own. Replacing it
+tears down every PTY it holds, which is a price worth paying for a daemon
+supervising nothing and never worth paying for one supervising an afternoon's
+work; an update used to pay it every time. The cost is that a change to daemon
+code does not take effect while a session from the previous build is open — so
+when working on the daemon, close the sessions, or end it outright with
+`pkill relay-daemon`.
 
 The daemon cannot read its own flavour: it is a bare executable inside
 `Contents/MacOS` with no bundle identifier, so `DaemonLauncher` puts it in the
@@ -171,8 +181,10 @@ default for `make daemon`.
 
 `RelayProtocolVersion.current` must be bumped whenever the message set changes.
 The daemon deliberately outlives the GUI, so a new build routinely meets the
-previous build's daemon; the version is what lets the client notice and retire
-it. Adding cases stays backwards compatible, reordering or removing them does
+previous build's daemon; the version is what lets the client notice. A daemon
+that cannot decode what this build sends is retired whatever it is holding,
+since it is no use to those sessions either — which is why adding a case is
+not the same kind of change as reordering one. Adding cases stays backwards compatible, reordering or removing them does
 not — `Tests/RelayProtocolTests/WireCompatibilityTests.swift` pins the encodings
 the upgrade path depends on.
 

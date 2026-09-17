@@ -159,6 +159,8 @@ final class AppModel {
     private var gitRefreshTask: Task<Void, Never>?
     private var portRefreshTask: Task<Void, Never>?
     private var reconnectTask: Task<Void, Never>?
+    /// True while the previous build's daemon is being handed over from.
+    private var isReplacingDaemon = false
     /// Sessions the user has closed but the daemon has not finished forgetting.
     ///
     /// Everything in flight about them — the reply that created them, the exit
@@ -244,6 +246,8 @@ final class AppModel {
             startEventLoop()
             try await reconcileSessions()
             restoreSelection()
+            announceInheritedDaemon()
+            finishInheritedDaemonIfEmpty()
         } catch {
             connectionState = .disconnected(error.localizedDescription)
             present(ToastContent(
@@ -262,6 +266,48 @@ final class AppModel {
     func retryConnection() {
         reconnectTask?.cancel()
         Task { await connect() }
+    }
+
+    /// Says so when the sessions on screen belong to the daemon the previous
+    /// build left running.
+    ///
+    /// Worth a line: an update used to end every session, and now it does not —
+    /// but the terminals are being supervised by code one version behind the
+    /// window around them, which is a thing to know rather than to discover.
+    private func announceInheritedDaemon() {
+        guard client.isInheritedDaemon, !sessions.isEmpty else { return }
+        present(ToastContent(
+            kind: .info,
+            title: relayLocalized("Sessions from the previous version kept running"),
+            message: relayLocalized("Relay takes over supervising them once they are closed."),
+            key: "daemon"
+        ))
+    }
+
+    /// Completes the changeover the moment there is nothing left to lose.
+    ///
+    /// Replacing the daemon ends every session inside it, so an update that
+    /// arrives while work is in progress leaves the old one running. With the
+    /// last session gone that objection disappears, and the app picks up the
+    /// daemon it actually shipped with.
+    private func finishInheritedDaemonIfEmpty() {
+        guard client.isInheritedDaemon, sessions.isEmpty, !isReplacingDaemon else { return }
+        isReplacingDaemon = true
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await self.client.replaceDaemon()
+                self.connectionState = .connected
+                self.dismissToasts(key: "daemon")
+                self.startEventLoop()
+                try await self.reconcileSessions()
+            } catch {
+                // Nothing was lost — there were no sessions — so this is not
+                // worth interrupting anyone over. The next launch tries again.
+                self.scheduleReconnect()
+            }
+            self.isReplacingDaemon = false
+        }
     }
 
     /// Reconnects on its own after a brief pause, which covers the common case
@@ -369,6 +415,7 @@ final class AppModel {
                 selectedSessionID = selectedProjectID.flatMap { sessions(in: $0).first?.id }
                 if let next = selectedSessionID { selectSession(next) }
             }
+            finishInheritedDaemonIfEmpty()
 
         case let .output(sessionID, data):
             surfaceCache.existing(sessionID)?.feed(data)
@@ -719,6 +766,7 @@ final class AppModel {
             }
             _ = try? await self.client.send(.forget(id))
             self.closingSessionIDs.remove(id)
+            self.finishInheritedDaemonIfEmpty()
         }
     }
 
@@ -1529,6 +1577,17 @@ final class AppModel {
                 try? await Task.sleep(for: .seconds(UpdateDecision.checkInterval))
             }
         }
+    }
+
+    /// Installs the waiting release, having first written the workspace down.
+    ///
+    /// The install quits the app, and a quit is not a moment the debounced save
+    /// can be trusted to have happened in — the split the user is looking at,
+    /// and which session was in front, are what the relaunched app restores the
+    /// surviving sessions into.
+    func installUpdate() {
+        persistImmediately()
+        updates.install()
     }
 
     func setShowsStatusBar(_ visible: Bool) {
