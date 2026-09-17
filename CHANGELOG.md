@@ -13,6 +13,9 @@ breaking change to stored data.
   a tile in the rail, or a session in the sidebar, and a line shows where it
   will land. The arrangement is remembered — sessions outlive the window, so
   their order does now too.
+- **⌘⌫ clears the line in a terminal.** ⌘ never reaches the program running
+  there, so the one deletion shortcut every other field on macOS answers did
+  nothing at all.
 
 ### Fixed
 
