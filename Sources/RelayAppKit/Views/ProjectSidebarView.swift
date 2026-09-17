@@ -29,52 +29,63 @@ struct ProjectSidebarView: View {
 
     // MARK: - Header
 
+    /// The name across the top, then the path and the buttons on one line.
+    ///
+    /// The name used to share its row with two icons, which left the rename
+    /// field about a word wide — too narrow to see what was being typed in it.
+    /// The path can be truncated and the buttons are a fixed size, so they are
+    /// the pair that belongs on a shared line.
     private var header: some View {
-        HStack(alignment: .center, spacing: Theme.Spacing.small) {
-            VStack(alignment: .leading, spacing: 2) {
-                if isRenamingProject {
-                    InlineRenameField(
-                        relayLocalized("Project name"),
-                        text: $projectNameDraft,
-                        onCommit: commitProjectRename,
-                        onCancel: { isRenamingProject = false }
-                    )
-                } else {
-                    Text(project.name)
-                        .font(Theme.Typography.title)
-                        .foregroundStyle(Theme.Palette.textPrimary)
-                        .lineLimit(1)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) {
-                            projectNameDraft = project.name
-                            isRenamingProject = true
-                        }
-                }
+        VStack(alignment: .leading, spacing: Theme.Spacing.small) {
+            if isRenamingProject {
+                InlineRenameField(
+                    relayLocalized("Project name"),
+                    text: $projectNameDraft,
+                    onCommit: commitProjectRename,
+                    onCancel: { isRenamingProject = false }
+                )
+                .frame(maxWidth: .infinity)
+            } else {
+                Text(project.name)
+                    .font(Theme.Typography.title)
+                    .foregroundStyle(Theme.Palette.textPrimary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    // One click, not two: the name is the only thing on this
+                    // line and there is nothing else a click on it could mean.
+                    // Escape and the cross beside the field undo a stray one.
+                    .onTapGesture {
+                        projectNameDraft = project.name
+                        isRenamingProject = true
+                    }
+                    .relayPointer(.text)
+            }
+
+            HStack(spacing: Theme.Spacing.small) {
                 Text(project.displayPath)
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
                     .lineLimit(1)
                     .truncationMode(.head)
-            }
 
-            // Fixed height: an expanding drag area would stretch the header to
-            // fill the sidebar, which is exactly what it did.
-            Spacer(minLength: Theme.Spacing.small)
+                Spacer(minLength: Theme.Spacing.small)
 
-            IconButton(systemImage: "plus", help: "", size: 22) {
-                isShowingNewSessionMenu.toggle()
-            }
-            .relayTooltip(relayLocalized("New session"), shortcut: model.binding(for: .newShell))
-            .popover(isPresented: $isShowingNewSessionMenu, arrowEdge: .bottom) {
-                NewSessionMenu(projectID: project.id) {
-                    isShowingNewSessionMenu = false
+                IconButton(systemImage: "plus", help: "", size: 22) {
+                    isShowingNewSessionMenu.toggle()
                 }
-            }
+                .relayTooltip(relayLocalized("New session"), shortcut: model.binding(for: .newShell))
+                .popover(isPresented: $isShowingNewSessionMenu, arrowEdge: .bottom) {
+                    NewSessionMenu(projectID: project.id) {
+                        isShowingNewSessionMenu = false
+                    }
+                }
 
-            IconButton(systemImage: "gearshape", help: "", size: 22) {
-                model.openProjectSettings()
+                IconButton(systemImage: "gearshape", help: "", size: 22) {
+                    model.openProjectSettings()
+                }
+                .relayTooltip(relayLocalized("Project settings"), shortcut: model.binding(for: .projectSettings))
             }
-            .relayTooltip(relayLocalized("Project settings"), shortcut: model.binding(for: .projectSettings))
         }
         .padding(.horizontal, Theme.Spacing.medium)
         .padding(.vertical, Theme.Spacing.medium)

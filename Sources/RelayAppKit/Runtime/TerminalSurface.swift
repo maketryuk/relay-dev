@@ -128,6 +128,25 @@ final class TerminalSurface: NSObject, @preconcurrency TerminalViewDelegate {
         window.makeFirstResponder(terminalView)
     }
 
+    /// Claims the keyboard only when nothing else in the window is taking text.
+    ///
+    /// For the implicit path: the focused pane asks for the keyboard on every
+    /// redraw, and a redraw happens on every change to the model — which, with
+    /// an agent writing output, is many times a second. Without this, renaming
+    /// a project while a session runs is impossible, because the caret is
+    /// pulled out of the field between one keystroke and the next.
+    ///
+    /// Clicking the terminal still works: that goes through `focus()`, which
+    /// asks outright rather than as a side effect of drawing.
+    func focusUnlessEditingElsewhere() {
+        guard let responder = terminalView.window?.firstResponder else {
+            focus()
+            return
+        }
+        guard responder === terminalView || !(responder is any NSTextInputClient) else { return }
+        focus()
+    }
+
     // MARK: - TerminalViewDelegate
 
     func send(source: TerminalView, data: ArraySlice<UInt8>) {
