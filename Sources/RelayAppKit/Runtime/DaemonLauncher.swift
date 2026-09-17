@@ -43,6 +43,12 @@ enum DaemonLauncher {
 
         let process = Process()
         process.executableURL = executable
+        // The daemon has no bundle identifier to read its own flavour from, so
+        // the app that starts it says which one it is. Without this it would
+        // claim the released build's socket and workspace.
+        process.environment = ProcessInfo.processInfo.environment.merging(
+            [RelayFlavour.environmentKey: RelayFlavour.current.rawValue]
+        ) { _, new in new }
         process.standardInput = FileHandle.nullDevice
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice

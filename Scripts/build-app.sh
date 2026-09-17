@@ -6,15 +6,40 @@ CONFIGURATION="${1:-release}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-APP_NAME="Relay"
-BUNDLE_ID="studio.lince.relay"
+# Which build this is. `RELAY_FLAVOUR=dev` assembles the one that stands beside
+# the released app rather than replacing it: its own identity, its own name, its
+# own data. Everything that would let the two reach each other is keyed by it,
+# and the code reads the same variable, so the bundle and the app agree.
+FLAVOUR="${RELAY_FLAVOUR:-release}"
+case "$FLAVOUR" in
+  dev|development)
+    FLAVOUR="development"
+    APP_NAME="Relay Dev"
+    BUNDLE_ID="studio.lince.relay.dev"
+    ICON_SOURCE="AppIconDev.icns"
+    ;;
+  release|prod|production)
+    FLAVOUR="release"
+    APP_NAME="Relay"
+    BUNDLE_ID="studio.lince.relay"
+    ICON_SOURCE="AppIcon.icns"
+    ;;
+  *)
+    echo "error: unknown RELAY_FLAVOUR '$FLAVOUR' — use 'release' or 'dev'" >&2
+    exit 1
+    ;;
+esac
+
+# The file inside MacOS keeps its plain name whatever the bundle is called: it
+# is what SwiftPM emits, and a space in an executable name helps nobody.
+EXECUTABLE="Relay"
 # Read from the Swift source so there is exactly one place to bump.
 VERSION="$(sed -n 's/.*static let current = "\(.*\)"/\1/p' "$ROOT/Sources/RelayProtocol/RelayVersion.swift" | head -1)"
 VERSION="${VERSION:-0.0.0}"
 BUILD_DIR="$ROOT/build"
 APP="$BUILD_DIR/$APP_NAME.app"
 
-echo "==> Building ($CONFIGURATION)"
+echo "==> Building $APP_NAME ($CONFIGURATION)"
 swift build -c "$CONFIGURATION" --product Relay
 swift build -c "$CONFIGURATION" --product relay-daemon
 BIN_PATH="$(swift build -c "$CONFIGURATION" --show-bin-path)"
@@ -23,12 +48,16 @@ echo "==> Assembling $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
-cp "$BIN_PATH/Relay" "$APP/Contents/MacOS/Relay"
+cp "$BIN_PATH/Relay" "$APP/Contents/MacOS/$EXECUTABLE"
 # The daemon ships inside the bundle so a released app never picks up a stale
 # binary from a developer's build directory.
 cp "$BIN_PATH/relay-daemon" "$APP/Contents/MacOS/relay-daemon"
 
-if [ -f "$ROOT/Resources/AppIcon.icns" ]; then
+# Named AppIcon inside the bundle whichever source it came from, so the plist
+# does not have to know which build this is.
+if [ -f "$ROOT/Resources/$ICON_SOURCE" ]; then
+  cp "$ROOT/Resources/$ICON_SOURCE" "$APP/Contents/Resources/AppIcon.icns"
+elif [ -f "$ROOT/Resources/AppIcon.icns" ]; then
   cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 fi
 
@@ -55,7 +84,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleName</key><string>$APP_NAME</string>
     <key>CFBundleDisplayName</key><string>$APP_NAME</string>
     <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
-    <key>CFBundleExecutable</key><string>$APP_NAME</string>
+    <key>CFBundleExecutable</key><string>$EXECUTABLE</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>$VERSION</string>
@@ -149,7 +178,7 @@ LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchS
 # `ditto` rather than `zip`, because `zip` drops the symlinks and extended
 # attributes a signed bundle is made of, and the copy fails verification on the
 # other side.
-ARCHIVE="$BUILD_DIR/Relay.app.zip"
+ARCHIVE="$BUILD_DIR/$APP_NAME.app.zip"
 rm -f "$ARCHIVE"
 ditto -c -k --keepParent "$APP" "$ARCHIVE"
 

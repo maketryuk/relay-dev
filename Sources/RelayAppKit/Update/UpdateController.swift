@@ -64,6 +64,9 @@ final class UpdateController {
     }
 
     func check() {
+        // A development build sits beside the released one and is replaced by
+        // rebuilding it, not by downloading the thing it is meant to become.
+        guard RelayFlavour.current.allowsUpdates else { return }
         guard !isBusy else { return }
         work?.cancel()
         state = .checking

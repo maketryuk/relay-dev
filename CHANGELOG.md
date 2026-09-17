@@ -45,6 +45,14 @@ breaking change to stored data.
   could read. A second button offers the `Host *` settings that make that
   survive a restart.
 
+- **A development build that can be worked in without ending your day.**
+  `make dev-install` produces Relay Dev: its own identity, name, icon, data and
+  daemon, standing beside the released app rather than replacing it. Before
+  this there was no safe way to use Relay for real work while changing it —
+  the client retires a daemon whose binary is not the one it shipped with, and
+  that hash changes on every build, so launching a freshly built app shut down
+  the daemon holding every session that was being worked in.
+
 ### Fixed
 
 - **Restarting a session starts the same session again.** It was rebuilt from

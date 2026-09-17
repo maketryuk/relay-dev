@@ -5,16 +5,27 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SOURCE="$ROOT/build/Relay.app"
-DESTINATION="/Applications/Relay.app"
+
+# The same variable the build script reads, so `RELAY_FLAVOUR=dev` installs the
+# build that variable produced rather than looking for one that was never made.
+case "${RELAY_FLAVOUR:-release}" in
+  dev|development) APP_NAME="Relay Dev" ;;
+  release|prod|production) APP_NAME="Relay" ;;
+  *) echo "error: unknown RELAY_FLAVOUR '${RELAY_FLAVOUR}' — use 'release' or 'dev'" >&2; exit 1 ;;
+esac
+
+SOURCE="$ROOT/build/$APP_NAME.app"
+DESTINATION="/Applications/$APP_NAME.app"
 
 if [ ! -d "$SOURCE" ]; then
   echo "error: $SOURCE not found — run ./Scripts/build-app.sh first" >&2
   exit 1
 fi
 
-echo "==> Stopping a running copy"
-pkill -f "Relay.app/Contents/MacOS/Relay" 2>/dev/null || true
+# Only this flavour's copy: the other one is somebody's working day, and the
+# two do not share a daemon, a workspace or a reason to be stopped together.
+echo "==> Stopping a running copy of $APP_NAME"
+pkill -f "$APP_NAME.app/Contents/MacOS/Relay" 2>/dev/null || true
 # The daemon is deliberately left alone: it is the thing that keeps sessions
 # alive, and the new build reconnects to it.
 
@@ -37,4 +48,4 @@ fi
 # Nudge Spotlight so launchers that read its index see the app immediately.
 mdimport "$DESTINATION" 2>/dev/null || true
 
-echo "==> Installed. Open it from Spotlight or: open -a Relay"
+echo "==> Installed. Open it from Spotlight or: open -a \"$APP_NAME\""

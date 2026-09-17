@@ -34,6 +34,13 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
+# A development build carries a different identity and never updates itself;
+# publishing one would hand every installed copy an app that is not this app.
+if [ -n "${RELAY_FLAVOUR:-}" ] && [ "${RELAY_FLAVOUR}" != "release" ]; then
+  echo "error: RELAY_FLAVOUR is '${RELAY_FLAVOUR}' — only the release flavour can be published" >&2
+  exit 1
+fi
+
 APP="$ROOT/build/Relay.app"
 OUT="$ROOT/build/release"
 ARCHIVE="$OUT/Relay-$VERSION.app.zip"

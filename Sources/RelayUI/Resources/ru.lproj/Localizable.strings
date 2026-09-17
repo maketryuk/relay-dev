@@ -14,6 +14,7 @@
 "%d picked" = "выбрано: %d";
 "%d unmodified lines" = "Неизменённых строк: %d";
 "%d unread" = "непрочитанных: %d";
+"A development build stands beside the released one; it does not replace itself with it." = "Сборка для разработки стоит рядом с выпущенной и не заменяет себя ею.";
 "A host needs a name to be connected by." = "Хосту нужно имя, по которому к нему подключаются.";
 "A port is a number between 1 and 65535." = "Порт — число от 1 до 65535.";
 "A project file tree and an editor with linting will live here." = "Здесь появится дерево файлов проекта и редактор с линтером.";
@@ -437,6 +438,7 @@
 "The update check failed: HTTP %d" = "Проверка обновлений не удалась: HTTP %d";
 "The working copy matches the last commit." = "Рабочая копия совпадает с последним коммитом.";
 "This block also names: %@" = "Этот блок также описывает: %@";
+"This build updates by being rebuilt" = "Эта сборка обновляется пересборкой";
 "This is the newest release" = "Это самый свежий релиз";
 "this project" = "этот проект";
 "This project" = "Этот проект";
