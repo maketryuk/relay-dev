@@ -548,18 +548,6 @@ final class AppModel {
         persist()
     }
 
-    /// The project being dragged in the rail, for the same reason a session's
-    /// identifier is held here while it is dragged: the row the pointer is over
-    /// has to know what is coming before the drop resolves the payload.
-    var draggingProjectID: ProjectID?
-
-    /// Ends a reordering drag. The rows have already moved — this is only the
-    /// mouse being let go.
-    func endRowDrag() {
-        draggingProjectID = nil
-        draggingSessionID = nil
-    }
-
     func revealInFinder(_ project: Project) {
         NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: project.rootPath)
     }

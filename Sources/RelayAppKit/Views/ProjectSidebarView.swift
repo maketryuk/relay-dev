@@ -12,7 +12,6 @@ struct ProjectSidebarView: View {
     let project: Project
 
     @State private var renameText = ""
-    @State private var rowFrames = RowFrames()
     @State private var isShowingNewSessionMenu = false
     @State private var isRenamingProject = false
     @State private var projectNameDraft = ""
@@ -116,14 +115,20 @@ struct ProjectSidebarView: View {
                 .padding(.top, Theme.Spacing.xlarge)
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 2) {
-                        ForEach(list) { session in
+                    ReorderableColumn(
+                        ids: list.map(\.id),
+                        spacing: 2,
+                        space: "relay.sessions",
+                        onMove: { moved, target, side in
+                            model.moveSession(moved, beside: target, side: side)
+                        }
+                    ) { sessionID in
+                        if let session = model.sessions[sessionID] {
                             row(session)
                         }
                     }
                     .padding(.horizontal, Theme.Spacing.small)
                     .padding(.vertical, Theme.Spacing.small)
-                    .reorderSpace(RowReorder.sessionSpace)
                 }
             }
         }
@@ -171,22 +176,6 @@ struct ProjectSidebarView: View {
                     renameText = session.displayName
                     model.renamingSessionID = session.id
                 }
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.Radius.medium, style: .continuous)
-                    .strokeBorder(
-                        model.draggingSessionID == session.id ? Theme.Palette.accent : .clear,
-                        lineWidth: 1
-                    )
-            )
-            .reorderRow(
-                id: session.id.rawValue,
-                in: RowReorder.sessionSpace,
-                frames: rowFrames,
-                onDrag: { point in
-                    RowReorder.session(session.id, to: point, frames: rowFrames, model: model)
-                },
-                onEnd: { model.endRowDrag() }
             )
             .contextMenu {
                 Button(relayLocalized("Rename…")) {

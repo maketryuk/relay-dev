@@ -146,7 +146,6 @@ extension View {
     /// provider only resolves on drop — far too late to preview anything.
     func sessionDragSource(_ sessionID: SessionID, model: AppModel) -> some View {
         onDrag {
-            model.draggingProjectID = nil
             model.draggingSessionID = sessionID
             return NSItemProvider(object: sessionID.rawValue as NSString)
         }

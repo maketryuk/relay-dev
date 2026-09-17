@@ -9,13 +9,13 @@ breaking change to stored data.
 
 ### Added
 
-- **Projects and sessions can be dragged into the order you want them in.** Drag
-  a tile in the rail, or a session in the sidebar, and the rest move aside as
-  you go, so where it will land is where it already is. The arrangement is
-  remembered — sessions outlive the window, so their order does now too. A
-  session can no longer be dragged from the sidebar onto a pane; clicking it
-  still shows it in the focused pane, and a pane's own header still moves the
-  terminal between panes.
+- **Projects and sessions can be dragged into the order you want them in.** Take
+  hold of a tile in the rail or a session in the sidebar: it lifts, follows the
+  pointer, and the rest slide aside to leave the gap it will drop into. The
+  arrangement is remembered — sessions outlive the window, so their order does
+  now too. A session can no longer be dragged from the sidebar onto a pane;
+  clicking it still shows it in the focused pane, and a pane's own header still
+  moves the terminal between panes.
 - **Pull and push ask where they are going.** The Git panel's menu opens a
   panel where the remote, the branch and the flags are one row reading as the
   command they spell, with that command written out underneath. A pull offers

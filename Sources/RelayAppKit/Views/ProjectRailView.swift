@@ -10,20 +10,25 @@ import SwiftUI
 struct ProjectRailView: View {
     @Environment(AppModel.self) private var model
     @State private var isDropTargeted = false
-    @State private var rowFrames = RowFrames()
 
     var body: some View {
         @Bindable var model = model
 
         return VStack(spacing: Theme.Spacing.small) {
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: Theme.Spacing.small) {
-                    ForEach(model.projects) { project in
+                ReorderableColumn(
+                    ids: model.projects.map(\.id),
+                    spacing: Theme.Spacing.small,
+                    space: "relay.projects",
+                    onMove: { moved, target, side in
+                        model.moveProject(moved, beside: target, side: side)
+                    }
+                ) { projectID in
+                    if let project = model.project(projectID) {
                         projectTile(project)
                     }
                 }
                 .padding(.vertical, Theme.Spacing.small)
-                .reorderSpace(RowReorder.projectSpace)
             }
 
             Spacer(minLength: 0)
@@ -85,22 +90,6 @@ struct ProjectRailView: View {
                 edge: .trailing
             )
             .contextMenu { projectMenu(project) }
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.Radius.medium, style: .continuous)
-                    .strokeBorder(
-                        model.draggingProjectID == project.id ? Theme.Palette.accent : .clear,
-                        lineWidth: 1
-                    )
-            )
-            .reorderRow(
-                id: project.id.rawValue,
-                in: RowReorder.projectSpace,
-                frames: rowFrames,
-                onDrag: { point in
-                    RowReorder.project(project.id, to: point, frames: rowFrames, model: model)
-                },
-                onEnd: { model.endRowDrag() }
-            )
         }
     }
 
