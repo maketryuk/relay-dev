@@ -21,6 +21,13 @@ breaking change to stored data.
   not whether it was the long-context variant of it, so a 1M session read as
   though it were on 200K until more than 200K had been put in it.
 
+### Changed
+
+- **The Session and Project menus no longer list nine numbered entries.**
+  `Session 1` through `Session 9` were there to carry ⌘1…⌘9, which macOS can
+  only attach to a menu item; they filled half of each menu and named nothing.
+  The shortcuts are unchanged, and Settings is where they are described.
+
 ### Fixed
 
 - **Updating no longer ends every session.** The sessions live in a daemon that

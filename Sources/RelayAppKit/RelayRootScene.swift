@@ -128,11 +128,16 @@ struct RelayCommands: Commands {
             Button(RelayCommand.focusNextPane.localizedTitle) { model.focusNextPane() }
                 .relayShortcut(model.binding(for: .focusNextPane))
 
+            // Nine items nobody reads, hidden because they are not for reading:
+            // SwiftUI can only attach a shortcut to a menu item, so ⌘1…⌘9 has
+            // to be carried by one each. On screen they filled the menu with
+            // "Session 4" and said nothing the numbers on the sidebar rows do
+            // not. Settings names the shortcut instead.
             if model.shortcutSettings.indexShortcutsEnabled {
-                Divider()
                 ForEach(1 ... 9, id: \.self) { number in
                     Button("Session \(number)") { model.selectSession(atIndex: number - 1) }
                         .keyboardShortcut(KeyEquivalent(Character("\(number)")), modifiers: .command)
+                        .hidden()
                 }
             }
         }
@@ -178,13 +183,13 @@ struct RelayCommands: Commands {
                 .relayShortcut(model.binding(for: .projectSettings))
 
             if model.shortcutSettings.indexShortcutsEnabled {
-                Divider()
                 ForEach(1 ... 9, id: \.self) { number in
                     Button("Project \(number)") { model.selectProject(atIndex: number - 1) }
                         .keyboardShortcut(
                             KeyEquivalent(Character("\(number)")),
                             modifiers: [.command, .option]
                         )
+                        .hidden()
                 }
             }
         }
