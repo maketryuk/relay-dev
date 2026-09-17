@@ -25,7 +25,35 @@ struct CodeTextView: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let textView = NSTextView()
+        let made = Self.make(fontSize: fontSize)
+        made.text.delegate = context.coordinator
+        made.text.string = text
+
+        context.coordinator.textView = made.text
+        context.coordinator.ruler = made.ruler
+        context.coordinator.observe(made.scroll, onScroll: onScroll)
+        context.coordinator.applyTints(tints)
+        return made.scroll
+    }
+
+    /// Builds the views, away from SwiftUI, so that what AppKit needs to lay
+    /// text out at all can be asserted on.
+    ///
+    /// All of it is needed. A text view with no frame, no `minSize`/`maxSize`
+    /// and no container size is laid out into nothing — and says nothing about
+    /// it: the ruler still draws its line numbers, which is how this showed up,
+    /// as four numbers floating in an empty black panel.
+    static func make(fontSize: CGFloat) -> (scroll: NSScrollView, text: NSTextView, ruler: LineNumberRuler) {
+        let unbounded = CGFloat.greatestFiniteMagnitude
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
+        textView.minSize = NSSize(width: 0, height: 0)
+        textView.maxSize = NSSize(width: unbounded, height: unbounded)
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.containerSize = NSSize(width: 0, height: unbounded)
+        textView.textContainer?.widthTracksTextView = true
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+
         textView.isRichText = false
         textView.allowsUndo = true
         textView.isAutomaticQuoteSubstitutionEnabled = false
@@ -39,14 +67,9 @@ struct CodeTextView: NSViewRepresentable {
         textView.backgroundColor = NSColor(Theme.Palette.base)
         textView.insertionPointColor = NSColor(Theme.Palette.accent)
         textView.drawsBackground = true
-        textView.isVerticallyResizable = true
-        textView.isHorizontallyResizable = false
         textView.textContainerInset = NSSize(width: 6, height: 6)
-        textView.textContainer?.widthTracksTextView = true
-        textView.delegate = context.coordinator
-        textView.string = text
 
-        let scrollView = NSScrollView()
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
         scrollView.documentView = textView
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
@@ -59,11 +82,7 @@ struct CodeTextView: NSViewRepresentable {
         scrollView.hasVerticalRuler = true
         scrollView.rulersVisible = true
 
-        context.coordinator.textView = textView
-        context.coordinator.ruler = ruler
-        context.coordinator.observe(scrollView, onScroll: onScroll)
-        context.coordinator.applyTints(tints)
-        return scrollView
+        return (scrollView, textView, ruler)
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
@@ -143,14 +162,20 @@ struct CodeTextView: NSViewRepresentable {
             let text = textView.string as NSString
             var line = 0
             var start = 0
-            while start <= text.length {
+            while start < text.length {
                 let range = text.lineRange(for: NSRange(location: start, length: 0))
                 if let colour = tints[line] {
                     storage.addAttribute(.backgroundColor, value: NSColor(colour), range: range)
                 }
                 line += 1
-                start = NSMaxRange(range)
-                if range.length == 0 { break }
+                // A last line with no newline after it returns a range that
+                // ends exactly where this one began, so walking to the end of
+                // it walks nowhere: the loop spun for ever, on the main
+                // thread, on any file that does not end in a newline — which
+                // is most of the ones a merge produces.
+                let next = NSMaxRange(range)
+                guard next > start else { break }
+                start = next
             }
         }
     }

@@ -121,6 +121,7 @@ struct GitMergePane: View {
                 tints: [:]
             )
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     /// The two sides keep git's own names for themselves — `HEAD` and the
@@ -174,8 +175,11 @@ struct GitMergePane: View {
                 onScroll: { offset in scroll = offset },
                 scrollOffset: scroll
             )
+            // An `NSScrollView` has no size of its own to offer, so it is told
+            // to take the room rather than asked how much it would like.
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Footer
