@@ -170,6 +170,7 @@ struct ProjectSidebarView: View {
                     model.renamingSessionID = session.id
                 }
             )
+            .opacity(model.draggingSessionID == session.id ? 0.4 : 1)
             .sessionDragSource(session.id, model: model)
             .sessionReorderTarget(session.id, model: model)
             .contextMenu {

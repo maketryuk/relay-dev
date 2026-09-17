@@ -83,6 +83,7 @@ struct ProjectRailView: View {
                 edge: .trailing
             )
             .contextMenu { projectMenu(project) }
+            .opacity(model.draggingProjectID == project.id ? 0.4 : 1)
             .projectDragSource(project.id, model: model)
             .projectReorderTarget(project.id, model: model)
         }

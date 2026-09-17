@@ -2,16 +2,17 @@ import RelayProtocol
 import RelayUI
 import SwiftUI
 
-/// Reports which side of a row the drag is on, and lands it there.
+/// Reports where in a list the drag currently is, and moves the row there.
 ///
 /// A delegate rather than `dropDestination` for the reason the pane drop uses
-/// one: only `dropUpdated` says where the pointer is while it moves, and
-/// without that the line showing where the row will land could not be drawn.
+/// one: only `dropUpdated` says where the pointer is while it moves, and that
+/// is the whole gesture here — the row is put in place as it is dragged past,
+/// not when the mouse is let go.
 private struct ReorderDropDelegate: DropDelegate {
     let size: CGSize
     let isDragging: () -> Bool
-    let onSideChanged: (RowDropSide?) -> Void
-    let onDrop: (RowDropSide) -> Void
+    let onMove: (RowDropSide) -> Void
+    let onFinish: () -> Void
 
     func validateDrop(info _: DropInfo) -> Bool {
         isDragging()
@@ -19,35 +20,29 @@ private struct ReorderDropDelegate: DropDelegate {
 
     func dropEntered(info: DropInfo) {
         guard isDragging() else { return }
-        onSideChanged(ListReordering.side(at: info.location, in: size))
+        onMove(ListReordering.side(at: info.location, in: size))
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
         guard isDragging() else { return DropProposal(operation: .cancel) }
-        onSideChanged(ListReordering.side(at: info.location, in: size))
+        onMove(ListReordering.side(at: info.location, in: size))
         return DropProposal(operation: .move)
     }
 
-    func dropExited(info _: DropInfo) {
-        onSideChanged(nil)
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
+    func performDrop(info _: DropInfo) -> Bool {
         guard isDragging() else { return false }
-        let side = ListReordering.side(at: info.location, in: size)
-        onSideChanged(nil)
-        onDrop(side)
+        onFinish()
         return true
     }
 }
 
-/// A row that a dragged sibling can be dropped above or below.
+/// A row a dragged sibling can be moved past.
 private struct ReorderTarget: ViewModifier {
     let isDragging: () -> Bool
-    let onDrop: (RowDropSide) -> Void
+    let onMove: (RowDropSide) -> Void
+    let onFinish: () -> Void
 
     @State private var size: CGSize = .zero
-    @State private var side: RowDropSide?
 
     func body(content: Content) -> some View {
         content
@@ -58,40 +53,34 @@ private struct ReorderTarget: ViewModifier {
                         .onChange(of: proxy.size) { _, updated in size = updated }
                 }
             }
-            .overlay(alignment: side == .before ? .top : .bottom) { indicator }
             .onDrop(
                 of: [.text],
                 delegate: ReorderDropDelegate(
                     size: size,
                     isDragging: isDragging,
-                    onSideChanged: { side = $0 },
-                    onDrop: onDrop
+                    onMove: onMove,
+                    onFinish: onFinish
                 )
             )
-    }
-
-    /// A line, not a highlight: the question the gesture asks is *where in the
-    /// order*, and a filled row answers "this one" instead.
-    @ViewBuilder
-    private var indicator: some View {
-        if side != nil {
-            Capsule()
-                .fill(Theme.Palette.accent)
-                .frame(height: 2)
-                .allowsHitTesting(false)
-        }
     }
 }
 
 extension View {
     /// Accepts a dragged session from the same project, reordering the sidebar.
+    ///
+    /// The list is rearranged while the pointer moves rather than on release.
+    /// A line showing where the row *would* land, and then a wait for the drag
+    /// session to wind itself up before it did, read as a lag of a second or
+    /// two — and the answer to "where will this go" is best given by putting
+    /// it there.
     func sessionReorderTarget(_ target: SessionID, model: AppModel) -> some View {
         modifier(ReorderTarget(
             isDragging: { model.draggingSessionID != nil && model.draggingSessionID != target },
-            onDrop: { side in
+            onMove: { side in
                 guard let moved = model.draggingSessionID else { return }
                 model.moveSession(moved, beside: target, side: side)
-            }
+            },
+            onFinish: { model.endRowDrag() }
         ))
     }
 
@@ -99,10 +88,11 @@ extension View {
     func projectReorderTarget(_ target: ProjectID, model: AppModel) -> some View {
         modifier(ReorderTarget(
             isDragging: { model.draggingProjectID != nil && model.draggingProjectID != target },
-            onDrop: { side in
+            onMove: { side in
                 guard let moved = model.draggingProjectID else { return }
                 model.moveProject(moved, beside: target, side: side)
-            }
+            },
+            onFinish: { model.endRowDrag() }
         ))
     }
 
@@ -110,7 +100,7 @@ extension View {
     ///
     /// The payload is the identifier, but the rows read the model instead:
     /// `onDrag` fires as the drag begins, while an item provider only resolves
-    /// on drop — long after the line showing where it will land was needed.
+    /// on drop — long after the row needed to move.
     func projectDragSource(_ projectID: ProjectID, model: AppModel) -> some View {
         onDrag {
             // Only one thing is ever in flight, and the drop targets ask the

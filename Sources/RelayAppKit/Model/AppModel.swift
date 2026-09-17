@@ -532,7 +532,6 @@ final class AppModel {
     /// it is whatever the user arranged, which is why the arrangement is worth
     /// remembering.
     func moveProject(_ moved: ProjectID, beside target: ProjectID, side: RowDropSide) {
-        draggingProjectID = nil
         guard let movedProject = project(moved), let targetProject = project(target) else { return }
         let reordered = ListReordering.moving(movedProject, beside: targetProject, side: side, in: projects)
         guard reordered.map(\.id) != projects.map(\.id) else { return }
@@ -544,6 +543,13 @@ final class AppModel {
     /// identifier is held here while it is dragged: the row the pointer is over
     /// has to know what is coming before the drop resolves the payload.
     var draggingProjectID: ProjectID?
+
+    /// Ends a reordering drag. The rows have already moved — this is only the
+    /// mouse being let go.
+    func endRowDrag() {
+        draggingProjectID = nil
+        draggingSessionID = nil
+    }
 
     func revealInFinder(_ project: Project) {
         NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: project.rootPath)
@@ -748,7 +754,6 @@ final class AppModel {
     /// read in; the daemon's own order is untouched, since it describes when
     /// things started rather than how they are arranged.
     func moveSession(_ moved: SessionID, beside target: SessionID, side: RowDropSide) {
-        draggingSessionID = nil
         guard let projectID = sessions[moved]?.projectID,
               sessions[target]?.projectID == projectID
         else { return }
