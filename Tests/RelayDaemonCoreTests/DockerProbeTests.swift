@@ -382,13 +382,13 @@ struct DockerLabelTests {
         // Compose records it on everything it creates, which makes it the
         // answer to "which file is this stack" rather than a guess at it.
         let payload = """
-        {"ID":"a","Names":"curator.php","State":"running","Status":"Up 2 hours",\
-        "Labels":"com.docker.compose.project=curator,com.docker.compose.project.config_files=/p/docker/docker-compose.local.yml,com.docker.compose.project.working_dir=/p/docker"}
+        {"ID":"a","Names":"shop.php","State":"running","Status":"Up 2 hours",\
+        "Labels":"com.docker.compose.project=shop,com.docker.compose.project.config_files=/p/docker/docker-compose.local.yml,com.docker.compose.project.working_dir=/p/docker"}
         """
         let container = DockerProbe.parseContainers(payload).first
         #expect(container?.composeConfigFile == "/p/docker/docker-compose.local.yml")
         #expect(container?.composeWorkingDirectory == "/p/docker")
-        #expect(container?.composeProject == "curator")
+        #expect(container?.composeProject == "shop")
     }
 
     @Test("Several files means the first, which the rest override")

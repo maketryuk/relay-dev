@@ -73,7 +73,7 @@ breaking change to stored data.
   taking text; clicking the terminal still works, because that asks outright
   rather than as a side effect of drawing.
 - **A project is called what its folder is called.** A directory named
-  `botica-web` was added as `nuxt-app`, because `package.json` was allowed to
+  `storefront` was added as `nuxt-app`, because `package.json` was allowed to
   overrule the folder — and what `package.json` says is what the scaffold wrote
   there: every Nuxt app is `nuxt-app`, every Vite one `vite-project`, until
   somebody edits it, and nobody does. The name and the path beneath it

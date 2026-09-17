@@ -11,21 +11,21 @@ struct DockerEngineAPITests {
         // Names arrive as a list with a leading slash, ports as objects, and
         // labels already as a dictionary — none of which the CLI's output does.
         let body = Data("""
-        [{"Id":"abc123","Names":["/curator.php"],"Image":"php:8.4",
+        [{"Id":"abc123","Names":["/shop.php"],"Image":"php:8.4",
           "State":"running","Status":"Up 2 hours",
           "Ports":[{"PrivatePort":80,"PublicPort":8083,"Type":"tcp"}],
-          "Labels":{"com.docker.compose.project":"curator",
+          "Labels":{"com.docker.compose.project":"shop",
                     "com.docker.compose.service":"php",
                     "com.docker.compose.project.working_dir":"/p/docker",
                     "com.docker.compose.project.config_files":"/p/docker/docker-compose.local.yml"}}]
         """.utf8)
 
         let container = DockerEngineAPI.parseAPIContainers(body)?.first
-        #expect(container?.name == "curator.php")
+        #expect(container?.name == "shop.php")
         #expect(container?.id == "abc123")
         #expect(container?.service == "php")
         #expect(container?.state == "running")
-        #expect(container?.composeProject == "curator")
+        #expect(container?.composeProject == "shop")
         #expect(container?.composeWorkingDirectory == "/p/docker")
         #expect(container?.composeConfigFile == "/p/docker/docker-compose.local.yml")
         #expect(container?.publishedPorts.map(\.published) == [8083])

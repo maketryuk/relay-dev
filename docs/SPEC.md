@@ -775,8 +775,8 @@ Project → Workspace → Sessions / Services / Ports.
 Примеры Workspace:
 
 - main;
-- BOTICA-183;
-- BOTICA-184.
+- ACME-183;
+- ACME-184.
 
 Workspace может быть связан с отдельным git worktree.
 

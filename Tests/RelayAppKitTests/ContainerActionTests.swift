@@ -8,7 +8,7 @@ import Testing
 struct ContainerActionTests {
     private let container = DockerContainer(
         id: "abc",
-        name: "curator.php",
+        name: "shop.php",
         service: "php",
         state: "running"
     )
@@ -18,7 +18,7 @@ struct ContainerActionTests {
         let arguments = ContainerAction.shell.arguments(for: container)
         // Both flags matter: without a TTY there is no prompt, and without
         // --interactive there is nothing to type into it.
-        #expect(arguments.starts(with: ["exec", "--interactive", "--tty", "curator.php"]))
+        #expect(arguments.starts(with: ["exec", "--interactive", "--tty", "shop.php"]))
         #expect(arguments.contains("sh"))
     }
 
@@ -50,8 +50,8 @@ struct ContainerActionTests {
 
     @Test("The other actions still address the container by name")
     func lifecycleActionsAreUnchanged() {
-        #expect(ContainerAction.start.arguments(for: container) == ["start", "curator.php"])
-        #expect(ContainerAction.stop.arguments(for: container) == ["stop", "curator.php"])
-        #expect(ContainerAction.restart.arguments(for: container) == ["restart", "curator.php"])
+        #expect(ContainerAction.start.arguments(for: container) == ["start", "shop.php"])
+        #expect(ContainerAction.stop.arguments(for: container) == ["stop", "shop.php"])
+        #expect(ContainerAction.restart.arguments(for: container) == ["restart", "shop.php"])
     }
 }

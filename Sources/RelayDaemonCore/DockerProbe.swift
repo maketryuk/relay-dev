@@ -262,7 +262,7 @@ public enum DockerProbe {
         // inside it. Matching the project root exactly is not enough: putting
         // the stack in `<project>/docker` is extremely common, and the Compose
         // project name is frequently nothing like the folder name — one real
-        // example has `qrator-ru/docker` running a project called `curator`.
+        // example has `storefront/docker` running a project called `shop`.
         let owned = all.filter { container in
             guard let workingDirectory = container.composeWorkingDirectory else { return false }
             return isPath(workingDirectory, inside: projectDirectory)
