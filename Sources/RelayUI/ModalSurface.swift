@@ -11,6 +11,10 @@ public struct ModalSurface<Content: View, Footer: View>: View {
     /// edges reads as unfinished.
     public static var verticalInset: CGFloat { Theme.Spacing.xlarge }
     public static var horizontalInset: CGFloat { Theme.Spacing.large + Theme.Spacing.xsmall }
+    /// The header and the footer are bars, not pages. Given the body's inset
+    /// they came out nearly ninety points tall for one line of text and one
+    /// button, which reads as a dialog with a wide empty band at each end.
+    public static var barVerticalInset: CGFloat { Theme.Spacing.medium }
 
     private let title: String
     private let onDismiss: (() -> Void)?
@@ -53,7 +57,7 @@ public struct ModalSurface<Content: View, Footer: View>: View {
                 RelayDivider()
                 footer
                     .padding(.horizontal, Self.horizontalInset)
-                    .padding(.vertical, Self.verticalInset)
+                    .padding(.vertical, Self.barVerticalInset)
             }
         }
         .background(Theme.Palette.base)
@@ -71,7 +75,7 @@ public struct ModalSurface<Content: View, Footer: View>: View {
             }
         }
         .padding(.horizontal, Self.horizontalInset)
-        .padding(.vertical, Self.verticalInset)
+        .padding(.vertical, Self.barVerticalInset)
     }
 }
 

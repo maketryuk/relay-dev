@@ -90,6 +90,12 @@ struct ModalHost: View {
     @Environment(AppModel.self) private var model
     let modal: RelayModal
 
+    /// How much window is left showing around a panel at its largest. A dialog
+    /// flush against the top and bottom of the window reads as a second window
+    /// rather than as something opened over this one — and a panel asking for
+    /// more height than the window has would simply be cut off.
+    private static let margin: CGFloat = Theme.Spacing.xlarge
+
     var body: some View {
         ZStack {
             Color.black.opacity(0.45)
@@ -97,12 +103,18 @@ struct ModalHost: View {
                 .contentShape(Rectangle())
                 .onTapGesture { model.dismissModal() }
 
-            panel
-                .frame(width: modal.size.width, height: modal.size.height)
-                .modalPlate()
-                // A text field inside swallows Escape before SwiftUI sees it,
-                // so the key is caught at the window instead.
-                .background { KeyCaptureView(onEscape: { model.dismissModal() }) }
+            GeometryReader { proxy in
+                panel
+                    .frame(
+                        width: min(modal.size.width, max(proxy.size.width - Self.margin * 2, 320)),
+                        height: min(modal.size.height, max(proxy.size.height - Self.margin * 2, 240))
+                    )
+                    .modalPlate()
+                    // A text field inside swallows Escape before SwiftUI sees
+                    // it, so the key is caught at the window instead.
+                    .background { KeyCaptureView(onEscape: { model.dismissModal() }) }
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+            }
         }
     }
 
