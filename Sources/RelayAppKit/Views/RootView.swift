@@ -77,6 +77,9 @@ struct RootView: View {
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 340)
             }
+            RelayButton(relayLocalized("Add Project"), systemImage: "plus", kind: .primary) {
+                model.toggleModal(.addProject)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.Palette.base)

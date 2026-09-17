@@ -26,10 +26,15 @@ struct ProjectRailView: View {
 
             Spacer(minLength: 0)
 
-            addButton
-            RelayDivider()
-                .frame(width: 24)
-                .padding(.vertical, 2)
+            // With nothing above it, a lone plus at the foot of an empty strip
+            // is the smallest target in the window for the one thing there is
+            // to do. The welcome pane takes it until there is a rail to add to.
+            if !model.projects.isEmpty {
+                addButton
+                RelayDivider()
+                    .frame(width: 24)
+                    .padding(.vertical, 2)
+            }
             portsButton
             sshButton
         }
