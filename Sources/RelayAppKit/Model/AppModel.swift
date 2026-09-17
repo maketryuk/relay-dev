@@ -200,6 +200,7 @@ final class AppModel {
         shortcutSettings = state.shortcuts
         presets = state.presets ?? SessionPresets.migrate(custom: state.customPresets, enabledIDs: state.enabledPresetIDs)
         sessionHistory = state.sessionHistory
+        sessionOrder = state.sessionOrder.map { SessionID(rawValue: $0) }
         isRightSidebarVisible = state.isRightSidebarVisible
         isLeftSidebarVisible = state.isLeftSidebarVisible
         language = state.language
@@ -364,7 +365,9 @@ final class AppModel {
     private func reconcileSessions() async throws {
         let snapshots = try await client.listSessions()
         sessions = Dictionary(uniqueKeysWithValues: snapshots.map { ($0.id, $0) })
-        sessionOrder = snapshots.map(\.id)
+        // The arrangement outlives the window: sessions survive a relaunch, so
+        // the order they were dragged into has to survive it too.
+        sessionOrder = SessionOrdering.applying(sessionOrder, to: snapshots.map(\.id))
         prunePaneLayouts()
     }
 
@@ -518,6 +521,25 @@ final class AppModel {
         let nextIndex = (currentIndex + offset + projects.count) % projects.count
         selectProject(projects[nextIndex].id)
     }
+
+    /// Puts a project beside another one in the rail.
+    ///
+    /// The rail is the one list in the window with no sort order of its own —
+    /// it is whatever the user arranged, which is why the arrangement is worth
+    /// remembering.
+    func moveProject(_ moved: ProjectID, beside target: ProjectID, side: RowDropSide) {
+        draggingProjectID = nil
+        guard let movedProject = project(moved), let targetProject = project(target) else { return }
+        let reordered = ListReordering.moving(movedProject, beside: targetProject, side: side, in: projects)
+        guard reordered.map(\.id) != projects.map(\.id) else { return }
+        projects = reordered
+        persist()
+    }
+
+    /// The project being dragged in the rail, for the same reason a session's
+    /// identifier is held here while it is dragged: the row the pointer is over
+    /// has to know what is coming before the drop resolves the payload.
+    var draggingProjectID: ProjectID?
 
     func revealInFinder(_ project: Project) {
         NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: project.rootPath)
@@ -714,6 +736,23 @@ final class AppModel {
         let currentIndex = list.firstIndex { $0.id == selectedSessionID } ?? 0
         let nextIndex = (currentIndex + offset + list.count) % list.count
         selectSession(list[nextIndex].id)
+    }
+
+    /// Puts a session beside another one in the sidebar.
+    ///
+    /// Only within a project, because that is the only list the order is ever
+    /// read in; the daemon's own order is untouched, since it describes when
+    /// things started rather than how they are arranged.
+    func moveSession(_ moved: SessionID, beside target: SessionID, side: RowDropSide) {
+        draggingSessionID = nil
+        guard let projectID = sessions[moved]?.projectID,
+              sessions[target]?.projectID == projectID
+        else { return }
+
+        let reordered = ListReordering.moving(moved, beside: target, side: side, in: sessionOrder)
+        guard reordered != sessionOrder else { return }
+        sessionOrder = reordered
+        persist()
     }
 
     func renameSession(_ id: SessionID, to name: String) {
@@ -2561,6 +2600,7 @@ final class AppModel {
             shortcuts: shortcutSettings,
             presets: presets,
             sessionHistory: sessionHistory,
+            sessionOrder: sessionOrder.map(\.rawValue),
             isRightSidebarVisible: isRightSidebarVisible,
             isLeftSidebarVisible: isLeftSidebarVisible,
             rightSidebarTab: rightSidebarTab.rawValue,

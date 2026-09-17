@@ -108,6 +108,10 @@ struct WorkspaceState: Codable {
     var customPresets: [SessionPreset]
     var enabledPresetIDs: [String]?
     var sessionHistory: [SessionHistoryEntry]
+    /// The order sessions are listed in, as dragged. Session identifiers rather
+    /// than anything about them: the daemon owns the sessions, and this only
+    /// says where each one sits.
+    var sessionOrder: [String]
     var isRightSidebarVisible: Bool
     var isLeftSidebarVisible: Bool
     var rightSidebarTab: String?
@@ -147,6 +151,7 @@ struct WorkspaceState: Codable {
         customPresets: [SessionPreset] = [],
         enabledPresetIDs: [String]? = nil,
         sessionHistory: [SessionHistoryEntry] = [],
+        sessionOrder: [String] = [],
         isRightSidebarVisible: Bool = true,
         isLeftSidebarVisible: Bool = true,
         rightSidebarTab: String? = nil,
@@ -172,6 +177,7 @@ struct WorkspaceState: Codable {
         self.customPresets = customPresets
         self.enabledPresetIDs = enabledPresetIDs
         self.sessionHistory = sessionHistory
+        self.sessionOrder = sessionOrder
         self.isRightSidebarVisible = isRightSidebarVisible
         self.isLeftSidebarVisible = isLeftSidebarVisible
         self.rightSidebarTab = rightSidebarTab
@@ -202,6 +208,7 @@ struct WorkspaceState: Codable {
         customPresets = try container.decodeIfPresent([SessionPreset].self, forKey: .customPresets) ?? []
         enabledPresetIDs = try container.decodeIfPresent([String].self, forKey: .enabledPresetIDs)
         sessionHistory = try container.decodeIfPresent([SessionHistoryEntry].self, forKey: .sessionHistory) ?? []
+        sessionOrder = try container.decodeIfPresent([String].self, forKey: .sessionOrder) ?? []
         isRightSidebarVisible = try container.decodeIfPresent(Bool.self, forKey: .isRightSidebarVisible) ?? true
         isLeftSidebarVisible = try container.decodeIfPresent(Bool.self, forKey: .isLeftSidebarVisible) ?? true
         rightSidebarTab = try container.decodeIfPresent(String.self, forKey: .rightSidebarTab)

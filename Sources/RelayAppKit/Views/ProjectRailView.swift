@@ -83,6 +83,8 @@ struct ProjectRailView: View {
                 edge: .trailing
             )
             .contextMenu { projectMenu(project) }
+            .projectDragSource(project.id, model: model)
+            .projectReorderTarget(project.id, model: model)
         }
     }
 

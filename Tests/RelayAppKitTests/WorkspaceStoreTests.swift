@@ -75,6 +75,25 @@ struct WorkspaceStoreTests {
         #expect(loaded.collapsedSections == ["docker"])
     }
 
+    @Test("The order sessions were dragged into survives a relaunch")
+    func sessionOrderRoundTrips() throws {
+        let directory = try TemporaryDirectory()
+        let url = directory.url.appendingPathComponent("workspace.json")
+
+        WorkspaceStore(url: url).saveNow(WorkspaceState(sessionOrder: ["c", "a", "b"]))
+
+        #expect(WorkspaceStore(url: url).load().sessionOrder == ["c", "a", "b"])
+    }
+
+    @Test("A workspace written before the order was remembered still opens")
+    func olderFileWithoutOrder() throws {
+        let directory = try TemporaryDirectory()
+        let url = directory.url.appendingPathComponent("workspace.json")
+        try #"{"version":1,"projects":[]}"#.write(to: url, atomically: true, encoding: .utf8)
+
+        #expect(WorkspaceStore(url: url).load().sessionOrder.isEmpty)
+    }
+
     @Test("A corrupt file is quarantined and startup still succeeds")
     func corruptFileIsQuarantined() throws {
         let directory = try TemporaryDirectory()

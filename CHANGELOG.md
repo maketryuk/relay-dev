@@ -7,6 +7,13 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Added
+
+- **Projects and sessions can be dragged into the order you want them in.** Drag
+  a tile in the rail, or a session in the sidebar, and a line shows where it
+  will land. The arrangement is remembered — sessions outlive the window, so
+  their order does now too.
+
 ### Fixed
 
 - **Updating no longer ends every session.** The sessions live in a daemon that

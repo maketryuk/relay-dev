@@ -171,6 +171,7 @@ struct ProjectSidebarView: View {
                 }
             )
             .sessionDragSource(session.id, model: model)
+            .sessionReorderTarget(session.id, model: model)
             .contextMenu {
                 Button(relayLocalized("Rename…")) {
                     renameText = session.displayName
