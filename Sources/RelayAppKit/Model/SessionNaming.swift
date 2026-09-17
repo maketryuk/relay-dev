@@ -22,6 +22,29 @@ enum SessionNaming {
         nextName(base: kind.displayName, existing: existing)
     }
 
+    /// How much of a name a header carries. An agent names itself after what
+    /// it is doing, which is a sentence rather than a name.
+    static let displayLimit = 40
+
+    /// A name cut to what a row can carry, at a word boundary where there is
+    /// one near enough to the end.
+    ///
+    /// The string is cut rather than the space it is given: a fixed width holds
+    /// the full width open for `Terminal 2` as well, and everything after it on
+    /// the row — the status, the pid, the controls — ends up a long way from
+    /// the name it belongs to.
+    static func shortened(_ name: String, limit: Int = displayLimit) -> String {
+        guard name.count > limit else { return name }
+        let head = name.prefix(limit)
+        // Only where the boundary is near the end; cutting `a` off a
+        // forty-character word is worse than cutting the word.
+        if let space = head.lastIndex(of: " "), head.distance(from: head.startIndex, to: space) >= limit * 2 / 3 {
+            return head[head.startIndex ..< space]
+                .trimmingCharacters(in: .whitespaces) + "…"
+        }
+        return head.trimmingCharacters(in: .whitespaces) + "…"
+    }
+
     /// Labels for a set of sessions, each distinguishable from the others.
     ///
     /// A program names its own terminal, and every instance of it chooses the

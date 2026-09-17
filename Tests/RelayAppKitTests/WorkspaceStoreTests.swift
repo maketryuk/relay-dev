@@ -193,6 +193,31 @@ struct ProjectTests {
         #expect(SessionNaming.nextName(base: "staging", existing: ["staging"]) == "staging 2")
     }
 
+    @Test("A name short enough is left exactly as it is")
+    func shortNamesAreUntouched() {
+        #expect(SessionNaming.shortened("Terminal 2") == "Terminal 2")
+        #expect(SessionNaming.shortened(String(repeating: "x", count: 40)).count == 40)
+    }
+
+    @Test("A long name is cut at a word, with an ellipsis for the rest")
+    func longNamesAreCutAtAWord() {
+        // An agent names itself after what it is doing, and what it is doing is
+        // a sentence.
+        let name = "Fix the session loss on update and add project sorting"
+        let shortened = SessionNaming.shortened(name)
+        #expect(shortened == "Fix the session loss on update and add…")
+        #expect(shortened.count <= SessionNaming.displayLimit + 1)
+    }
+
+    @Test("A name with no word boundary near the end is cut anyway")
+    func singleLongWordIsCut() {
+        let name = String(repeating: "x", count: 60)
+        #expect(SessionNaming.shortened(name) == String(repeating: "x", count: 40) + "…")
+        // A boundary too early to be useful is ignored: three characters and an
+        // ellipsis says nothing.
+        #expect(SessionNaming.shortened("abc " + String(repeating: "y", count: 50)).hasPrefix("abc y"))
+    }
+
     @Test("Paths under home are abbreviated with a tilde")
     func displayPathAbbreviatesHome() {
         let home = FileManager.default.homeDirectoryForCurrentUser.path

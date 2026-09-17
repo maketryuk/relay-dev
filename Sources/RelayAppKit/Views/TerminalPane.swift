@@ -182,7 +182,7 @@ struct TerminalPane: View {
                 tint: Color(hex: session.kind.accentHex)
             )
 
-            Text(model.label(for: session))
+            Text(SessionNaming.shortened(model.label(for: session)))
                 .font(Theme.Typography.title)
                 .foregroundStyle(Theme.Palette.textPrimary)
                 .lineLimit(1)
@@ -190,7 +190,6 @@ struct TerminalPane: View {
                 // Beats the status text to the remaining room: which terminal
                 // this is matters more than what it is doing.
                 .layoutPriority(1)
-                .frame(maxWidth: Theme.Metrics.sessionTitleWidth, alignment: .leading)
                 .relayTooltip(model.label(for: session), edge: .bottom)
 
             StatusDot(status: session.status)
