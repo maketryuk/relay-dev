@@ -6,6 +6,7 @@ enum ShortcutCategory: String, CaseIterable, Identifiable, Sendable {
     case sessions
     case services
     case projects
+    case editor
 
     var id: String { rawValue }
 
@@ -15,6 +16,7 @@ enum ShortcutCategory: String, CaseIterable, Identifiable, Sendable {
         case .sessions: "Sessions"
         case .services: "Services"
         case .projects: "Projects"
+        case .editor: "Editor"
         }
     }
 }
@@ -35,6 +37,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     case newClaude
     case newCodex
     case closeSession
+    case reopenSession
     case renameSession
     case nextSession
     case previousSession
@@ -48,6 +51,11 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
 
     case reviewChanges
     case switchBranch
+
+    case goToDefinition
+    case goBack
+    case findInFile
+    case searchProject
 
     case nextProject
     case previousProject
@@ -71,7 +79,8 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .newShell: "New Shell"
         case .newClaude: "New Claude Session"
         case .newCodex: "New Codex Session"
-        case .closeSession: "Close Session"
+        case .closeSession: "Close Pane"
+        case .reopenSession: "Reopen Closed Session"
         case .renameSession: "Rename Session"
         case .nextSession: "Next Session"
         case .previousSession: "Previous Session"
@@ -88,6 +97,10 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .addProject: "Add Project"
         case .revealProject: "Open Project in Finder"
         case .projectSettings: "Project Settings"
+        case .goToDefinition: "Go to Definition"
+        case .goBack: "Back"
+        case .findInFile: "Find"
+        case .searchProject: "Find in Files"
         }
     }
 
@@ -96,18 +109,21 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .commandPalette, .openSettings, .togglePorts, .openSSHHosts,
              .toggleRightSidebar, .toggleLeftSidebar,
              .increaseTerminalFontSize, .decreaseTerminalFontSize, .resetTerminalFontSize: .application
-        case .newShell, .newClaude, .newCodex, .closeSession, .renameSession,
+        case .newShell, .newClaude, .newCodex, .closeSession, .reopenSession, .renameSession,
              .nextSession, .previousSession, .focusTerminal,
              .splitRight, .splitDown, .focusNextPane: .sessions
         case .startDefaultService, .restartDefaultService: .services
         case .nextProject, .previousProject, .addProject, .revealProject,
              .projectSettings, .reviewChanges, .switchBranch: .projects
+        case .goToDefinition, .goBack, .findInFile, .searchProject: .editor
         }
     }
 
     /// Defaults follow macOS convention where one exists, and VS Code's where
-    /// it does not. `⌘W` closes the session rather than the window: Relay is a
-    /// single-window app, so closing a tab is what the key is for here.
+    /// it does not. `⌘W` closes the pane rather than the window: Relay is a
+    /// single-window app, so closing what is in front of you is what the key is
+    /// for here. The identifier stays `closeSession`, because it is what a
+    /// user's own rebinding is stored under.
     var defaultBinding: KeyBinding? {
         switch self {
         case .commandPalette: KeyBinding("p", .command)
@@ -126,6 +142,9 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .newClaude: KeyBinding("c", [.command, .shift])
         case .newCodex: KeyBinding("x", [.command, .shift])
         case .closeSession: KeyBinding("w", .command)
+        // `⌘T` opens a terminal here as it opens a tab in a browser, so the
+        // shift on top of it means what it means there.
+        case .reopenSession: KeyBinding("t", [.command, .shift])
         case .renameSession: KeyBinding("r", [.command, .shift])
         case .nextSession: KeyBinding("]", [.command, .shift])
         case .previousSession: KeyBinding("[", [.command, .shift])
@@ -151,6 +170,15 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .addProject: KeyBinding("n", [.command, .shift])
         case .revealProject: KeyBinding("o", [.command, .shift])
         case .projectSettings: KeyBinding(",", [.command, .shift])
+        // Xcode's, because this is the one shortcut a Mac developer already
+        // has in their hands; `⌘B`, which is JetBrains', is the sidebar here.
+        case .goToDefinition: KeyBinding("j", [.command, .control])
+        // And the bracket every editor and every browser goes back with.
+        case .goBack: KeyBinding("[", .command)
+        // `⌘F` finds in what is in front of you and `⇧⌘F` in everything, the
+        // way every editor on this machine divides the two.
+        case .findInFile: KeyBinding("f", .command)
+        case .searchProject: KeyBinding("f", [.command, .shift])
         }
     }
 }

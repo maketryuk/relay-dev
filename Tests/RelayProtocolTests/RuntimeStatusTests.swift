@@ -56,4 +56,26 @@ struct RuntimeStatusTests {
             #expect(!status.displayName.isEmpty)
         }
     }
+
+    @Test("A project with nothing happening in it is not marked")
+    func quietIsNotMarked() {
+        // No sessions at all aggregates to offline, and a project where
+        // everything is idle is just as quiet: a rail of grey dots says only
+        // that the projects exist.
+        #expect(RuntimeStatus.aggregate([]).isQuiet)
+        #expect(RuntimeStatus.aggregate([.idle, .idle]).isQuiet)
+        #expect(RuntimeStatus.aggregate([.offline, .idle]).isQuiet)
+    }
+
+    @Test("Anything actually happening is marked, including a session that has finished")
+    func somethingHappeningIsMarked() {
+        // Finished is the whole point of the mark: an agent that has stopped
+        // working is the one you are waiting to hear from.
+        #expect(!RuntimeStatus.finished.isQuiet)
+        #expect(!RuntimeStatus.aggregate([.idle, .waiting]).isQuiet)
+        #expect(!RuntimeStatus.aggregate([.idle, .idle, .working]).isQuiet)
+        for status in RuntimeStatus.allCases where status != .idle && status != .offline {
+            #expect(!status.isQuiet, Comment(rawValue: status.rawValue))
+        }
+    }
 }

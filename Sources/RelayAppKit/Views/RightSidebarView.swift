@@ -73,6 +73,8 @@ struct RightSidebarView: View {
             GitPane(project: project)
         case .todo:
             TodoPane(project: project)
+        case .files:
+            FileTreePane(project: project)
         default:
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -80,7 +82,7 @@ struct RightSidebarView: View {
                     case .services: ServicesPane(project: project)
                     case .docker: DockerPane(project: project)
                     case .history: HistoryPane(project: project)
-                    default: comingSoon(model.rightSidebarTab)
+                    default: EmptyView()
                     }
                 }
                 .padding(.horizontal, Theme.Spacing.small)
@@ -89,14 +91,6 @@ struct RightSidebarView: View {
         }
     }
 
-    private func comingSoon(_ tab: RightSidebarTab) -> some View {
-        EmptyStateView(
-            systemImage: tab.symbolName,
-            title: relayLocalized("Coming soon"),
-            message: tab.localizedComingSoon
-        )
-        .frame(minHeight: 220)
-    }
 }
 
 // MARK: - Services

@@ -119,10 +119,12 @@ struct GitConflictPane: View {
                 Text(ConflictSides.describe(change.unmergedCode?.ours))
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
+                    .lineLimit(1)
                     .frame(width: 90, alignment: .leading)
                 Text(ConflictSides.describe(change.unmergedCode?.theirs))
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
+                    .lineLimit(1)
                     .frame(width: 90, alignment: .leading)
             }
             .padding(.horizontal, Theme.Spacing.small)

@@ -85,6 +85,25 @@ struct WorkspaceStoreTests {
         #expect(WorkspaceStore(url: url).load().sessionOrder == ["c", "a", "b"])
     }
 
+    @Test("What ⌘⇧T would reopen survives a relaunch")
+    func closedSessionsRoundTrip() throws {
+        // Relay is restarted often — and a browser that forgot its closed tabs
+        // on quit would be a browser nobody used the shortcut in.
+        let directory = try TemporaryDirectory()
+        let url = directory.url.appendingPathComponent("workspace.json")
+        let spec = SessionSpec(
+            projectID: ProjectID(rawValue: "one"),
+            kind: .claude,
+            name: "Claude 2",
+            workingDirectory: "/tmp/work",
+            command: ["claude"]
+        )
+
+        WorkspaceStore(url: url).saveNow(WorkspaceState(closedSessions: [spec]))
+        let loaded = WorkspaceStore(url: url).load().closedSessions
+        #expect(loaded == [spec])
+    }
+
     @Test("A workspace written before the order was remembered still opens")
     func olderFileWithoutOrder() throws {
         let directory = try TemporaryDirectory()

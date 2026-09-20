@@ -72,7 +72,7 @@ final class AppModel {
     /// An agent's prompt does not exist for the first second or two of its
     /// life, and anything typed into the terminal before it does is swallowed
     /// by whatever the CLI prints over it.
-    @ObservationIgnored private var queuedInput: [SessionID: String] = [:]
+    @ObservationIgnored private var queuedInput: [SessionID: PendingInput] = [:]
     /// Kept on the model rather than in the panel, so switching tabs to look at
     /// something does not throw away a half-written message.
     var commitMessage = ""
@@ -85,10 +85,6 @@ final class AppModel {
     /// Conflicted files as they are on disk, parsed into the sides a person
     /// has to choose between. Keyed by project and path.
     private(set) var conflicts: [String: GitConflictFile] = [:]
-    /// The same files as text, exactly as git left them: what the merge panel
-    /// starts from, and the one thing a reconstruction cannot promise to be
-    /// byte for byte.
-    private(set) var conflictTexts: [String: String] = [:]
     /// The pull or push the transfer panel is running, if any.
     private(set) var runningTransfer: GitTransfer?
     /// The remotes each project has, read when the transfer panel opens.
@@ -125,6 +121,8 @@ final class AppModel {
     private(set) var shortcutSettings = ShortcutSettings()
     private(set) var presets: [SessionPreset] = SessionPresets.defaultSet
     private(set) var sessionHistory: [SessionHistoryEntry] = []
+    /// What ⌘⇧T brings back, newest first.
+    private(set) var closedSessions: [SessionSpec] = []
     private(set) var inbox: [InboxItem] = []
     private(set) var toasts: [ToastContent] = []
     var isRightSidebarVisible = true
@@ -137,6 +135,9 @@ final class AppModel {
     private(set) var claudeContextWindow: ContextWindowPreference = .automatic
     /// How large the terminals are drawn, in points.
     private(set) var terminalFontSize = Double(TerminalZoom.defaultSize)
+    /// How large a file is drawn. Apart from the terminal's: code is read
+    /// closer than a log is.
+    private(set) var editorFontSize = 12.0
     /// Whether terminals are drawn on the GPU. On by default, because scrolling
     /// a full window of text is what the CPU path is worst at; a machine where
     /// it cannot be had falls back on its own, and the switch is here for one
@@ -155,6 +156,16 @@ final class AppModel {
 
     var selectedProjectID: ProjectID?
     var selectedSessionID: SessionID?
+    /// Files open in panes, and the rules about when they are written out.
+    let editors = FileEditors()
+    /// What each project declares, for going to where a name comes from.
+    let symbols = SymbolIndex()
+    /// Every file in each project, for finding one by name and searching what
+    /// is in them.
+    let files = FileIndex()
+    /// ESLint kept warm, so that checking a file costs milliseconds rather
+    /// than the two thirds of a second a node process takes to start.
+    let lint = LintService()
     var isCommandPaletteOpen = false
     var isInboxOpen = false
     /// The panels open over the window, innermost last.
@@ -217,6 +228,11 @@ final class AppModel {
     /// thing that reached out and wrote to the developer's own app.
     init(store: WorkspaceStore = WorkspaceStore()) {
         self.store = store
+        // A file is written out on ⌘S, on losing focus and on closing, and a
+        // function added a minute ago has to be findable after any of the
+        // three. Re-reading the one file that changed costs a parse; walking
+        // the project again costs a second.
+        editors.onSave = { [weak self] file in self?.reindex(file) }
     }
 
     func bootstrap() async {
@@ -229,6 +245,7 @@ final class AppModel {
         shortcutSettings = state.shortcuts
         presets = state.presets ?? SessionPresets.migrate(custom: state.customPresets, enabledIDs: state.enabledPresetIDs)
         sessionHistory = state.sessionHistory
+        closedSessions = state.closedSessions ?? []
         sessionOrder = state.sessionOrder.map { SessionID(rawValue: $0) }
         isRightSidebarVisible = state.isRightSidebarVisible
         isLeftSidebarVisible = state.isLeftSidebarVisible
@@ -239,16 +256,38 @@ final class AppModel {
         claudeContextWindow = state.claudeContextWindow
         context.claudeWindow = state.claudeContextWindow
         terminalFontSize = state.terminalFontSize
+        editorFontSize = state.editorFontSize
         terminalUsesGPURendering = state.terminalUsesGPURendering
         reviewComments = state.reviewComments
         paneLayouts = Dictionary(uniqueKeysWithValues: state.paneLayouts.map {
             (ProjectID(rawValue: $0.key), $0.value)
         })
+        // A saved layout can name files as well as sessions, and a file pane
+        // whose buffer was never reopened is a pane that says the file is
+        // unavailable. One of them is reopened, because one is the rule now;
+        // a layout written before that rule can name several, and the rest of
+        // those panes are dropped rather than left behind broken.
+        if let first = paneLayouts.values.flatMap({ PaneLayout.files(in: $0) }).sorted().first {
+            editors.open(first)
+        }
+        for (projectID, layout) in paneLayouts {
+            var pruned: PaneNode? = layout
+            for path in PaneLayout.files(in: layout) where editors[path] == nil {
+                pruned = pruned.flatMap { PaneLayout.removing(.file(path), from: $0) }
+            }
+            paneLayouts[projectID] = pruned
+        }
         Localization.shared.language = state.language
         rightSidebarTab = state.rightSidebarTab.flatMap(RightSidebarTab.init(rawValue:)) ?? .services
         lastActiveSessionByProject = state.lastActiveSessionByProject
         selectedProjectID = state.lastActiveProjectID.map { ProjectID(rawValue: $0) }
             ?? projects.first?.id
+
+        // What a terminal's PATH is takes a login shell to answer — three
+        // quarters of a second on this machine — and the first thing that
+        // needs it is a linter somebody is waiting on. Asked for now, while
+        // nobody is.
+        Task.detached(priority: .utility) { _ = LoginPath.value }
 
         // Before the daemon, because git has nothing to do with it: waiting for
         // a session host to start is what left the Git tab dead for the first
@@ -506,6 +545,7 @@ final class AppModel {
     func removeProject(_ id: ProjectID) {
         // Sessions are the daemon's, not the project's: closing them is an
         // explicit action, so removing a project only forgets configuration.
+        if let root = project(id)?.rootPath { lint.stop(root: root) }
         projects.removeAll { $0.id == id }
         projectFacts.removeValue(forKey: id)
         gitStatuses.removeValue(forKey: id)
@@ -675,7 +715,7 @@ final class AppModel {
     func createSession(
         from preset: SessionPreset,
         in projectID: ProjectID,
-        thenType pendingInput: String? = nil
+        thenType pendingInput: PendingInput? = nil
     ) {
         guard let project = project(projectID) else { return }
         let name = SessionNaming.nextName(
@@ -710,7 +750,7 @@ final class AppModel {
         launch(spec)
     }
 
-    private func launch(_ spec: SessionSpec, selecting: Bool = true, pendingInput: String? = nil) {
+    private func launch(_ spec: SessionSpec, selecting: Bool = true, pendingInput: PendingInput? = nil) {
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -728,6 +768,10 @@ final class AppModel {
                 // A background service must not yank the user out of the
                 // terminal they are working in.
                 if selecting { self.selectSession(snapshot.id) }
+                // The session may already have reached the prompt while this
+                // reply was in flight — in which case no further update is
+                // coming, and waiting for one waits for ever.
+                self.flushQueuedInput(for: snapshot)
             } catch {
                 self.present(ToastContent(
                     kind: .error,
@@ -740,6 +784,9 @@ final class AppModel {
 
     func selectSession(_ id: SessionID) {
         selectedSessionID = id
+        // Leaving a file is one of the three moments it is written out, and
+        // clicking into a terminal is leaving it.
+        editors.focused = nil
         surfaceCache.touch(id)
         if let projectID = sessions[id]?.projectID {
             showInFocusedPane(id, projectID: projectID)
@@ -796,8 +843,35 @@ final class AppModel {
     /// does not know which host an SSH session was connected to.
     func restartSession(_ id: SessionID) {
         guard let session = sessions[id] else { return }
-        closeSession(id)
+        close(id, remembering: false)
         launch(SessionRestart.spec(for: session))
+    }
+
+    /// What the cross on a pane and ⌘W do.
+    ///
+    /// A service is taken off the screen and left running; anything else is
+    /// closed. Everywhere else on macOS a cross in a corner closes a window,
+    /// and here it ended the process behind it — so the gesture that means "I
+    /// am done looking at this" killed the dev server being looked at, which
+    /// is a mistake nobody makes once. Stopping a service is the stop button
+    /// beside it in the sidebar: deliberate, and named after what it does.
+    func dismissSession(_ id: SessionID) {
+        guard sessions[id]?.role.isService == true else { return closeSession(id) }
+        hideSession(id)
+    }
+
+    /// Takes a session off the screen without touching what is running in it.
+    func hideSession(_ id: SessionID) {
+        guard let snapshot = sessions[id] else { return }
+        if let layout = paneLayouts[snapshot.projectID] {
+            paneLayouts[snapshot.projectID] = PaneLayout.removing(id, from: layout)
+        }
+        persist()
+        // Selected last, since selecting puts a session into the focused pane
+        // and would undo the removal if it happened the other way round.
+        guard selectedSessionID == id else { return }
+        selectedSessionID = interactiveSessions(in: snapshot.projectID).first?.id
+        if let next = selectedSessionID { selectSession(next) }
     }
 
     /// Stops the process if needed and drops the session from the workspace.
@@ -807,7 +881,40 @@ final class AppModel {
     /// takes a moment to die is the daemon's problem, not the user's. Should the
     /// daemon disagree, the next reconcile puts the session back.
     func closeSession(_ id: SessionID) {
+        close(id, remembering: true)
+    }
+
+    /// Reopens the session closed most recently in this project, the way a
+    /// browser reopens a tab.
+    ///
+    /// Started again rather than resurrected: the process it was is gone, and
+    /// what comes back is its command in its directory under its name — the
+    /// same definition of "again" that the restart button uses, so the two
+    /// cannot drift apart.
+    func reopenLastClosedSession() {
+        guard let projectID = selectedProjectID else { return }
+        guard let popped = ClosedSessions.popping(closedSessions, where: { $0.projectID == projectID })
+        else { return }
+
+        closedSessions = popped.rest
+        var spec = popped.spec
+        // The name it had, unless something else has taken it since.
+        spec.name = SessionNaming.nextName(
+            base: spec.name,
+            existing: sessions(in: projectID).map(\.name)
+        )
+        launch(spec)
+        persist()
+    }
+
+    private func close(_ id: SessionID, remembering: Bool) {
         guard let snapshot = sessions[id] else { return }
+        if remembering {
+            closedSessions = ClosedSessions.pushing(
+                SessionRestart.spec(for: snapshot),
+                onto: closedSessions
+            )
+        }
         let isRunning = snapshot.exitCode == nil
 
         recordHistory(for: snapshot)
@@ -926,17 +1033,11 @@ final class AppModel {
     /// showing rather than tearing the split down — the same as opening a file
     /// into the active editor.
     private func showInFocusedPane(_ sessionID: SessionID, projectID: ProjectID) {
-        guard let layout = paneLayouts[projectID] else {
-            paneLayouts[projectID] = .session(sessionID)
-            return
-        }
-        guard !PaneLayout.contains(sessionID, in: layout) else { return }
-
-        if let focused = selectedSessionID, PaneLayout.contains(focused, in: layout) {
-            paneLayouts[projectID] = PaneLayout.replacing(focused, with: sessionID, in: layout)
-        } else {
-            paneLayouts[projectID] = .session(sessionID)
-        }
+        paneLayouts[projectID] = PaneLayout.showing(
+            .session(sessionID),
+            in: paneLayouts[projectID],
+            focused: focusedPaneItem(in: projectID)
+        )
     }
 
     /// Lands a dragged session on the pane showing `target`.
@@ -957,6 +1058,723 @@ final class AppModel {
         }
         selectSession(moved)
         persist()
+    }
+
+    // MARK: - Files
+
+    /// Opens a file in a pane of the project, beside whatever is focused.
+    ///
+    /// Beside rather than in place: a file is almost always opened to be read
+    /// against something — the agent that wrote it, the file it breaks — and
+    /// replacing the terminal you were looking at is the one arrangement
+    /// nobody asked for. Already open means focused rather than opened twice.
+    ///
+    /// One file at a time, though, so the file already open gives up its
+    /// pane to this one: the arrangement then stays where it was put instead
+    /// of splitting again for every file somebody glances at.
+    @discardableResult
+    func openFile(at path: String, in projectID: ProjectID) -> Bool {
+        let previous = editors.openPath.flatMap { $0 == path ? nil : $0 }
+        guard editors.open(path) != nil else {
+            present(ToastContent(
+                kind: .error,
+                title: relayLocalized("Could not open file"),
+                message: (path as NSString).lastPathComponent
+            ))
+            return false
+        }
+
+        if let layout = paneLayouts[projectID] {
+            if !PaneLayout.contains(.file(path), in: layout) {
+                if let previous, PaneLayout.contains(.file(previous), in: layout) {
+                    paneLayouts[projectID] = PaneLayout.replacing(
+                        .file(previous),
+                        with: .file(path),
+                        in: layout
+                    )
+                } else if let target = focusedPaneItem(in: projectID) {
+                    paneLayouts[projectID] = PaneLayout.split(
+                        layout,
+                        target: target,
+                        with: .file(path),
+                        axis: .horizontal
+                    )
+                } else {
+                    paneLayouts[projectID] = .file(path)
+                }
+            }
+        } else {
+            paneLayouts[projectID] = .file(path)
+        }
+
+        // A file left open in a project switched away from is closed now too,
+        // and its pane goes with it rather than staying behind saying the
+        // file is unavailable.
+        if let previous {
+            for (owner, layout) in paneLayouts where owner != projectID {
+                guard PaneLayout.contains(.file(previous), in: layout) else { continue }
+                paneLayouts[owner] = PaneLayout.removing(.file(previous), from: layout)
+            }
+        }
+
+        selectedProjectID = projectID
+        editors.focused = path
+        persist()
+        // Reading the project for what it declares takes a moment, and the
+        // moment to spend it is now rather than when somebody is waiting on a
+        // ⌘-click. Idempotent: a reading already done or under way is joined
+        // rather than started again.
+        if let root = project(projectID)?.rootPath {
+            Task {
+                await symbols.prepare(root: root)
+                // And then the dependencies, which are slower, wanted less
+                // often and never worth making the project's own names wait
+                // behind. By the time anybody ⌘-clicks a framework's macro it
+                // is usually already read; if it is not, the click waits.
+                await symbols.prepare(root: root, scope: .dependencies)
+            }
+        }
+        return true
+    }
+
+    /// Writes the file out and takes its pane down.
+    func closeFile(at path: String, in projectID: ProjectID) {
+        editors.close(path)
+        if let layout = paneLayouts[projectID] {
+            paneLayouts[projectID] = PaneLayout.removing(.file(path), from: layout)
+        }
+        persist()
+    }
+
+    // MARK: - Changing the files themselves
+
+    /// Renames a file, and takes the buffer and the pane with it.
+    ///
+    /// The buffer is written out before the move rather than after: a save
+    /// that lands after the rename writes the old path back into existence,
+    /// and the tree then shows both.
+    func renameFile(at path: String, to name: String, in projectID: ProjectID) {
+        guard name.trimmingCharacters(in: .whitespacesAndNewlines) != (path as NSString).lastPathComponent
+        else { return }
+
+        editors.save(path)
+        do {
+            let moved = try FileActions.rename(path, to: name)
+            let wasOpen = editors[path] != nil
+            editors.close(path)
+            if let layout = paneLayouts[projectID] {
+                paneLayouts[projectID] = PaneLayout.replacing(.file(path), with: .file(moved), in: layout)
+            }
+            if wasOpen {
+                editors.open(moved)
+                editors.focused = moved
+            }
+            forgetFiles(of: projectID)
+            persist()
+        } catch {
+            report(error, title: relayLocalized("Could not rename"))
+        }
+    }
+
+    /// Puts a file in the Trash, and closes what was showing it.
+    func deleteFile(at path: String, in projectID: ProjectID) {
+        do {
+            try FileActions.delete(path)
+        } catch {
+            return report(error, title: relayLocalized("Could not delete"))
+        }
+
+        // A folder takes everything open inside it with it.
+        for open in editors.openPaths where open == path || open.hasPrefix(path + "/") {
+            editors.close(open)
+            if let layout = paneLayouts[projectID] {
+                paneLayouts[projectID] = PaneLayout.removing(.file(open), from: layout)
+            }
+        }
+        forgetFiles(of: projectID)
+        persist()
+    }
+
+    /// Makes an empty file or a folder, and opens the file.
+    func createFile(named name: String, in directory: String, isDirectory: Bool, in projectID: ProjectID) {
+        do {
+            let path = try FileActions.create(name, in: directory, isDirectory: isDirectory)
+            forgetFiles(of: projectID)
+            if !isDirectory { openFile(at: path, in: projectID) }
+        } catch {
+            report(error, title: relayLocalized("Could not create"))
+        }
+    }
+
+    /// The path, as the project reads it or as the disk does.
+    func copyPath(of path: String, native: Bool, in projectID: ProjectID) {
+        let root = project(projectID)?.rootPath ?? ""
+        let copied = native ? path : FileMatching.relative(path, to: root)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(copied, forType: .string)
+    }
+
+    func revealInFinder(_ path: String) {
+        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+    }
+
+    /// Everything read off the disk for this project is now a guess.
+    private func forgetFiles(of projectID: ProjectID) {
+        guard let root = project(projectID)?.rootPath else { return }
+        files.invalidate(root: root)
+        symbols.invalidate(root: root)
+    }
+
+    private func report(_ error: any Error, title: String) {
+        let message = (error as? FileActions.Failure)?.localizedMessage ?? error.localizedDescription
+        present(ToastContent(kind: .error, title: title, message: message))
+    }
+
+    /// ⌘W, which closes whichever pane the keyboard is in.
+    ///
+    /// It closed the selected session whatever was in front of it, so a file
+    /// opened beside a terminal could not be closed with the key every window
+    /// on the machine closes things with — and pressing it took down the
+    /// agent in the pane next door instead.
+    func closeFocusedPane() {
+        guard let path = editors.focused else {
+            if let id = selectedSessionID { dismissSession(id) }
+            return
+        }
+        // The project whose arrangement holds it, which is not always the one
+        // selected: a file can be left open in a project switched away from.
+        let owner = paneLayouts.first { PaneLayout.contains(.file(path), in: $0.value) }?.key
+        guard let projectID = owner ?? selectedProjectID else { return }
+        closeFile(at: path, in: projectID)
+    }
+
+    func focusFile(at path: String, caret: Int? = nil) {
+        editors.focused = path
+        guard let caret, let file = editors[path] else { return }
+        file.caret = caret
+        // The marks belong to the name the caret is in. Moved off it, they
+        // are a highlight on a word nobody is looking at any more.
+        if !file.occurrences.contains(where: { NSLocationInRange(caret, $0) }) {
+            file.occurrences = []
+        }
+    }
+
+    /// ⌘S. Saving also happens on its own — on leaving the pane and on closing
+    /// it — so this is for the habit rather than for the file's safety.
+    ///
+    /// It is also where the project's own formatter runs, which is why the
+    /// two are not the same thing: a deliberate save is a moment to rewrite
+    /// the file in, and leaving a pane or closing it is not.
+    ///
+    /// The file is written first and corrected after. Waiting for the
+    /// formatter before writing made ⌘S take as long as the formatter does —
+    /// two thirds of a second of ESLint on a real project — which is two
+    /// thirds of a second in which the file on disk is not what is on screen
+    /// and the agent in the pane next door may read it. The correction is a
+    /// second write when there is one to make, and none when there is not.
+    func saveFocusedFile() {
+        guard let path = editors.focused, let file = editors[path], !file.isVendored else {
+            editors.focused.map { editors.save($0) }
+            return
+        }
+        guard let projectID = selectedProjectID, let root = project(projectID)?.rootPath else {
+            editors.save(path)
+            return
+        }
+
+        // On disk now, exactly as it is on screen.
+        editors.save(path)
+
+        let text = file.text
+        Task { [weak self] in
+            guard let self else { return }
+            var fixed = await lint.answer(for: text, path: path, root: root, fix: true)
+            if fixed == nil {
+                fixed = await Task.detached(priority: .userInitiated) { () -> FileCheck.Fixed? in
+                    guard let fixer = FileCheckers.fixer(for: path, in: root) else { return nil }
+                    return FileCheck.fix(fixer, on: text, path: path, root: root)
+                }.value
+            }
+
+            guard let file = editors[path] else { return }
+            // Only if nothing was typed while it ran: overwriting a keystroke
+            // with a correction made before it is the one way a formatter can
+            // lose somebody's work.
+            guard file.text == text else { return }
+
+            if let corrected = fixed?.text {
+                file.text = corrected
+                editors.save(path)
+            }
+
+            // ESLint answered both questions in the one run it was given, so
+            // there is nothing left to ask it.
+            if let found = fixed?.diagnostics {
+                diagnostics = found
+                checkedText = file.text
+                checkerName = checkerName ?? "ESLint"
+            } else {
+                checkOpenFile(in: projectID, immediately: true)
+            }
+        }
+    }
+
+    // MARK: - What is wrong with the file
+
+    /// What the project's own checker said about the open file.
+    private(set) var diagnostics: [Diagnostic] = []
+    /// The name of whatever said it, for the pane to attribute it to.
+    private(set) var checkerName: String?
+    private var checkTask: Task<Void, Never>?
+    /// The text the diagnostics on screen were made from.
+    ///
+    /// A checker is a whole node process on a large project — most of a
+    /// second — and asking it again about text it has just answered about is
+    /// that second spent on nothing. Saving asks once and records what it
+    /// asked about, so the redraw that follows does not ask again.
+    private var checkedText: String?
+
+    /// How long after the last keystroke the checker is run.
+    ///
+    /// Short, because the wait is added to the checker's own — and with the
+    /// service kept warm the checker's own is about thirty milliseconds, so
+    /// this pause is now most of what there is to feel. A run whose answer
+    /// stops being wanted is killed rather than left to finish, so a shorter
+    /// pause costs nothing but the processes it starts.
+    private static let checkDelay = Duration.milliseconds(250)
+
+    /// Runs the project's own checker over the buffer.
+    ///
+    /// The project's own, never one of ours: a checkout is linted by the
+    /// rules it carries, and a linter installed beside Relay would be a
+    /// second opinion nobody asked for. No checker in the project means no
+    /// marks and nothing said about it.
+    func checkOpenFile(in projectID: ProjectID, immediately: Bool = false) {
+        checkTask?.cancel()
+
+        guard let path = editors.openPath,
+              let file = editors[path],
+              !file.isVendored,
+              let root = project(projectID)?.rootPath
+        else {
+            diagnostics = []
+            checkerName = nil
+            checkedText = nil
+            return
+        }
+
+        let text = file.text
+        guard text != checkedText else { return }
+
+        checkTask = Task { [weak self] in
+            if !immediately { try? await Task.sleep(for: Self.checkDelay) }
+            guard !Task.isCancelled else { return }
+
+            // The warm service first: the same ESLint, already started, with
+            // the project's config already read.
+            if let self, let served = await self.lint.answer(for: text, path: path, root: root, fix: false) {
+                guard !Task.isCancelled, self.editors.openPath == path else { return }
+                checkerName = "ESLint"
+                diagnostics = served.diagnostics ?? []
+                checkedText = text
+                return
+            }
+
+            // Everything about running it happens off the main actor,
+            // including asking where the tool is: that is a process of its
+            // own, and the window must not wait for either.
+            let running = RunningProcess()
+            let found = await withTaskCancellationHandler {
+                await Task.detached(priority: .utility) { () -> (String, [Diagnostic])? in
+                    guard let checker = FileCheckers.checker(for: path, in: root) else { return nil }
+                    return (
+                        checker.name,
+                        FileCheck.run(checker, on: text, path: path, root: root, running: running)
+                    )
+                }.value
+            } onCancel: {
+                running.cancel()
+            }
+
+            guard !Task.isCancelled, let self, editors.openPath == path else { return }
+            checkerName = found?.0
+            diagnostics = found?.1 ?? []
+            checkedText = text
+        }
+    }
+
+    // MARK: - Searching the files
+
+    /// Bumped to ask the pane being worked in to open its find bar.
+    ///
+    /// A counter rather than a flag, because the same request can be made
+    /// twice — ⌘F while the bar is already open means "put the caret back in
+    /// it" — and a flag that is already true says nothing the second time.
+    private(set) var findRequest = 0
+
+    /// ⌘F: the file in front of you, or the project when no file is.
+    ///
+    /// Not nothing in the second case: somebody pressing find in a terminal
+    /// is looking for something, and the panel that searches everything is
+    /// the only honest thing to offer them.
+    func findInFocusedFile() {
+        guard editors.focused != nil else {
+            if let projectID = selectedProjectID { presentModal(.search(projectID)) }
+            return
+        }
+        findRequest += 1
+    }
+
+    /// What is being looked for, as typed.
+    var searchQuery = ""
+    /// How it is read: case, whole words, pattern.
+    var searchOptions = TextSearch.Options()
+    private(set) var searchHits: [TextHit] = []
+    private(set) var isSearching = false
+    /// True when there were more matches than are being shown.
+    private(set) var searchWasTruncated = false
+    private var searchTask: Task<Void, Never>?
+
+    /// Runs the search a moment after the typing stops.
+    ///
+    /// Every keystroke reading the project would be a project read twenty
+    /// times a second; a pause of a quarter of a second is below noticing and
+    /// above typing.
+    func search(in projectID: ProjectID) {
+        searchTask?.cancel()
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // One letter matches most of a codebase, which is not an answer.
+        guard query.count >= 2, let root = project(projectID)?.rootPath else {
+            searchHits = []
+            searchWasTruncated = false
+            isSearching = false
+            return
+        }
+
+        isSearching = true
+        searchTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled, let self else { return }
+
+            await files.prepare(root: root)
+            let found = await TextSearch.find(query, in: files.files(in: root), options: searchOptions)
+            guard !Task.isCancelled else { return }
+
+            searchHits = found
+            searchWasTruncated = found.count >= TextSearch.limit
+            isSearching = false
+        }
+    }
+
+    /// Opens the file a match is in, at the match.
+    func open(_ hit: TextHit, in projectID: ProjectID) {
+        dismissModal()
+        guard openFile(at: hit.path, in: projectID) else { return }
+        editors[hit.path]?.jump(to: hit.range)
+    }
+
+    // MARK: - Going to where a name comes from
+
+    /// Where a jump started, so it can be gone back to.
+    private struct SymbolOrigin {
+        let projectID: ProjectID
+        let path: String
+        let range: NSRange
+    }
+
+    /// The candidates of the last lookup that found more than one, and the
+    /// name they are candidates for. Read by the panel that asks which was
+    /// meant; kept here rather than in the panel so that the panel can be
+    /// drawn from the model alone, like every other one.
+    private(set) var definitionMatches: [SymbolDefinition] = []
+    private var symbolOrigins: [SymbolOrigin] = []
+    private var pendingOrigin: SymbolOrigin?
+
+    /// Far more than anybody walks back through, and small enough that the
+    /// paths in it are never worth thinking about.
+    private static let symbolHistoryLimit = 50
+
+    var canGoBackToOrigin: Bool { !symbolOrigins.isEmpty }
+
+    /// ⌘-click in a file, at the character it landed on.
+    func goToDefinition(at offset: Int, in path: String, projectID: ProjectID) {
+        guard let file = editors[path],
+              let word = SymbolWord.identifier(in: file.text, at: offset)
+        else { return }
+
+        let origin = SymbolOrigin(projectID: projectID, path: path, range: word.range)
+
+        // A parameter or a `const` means the one written here. An index of
+        // names has nothing to say about it — and said it anyway, sending a
+        // click on a function's own argument to a file across the project
+        // that happened to use the same word.
+        if let language = file.language,
+           let local = LocalScopes.binding(at: offset, in: file.text, language: language) {
+            if local.definition != word.range { remember(origin) }
+            file.show(local)
+            return
+        }
+
+        // A word inside a string is a value rather than a name: a cookie's
+        // key, a class in a template, a word in a sentence. Nothing declares
+        // it, and saying so every time somebody ⌘-clicks one is a complaint
+        // about the question rather than an answer to it.
+        let literal = SymbolWord.literal(in: file.text, at: offset)
+        if let literal, literal.text.contains(".") {
+            Task { await resolveKey(literal.text, from: origin, fallback: word.text) }
+            return
+        }
+        // And a plain one is not asked about at all. Saying nothing was half
+        // the answer: the other half is not going anywhere either, since a
+        // `const max` in another file has nothing to do with the word `max`
+        // inside `value === 'max'`.
+        guard literal == nil || literal?.text.contains("/") == true else { return }
+
+        Task { await resolveDefinition(named: word.text, from: origin) }
+    }
+
+    /// A translation key, which lives in a locale file rather than in code.
+    private func resolveKey(_ key: String, from origin: SymbolOrigin, fallback name: String) async {
+        guard let root = project(origin.projectID)?.rootPath else { return }
+        await files.prepare(root: root)
+
+        let paths = files.files(in: root)
+        let found = await Task.detached(priority: .userInitiated) {
+            TranslationKeys.find(key, in: paths)
+        }.value
+
+        guard !found.isEmpty else {
+            // Not a key after all, or not one this project defines: the name
+            // under the caret is still worth asking about — quietly, since
+            // what was clicked was a string either way.
+            await resolveDefinition(named: name, from: origin, quietly: true)
+            return
+        }
+
+        let ranked = found.sorted { $0.path < $1.path }
+        go(to: ranked[0], from: origin)
+        guard ranked.count > 1 else { return }
+
+        definitionMatches = ranked
+        pendingOrigin = nil
+        present(ToastContent(
+            kind: .info,
+            title: String(format: relayLocalized("Other declarations: %d"), ranked.count - 1),
+            message: key,
+            duration: .seconds(5),
+            key: "definition",
+            action: ToastAction(title: relayLocalized("Show")) { [weak self] in
+                self?.presentModal(.definitions(projectID: origin.projectID, name: key))
+            }
+        ))
+    }
+
+    /// The same from the keyboard, which means the file being typed in at the
+    /// caret it was left at.
+    func goToDefinitionFromCaret() {
+        guard let projectID = selectedProjectID,
+              let path = editors.focused,
+              let file = editors[path]
+        else { return }
+        goToDefinition(at: file.caret, in: path, projectID: projectID)
+    }
+
+    /// The file first, then the project.
+    ///
+    /// A name declared in the file being read is almost always the one meant —
+    /// a private helper, a method of the class the call is in — and answering
+    /// from there is instant and needs no index at all. The project is asked
+    /// only when the file has no answer or more than one.
+    /// - Parameter quietly: say nothing when there is no answer, which is
+    ///   the right silence for a click on something that was never a name.
+    private func resolveDefinition(named name: String, from origin: SymbolOrigin, quietly: Bool = false) async {
+        var candidates = declarations(of: name, in: origin.path)
+
+        if candidates.count != 1, let root = project(origin.projectID)?.rootPath {
+            // The first jump into a project can wait for it to be read, and a
+            // click that appears to do nothing for a few seconds reads as a
+            // click that missed. The key is shared with the answer below, so
+            // this is replaced rather than stacked on.
+            if !symbols.isReady(root), !quietly {
+                present(ToastContent(
+                    kind: .info,
+                    title: relayLocalized("Reading the project…"),
+                    duration: .seconds(2),
+                    key: "definition"
+                ))
+            }
+            await symbols.prepare(root: root)
+            for found in symbols.definitions(named: name, in: root) where !candidates.contains(found) {
+                candidates.append(found)
+            }
+            // Only when nothing declares it: a file named after it is the
+            // answer to a component, and the worse answer to everything else.
+            if candidates.isEmpty {
+                candidates = symbols.files(named: name, in: root)
+            }
+            // And last, other people's code. Read only when the project has
+            // failed to answer, because reading it costs seconds and most
+            // jumps never get this far: a framework's macro is declared in
+            // its own type declarations and nowhere in the checkout at all.
+            if candidates.isEmpty {
+                if !symbols.isReady(root, scope: .dependencies), !quietly {
+                    present(ToastContent(
+                        kind: .info,
+                        title: relayLocalized("Reading dependencies…"),
+                        duration: .seconds(4),
+                        key: "definition"
+                    ))
+                }
+                await symbols.prepare(root: root, scope: .dependencies)
+                candidates = symbols.definitions(named: name, in: root, scope: .dependencies)
+                // A class in PHP is a file named after it, which is how a
+                // framework's `Model` is found without its source having been
+                // read at all.
+                if candidates.isEmpty {
+                    candidates = symbols.files(named: name, in: root, scope: .dependencies)
+                }
+            }
+        }
+
+        // Standing on a declaration and asking for it is how "where else is
+        // this" gets asked, so the thing under the caret is dropped — unless
+        // it is all there is, in which case going nowhere is the honest
+        // answer and the caret is already there.
+        let elsewhere = candidates.filter { $0.path != origin.path || $0.range != origin.range }
+        let found = elsewhere.isEmpty ? candidates : elsewhere
+
+        let ranked = DefinitionRanking.ranked(
+            found,
+            from: origin.path,
+            hints: DefinitionRanking.hints(in: editors[origin.path]?.text ?? "")
+        )
+
+        guard let best = ranked.first else {
+            guard !quietly else { return }
+            present(ToastContent(
+                kind: .info,
+                title: relayLocalized("No definition found"),
+                message: name,
+                duration: .seconds(6),
+                key: "definition",
+                action: ToastAction(title: relayLocalized("Find in Files")) { [weak self] in
+                    guard let self else { return }
+                    searchQuery = name
+                    presentModal(.search(origin.projectID))
+                    search(in: origin.projectID)
+                }
+            ))
+            return
+        }
+
+        // Straight there, the way every editor a person has used before this
+        // one behaves. The others are not hidden — they are one press away —
+        // but they are not a question asked before the jump either.
+        go(to: best, from: origin)
+        guard ranked.count > 1 else { return }
+
+        definitionMatches = ranked
+        pendingOrigin = nil
+        present(ToastContent(
+            kind: .info,
+            title: String(format: relayLocalized("Other declarations: %d"), ranked.count - 1),
+            message: name,
+            duration: .seconds(5),
+            key: "definition",
+            action: ToastAction(title: relayLocalized("Show")) { [weak self] in
+                self?.presentModal(.definitions(projectID: origin.projectID, name: name))
+            }
+        ))
+    }
+
+    /// What this file itself declares under that name.
+    private func declarations(of name: String, in path: String) -> [SymbolDefinition] {
+        guard let file = editors[path], let language = file.language else { return [] }
+        return SymbolTags
+            .definitions(in: file.text, language: language, path: path)
+            .filter { $0.name == name }
+    }
+
+    /// Picked from the panel that offered several.
+    func openDefinition(_ definition: SymbolDefinition) {
+        let origin = pendingOrigin
+        pendingOrigin = nil
+        dismissModal()
+        go(to: definition, from: origin)
+    }
+
+    private func go(to definition: SymbolDefinition, from origin: SymbolOrigin?) {
+        let projectID = origin?.projectID ?? selectedProjectID
+        guard let projectID, openFile(at: definition.path, in: projectID) else { return }
+        if let origin { remember(origin) }
+        editors[definition.path]?.jump(to: currentRange(of: definition))
+    }
+
+    private func remember(_ origin: SymbolOrigin) {
+        symbolOrigins.append(origin)
+        if symbolOrigins.count > Self.symbolHistoryLimit { symbolOrigins.removeFirst() }
+    }
+
+    /// Back to where the last jump started.
+    func goBackToOrigin() {
+        guard let origin = symbolOrigins.popLast() else { return }
+        guard openFile(at: origin.path, in: origin.projectID) else { return }
+        editors[origin.path]?.jump(to: origin.range)
+    }
+
+    /// Where that name is now, rather than where it was when the project was
+    /// read.
+    ///
+    /// The file is asked again whenever what the index remembers is no longer
+    /// the name it promised — which is what an edit above the declaration does
+    /// to every offset under it. One parse at the moment of the jump, against
+    /// keeping a whole project's offsets in step with every keystroke.
+    private func currentRange(of definition: SymbolDefinition) -> NSRange {
+        // A file is its own declaration and has no name in it to look for.
+        guard definition.kind != .file else { return definition.range }
+        guard let text = editors[definition.path]?.text
+            ?? (try? String(contentsOfFile: definition.path, encoding: .utf8))
+        else { return definition.range }
+
+        let source = text as NSString
+        if NSMaxRange(definition.range) <= source.length,
+           source.substring(with: definition.range) == definition.name {
+            return definition.range
+        }
+        guard let language = SourceLanguage.detect(path: definition.path, contents: text)
+        else { return definition.range }
+
+        let again = SymbolTags.definitions(in: text, language: language, path: definition.path)
+        let match = again.first { $0.name == definition.name && $0.kind == definition.kind }
+            ?? again.first { $0.name == definition.name }
+        return match?.range ?? definition.range
+    }
+
+    /// Replaces what one saved file declares, when its project has been read.
+    private func reindex(_ file: OpenFile) {
+        guard let language = file.language,
+              let root = projects.map(\.rootPath).first(where: { file.path.hasPrefix($0) }),
+              symbols.isReady(root)
+        else { return }
+        symbols.replace(
+            SymbolTags.definitions(in: file.text, language: language, path: file.path),
+            for: file.path,
+            in: root
+        )
+    }
+
+    /// Which pane the keyboard is in, as the layout sees it.
+    private func focusedPaneItem(in projectID: ProjectID) -> PaneItem? {
+        guard let layout = paneLayouts[projectID] else { return nil }
+        if let path = editors.focused, PaneLayout.contains(.file(path), in: layout) {
+            return .file(path)
+        }
+        if let session = selectedSessionID, PaneLayout.contains(.session(session), in: layout) {
+            return .session(session)
+        }
+        return PaneLayout.items(in: layout).first
     }
 
     func setPaneFraction(_ fraction: Double, forSplit id: UUID, in projectID: ProjectID) {
@@ -1032,8 +1850,9 @@ final class AppModel {
     /// Drops panes whose session has gone.
     private func prunePaneLayouts() {
         let known = Set(sessions.keys)
+        let open = editors.openPaths
         for (projectID, layout) in paneLayouts {
-            paneLayouts[projectID] = PaneLayout.pruning(layout, keeping: known)
+            paneLayouts[projectID] = PaneLayout.pruning(layout, keeping: known, openFiles: open)
         }
     }
 
@@ -1054,6 +1873,13 @@ final class AppModel {
         )
         for evicted in surfaceCache.store(surface, for: sessionID, keeping: selectedSessionID) {
             client.post(.detach(evicted))
+        }
+
+        // Asked on the next turn of the run loop: this is called from a view
+        // body, and handing text over from inside one is a write to state
+        // while SwiftUI is reading it.
+        if queuedInput[sessionID] != nil {
+            Task { [weak self] in self?.flushQueuedInput(for: sessionID) }
         }
 
         // Replaying scrollback on attach is what makes a restarted GUI feel like
@@ -1373,10 +2199,6 @@ final class AppModel {
         conflicts[key(projectID, path)]
     }
 
-    func conflictText(_ path: String, in projectID: ProjectID) -> String? {
-        conflictTexts[key(projectID, path)]
-    }
-
     /// Opens the merge panes for one file, having read it first.
     ///
     /// Read here rather than by the panel: a view that fetches its own subject
@@ -1393,43 +2215,20 @@ final class AppModel {
         refreshChanges(for: projectID)
     }
 
-    /// Reads one conflicted file from disk and splits it at its markers.
+    /// Reads one conflicted file as the three versions of itself.
     func loadConflict(_ path: String, in projectID: ProjectID) {
         guard let root = project(projectID)?.rootPath else { return }
         let identifier = key(projectID, path)
         Task { [weak self] in
-            let parsed = await Task.detached(priority: .userInitiated) { () -> (text: String, file: GitConflictFile)? in
-                let url = URL(fileURLWithPath: root).appendingPathComponent(path)
-                guard let contents = try? String(contentsOf: url, encoding: .utf8) else { return nil }
-                return (contents, GitConflictFile.parse(contents))
+            let parsed = await Task.detached(priority: .userInitiated) { () -> GitConflictFile? in
+                GitConflictReader.read(path, at: root)
             }.value
             guard let self else { return }
             if let parsed {
-                self.conflicts[identifier] = parsed.file
-                self.conflictTexts[identifier] = parsed.text
+                self.conflicts[identifier] = parsed
             } else {
                 self.conflicts.removeValue(forKey: identifier)
-                self.conflictTexts.removeValue(forKey: identifier)
             }
-        }
-    }
-
-    /// Writes a file with every conflict in it answered, and stages it.
-    func resolveConflict(
-        _ path: String,
-        in projectID: ProjectID,
-        choosing choices: [Int: GitConflictChoice]
-    ) {
-        guard let file = conflict(path, in: projectID) else { return }
-        let contents = file.resolved(with: choices)
-        let identifier = key(projectID, path)
-        perform(
-            in: projectID,
-            title: String(format: relayLocalized("Could not resolve %@"), path)
-        ) { root in
-            GitActions.resolve(path, contents: contents, at: root)
-        } onSuccess: { [weak self] in
-            self?.conflicts.removeValue(forKey: identifier)
         }
     }
 
@@ -1459,7 +2258,6 @@ final class AppModel {
             guard let self else { return }
             let identifier = self.key(projectID, path)
             self.conflicts.removeValue(forKey: identifier)
-            self.conflictTexts.removeValue(forKey: identifier)
             self.dismissModal()
         }
     }
@@ -1503,11 +2301,31 @@ final class AppModel {
     /// stopped printing and is waiting for a person, which is exactly the
     /// moment its prompt will keep what is typed into it.
     private func flushQueuedInput(for snapshot: SessionSnapshot) {
-        guard let text = queuedInput[snapshot.id] else { return }
-        guard snapshot.status == .waiting || snapshot.status == .idle else { return }
+        guard let pending = queuedInput[snapshot.id] else { return }
+        guard PendingInputPolicy.isReady(
+            status: snapshot.status,
+            hasTerminal: surfaceCache.existing(snapshot.id) != nil
+        ) else { return }
+
         queuedInput.removeValue(forKey: snapshot.id)
-        type(text, into: snapshot.id)
+        type(pending.text, into: snapshot.id)
+        // Only now: until the text is in the prompt, the notes are the only
+        // copy of it there is.
+        forgetComments(pending.commentIDs)
     }
+
+    /// Tries again for a session whose terminal has just appeared.
+    ///
+    /// The other half of the wait. A session can reach its prompt before
+    /// anything is drawn for it, and the daemon then has no reason to send
+    /// another update — so the arrival of the terminal has to ask as well.
+    func flushQueuedInput(for sessionID: SessionID) {
+        guard let snapshot = sessions[sessionID] else { return }
+        flushQueuedInput(for: snapshot)
+    }
+
+    /// What is still waiting to be typed into a session, if anything.
+    var sessionsWithQueuedInput: Set<SessionID> { Set(queuedInput.keys) }
 
     // MARK: - Branches
 
@@ -1619,9 +2437,16 @@ final class AppModel {
         // Selected first, so the terminal exists to be asked how it wants its
         // text before anything is typed into it.
         selectSession(sessionID)
-        type(ReviewCommentTranscript.compose(comments), into: sessionID)
+
+        let pending = PendingInput(
+            text: ReviewCommentTranscript.compose(comments),
+            commentIDs: comments.map(\.id)
+        )
+        queuedInput[sessionID] = pending
+        if let snapshot = sessions[sessionID] {
+            flushQueuedInput(for: snapshot)
+        }
         focusTerminal()
-        remove(comments)
     }
 
     /// Types text into a session the way a paste arrives.
@@ -1647,13 +2472,16 @@ final class AppModel {
         createSession(
             from: preset,
             in: projectID,
-            thenType: ReviewCommentTranscript.compose(comments)
+            thenType: PendingInput(
+                text: ReviewCommentTranscript.compose(comments),
+                commentIDs: comments.map(\.id)
+            )
         )
-        remove(comments)
     }
 
-    private func remove(_ comments: [ReviewComment]) {
-        let sent = Set(comments.map(\.id))
+    private func forgetComments(_ ids: [UUID]) {
+        guard !ids.isEmpty else { return }
+        let sent = Set(ids)
         reviewComments.removeAll { sent.contains($0.id) }
         persist()
     }
@@ -1767,7 +2595,7 @@ final class AppModel {
         createSession(
             from: preset,
             in: projectID,
-            thenType: TodoTranscript.compose(todos, instruction: instruction)
+            thenType: PendingInput(text: TodoTranscript.compose(todos, instruction: instruction))
         )
         finishSending(todos, in: projectID)
     }
@@ -1935,6 +2763,28 @@ final class AppModel {
     /// means there is nothing to report either way.
     var isDrawingTerminalsOnGPU: Bool {
         surfaceCache.all.contains { $0.isDrawingOnGPU }
+    }
+
+    /// ⌘+ and ⌘−, on whatever the keyboard is in.
+    ///
+    /// The same rule as ⌘W: a file open in front of you is what the shortcut
+    /// is about, and the terminal behind it is not. One size for every
+    /// terminal and one for every file rather than per pane — it is how the
+    /// user reads, not something about a particular file.
+    func stepFontSize(by delta: Double) {
+        guard editors.focused != nil else { return stepTerminalFontSize(by: delta) }
+        setEditorFontSize(Double(TerminalZoom.stepped(CGFloat(editorFontSize), by: CGFloat(delta))))
+    }
+
+    func resetFontSize() {
+        guard editors.focused != nil else { return resetTerminalFontSize() }
+        setEditorFontSize(12)
+    }
+
+    private func setEditorFontSize(_ size: Double) {
+        guard size != editorFontSize else { return }
+        editorFontSize = size
+        persist()
     }
 
     /// Steps the terminal text size, the way every other reader does it.
@@ -2121,10 +2971,8 @@ final class AppModel {
                 || dockerSnapshots[project.id]?.containers.isEmpty == false
         case .git:
             gitRepositories.contains(project.id) || gitStatuses[project.id] != nil
-        case .todo:
+        case .todo, .files:
             true
-        case .files:
-            false
         }
     }
 
@@ -2907,6 +3755,7 @@ final class AppModel {
             shortcuts: shortcutSettings,
             presets: presets,
             sessionHistory: sessionHistory,
+            closedSessions: closedSessions,
             sessionOrder: sessionOrder.map(\.rawValue),
             isRightSidebarVisible: isRightSidebarVisible,
             isLeftSidebarVisible: isLeftSidebarVisible,
@@ -2917,6 +3766,7 @@ final class AppModel {
             usageBarDetail: usageBarDetail,
             claudeContextWindow: claudeContextWindow,
             terminalFontSize: terminalFontSize,
+            editorFontSize: editorFontSize,
             terminalUsesGPURendering: terminalUsesGPURendering,
             reviewComments: reviewComments,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })

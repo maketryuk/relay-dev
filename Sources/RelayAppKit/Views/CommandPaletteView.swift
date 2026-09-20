@@ -15,6 +15,25 @@ struct PaletteCommand: Identifiable {
     let searchTerms: [String]
     let run: () -> Void
 
+    /// A plain entry, whose title is not a phrase of the interface: a file
+    /// name is a file name in every language, and looking one up in the
+    /// string tables would be looking for a translation of `GitPanel.swift`.
+    init(
+        id: String,
+        title: String,
+        subtitle: String,
+        systemImage: String,
+        searchTerms: [String],
+        run: @escaping () -> Void
+    ) {
+        self.id = id
+        self.title = title
+        self.subtitle = subtitle
+        self.systemImage = systemImage
+        self.searchTerms = searchTerms
+        self.run = run
+    }
+
     /// - Parameters:
     ///   - titleKey: the untranslated title, which is also the key it is
     ///     looked up under.
@@ -51,6 +70,12 @@ struct CommandPaletteView: View {
     @State private var highlightedIndex = 0
     @FocusState private var isFieldFocused: Bool
 
+    /// How many files a query is allowed to fill the list with. The commands
+    /// are a closed set and the files are not: without a limit a two-letter
+    /// query answers with a thousand rows and the command that was meant is
+    /// somewhere in them.
+    private static let fileLimit = 30
+
     var body: some View {
         ZStack(alignment: .top) {
             Color.black.opacity(0.45)
@@ -71,6 +96,12 @@ struct CommandPaletteView: View {
         .onAppear {
             isFieldFocused = true
             highlightedIndex = 0
+        }
+        // The walk that makes files findable, started when the palette opens
+        // rather than at launch: it is the first moment anybody could want it.
+        .task {
+            guard let root = model.selectedProject?.rootPath else { return }
+            await model.files.prepare(root: root)
         }
     }
 
@@ -177,6 +208,15 @@ struct CommandPaletteView: View {
             guard let score = search.score(command.searchTerms) else { continue }
             ranked.append(RankedCommand(position: position, score: score, command: command))
         }
+        // Files are ranked by the same reading of the query and sorted in
+        // among the commands, so typing a file name answers with the file
+        // and typing a verb answers with the command — without the palette
+        // having to decide in advance which of the two was meant. They are
+        // listed after commands of the same score, which is what the position
+        // does: every file starts after every command.
+        for (position, file) in matchingFiles().enumerated() {
+            ranked.append(RankedCommand(position: all.count + position, score: file.score, command: file.command))
+        }
         // Position breaks ties, so equally good matches keep the order the
         // palette lists them in rather than an arbitrary one.
         ranked.sort { $0.score == $1.score ? $0.position < $1.position : $0.score > $1.score }
@@ -187,6 +227,29 @@ struct CommandPaletteView: View {
         let position: Int
         let score: Int
         let command: PaletteCommand
+    }
+
+    /// The project's files that answer to the query, best first.
+    private func matchingFiles() -> [(score: Int, command: PaletteCommand)] {
+        guard let project = model.selectedProject else { return [] }
+        let root = project.rootPath
+
+        return FileMatching
+            .matches(query, in: model.files.files(in: root), under: root, limit: Self.fileLimit)
+            .map { match in
+                let relative = FileMatching.relative(match.path, to: root)
+                return (
+                    match.score,
+                    PaletteCommand(
+                        id: "file:\(match.path)",
+                        title: (match.path as NSString).lastPathComponent,
+                        subtitle: relative,
+                        systemImage: "doc",
+                        searchTerms: [(match.path as NSString).lastPathComponent, relative],
+                        run: { model.openFile(at: match.path, in: project.id) }
+                    )
+                )
+            }
     }
 
     private var allCommands: [PaletteCommand] {

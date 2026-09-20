@@ -7,7 +7,230 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Changed
+
+- **⌘+ and ⌘− resize the file in front of you.** They always resized the
+  terminal, whatever was on screen. They now follow the same rule ⌘W does —
+  the shortcut is about what the keyboard is in — and a file is read at its
+  own size, kept apart from the terminal's and remembered between launches.
+  The size reaches the pane that is already open, too: a text view keeps what
+  it was built at, since its font is in the view, in what it types with and on
+  every character at once, so the new size only showed on a file closed and
+  opened again.
+- **⌘W closes the pane in front of you.** It always closed the selected
+  session, whatever was on screen — so a file opened beside a terminal could
+  not be closed with the key every window on this machine closes things with,
+  and pressing it took down the agent in the pane next door instead. The
+  command is now called Close Pane, and closes a file when a file is what the
+  keyboard is in. A rebinding of it is kept: it is stored under what the
+  command is, not what it is called.
+
+### Fixed
+
+- **Closing a terminal no longer closes the file open beside it.** Closing a
+  pane picks the next session to show, and when nothing else on screen was a
+  session — because the only other pane was an editor — it replaced the whole
+  arrangement rather than that pane. The terminal closed and took the file with
+  it, which from the outside looked as though the close button had shut the
+  wrong pane. A session now takes over the first pane of its own kind, and
+  arrives beside an editor rather than instead of it.
+- **A review sent to a new agent no longer disappears on the way.** The notes
+  were forgotten at the moment the session was asked for rather than when the
+  text reached it, and the text itself was only handed over on the next update
+  the daemon sent. A session that reached its prompt while the request was
+  still in flight never got another update — so nothing was typed, and there
+  was nothing left in the panel to send again. The notes now travel with the
+  text and are forgotten only once it is in the prompt, and the hand-over is
+  tried again when the session answers and when its terminal appears. It also
+  waits for the terminal rather than only for the status: without one Relay
+  cannot ask whether a bracketed paste is understood, and a review then went in
+  as plain keystrokes — every newline sending the half-written message before
+  it.
+
 ### Added
+
+- **The project's own linter marks the file as you write it.** A wavy line
+  under what it objected to — red for an error, amber for a warning, and the
+  message under the pointer when the hand stops on one — and a strip under the
+  header saying how many there are, what the one nearest the caret says and
+  which tool said it; clicking the strip walks to the next. A complaint about
+  blank space is marked on what the space follows: half of what a linter
+  objects to is a line break, and a range of two empty lines underlines
+  nothing at all. A file that could not be parsed at all — a string opened
+  with one quote and closed with another — is marked along the whole line the
+  parser gave up on, because what it reports is where it stopped rather than
+  what broke it, and one character there is a dot nobody reads as a mark. It runs the checker the checkout already
+  carries and installs nothing: ESLint or oxlint from `node_modules` for
+  JavaScript, TypeScript, Vue, Svelte and the rest, `php -l` for PHP,
+  `gofmt` for Go, `shellcheck` for shell scripts, `ruby -c` for Ruby, Ruff or
+  Python's own compiler for Python, and SwiftLint for Swift where it is
+  installed with `swiftc -parse` where it is not. A syntax error is reported
+  by all of them, which is what an unterminated string or a stray brace is.
+  ⌘S writes the file at once and corrects it after: waiting for the formatter
+  first made the save take as long as the formatter does, and in that time
+  what is on disk is not what is on screen — which the agent in the pane next
+  door may be reading. The correction is a second write when there is one to
+  make and none when there is not. What corrects it is what the tool can:
+  ESLint's own
+  `--fix`, `gofmt`, Ruff, Pint for a Laravel project and SwiftLint where it is
+  installed — one run does it: ESLint answers with the corrected text and what
+  it still objects to at the same time, and asking it twice is two node
+  processes for one question — most of a second each on a real project. The
+  same text is never asked about twice either, so the redraw that follows a
+  save asks nothing at all. The wait before a check is a third of a second
+  rather than a whole one — it is added to the checker's own, and a second of
+  waiting in front of two thirds of a second of ESLint made an error take
+  over two seconds to appear — and a run whose answer stops being wanted is
+  killed rather than left to finish. What a terminal's `PATH` is, which takes
+  a login shell three quarters of a second to answer, is asked for at launch
+  rather than by the first person waiting on a linter. Where a project keeps `eslint_d`, that is used
+  instead: the same ESLint with the process kept warm between runs. The corrected text goes into the buffer and is written once, so
+  the file changes once and undo still means something — and a keystroke made
+  while the tool was running is never overwritten by a correction made before
+  it. Only ⌘S: leaving a pane or closing it writes the file as it stands,
+  since a deliberate save is a moment to rewrite a file in and a glance
+  elsewhere is not.
+  They are found the way a terminal finds them rather than the way an
+  application launched from the Dock does: a GUI process is started with four
+  directories on its `PATH` and none of them is where node, Homebrew or a
+  virtual environment put anything — so `node_modules/.bin/eslint`, whose
+  first line is `#!/usr/bin/env node`, did not start at all and the linter
+  looked switched off rather than broken. What is checked is the buffer rather than the file on disk — ESLint is
+  given it on standard input with the real file name so that its own config
+  still governs it — a moment after the typing stops, and again when the file
+  is written out. A project with no such tool is not told about it: the strip
+  stays away and nothing is underlined.
+- **One file at a time.** Opening another writes the current one out and gives
+  it the same pane, rather than splitting again for every file somebody
+  glances at — the pane is somewhere to read and correct the file an agent is
+  working on, beside the agent, not a desk to stack documents on. A layout
+  saved before this rule opens its first file and drops the other panes
+  instead of leaving them behind saying the file is unavailable.
+- **A file can be opened beside the terminal and edited there.** The Git panel's
+  hover strip has a pencil: it opens that file in a pane next to whatever is
+  focused, with the agent still visible and still working in the pane beside
+  it. Code is coloured from a real parse of the file rather than a list of
+  keywords, so a keyword inside a string stays a string and the forty-odd
+  languages tree-sitter ships with — Swift, Go, PHP, TypeScript, Python, SQL,
+  YAML, shell and the rest — are coloured without a word list per language
+  having to be kept. A file is rarely one language, so the markup inside a PHP
+  template, the script and the styles inside a page, and a fenced block inside
+  Markdown are each coloured as what they are; and a template whose own grammar
+  nobody ships — Vue, Svelte, Twig, ERB, Blade — is read as the language it is
+  mostly made of rather than left white, with the tags that language is
+  actually for painted over the top: `@section` and `{{ }}` in Blade,
+  `defineModel` and `v-if` in Vue, `{% %}` in Twig, `<% %>` in ERB. Saving is not something to remember: ⌘S writes the file,
+  and so does leaving the pane or closing it, because an agent reading the file
+  in the terminal beside it must not be reading a version that only exists on
+  screen. The merge panes are coloured by the same parse.
+- **⌘-click a name to go to where it comes from.** Hold ⌘ and the name under
+  the pointer is drawn as a link and the pointer becomes a hand; click it and
+  the file that declares it opens in a pane with the caret on the declaration. The file being read answers
+  first — a helper declared above the call needs nothing else — and the project
+  answers after it, from an index built by reading the project once with the
+  grammars' own tags queries, the same ones GitHub's code navigation is built
+  on. That covers C, C#, C++, Dart, Elixir, Go, Java, JavaScript, Lua, OCaml,
+  PHP, Python, Ruby, Rust, Swift and TypeScript, with nothing to install: no
+  language server, no `gopls`, no toolchain of somebody else's. A page and a
+  single-file component are read through to the script inside them, so a `.vue`
+  or a `.svelte` declares what its `<script>` declares rather than nothing at
+  all — and a script that says `lang="ts"` is read as TypeScript, without
+  which a type argument turned into a chain of comparisons and took the
+  declarations around it down with it. What counts as a declaration is wider
+  than a grammar's own table of contents: a `const` holding a store, a
+  composable or a number is one, so are a type alias, an enum, a class
+  constant and the names a destructured `const` binds — and so is everything a
+  module's own factory declares, which is what a Pinia store or a composable
+  is made of: a `const` inside a function that is an argument of a call, which
+  is neither the top level of a file nor a local of anybody's. A name nothing declares
+  but a file is named after — `<UserCard />`, and the import above it — opens
+  that file. Last of all it asks the dependencies, which are read in the
+  background once a file has been opened: a JavaScript package as the one
+  bundled declaration file its manifest points at, `node_modules/.pnpm` and
+  its links included, so a framework's compiler macro like `defineProps` is
+  found where it is actually declared. A Composer package is indexed by file
+  name rather than read — 96 MB of source is forty seconds of parsing for an
+  answer that is usually the file name, since PHP puts one class in a file and
+  names the file after it — so `Model` opens `Model.php` and a method of it
+  does not. Anything opened out of a dependency is read-only, because an edit
+  there is undone by the next install without a word. What is not read is what the project did not write: `node_modules`,
+  `vendor` and the rest are skipped, so a name that only a dependency declares
+  — a framework's compiler macro, say — is reported as not found rather than
+  jumped to. What it knows
+  is names rather than types, so a popular name comes back from several places
+  at once. A key written as a string — `t('common.seo.subtitle')` —
+  is looked for where a project keeps its translations rather than among its
+  names: the file is usually called after the key's first segment, so the path
+  is tried both with that segment and without it, and a file that merely
+  contains the words does not count as defining the key. When nothing
+  declares a name at all, the answer offers to search for it in every file
+  instead of stopping at "not found" — unless what was clicked was a word
+  inside a plain string, which is a value rather than a name: nothing declares
+  `'theme_preference'` anywhere, so it is not drawn as a link, nothing is said
+  about it, and nothing is gone to: a `const max` in another file has nothing
+  to do with the word `max` inside `value === 'max'`. A string with dots or slashes in it keeps
+  its link, because a key and a path do name something.
+  A name that is local to where it is written — a parameter, a `const`
+  inside a function — is not asked of the index at all: the grammars carry a
+  second query for scopes, and it answers from the twelve lines around the
+  click. The caret goes to the declaration and every use of it inside its own
+  scope is marked, until the caret leaves them. It goes to the likeliest of them rather than stopping to ask —
+  ranked by what the click itself says: the module or namespace the file has
+  already named at the top of itself, a declaration beside the caller over one
+  across the project, the project over what it depends on — and says quietly
+  that there were others, with one press to see them. ⌘[ goes back to where
+  the jump started, and the Editor menu carries both. The index is read in the
+  background when a file is opened, re-read for one file when it is saved, and
+  forgotten for the project when the file tree is re-read.
+- **⌘F finds in the file in front of you, ⇧⌘F in every file of the project.**
+  ⌘F puts a field at the top of the pane: every match is picked out in the
+  text, the one being looked at more strongly than the rest, Return walks
+  forward and ⇧Return back — both wrapping round — and Escape gives the file
+  back. ⇧⌘F opens a panel over the window with the caret already in it: the
+  lines come back grouped by file with the match picked out, from the
+  project's own files rather than from `node_modules` and `vendor`, and
+  Return or a click opens the file in a pane with the caret on the match.
+  Pressing ⌘F where no file is open opens that panel instead, since somebody
+  pressing find in a terminal is still looking for something. The panel is
+  laid out the way every find-in-files is: the query and its three switches —
+  match case, whole words, regular expression — then the matching lines with
+  the file each came from on the right, and the file itself below, coloured
+  and scrolled to the line — coloured by the same parse the editor uses, which
+  needed teaching that a text view whose contents were swapped has to be
+  coloured again: nothing announces that, since the notification a text view
+  sends is about editing. A line on its own rarely settles whether it is the
+  one that was meant, and opening each candidate to find out is what the panel
+  exists to save. The search is
+  Relay's own — a `rg` that may not be installed is a feature that works on
+  the machine it was written on — spread over the cores the way the symbol
+  index is, and run a quarter of a second after the typing stops.
+- **⌘P finds a file by its name.** The command palette ranks the project's
+  files alongside its commands and by the same reading of what was typed, so a
+  file name answers with the file and a verb answers with the command without
+  the palette having to be told which was meant. A name may be matched by its
+  parts — `gtpnl` finds `GitPanel.swift` — while a folder is matched only by
+  what is written out, because a path is long enough that letters scattered
+  through it match almost anything. The list of files is walked when the
+  palette first opens and re-read with the file tree.
+- **The file tree has the menu it should have.** Right-click a row: New File
+  and New Folder — the name is typed in the tree, where the file will be —
+  Copy Path and Copy Native Path, Reveal in Finder, Rename, and Delete. Right-
+  clicking the empty space below the rows offers the same for the project
+  itself. A rename takes the open buffer and its pane with it, saving before
+  the move rather than after — a save that lands after a rename writes the old
+  name back into existence — and Delete moves the file to the Trash, where it
+  can be got back, after asking.
+- **The Files tab is a file tree.** The last of the placeholder tabs is built:
+  the project's folders, read when they are opened rather than at launch, with
+  dotfiles listed — `.env` and `.gitignore` are what a tree is opened for — and
+  git's own database left out. A click opens the file in a pane; an open file
+  is marked, and one with unsaved work carries the same dot the pane header
+  does. Opening a file the other way round — from the Git panel, from a
+  ⌘-click, from a saved layout — opens the folders down to it and brings its
+  row into view, and the file being worked in is marked apart from the ones
+  merely open beside it: with several open the mark follows the caret, and it
+  stays on the last one when the caret moves to a terminal. Nothing watches the directory yet, so a file an agent has just written
+  appears when the tree is re-read.
 
 - **Projects and sessions can be dragged into the order you want them in.** Take
   hold of a tile in the rail or a session in the sidebar: it lifts, follows the
@@ -26,9 +249,24 @@ breaking change to stored data.
   visible. A pull sets uncommitted work aside and puts it back, which is what
   every other client does and what git will not do unasked — it refuses to
   pull at all while anything is uncommitted. A push also lists the commits it would send, and says when the
-  remote has no such branch yet. Force pushing lives here now rather than in
+  remote has no such branch yet — and when there is nothing to send it is
+  refused rather than offered, since a panel that has just said "nothing to
+  push" should not have a live Push button under it. Counted from
+  `remote..HEAD` rather than from how far ahead git says the branch is, because
+  after an amend those two disagree exactly where it matters; a branch the
+  remote has never heard of, and `--tags`, both still count as something to
+  send. Force pushing lives here now rather than in
   the menu, because it is worth seeing spelled out; it is always with a lease,
   so it refuses when the remote has moved since you last fetched.
+- **⌘⇧T brings back the session you just closed.** A shift on top of the
+  shortcut that opens a terminal, exactly as it is in a browser: press it again
+  and it goes further back, up to ten. What comes back is the command in its
+  directory under its name — the same definition of "the same session again"
+  that the restart button uses — and the list survives a relaunch, since Relay
+  is restarted often enough that forgetting it on quit would be forgetting it
+  altogether. It works on the project in front of you, and a service is not on
+  the list: those are started and stopped by the buttons beside them, and the
+  shortcut for reopening a terminal has no business starting a dev server.
 - **⌘⌫ clears the line in a terminal.** ⌘ never reaches the program running
   there, so the one deletion shortcut every other field on macOS answers did
   nothing at all.
@@ -40,17 +278,46 @@ breaking change to stored data.
 - **Conflicts are resolved in Relay.** When a pull stops on a conflict the panel
   that answers it opens by itself: the conflicted files, what each side did to
   each of them, and three ways out — take ours, take theirs, or open the file in
-  a merge of three panes. The panes are what each side wrote and, between them,
-  what is going to be committed: an editor, because the answer to a conflict is
-  often a line from each rather than either as written. Taking a side is a
-  shortcut for an edit; the conflicting passages are tinted, the three panes
-  scroll together, and Apply is refused until nothing is left in dispute. The
-  footer then finishes the rebase, merge, cherry-pick or revert — or aborts it.
-  The two sides keep git's own names, `HEAD` and the commit being replayed,
-  because which of them is "mine" reverses between a merge and a rebase.
+  a merge of three panes.
+
+  The middle pane is the file, not git's hand-over notation. There are no
+  `<<<<<<<` markers in it at any point: a passage nobody has answered stands
+  there as what both sides had before either of them touched it, and what is
+  still in dispute is held beside the text rather than spelled out in it. Each
+  passage is answered where it stands — the arrow in the gutter beside it takes
+  that side, the cross refuses both and leaves the ancestor — and once it has an
+  answer it stops being marked at all: no tint, no arrows, because the mark is a
+  question rather than a record of one. Everything only one side changed is
+  already applied when the panel opens, because git's own merge did it.
+
+  It is still an editor, because the answer to a conflict is often a line from
+  each rather than either as written: taking a side is a shortcut for an edit,
+  the passages are followed through whatever is typed around them, and Apply is
+  refused until every one of them has an answer. The three panes are set to one
+  line height and a passage shorter in one of them than the others has the
+  difference left as empty room, so line 40 is line 40 in all three. The sides
+  are named by the operation — "Already rebased" against "Being rebased:
+  85a186c" — since which of them is "mine" reverses between a merge and a
+  rebase, and `HEAD` on its own says nothing at all. The footer then finishes
+  the rebase, merge, cherry-pick or revert — or aborts it.
 
 ### Changed
 
+- **A conflicted file in the Git panel carries no badge.** The word "conflict"
+  sat in a row whose width belongs to the file's name, and squeezed into what
+  was left of a narrow panel it broke across lines a letter at a time. It is
+  gone: anything conflicted opens the panel that resolves it, which says so
+  louder than a word in a row ever did. Nothing else in that row gives way
+  either — the name truncates instead, since a shortened name still reads and a
+  wrapped count does not.
+- **The cross on a service's pane closes the view, not the service.** It ended
+  the process, so the gesture that everywhere else on macOS means "I am done
+  looking at this" killed the dev server being looked at. Now the pane goes
+  away and the service keeps running, still in the sidebar and one click from
+  being looked at again; ⌘W does the same thing, being the same gesture by
+  keyboard. Stopping a service is the stop button beside it, which is named
+  after what it does. Nothing else changes: a shell's cross still closes the
+  shell.
 - **A tab in the right-hand panel no longer closes it.** Clicking the tab that
   was already open took the panel away, which made one target mean two things —
   and the meaning nobody intended is the one that happened whenever the panel

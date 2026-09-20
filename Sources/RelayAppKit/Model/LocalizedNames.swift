@@ -18,6 +18,16 @@ extension RelayCommand {
 }
 
 @MainActor
+extension FileActions.Failure {
+    var localizedMessage: String {
+        switch self {
+        case .invalidName: relayLocalized("That is not a file name.")
+        case let .alreadyExists(name): String(format: relayLocalized("%@ already exists."), name)
+        }
+    }
+}
+
+@MainActor
 extension ShortcutCategory {
     var localizedTitle: String { relayLocalized(title) }
 }
@@ -25,7 +35,6 @@ extension ShortcutCategory {
 @MainActor
 extension RightSidebarTab {
     var localizedTitle: String { relayLocalized(title) }
-    var localizedComingSoon: String { relayLocalized(comingSoonDescription) }
 }
 
 @MainActor

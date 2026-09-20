@@ -319,6 +319,10 @@ public struct RelayTextField: View {
     private let systemImage: String?
     @Binding private var text: String
     private let onSubmit: () -> Void
+    /// Takes the caret when it appears, for a panel whose whole purpose is
+    /// the typing: a search that has to be clicked into first is a search
+    /// that was opened by a shortcut and then abandoned.
+    private let autofocus: Bool
 
     @FocusState private var isFocused: Bool
 
@@ -326,11 +330,13 @@ public struct RelayTextField: View {
         _ placeholder: String,
         text: Binding<String>,
         systemImage: String? = nil,
+        autofocus: Bool = false,
         onSubmit: @escaping () -> Void = {}
     ) {
         self.placeholder = placeholder
         _text = text
         self.systemImage = systemImage
+        self.autofocus = autofocus
         self.onSubmit = onSubmit
     }
 
@@ -359,6 +365,7 @@ public struct RelayTextField: View {
         // The field is the plate, not the run of glyphs inside it: clicking the
         // padding puts the caret in, so the padding has to say so too.
         .relayPointer(.text)
+        .task { if autofocus { isFocused = true } }
     }
 }
 

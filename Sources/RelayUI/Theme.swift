@@ -35,6 +35,22 @@ public enum Theme {
         public static let statusOffline = Color(hex: 0x394044)
     }
 
+    /// What code looks like. One palette for every pane that draws a file —
+    /// the merge panes, the editor, a diff — so the same word is the same
+    /// colour wherever it appears.
+    public enum Code {
+        public static let plain = Palette.textPrimary
+        public static let keyword = Color(hex: 0xC678_DD)
+        public static let type = Color(hex: 0xE5C0_7B)
+        public static let function = Color(hex: 0x61AF_EF)
+        public static let string = Color(hex: 0x98C3_79)
+        public static let number = Color(hex: 0xD19A_66)
+        public static let comment = Color(hex: 0x5C67_73)
+        public static let property = Color(hex: 0x56B6_C2)
+        public static let constant = Color(hex: 0xD19A_66)
+        public static let punctuation = Palette.textSecondary
+    }
+
     public enum Radius {
         public static let small: CGFloat = 6
         public static let medium: CGFloat = 10

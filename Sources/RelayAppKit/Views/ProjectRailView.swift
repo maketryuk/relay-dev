@@ -67,6 +67,7 @@ struct ProjectRailView: View {
 
     private func projectTile(_ project: Project) -> some View {
         let isSelected = model.selectedProjectID == project.id
+        let status = model.aggregatedStatus(for: project.id)
         return ZStack(alignment: .leading) {
             // Selection pill, the one piece of chrome that earns its colour.
             Capsule()
@@ -78,7 +79,7 @@ struct ProjectRailView: View {
             ProjectIcon(
                 initials: ProjectAppearance.initials(for: project.name),
                 tint: ProjectAppearance.tint(for: project.rootPath),
-                status: model.aggregatedStatus(for: project.id),
+                status: status,
                 isSelected: isSelected,
                 artwork: model.projectIcons[project.id]
             )
@@ -86,7 +87,11 @@ struct ProjectRailView: View {
             .onTapGesture { model.selectProject(project.id) }
             .relayTooltip(
                 project.name,
-                shortcut: model.aggregatedStatus(for: project.id).displayName,
+                // Nothing where nothing is happening, and in the window's own
+                // language where something is: `displayName` is the English
+                // the tables are keyed by, so it read "Working" in a Russian
+                // window.
+                shortcut: status.isQuiet ? nil : status.localizedName,
                 edge: .trailing
             )
             .contextMenu { projectMenu(project) }

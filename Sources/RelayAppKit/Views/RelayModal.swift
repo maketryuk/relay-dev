@@ -21,6 +21,10 @@ enum RelayModal: Identifiable, Hashable {
     case conflicts(ProjectID)
     /// One file's two revisions, and the one being written.
     case merge(projectID: ProjectID, path: String)
+    /// Which of several declarations of one name was meant.
+    case definitions(projectID: ProjectID, name: String)
+    /// Everywhere a word appears in the project's files.
+    case search(ProjectID)
     case addProject
     case projectSettings(ProjectID)
     /// A nil service is a new one.
@@ -43,6 +47,8 @@ enum RelayModal: Identifiable, Hashable {
         case let .gitTransfer(projectID, direction): "git-\(direction.rawValue):\(projectID.rawValue)"
         case let .conflicts(projectID): "conflicts:\(projectID.rawValue)"
         case let .merge(projectID, path): "merge:\(projectID.rawValue):\(path)"
+        case let .definitions(projectID, name): "definitions:\(projectID.rawValue):\(name)"
+        case let .search(projectID): "search:\(projectID.rawValue)"
         case .settings: "settings"
         case .addProject: "add-project"
         case let .projectSettings(projectID): "project-settings:\(projectID.rawValue)"
@@ -63,6 +69,8 @@ enum RelayModal: Identifiable, Hashable {
             relayLocalized(direction == .pull ? "Pull" : "Push")
         case .conflicts: relayLocalized("Resolve conflicts")
         case .merge: relayLocalized("Merge")
+        case let .definitions(_, name): String(format: relayLocalized("Definitions of %@"), name)
+        case .search: relayLocalized("Find in Files")
         case .settings: relayLocalized("Settings")
         case .addProject: relayLocalized("Add Project")
         case .projectSettings: relayLocalized("Project Settings")
@@ -87,6 +95,8 @@ enum RelayModal: Identifiable, Hashable {
         // Three revisions side by side need the width, and a file needs the
         // height: this is the one panel that wants the whole window.
         case .merge: CGSize(width: 1_400, height: 900)
+        case .definitions: CGSize(width: 620, height: 420)
+        case .search: CGSize(width: 980, height: 720)
         case .settings: CGSize(width: 760, height: 580)
         case .addProject: CGSize(width: 480, height: 460)
         case .projectSettings: CGSize(width: 520, height: 600)
@@ -162,6 +172,14 @@ struct ModalHost: View {
             if let project = model.project(projectID) {
                 GitMergePane(project: project, path: path)
             }
+        case let .definitions(projectID, _):
+            if let project = model.project(projectID) {
+                DefinitionsPane(project: project)
+            }
+        case let .search(projectID):
+            if let project = model.project(projectID) {
+                SearchPane(project: project)
+            }
         case .settings: SettingsView()
         case .addProject: AddProjectSheet()
         case let .projectSettings(projectID):
@@ -194,7 +212,7 @@ struct ModalHost: View {
     /// surface; the rest are just a body.
     private var hasOwnSurface: Bool {
         switch modal {
-        case .ports, .sshHosts, .settings, .branches: false
+        case .ports, .sshHosts, .settings, .branches, .definitions, .search: false
         case .addProject, .projectSettings, .serviceEditor, .presetEditor, .sshHostEditor, .sshKeyUnlock,
              .gitTransfer, .conflicts, .merge:
             true

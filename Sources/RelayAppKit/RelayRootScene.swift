@@ -98,14 +98,42 @@ struct RelayCommands: Commands {
         }
 
         // `⌘W` closes the session, so window closing moves aside rather than
-        // fighting it.
-        CommandGroup(replacing: .saveItem) {}
+        // fighting it. Saving belongs here, where every Mac application puts
+        // it — even though the editor also writes the file when the pane loses
+        // focus and when it closes, because a person who presses ⌘S and sees
+        // nothing happen does not conclude that it was already saved.
+        CommandGroup(replacing: .saveItem) {
+            Button(relayLocalized("Save")) { model.saveFocusedFile() }
+                .keyboardShortcut("s", modifiers: .command)
+        }
+
+        CommandMenu("Editor") {
+            Button(RelayCommand.findInFile.localizedTitle) { model.findInFocusedFile() }
+                .relayShortcut(model.binding(for: .findInFile))
+
+            Button(RelayCommand.searchProject.localizedTitle) {
+                if let projectID = model.selectedProjectID { model.presentModal(.search(projectID)) }
+            }
+            .relayShortcut(model.binding(for: .searchProject))
+
+            Divider()
+
+            Button(RelayCommand.goToDefinition.localizedTitle) { model.goToDefinitionFromCaret() }
+                .relayShortcut(model.binding(for: .goToDefinition))
+                .disabled(model.editors.focused == nil)
+            Button(RelayCommand.goBack.localizedTitle) { model.goBackToOrigin() }
+                .relayShortcut(model.binding(for: .goBack))
+                .disabled(!model.canGoBackToOrigin)
+        }
 
         CommandMenu("Session") {
-            Button(RelayCommand.closeSession.localizedTitle) {
-                if let id = model.selectedSessionID { model.closeSession(id) }
+            Button(RelayCommand.closeSession.localizedTitle) { model.closeFocusedPane() }
+                .relayShortcut(model.binding(for: .closeSession))
+
+            Button(RelayCommand.reopenSession.localizedTitle) {
+                model.reopenLastClosedSession()
             }
-            .relayShortcut(model.binding(for: .closeSession))
+            .relayShortcut(model.binding(for: .reopenSession))
 
             Button(RelayCommand.renameSession.localizedTitle) { model.beginRenamingSelectedSession() }
                 .relayShortcut(model.binding(for: .renameSession))
@@ -213,17 +241,17 @@ struct RelayCommands: Commands {
 
             Divider()
 
-            Button(RelayCommand.increaseTerminalFontSize.localizedTitle) { model.stepTerminalFontSize(by: 1) }
+            Button(RelayCommand.increaseTerminalFontSize.localizedTitle) { model.stepFontSize(by: 1) }
                 .relayShortcut(model.binding(for: .increaseTerminalFontSize))
             // `⌘+` is `⌘=` with the Shift held, and which of the two a person
             // presses is not something they think about. The menu shows the one
             // it is called by; this one is here so the other also arrives.
-            Button(relayLocalized("Increase Font Size (⌘=)")) { model.stepTerminalFontSize(by: 1) }
+            Button(relayLocalized("Increase Font Size (⌘=)")) { model.stepFontSize(by: 1) }
                 .keyboardShortcut("=", modifiers: .command)
                 .hidden()
-            Button(RelayCommand.decreaseTerminalFontSize.localizedTitle) { model.stepTerminalFontSize(by: -1) }
+            Button(RelayCommand.decreaseTerminalFontSize.localizedTitle) { model.stepFontSize(by: -1) }
                 .relayShortcut(model.binding(for: .decreaseTerminalFontSize))
-            Button(RelayCommand.resetTerminalFontSize.localizedTitle) { model.resetTerminalFontSize() }
+            Button(RelayCommand.resetTerminalFontSize.localizedTitle) { model.resetFontSize() }
                 .relayShortcut(model.binding(for: .resetTerminalFontSize))
         }
     }

@@ -153,6 +153,26 @@ struct GitTransfer: Equatable, Sendable {
         !remote.isEmpty && !branch.isEmpty && !localBranch.isEmpty && !isDetached
     }
 
+    /// Whether running this would send anything at all.
+    ///
+    /// Answered from the count of `remote..HEAD` rather than from how far
+    /// ahead git says the branch is, because the two disagree exactly where it
+    /// matters: after an amend or a rebase the counts can match while the
+    /// commits are different objects, and only the log knows.
+    ///
+    /// `outgoing` is nil while that log is still being read, and then the
+    /// answer is yes — a button that flickers from live to dead a moment after
+    /// the panel opens is worse than a push that turns out to have been a
+    /// no-op.
+    func sends(outgoing: Int?, isNewBranch: Bool) -> Bool {
+        guard direction == .push else { return true }
+        // A branch the remote has never heard of is created by the push, and
+        // `--tags` sends tags whether or not any commits go with them.
+        if isNewBranch || options.contains(.tags) { return true }
+        guard let outgoing else { return true }
+        return outgoing > 0
+    }
+
     /// `git status` names a detached head `(detached)`, and a branch name
     /// cannot contain a bracket.
     var isDetached: Bool { localBranch.hasPrefix("(") }

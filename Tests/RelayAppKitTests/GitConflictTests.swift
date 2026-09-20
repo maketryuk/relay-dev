@@ -19,7 +19,7 @@ struct GitConflictTests {
     func parsesTwoWay() {
         let file = GitConflictFile.parse(twoWay)
         #expect(file.hunks.count == 1)
-        let hunk = try? #require(file.hunks.first)
+        let hunk = file.hunks.first
         #expect(hunk?.ours == ["ours line"])
         #expect(hunk?.theirs == ["theirs line"])
         // git's own labels, not "yours" and "theirs": which side is which
@@ -43,100 +43,12 @@ struct GitConflictTests {
         #expect(file.hunks.first?.base == ["original"])
     }
 
-    @Test("Answering a conflict leaves the rest of the file alone")
-    func resolvesOneSide() {
-        let file = GitConflictFile.parse(twoWay)
-        let ours = file.resolved(with: [0: .ours])
-        #expect(ours == """
-        context above
-        ours line
-        context below
-        """)
-        #expect(file.resolved(with: [0: .theirs]) == """
-        context above
-        theirs line
-        context below
-        """)
-        #expect(file.resolved(with: [0: .both]) == """
-        context above
-        ours line
-        theirs line
-        context below
-        """)
-    }
-
-    @Test("A conflict nobody has answered keeps its markers")
-    func unansweredConflictsSurvive() {
-        // Half a resolution must stay something git refuses to commit, rather
-        // than quietly becoming one side.
-        let file = GitConflictFile.parse(twoWay)
-        #expect(file.resolved(with: [:]) == twoWay)
-    }
-
-    @Test("Several conflicts are answered one at a time")
-    func severalHunks() {
-        let file = GitConflictFile.parse("""
-        <<<<<<< HEAD
-        a-ours
-        =======
-        a-theirs
-        >>>>>>> other
-        middle
-        <<<<<<< HEAD
-        b-ours
-        =======
-        b-theirs
-        >>>>>>> other
-        """)
-        #expect(file.hunks.count == 2)
-        #expect(file.resolved(with: [0: .theirs, 1: .ours]) == """
-        a-theirs
-        middle
-        b-ours
-        """)
-    }
-
-    @Test("Each side's whole file can be reconstructed")
-    func wholeVersions() {
-        // What a three-pane merge needs: the two revisions in full, not the
-        // fragments between the markers.
-        let file = GitConflictFile.parse(twoWay)
-        #expect(file.version(.ours) == """
-        context above
-        ours line
-        context below
-        """)
-        #expect(file.version(.theirs) == """
-        context above
-        theirs line
-        context below
-        """)
-    }
-
-    @Test("The text and the map of it describe the same file")
-    func lineMapMatchesTheText() {
-        let file = GitConflictFile.parse(twoWay)
-        let written = file.written(with: [:])
-        let lines = written.text.components(separatedBy: "\n")
-
-        // Line 0 is context, 1 is the marker, 2 is ours, 3 the separator,
-        // 4 theirs, 5 the closing marker, 6 context.
-        #expect(written.map.ours == [2])
-        #expect(written.map.theirs == [4])
-        #expect(written.map.markers == [1, 3, 5])
-        #expect(lines[2] == "ours line")
-        #expect(lines[4] == "theirs line")
-        #expect(lines[1].hasPrefix("<<<<<<<"))
-
-        // Answered, there is nothing left to point at.
-        #expect(file.written(with: [0: .ours]).map.isEmpty)
-    }
-
     @Test("A file with no markers is not a conflict")
     func plainFile() {
         let file = GitConflictFile.parse("one\ntwo\n")
         #expect(!file.hasConflicts)
-        #expect(file.resolved(with: [:]) == "one\ntwo\n")
+        // And comes through the panel untouched.
+        #expect(MergeDocument.opened(file).text == "one\ntwo\n")
     }
 
     @Test("An unterminated block is left as the text it is")
@@ -147,7 +59,7 @@ struct GitConflictTests {
         let text = "<<<<<<< HEAD\nours\n"
         let file = GitConflictFile.parse(text)
         #expect(!file.hasConflicts)
-        #expect(file.resolved(with: [:]) == text)
+        #expect(MergeDocument.opened(file).text == text)
     }
 }
 
@@ -188,5 +100,32 @@ struct GitMergeStateTests {
             relativeTo: "/repo/spike"
         ) == "/repo/spike/../.git/worktrees/spike")
         #expect(GitMergeStateReader.pointedDirectory(inGitFile: "nonsense", relativeTo: "/repo") == nil)
+    }
+}
+
+@Suite("Naming the two sides")
+@MainActor
+struct GitMergeNamingTests {
+    @Test("A rebase is not described as yours and theirs")
+    func rebaseSaysWhatItIs() {
+        // Rebasing replays your commits onto someone else's, so git's `ours`
+        // is the upstream and git's `theirs` is your own work. A header that
+        // said "mine" would be wrong here, which is the common case.
+        #expect(GitMergeNaming.ours(operation: .rebase, label: "HEAD") == "Already rebased")
+        #expect(GitMergeNaming.theirs(operation: .rebase, label: "85a186c (my edit)")
+            == "Being rebased: 85a186c (my edit)")
+    }
+
+    @Test("A merge names what is coming in")
+    func mergeNamesTheIncoming() {
+        #expect(GitMergeNaming.ours(operation: .merge, label: "HEAD") == "Current branch")
+        #expect(GitMergeNaming.theirs(operation: .merge, label: "origin/master") == "Merging in: origin/master")
+    }
+
+    @Test("With no operation and no label there is still something to show")
+    func fallsBackToASide() {
+        #expect(GitMergeNaming.ours(operation: nil, label: "") == "ours")
+        #expect(GitMergeNaming.theirs(operation: nil, label: "  ") == "theirs")
+        #expect(GitMergeNaming.ours(operation: nil, label: "HEAD") == "HEAD")
     }
 }

@@ -27,6 +27,23 @@ public enum RuntimeStatus: String, Codable, Sendable, CaseIterable {
         }
     }
 
+    /// Whether this is nothing worth marking on a project.
+    ///
+    /// A project is marked when something is happening in it. Idle is not
+    /// something happening, and neither is a project with no sessions at all:
+    /// a rail of grey dots says only that the projects exist, which their tiles
+    /// already say, and the one dot that means "this one wants you" is lost
+    /// among them.
+    ///
+    /// Switched over every case rather than defaulted, so a status added later
+    /// has to answer this.
+    public var isQuiet: Bool {
+        switch self {
+        case .idle, .offline: true
+        case .waiting, .error, .working, .starting, .finished: false
+        }
+    }
+
     public var displayName: String {
         switch self {
         case .waiting: "Waiting for you"

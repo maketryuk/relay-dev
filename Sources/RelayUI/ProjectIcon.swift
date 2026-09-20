@@ -3,7 +3,9 @@ import RelayProtocol
 import SwiftUI
 
 /// Discord-style project tile: a squircle that morphs toward a rounded square
-/// when selected, with the aggregated runtime status pinned to its corner.
+/// when selected, with the aggregated runtime status pinned to its corner —
+/// when there is one worth pinning. A project where nothing is happening
+/// carries no mark at all.
 public struct ProjectIcon: View {
     private let initials: String
     private let tint: Color
@@ -48,7 +50,7 @@ public struct ProjectIcon: View {
                         .strokeBorder(Color.white.opacity(borderOpacity), lineWidth: 1)
                 )
 
-            if status != .offline {
+            if !status.isQuiet {
                 // Inside the tile, not hanging off it. Drawing past your own
                 // frame works only for as long as nothing above you clips, and
                 // the tile carries a context menu, which does — the dot lost

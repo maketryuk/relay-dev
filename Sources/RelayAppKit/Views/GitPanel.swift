@@ -523,6 +523,8 @@ private struct FileCard: View {
                         .relayTooltip(relayLocalized("Copy path"))
                     IconButton(systemImage: "arrow.uturn.backward", help: "", size: Theme.Metrics.action, action: onDiscard)
                         .relayTooltip(relayLocalized("Discard"))
+                    IconButton(systemImage: "square.and.pencil", help: "", size: Theme.Metrics.action) { edit() }
+                        .relayTooltip(relayLocalized("Edit here"))
                     IconButton(systemImage: "arrow.up.forward.square", help: "", size: Theme.Metrics.action) { open() }
                         .relayTooltip(relayLocalized("Open"))
                 }
@@ -551,12 +553,12 @@ private struct FileCard: View {
                     .font(Theme.Typography.caption)
                     .foregroundStyle(Theme.Palette.textTertiary)
             }
-            if change.isConflicted {
-                Text(relayLocalized("conflict"))
-                    .font(Theme.Typography.caption)
-                    .foregroundStyle(Theme.Palette.statusWaiting)
-            }
         }
+        // None of these give way: the name is what truncates, since a
+        // truncated name still reads and a wrapped count does not — which is
+        // what a badge here used to do, a letter at a time.
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     @ViewBuilder
@@ -593,6 +595,14 @@ private struct FileCard: View {
 
     private func open() {
         model.openFileInEditor(change.path, in: project)
+    }
+
+    /// Opens the file in a pane rather than in another application: the point
+    /// of looking at a diff is usually to change one line of it, and a round
+    /// trip through another editor is a long way to go for that.
+    private func edit() {
+        let url = URL(fileURLWithPath: project.rootPath).appendingPathComponent(change.path)
+        model.openFile(at: url.path, in: project.id)
     }
 }
 

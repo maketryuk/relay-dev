@@ -203,4 +203,71 @@ struct GitTransferReaderTests {
         #expect(GitTransferReader.parse(log: "a1b2c3d\t").first?.subject == "")
         #expect(GitTransferReader.parse(log: "\tsubject").isEmpty)
     }
+
+    @Test("A push with nothing to send is not offered")
+    func nothingToPush() {
+        let push = GitTransfer(
+            direction: .push,
+            remote: "origin",
+            branch: "master",
+            localBranch: "master",
+            options: []
+        )
+        #expect(!push.sends(outgoing: 0, isNewBranch: false))
+        #expect(push.sends(outgoing: 3, isNewBranch: false))
+    }
+
+    @Test("A branch the remote has never heard of is always worth pushing")
+    func newBranchIsWorthPushing() {
+        // `remote..HEAD` counts nothing when the remote ref does not exist,
+        // which is the one case where there is the most to send.
+        let push = GitTransfer(
+            direction: .push,
+            remote: "origin",
+            branch: "feature",
+            localBranch: "feature",
+            options: []
+        )
+        #expect(push.sends(outgoing: 0, isNewBranch: true))
+    }
+
+    @Test("Tags go out whether or not any commits go with them")
+    func tagsAreSomethingToSend() {
+        let push = GitTransfer(
+            direction: .push,
+            remote: "origin",
+            branch: "master",
+            localBranch: "master",
+            options: [.tags]
+        )
+        #expect(push.sends(outgoing: 0, isNewBranch: false))
+    }
+
+    @Test("While the log is still being read the push stays live")
+    func unknownCountsAsSomething() {
+        // A button that flickers from live to dead a moment after the panel
+        // opens is worse than a push that turns out to have been a no-op.
+        let push = GitTransfer(
+            direction: .push,
+            remote: "origin",
+            branch: "master",
+            localBranch: "master",
+            options: []
+        )
+        #expect(push.sends(outgoing: nil, isNewBranch: false))
+    }
+
+    @Test("A pull is never refused for having nothing to bring")
+    func pullIsUnaffected() {
+        // What a pull would fetch is not known until it has fetched, so the
+        // question does not arise on that side.
+        let pull = GitTransfer(
+            direction: .pull,
+            remote: "origin",
+            branch: "master",
+            localBranch: "master",
+            options: [.rebase]
+        )
+        #expect(pull.sends(outgoing: 0, isNewBranch: false))
+    }
 }

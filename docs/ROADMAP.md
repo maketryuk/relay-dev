@@ -58,6 +58,37 @@ workspace is usually a git worktree.
 
 ## Then
 
+- **The rest of the editor.** A file opens from the Git panel, the file tree,
+  a name in the palette and a search; ⌘-click goes to where a name is declared.
+  Still to do: watching the directory so the tree and the open buffers notice
+  what an agent wrote, replacing what a search found, and re-parsing only what
+  changed rather than the whole file after a pause.
+- **Method-level jumps into a Composer dependency.** A `vendor` is indexed by
+  file name, which answers for classes and not for what is in them: 17,500
+  files and 96 MB of PHP is forty seconds of parsing, and it is spent before
+  anybody has asked for it. Reading one package on demand — the one whose
+  class was just jumped to — would cost a fraction of that and answer the rest.
+- **The same warm service for the other linters.** ESLint is kept warm and
+  answers in milliseconds; `php -l`, `gofmt` and the rest still pay for a
+  process each time. They are cheaper processes — a tenth of node's — so it
+  has not mattered yet, and PHPStan is where it will.
+- **The rest of the checkers.** ESLint, oxlint, `php -l`, SwiftLint and
+  `swiftc` are wired; Biome, stylelint, Ruff, RuboCop and `golangci-lint` are
+  the same shape of work — a command and a reader for what it prints — and
+  each should be added against its real output rather than its documentation.
+  PHPStan is worth having and was not wired: it needs the project's own PHP,
+  and a machine whose `php` is older than the project's `composer.json` asks
+  for cannot run it at all, which is a thing to say out loud rather than fail
+  quietly on.
+- **Everywhere a name is used, not only where it comes from.** The tags queries
+  the jump is built on capture references as well as declarations, so the other
+  half — "show me the callers" — is the same index read the other way round.
+- **Compiling a grammar query off the main thread.** Colouring a file compiles
+  its highlight query the first time that language is opened, and for Swift
+  that measures at a second — on the main thread, where it is a second of a
+  window that does not move. Every other grammar is a hundredth of that, which
+  is why it went unnoticed. The symbol index already compiles its own queries
+  in the background and shares them; the colouring should join it.
 - **Richer status adapters.** Per-CLI adapters for Claude and Codex that read
   their specific UI rather than generic prompt patterns.
 - **Session and project templates.** "New project from template" that creates

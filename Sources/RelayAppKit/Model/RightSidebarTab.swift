@@ -34,30 +34,13 @@ enum RightSidebarTab: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Placeholders for work that is planned but not built. They are shown
-    /// rather than hidden so the shape of the app is honest about where it is
-    /// going, and disabled rather than half-working.
-    var isAvailable: Bool {
-        switch self {
-        case .services, .docker, .history, .git, .todo: true
-        case .files: false
-        }
-    }
-
     /// Whether the pane lays out its own full height. The ones that do keep a
     /// list scrolling against a box pinned to the bottom, which the shared
     /// scroll view would push somewhere below fifty rows.
     var fillsPanel: Bool {
         switch self {
-        case .git, .todo: true
+        case .git, .todo, .files: true
         default: false
-        }
-    }
-
-    var comingSoonDescription: String {
-        switch self {
-        case .files: "A project file tree and an editor with linting will live here."
-        default: ""
         }
     }
 }

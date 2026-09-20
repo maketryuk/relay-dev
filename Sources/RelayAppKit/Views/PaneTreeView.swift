@@ -16,6 +16,9 @@ struct PaneTreeView: View {
         switch node {
         case let .session(sessionID):
             leaf(sessionID)
+        case let .file(path):
+            FilePane(path: path, projectID: projectID)
+                .overlay(alignment: .top) { fileFocusIndicator(for: path) }
         case let .split(split):
             SplitPaneView(split: split, projectID: projectID)
         }
@@ -40,12 +43,28 @@ struct PaneTreeView: View {
         }
     }
 
+    /// The same strip for a file pane. Focus here is not the selected session:
+    /// a file can be the thing being typed into while a terminal is still the
+    /// session the sidebar shows.
+    @ViewBuilder
+    private func fileFocusIndicator(for path: String) -> some View {
+        let layout = model.paneLayout(for: projectID)
+        let paneCount = layout.map { PaneLayout.items(in: $0).count } ?? 1
+
+        if paneCount > 1 {
+            Rectangle()
+                .fill(model.editors.focused == path ? Theme.Palette.accent : .clear)
+                .frame(height: 2)
+                .animation(.easeOut(duration: 0.12), value: model.editors.focused)
+        }
+    }
+
     /// Which pane the keyboard is talking to. Only drawn when there is more
     /// than one, because a lone pane is unambiguous.
     @ViewBuilder
     private func focusIndicator(for sessionID: SessionID) -> some View {
         let layout = model.paneLayout(for: projectID)
-        let paneCount = layout.map { PaneLayout.sessions(in: $0).count } ?? 1
+        let paneCount = layout.map { PaneLayout.items(in: $0).count } ?? 1
 
         if paneCount > 1 {
             Rectangle()

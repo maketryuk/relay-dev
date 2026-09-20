@@ -335,7 +335,15 @@ struct GitTransferPane: View {
 
     private var canRun: Bool {
         guard !isRunning, let transfer else { return false }
-        return transfer.isRunnable
+        guard transfer.isRunnable else { return false }
+        // Nothing to send, so nothing to do. What that leaves out is rewinding
+        // the remote to something older by force, which is a deliberate and
+        // destructive act that has no business being one click away from a
+        // panel that opened saying there was nothing to push.
+        return transfer.sends(
+            outgoing: model.outgoingCommits(in: project.id, against: transfer.remoteRef)?.count,
+            isNewBranch: model.remoteBranchIsNew(in: project.id, ref: transfer.remoteRef)
+        )
     }
 
     private func run() {

@@ -108,6 +108,10 @@ struct WorkspaceState: Codable {
     var customPresets: [SessionPreset]
     var enabledPresetIDs: [String]?
     var sessionHistory: [SessionHistoryEntry]
+    /// Sessions that were closed, newest first, for ⌘⇧T. Kept apart from the
+    /// history: that is a record of what agents did, this is an undo.
+    /// Nil means a workspace written before the shortcut existed.
+    var closedSessions: [SessionSpec]?
     /// The order sessions are listed in, as dragged. Session identifiers rather
     /// than anything about them: the daemon owns the sessions, and this only
     /// says where each one sits.
@@ -130,6 +134,8 @@ struct WorkspaceState: Codable {
     var claudeContextWindow: ContextWindowPreference
     /// How large the terminals are drawn, in points.
     var terminalFontSize: Double
+    /// And the files, which are read at a different distance.
+    var editorFontSize: Double
     /// Whether terminals are drawn on the GPU.
     var terminalUsesGPURendering: Bool
     /// Review notes that have not been handed to an agent yet. Kept because
@@ -154,6 +160,7 @@ struct WorkspaceState: Codable {
         customPresets: [SessionPreset] = [],
         enabledPresetIDs: [String]? = nil,
         sessionHistory: [SessionHistoryEntry] = [],
+        closedSessions: [SessionSpec]? = nil,
         sessionOrder: [String] = [],
         isRightSidebarVisible: Bool = true,
         isLeftSidebarVisible: Bool = true,
@@ -164,6 +171,7 @@ struct WorkspaceState: Codable {
         usageBarDetail: UsageDetail = .compact,
         claudeContextWindow: ContextWindowPreference = .automatic,
         terminalFontSize: Double = 12.5,
+        editorFontSize: Double = 12,
         terminalUsesGPURendering: Bool = true,
         reviewComments: [ReviewComment] = [],
         paneLayouts: [String: PaneNode] = [:]
@@ -181,6 +189,7 @@ struct WorkspaceState: Codable {
         self.customPresets = customPresets
         self.enabledPresetIDs = enabledPresetIDs
         self.sessionHistory = sessionHistory
+        self.closedSessions = closedSessions
         self.sessionOrder = sessionOrder
         self.isRightSidebarVisible = isRightSidebarVisible
         self.isLeftSidebarVisible = isLeftSidebarVisible
@@ -191,6 +200,7 @@ struct WorkspaceState: Codable {
         self.usageBarDetail = usageBarDetail
         self.claudeContextWindow = claudeContextWindow
         self.terminalFontSize = terminalFontSize
+        self.editorFontSize = editorFontSize
         self.terminalUsesGPURendering = terminalUsesGPURendering
         self.reviewComments = reviewComments
         self.paneLayouts = paneLayouts
@@ -213,6 +223,7 @@ struct WorkspaceState: Codable {
         customPresets = try container.decodeIfPresent([SessionPreset].self, forKey: .customPresets) ?? []
         enabledPresetIDs = try container.decodeIfPresent([String].self, forKey: .enabledPresetIDs)
         sessionHistory = try container.decodeIfPresent([SessionHistoryEntry].self, forKey: .sessionHistory) ?? []
+        closedSessions = try container.decodeIfPresent([SessionSpec].self, forKey: .closedSessions)
         sessionOrder = try container.decodeIfPresent([String].self, forKey: .sessionOrder) ?? []
         isRightSidebarVisible = try container.decodeIfPresent(Bool.self, forKey: .isRightSidebarVisible) ?? true
         isLeftSidebarVisible = try container.decodeIfPresent(Bool.self, forKey: .isLeftSidebarVisible) ?? true
@@ -224,6 +235,7 @@ struct WorkspaceState: Codable {
         claudeContextWindow = try container
             .decodeIfPresent(ContextWindowPreference.self, forKey: .claudeContextWindow) ?? .automatic
         terminalFontSize = try container.decodeIfPresent(Double.self, forKey: .terminalFontSize) ?? 12.5
+        editorFontSize = try container.decodeIfPresent(Double.self, forKey: .editorFontSize) ?? 12
         terminalUsesGPURendering = try container
             .decodeIfPresent(Bool.self, forKey: .terminalUsesGPURendering) ?? true
         reviewComments = try container.decodeIfPresent([ReviewComment].self, forKey: .reviewComments) ?? []

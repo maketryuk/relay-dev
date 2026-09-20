@@ -67,6 +67,22 @@ for bundle in "$BIN_PATH"/*.bundle; do
   cp -R "$bundle" "$APP/Contents/Resources/"
 done
 
+# Temporary, for the editor lab. `CodeEditLanguages` looks for its tree-sitter
+# queries at `Bundle.module.resourceURL` + `"Resources/<grammar>/highlights.scm"`,
+# which is the bundle root in an Xcode build and already `Resources` in a
+# SwiftPM one — so the path doubles, every query fails to load, and the editor
+# draws the file in plain white with nothing saying why. The links make the path
+# it asks for true, and they go in before signing so the signature covers them.
+# This goes when the lab does.
+GRAMMARS="$APP/Contents/Resources/CodeEditLanguages_CodeEditLanguages.bundle/Resources"
+if [ -d "$GRAMMARS" ]; then
+  mkdir -p "$GRAMMARS/Resources"
+  for grammar in "$GRAMMARS"/tree-sitter-*; do
+    [ -d "$grammar" ] || continue
+    ln -sfn "../$(basename "$grammar")" "$GRAMMARS/Resources/$(basename "$grammar")"
+  done
+fi
+
 # Relay's own strings are not optional furniture: the menu bar is built before
 # the first window and asks for them immediately. A bundle assembled without
 # them is a bundle that has to be caught here, not by whoever downloads it.
@@ -99,6 +115,9 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleSignature</key><string>????</string>
     <key>NSHumanReadableCopyright</key><string>Relay</string>
     <key>LSUIElement</key><false/>
+    <key>NSDocumentsFolderUsageDescription</key><string>Relay opens the files of the projects you add to it.</string>
+    <key>NSDesktopFolderUsageDescription</key><string>Relay opens the files of the projects you add to it.</string>
+    <key>NSDownloadsFolderUsageDescription</key><string>Relay opens the files of the projects you add to it.</string>
 </dict>
 </plist>
 PLIST
