@@ -21,6 +21,14 @@ breaking change to stored data.
   terminal, and the old path was one nobody types twice. An existing install is
   moved on first launch, so there is nothing to do; the development build uses
   `~/.relay-dev`, as separate from it as it ever was.
+- **The context strip under a terminal is gone.** It said how full the agent's
+  window was, under every agent pane, and the agents' own interfaces now say
+  it themselves — Claude Code puts it in its status line. Two places for one
+  number is one place too many, and the one that was ours had to be kept in
+  step with a transcript format we do not own. The setting that told it which
+  window a Claude session runs with goes too, since it existed only to read
+  that number. What still reads those transcripts is the conversation
+  history, which is unaffected.
 
 ### Added
 

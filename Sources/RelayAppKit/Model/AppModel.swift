@@ -132,7 +132,6 @@ final class AppModel {
     private(set) var showsStatusBar = true
     private(set) var usageBarDetail: UsageDetail = .compact
     /// Which window Claude sessions are taken to run with.
-    private(set) var claudeContextWindow: ContextWindowPreference = .automatic
     /// How large the terminals are drawn, in points.
     private(set) var terminalFontSize = Double(TerminalZoom.defaultSize)
     /// How large a file is drawn. Apart from the terminal's: code is read
@@ -144,12 +143,7 @@ final class AppModel {
     /// where it can be had but should not.
     private(set) var terminalUsesGPURendering = true
     var isUsagePopoverOpen = false
-    private(set) var paneLayouts: [ProjectID: PaneNode] = [:] {
-        // Splitting, dropping and closing all move a terminal on screen without
-        // going through the selection, and the context readers follow what is
-        // on screen.
-        didSet { watchContextForVisiblePanes() }
-    }
+    private(set) var paneLayouts: [ProjectID: PaneNode] = [:]
     var rightSidebarTab: RightSidebarTab = .services
 
     // MARK: - Selection and UI
@@ -206,13 +200,11 @@ final class AppModel {
     /// caches on disk.
     let usage = UsageMonitor()
     /// How full each visible agent session's context window is.
-    let context = ContextMonitor()
     /// Past conversations for the selected project, from the agents' own
     /// transcripts rather than from what Relay happens to have run.
     private(set) var conversations: [Conversation] = []
     private(set) var isLoadingConversations = false
     private var conversationsTask: Task<Void, Never>?
-    var sessionShowingContextDetail: SessionID?
     private var updateTask: Task<Void, Never>?
 
     /// Cap on cached terminal renderers. Beyond this the least recently viewed
@@ -253,8 +245,6 @@ final class AppModel {
         checksForUpdates = state.checksForUpdates
         showsStatusBar = state.showsStatusBar
         usageBarDetail = state.usageBarDetail
-        claudeContextWindow = state.claudeContextWindow
-        context.claudeWindow = state.claudeContextWindow
         terminalFontSize = state.terminalFontSize
         editorFontSize = state.editorFontSize
         terminalUsesGPURendering = state.terminalUsesGPURendering
@@ -821,11 +811,6 @@ final class AppModel {
             lastActiveSessionByProject[projectID.rawValue] = id.rawValue
             persist()
         }
-        // After the pane has been given its session, not before: asked any
-        // earlier, the layout still describes what was on screen a moment ago
-        // and the terminal the user just opened is the one nobody reads a
-        // context figure for.
-        watchContextForVisiblePanes()
         _ = surface(for: id)
     }
 
@@ -1866,15 +1851,6 @@ final class AppModel {
         ))
     }
 
-    /// Keeps the context readers pointed at what is actually on screen.
-    private func watchContextForVisiblePanes() {
-        guard let projectID = selectedProjectID, let layout = paneLayouts[projectID] else {
-            context.watch([])
-            return
-        }
-        context.watch(PaneLayout.sessions(in: layout).compactMap { sessions[$0] })
-    }
-
     /// Drops panes whose session has gone.
     private func prunePaneLayouts() {
         let known = Set(sessions.keys)
@@ -2767,15 +2743,6 @@ final class AppModel {
     func installUpdate() {
         persistImmediately()
         updates.install()
-    }
-
-    /// Says which window Claude sessions run with, for the cases nothing on
-    /// disk can answer.
-    func setClaudeContextWindow(_ preference: ContextWindowPreference) {
-        guard claudeContextWindow != preference else { return }
-        claudeContextWindow = preference
-        context.claudeWindow = preference
-        persist()
     }
 
     func setShowsStatusBar(_ visible: Bool) {
@@ -3813,7 +3780,6 @@ final class AppModel {
             checksForUpdates: checksForUpdates,
             showsStatusBar: showsStatusBar,
             usageBarDetail: usageBarDetail,
-            claudeContextWindow: claudeContextWindow,
             terminalFontSize: terminalFontSize,
             editorFontSize: editorFontSize,
             terminalUsesGPURendering: terminalUsesGPURendering,

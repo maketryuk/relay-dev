@@ -129,9 +129,6 @@ struct WorkspaceState: Codable {
     /// stored under changed with the meaning, so a value written when it
     /// meant something else is ignored rather than honoured.
     var usageBarDetail: UsageDetail
-    /// Which window Claude sessions are taken to run with, since the CLI
-    /// records the model without the suffix that would say.
-    var claudeContextWindow: ContextWindowPreference
     /// How large the terminals are drawn, in points.
     var terminalFontSize: Double
     /// And the files, which are read at a different distance.
@@ -169,7 +166,6 @@ struct WorkspaceState: Codable {
         checksForUpdates: Bool = true,
         showsStatusBar: Bool = true,
         usageBarDetail: UsageDetail = .compact,
-        claudeContextWindow: ContextWindowPreference = .automatic,
         terminalFontSize: Double = 13,
         editorFontSize: Double = 13,
         terminalUsesGPURendering: Bool = true,
@@ -198,7 +194,6 @@ struct WorkspaceState: Codable {
         self.checksForUpdates = checksForUpdates
         self.showsStatusBar = showsStatusBar
         self.usageBarDetail = usageBarDetail
-        self.claudeContextWindow = claudeContextWindow
         self.terminalFontSize = terminalFontSize
         self.editorFontSize = editorFontSize
         self.terminalUsesGPURendering = terminalUsesGPURendering
@@ -232,8 +227,6 @@ struct WorkspaceState: Codable {
         checksForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checksForUpdates) ?? true
         showsStatusBar = try container.decodeIfPresent(Bool.self, forKey: .showsStatusBar) ?? true
         usageBarDetail = try container.decodeIfPresent(UsageDetail.self, forKey: .usageBarDetail) ?? .compact
-        claudeContextWindow = try container
-            .decodeIfPresent(ContextWindowPreference.self, forKey: .claudeContextWindow) ?? .automatic
         terminalFontSize = try container.decodeIfPresent(Double.self, forKey: .terminalFontSize) ?? 13
         editorFontSize = try container.decodeIfPresent(Double.self, forKey: .editorFontSize) ?? 13
         terminalUsesGPURendering = try container
