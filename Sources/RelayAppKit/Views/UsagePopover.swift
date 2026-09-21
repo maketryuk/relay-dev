@@ -53,7 +53,7 @@ struct UsagePopover: View {
                 size: 22,
                 isBusy: model.usage.isRefreshing
             ) {
-                Task { await model.usage.refresh() }
+                Task { await model.usage.refresh(force: true) }
             }
             .relayTooltip(relayLocalized("Refresh usage"))
         }

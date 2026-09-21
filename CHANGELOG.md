@@ -52,6 +52,29 @@ breaking change to stored data.
   a program has negotiated the Kitty keyboard protocol, since it is then told
   about the ⌘ itself.
 
+### Fixed
+
+- **The Claude limits are the ones Claude Code shows.** Relay read them from
+  the cache the CLI keeps in `~/.claude.json`, and that cache is only rewritten
+  when the CLI asks Anthropic for the figure itself — something it does rarely,
+  since the numbers in its own status line come from the headers of ordinary
+  answers and are never written down. A cache days old was the normal case: a
+  five-hour bar could sit at 31% while the terminal beside it said 44%, and a
+  window that had reset two days earlier was still drawn as a third spent.
+  Relay now asks the same endpoint the CLI does, with the token the CLI already
+  holds — macOS asks once whether Relay may read it — and falls back to the
+  cache when there is no token or no answer. A cached window whose reset has
+  passed is no longer shown at all, because "Relay does not know" is the truth
+  and a stale bar is not.
+- **The Codex limits follow the newest reading, not the newest file.** They
+  were taken from whichever rollout log was written last, which is routinely an
+  old conversation that has just been resumed — so the weekly bar could show a
+  figure from a month ago — or a session opened a moment ago that has heard
+  nothing from the provider yet, which left the bar empty. Relay now compares
+  the time on the records themselves. A window whose reset has passed reads as
+  empty rather than as whatever it last held, since Codex writes a record for
+  every answer it gets and anything spent since would have left a newer one.
+
 ## 0.4.0 — 2026-09-20
 
 ### Changed

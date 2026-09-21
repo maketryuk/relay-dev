@@ -25,6 +25,17 @@ struct UsageWindow: Equatable, Identifiable, Sendable {
 
     var percent: Int { Int((fraction * 100).rounded()) }
 
+    /// Whether the window this figure belongs to has already been replaced.
+    ///
+    /// Both agents report what has been spent in the window running when they
+    /// were asked, so a reading whose reset has passed is an answer about a
+    /// window that is over. What the one after it holds is a separate question,
+    /// and each reader answers it differently.
+    func hasRolledOver(by now: Date) -> Bool {
+        guard let resetsAt else { return false }
+        return resetsAt <= now
+    }
+
     /// For the bar, where there is room for two or three characters.
     var label: String {
         switch span {

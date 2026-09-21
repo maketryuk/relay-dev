@@ -375,3 +375,40 @@ both directions.
 Built-in presets live in code rather than in the workspace file, so a corrected
 flag reaches existing users instead of being frozen at whatever shipped first.
 Only user-defined presets are persisted.
+
+# Where the usage figures come from
+
+The bar along the bottom shows how much of each agent's rate limits is spent.
+Both agents know the answer, and neither writes it down the way a reader would
+want.
+
+**Codex writes every reading it is given.** A `rate_limits` record goes into the
+session's rollout log whenever the figure changes, so the newest such record
+anywhere on disk is what the CLI itself would show. `CodexUsageReader` compares
+the time on the records rather than on the files holding them: resuming a
+conversation appends to the log it started in, so the most recently written file
+is routinely an old one whose limits are months out of date, and a session
+opened a moment ago carries no record at all. The walk stops as soon as no
+unread log can hold a newer record, which is usually after the first.
+
+**Claude does not.** The figures in its status line come from the headers of
+every answer it gets and stay in the process. `~/.claude.json` holds a copy, but
+the CLI only rewrites it when it asks Anthropic for the figure on purpose —
+rarely enough that a cache days old is the normal case, not the exception. A
+client that reads only that file shows a number that was true once, which is
+indistinguishable from a number that is true now.
+
+So Relay asks the same endpoint the CLI does, with the token the CLI already
+holds — the keychain item Claude Code writes, which macOS gates behind its own
+permission sheet the first time. This is a deliberate reversal of an earlier
+rule that Relay would read files and never make a request: the rule produced a
+bar that was quietly wrong, and being wrong about a limit is worse than asking.
+Nothing is done with the token but read this account's own usage; it is never
+stored, logged, or sent anywhere else.
+
+The endpoint is not generous, so it is asked at most every five minutes, never
+while a `Retry-After` is in force, and a refusal that names no time backs off
+anyway. Between polls the last answer stands, and when there is no token or no
+answer at all the cache on disk stands in — minus any window whose reset has
+already passed, because a five-hour bar from a window that ended two days ago
+describes nothing.

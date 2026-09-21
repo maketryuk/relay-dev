@@ -40,7 +40,7 @@ struct StatusBar: View {
                     size: 20,
                     isBusy: model.usage.isRefreshing
                 ) {
-                    Task { await model.usage.refresh() }
+                    Task { await model.usage.refresh(force: true) }
                 }
                 .relayTooltip(relayLocalized("Refresh usage"), edge: .top)
 

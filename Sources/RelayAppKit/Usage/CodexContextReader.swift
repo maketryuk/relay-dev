@@ -99,7 +99,7 @@ enum CodexContextReader {
               let directory = payload["cwd"] as? String
         else { return nil }
 
-        let started = (payload["timestamp"] as? String).flatMap(ClaudeUsageReader.date(fromISO8601:))
+        let started = (payload["timestamp"] as? String).flatMap(ClaudeUsageWindows.date(fromISO8601:))
         return (directory, started)
     }
 
