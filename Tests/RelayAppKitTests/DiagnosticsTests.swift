@@ -549,6 +549,14 @@ struct RunningProcessTests {
         )
         let running = RunningProcess()
 
+        // A checker is run in the PATH a terminal would have, which is asked
+        // of an interactive login shell once and kept. That shell is most of a
+        // second on a machine with a configured one and was eleven on a cold
+        // CI runner, all of it inside the run being timed here — so the test
+        // failed for how long somebody's `.zshrc` takes. Paid for before the
+        // clock starts, the window holds what this test is about.
+        _ = LoginPath.value
+
         let started = Date()
         DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) { running.cancel() }
         _ = FileCheck.run(checker, on: "text\n", path: "/p/a.swift", root: directory.url.path, running: running)
