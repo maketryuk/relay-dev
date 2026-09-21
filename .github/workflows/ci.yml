@@ -21,5 +21,14 @@ jobs:
 
       # The daemon suite starts real processes on real pseudo-terminals, so it
       # needs a machine rather than a container.
+      #
+      # One test at a time, because a runner has three cores and this suite
+      # waits on processes rather than on itself: a test sitting in
+      # `waitUntilExit` holds one of the pool's threads while it waits, and
+      # three of them hold the lot. Run in parallel here, half the suite spent
+      # its first ten seconds waiting for a thread and every test that measures
+      # anything measured the queue instead — a cancellation that takes two
+      # tenths of a second was timed at eighteen. It costs about a minute and
+      # buys a red run that means something.
       - name: Test
-        run: swift test
+        run: swift test --no-parallel

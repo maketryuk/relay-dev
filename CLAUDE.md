@@ -198,6 +198,13 @@ the upgrade path depends on.
   running Docker engine.
 - **Never assert on the state of the machine the tests run on.** A clean CI
   runner has no stray listening ports, no containers and no git identity.
+- **Nor on how busy it is.** A test that times something times the window it
+  cares about and no more, and waits for a thing to have happened rather than
+  for a delay to have passed: a suite of tests that sit inside processes of
+  their own leaves a shared queue minutes behind itself, and a timer scheduled
+  on one arrives whenever it arrives. CI runs the suite `--no-parallel` for the
+  same reason — three cores, and a test waiting on a process holds a thread
+  while it waits.
 - A test written for a bug must be shown to fail without the fix.
 
 ## Compatibility
