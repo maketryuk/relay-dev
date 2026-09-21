@@ -530,14 +530,26 @@ struct FixOnSaveTests {
 
 @Suite("A run nobody is waiting for")
 struct RunningProcessTests {
+    /// When the cancellation went in: written on the thread that cancels and
+    /// read on the test thread once the run it cancelled has come back.
+    private final class Instant: @unchecked Sendable {
+        private let lock = NSLock()
+        private var value: Date?
+
+        func mark() { lock.withLock { value = Date() } }
+        var date: Date? { lock.withLock { value } }
+    }
+
     @Test("A checker whose answer stopped being wanted is stopped too")
     func cancelling() throws {
         // Typing starts a run every time the hand pauses, and each one is a
         // node process: the ones whose text has already been typed past have
         // to go, or they compete with the one that matters.
         let directory = try TemporaryDirectory()
+        let ran = directory.url.appendingPathComponent("ran")
         let tool = directory.url.appendingPathComponent("slow.sh")
-        try "#!/bin/sh\nsleep 30\n".write(to: tool, atomically: true, encoding: .utf8)
+        try "#!/bin/sh\ntouch \"\(ran.path)\"\nsleep 30\n"
+            .write(to: tool, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tool.path)
 
         let checker = FileChecker(
@@ -549,20 +561,31 @@ struct RunningProcessTests {
         )
         let running = RunningProcess()
 
-        // A checker is run in the PATH a terminal would have, which is asked
-        // of an interactive login shell once and kept. That shell is most of a
-        // second on a machine with a configured one and was eleven on a cold
-        // CI runner, all of it inside the run being timed here — so the test
-        // failed for how long somebody's `.zshrc` takes. Paid for before the
-        // clock starts, the window holds what this test is about.
-        _ = LoginPath.value
+        // Cancelled when the checker says it is running rather than after a
+        // delay, and from a thread of its own. A delay has to outlast starting
+        // a process on the slowest machine that will ever run this — and a
+        // checker not yet started is refused at `adopt`, which leaves nothing
+        // to kill and proves nothing. A thread because this suite runs beside
+        // a hundred others that sit inside processes of their own: a timer
+        // scheduled on a shared queue went off eighteen seconds late on CI,
+        // and the test read that as a checker that would not die.
+        let cancelled = Instant()
+        Thread.detachNewThread {
+            let deadline = Date().addingTimeInterval(30)
+            while Date() < deadline, !FileManager.default.fileExists(atPath: ran.path) {
+                usleep(10_000)
+            }
+            cancelled.mark()
+            running.cancel()
+        }
 
-        let started = Date()
-        DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) { running.cancel() }
         _ = FileCheck.run(checker, on: "text\n", path: "/p/a.swift", root: directory.url.path, running: running)
 
-        // It came back because it was killed, not because it finished.
-        #expect(Date().timeIntervalSince(started) < 5)
+        // It came back because it was killed, not because it finished: the
+        // script it was killed in the middle of sleeps for thirty seconds.
+        #expect(FileManager.default.fileExists(atPath: ran.path))
+        let killed = try #require(cancelled.date)
+        #expect(Date().timeIntervalSince(killed) < 5)
     }
 
     @Test("A run cancelled before it starts never starts")
