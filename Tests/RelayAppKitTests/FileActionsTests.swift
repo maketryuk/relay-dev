@@ -147,7 +147,7 @@ struct FileTreeActionTests {
         #expect(model.terminalFontSize == terminal + 1)
 
         model.resetFontSize()
-        #expect(model.editorFontSize == 12)
+        #expect(model.editorFontSize == Double(TerminalZoom.defaultSize))
         _ = directory
     }
 

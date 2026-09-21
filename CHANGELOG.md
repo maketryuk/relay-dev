@@ -9,6 +9,11 @@ breaking change to stored data.
 
 ### Changed
 
+- **Text starts at 13 pt, in terminals and in files alike.** The terminal
+  opened at 12.5 and a file at 12 — half a point apart for no reason anybody
+  could give, and both a size smaller than the one every other editor on this
+  machine starts at. A size already chosen is untouched; Reset now returns to
+  13.
 - **Relay keeps its files in `~/.relay`.** They were in Application Support,
   where a document-based app puts state nobody opens; these are not that — a
   workspace file worth reading when something looks wrong, a daemon log worth

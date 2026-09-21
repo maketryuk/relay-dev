@@ -137,7 +137,7 @@ final class AppModel {
     private(set) var terminalFontSize = Double(TerminalZoom.defaultSize)
     /// How large a file is drawn. Apart from the terminal's: code is read
     /// closer than a log is.
-    private(set) var editorFontSize = 12.0
+    private(set) var editorFontSize = Double(TerminalZoom.defaultSize)
     /// Whether terminals are drawn on the GPU. On by default, because scrolling
     /// a full window of text is what the CPU path is worst at; a machine where
     /// it cannot be had falls back on its own, and the switch is here for one
@@ -2806,7 +2806,7 @@ final class AppModel {
 
     func resetFontSize() {
         guard editors.focused != nil else { return resetTerminalFontSize() }
-        setEditorFontSize(12)
+        setEditorFontSize(Double(TerminalZoom.defaultSize))
     }
 
     private func setEditorFontSize(_ size: Double) {

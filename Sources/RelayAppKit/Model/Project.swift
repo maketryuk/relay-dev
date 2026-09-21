@@ -170,8 +170,8 @@ struct WorkspaceState: Codable {
         showsStatusBar: Bool = true,
         usageBarDetail: UsageDetail = .compact,
         claudeContextWindow: ContextWindowPreference = .automatic,
-        terminalFontSize: Double = 12.5,
-        editorFontSize: Double = 12,
+        terminalFontSize: Double = 13,
+        editorFontSize: Double = 13,
         terminalUsesGPURendering: Bool = true,
         reviewComments: [ReviewComment] = [],
         paneLayouts: [String: PaneNode] = [:]
@@ -234,8 +234,8 @@ struct WorkspaceState: Codable {
         usageBarDetail = try container.decodeIfPresent(UsageDetail.self, forKey: .usageBarDetail) ?? .compact
         claudeContextWindow = try container
             .decodeIfPresent(ContextWindowPreference.self, forKey: .claudeContextWindow) ?? .automatic
-        terminalFontSize = try container.decodeIfPresent(Double.self, forKey: .terminalFontSize) ?? 12.5
-        editorFontSize = try container.decodeIfPresent(Double.self, forKey: .editorFontSize) ?? 12
+        terminalFontSize = try container.decodeIfPresent(Double.self, forKey: .terminalFontSize) ?? 13
+        editorFontSize = try container.decodeIfPresent(Double.self, forKey: .editorFontSize) ?? 13
         terminalUsesGPURendering = try container
             .decodeIfPresent(Bool.self, forKey: .terminalUsesGPURendering) ?? true
         reviewComments = try container.decodeIfPresent([ReviewComment].self, forKey: .reviewComments) ?? []

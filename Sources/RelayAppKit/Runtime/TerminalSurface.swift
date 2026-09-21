@@ -17,7 +17,7 @@ import SwiftTerm
 /// application around it.
 enum TerminalZoom {
     /// The size the terminal is read at until the user says otherwise.
-    static let defaultSize: CGFloat = 12.5
+    static let defaultSize: CGFloat = 13
     /// Small enough to fit a wide diff, large enough to read across the room.
     static let range: ClosedRange<CGFloat> = 8 ... 28
 
