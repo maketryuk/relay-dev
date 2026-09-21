@@ -139,7 +139,12 @@ struct CodeTextView: NSViewRepresentable {
     /// anywhere; drawn as a link it promises a jump that cannot exist. The
     /// exceptions are the strings that do name something: a key with dots in
     /// it, a path with slashes.
-    static func linkRange(in text: String, at offset: Int) -> NSRange? {
+    ///
+    /// Nonisolated because it is a function of a string and nothing else,
+    /// while the view it hangs off is main-actor isolated by its conformance:
+    /// left to inference it is only callable from the main actor, which the
+    /// test that pins this behaviour is not.
+    nonisolated static func linkRange(in text: String, at offset: Int) -> NSRange? {
         guard let word = SymbolWord.identifier(in: text, at: offset) else { return nil }
         guard let literal = SymbolWord.literal(in: text, at: offset) else { return word.range }
         return literal.text.contains(".") || literal.text.contains("/") ? word.range : nil
