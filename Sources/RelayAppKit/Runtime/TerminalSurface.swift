@@ -22,7 +22,25 @@ enum TerminalZoom {
     static let range: ClosedRange<CGFloat> = 8 ... 28
 
     static func stepped(_ size: CGFloat, by delta: CGFloat) -> CGFloat {
-        min(max(size + delta, range.lowerBound), range.upperBound)
+        clamped(size + delta)
+    }
+
+    static func clamped(_ size: CGFloat) -> CGFloat {
+        min(max(size, range.lowerBound), range.upperBound)
+    }
+
+    /// Reads a size out of what someone typed, or nothing if it was not a size.
+    ///
+    /// Forgiving about the three things a person actually types: the unit they
+    /// can see beside the field, the spaces around it, and a comma for the
+    /// decimal point — which is what a Russian keyboard offers and what the
+    /// window asks for in Russian. Out-of-range is answered rather than
+    /// refused, since the intent of "40" is legible and rejecting it silently
+    /// would look like the field is broken.
+    static func parsed(_ text: String) -> CGFloat? {
+        let digits = text.replacingOccurrences(of: ",", with: ".").filter { $0.isNumber || $0 == "." }
+        guard let value = Double(digits), value > 0 else { return nil }
+        return clamped(CGFloat(value))
     }
 }
 

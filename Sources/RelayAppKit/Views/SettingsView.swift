@@ -96,11 +96,24 @@ struct SettingsView: View {
 struct GeneralSettingsPane: View {
     @Environment(AppModel.self) private var model
 
-    /// Written without a trailing zero, since half a point is a real setting
-    /// and `12.0 pt` reads like a rounding error.
-    private var sizeLabel: String {
+    /// Held apart from the setting while it is being typed: a size applied per
+    /// keystroke would reflow every terminal in the window on the way to "20",
+    /// and pass through 2 to get there.
+    @State private var sizeDraft = ""
+
+    /// What the field shows. Written without a trailing zero, since half a
+    /// point is a real setting and `12.0` reads like a rounding error.
+    private var sizeText: String {
         let size = model.terminalFontSize
-        return String(format: size == size.rounded() ? "%.0f pt" : "%.1f pt", size)
+        return String(format: size == size.rounded() ? "%.0f" : "%.1f", size)
+    }
+
+    /// Takes whatever was typed and then shows what the terminal is actually
+    /// at: nonsense reverts to the current size rather than being argued with,
+    /// and a number past the end of the range comes back as the end of it.
+    private func commitSize() {
+        model.setTerminalFontSize(typed: sizeDraft)
+        sizeDraft = sizeText
     }
 
     /// Says that the GPU path is running only once a terminal is actually on
@@ -141,14 +154,18 @@ struct GeneralSettingsPane: View {
                     detail: relayLocalized("Applies to every terminal at once")
                 ) {
                     HStack(spacing: Theme.Spacing.xsmall) {
-                        Text(verbatim: sizeLabel)
+                        RelayValueField(sizeText, text: $sizeDraft, onCommit: commitSize)
+                            .frame(width: 54)
+                        Text(verbatim: "pt")
                             .font(Theme.Typography.rowSecondary)
                             .foregroundStyle(Theme.Palette.textSecondary)
-                            .monospacedDigit()
                         RelayButton("−") { model.stepTerminalFontSize(by: -1) }
                         RelayButton("+") { model.stepTerminalFontSize(by: 1) }
                         RelayButton(relayLocalized("Reset")) { model.resetTerminalFontSize() }
                     }
+                    // The buttons and ⌘+ change the same setting, so the field
+                    // follows the size rather than owning it.
+                    .onChange(of: model.terminalFontSize, initial: true) { _, _ in sizeDraft = sizeText }
                 }
                 SettingsRow(
                     title: relayLocalized("Claude context window"),

@@ -354,18 +354,60 @@ public struct RelayTextField: View {
                 .focused($isFocused)
                 .onSubmit(onSubmit)
         }
-        .padding(.horizontal, Theme.Spacing.small + 2)
-        .padding(.vertical, 7)
-        .background(Theme.Palette.surface)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
-                .strokeBorder(isFocused ? Theme.Palette.accent.opacity(0.7) : Theme.Palette.border, lineWidth: 1)
-        )
-        // The field is the plate, not the run of glyphs inside it: clicking the
-        // padding puts the caret in, so the padding has to say so too.
-        .relayPointer(.text)
+        .relayFieldPlate(isFocused: isFocused)
         .task { if autofocus { isFocused = true } }
+    }
+}
+
+public extension View {
+    /// The plate a text field sits on, so that every field in the window is
+    /// the same object with the same edge lighting up under the caret.
+    func relayFieldPlate(isFocused: Bool) -> some View {
+        padding(.horizontal, Theme.Spacing.small + 2)
+            .padding(.vertical, 7)
+            .background(Theme.Palette.surface)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
+                    .strokeBorder(isFocused ? Theme.Palette.accent.opacity(0.7) : Theme.Palette.border, lineWidth: 1)
+            )
+            // The field is the plate, not the run of glyphs inside it: clicking
+            // the padding puts the caret in, so the padding has to say so too.
+            .relayPointer(.text)
+    }
+}
+
+/// A field holding one value that is applied when the typing is finished.
+///
+/// Apart from `RelayTextField`, which searches as it is typed into. A setting
+/// cannot: a size applied per keystroke passes through 2 on the way to 20, and
+/// every terminal in the window reflows twice for a number nobody meant. So it
+/// is committed on Return — and on the caret leaving, because clicking away is
+/// how half the people who type a number finish doing it.
+public struct RelayValueField: View {
+    private let placeholder: String
+    @Binding private var text: String
+    private let onCommit: () -> Void
+
+    @FocusState private var isFocused: Bool
+
+    public init(_ placeholder: String, text: Binding<String>, onCommit: @escaping () -> Void) {
+        self.placeholder = placeholder
+        _text = text
+        self.onCommit = onCommit
+    }
+
+    public var body: some View {
+        TextField(placeholder, text: $text)
+            .textFieldStyle(.plain)
+            .font(Theme.Typography.row)
+            .foregroundStyle(Theme.Palette.textPrimary)
+            .multilineTextAlignment(.center)
+            .monospacedDigit()
+            .focused($isFocused)
+            .onSubmit(onCommit)
+            .onChange(of: isFocused) { _, hasCaret in if !hasCaret { onCommit() } }
+            .relayFieldPlate(isFocused: isFocused)
     }
 }
 

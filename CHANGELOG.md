@@ -24,6 +24,11 @@ breaking change to stored data.
 
 ### Added
 
+- **The terminal's text size can be typed in.** Getting from 13 to 20 was seven
+  presses of a button, and the number beside them could be read but not
+  changed. It is a field now: Return applies it, so does clicking away, "14 pt"
+  and "13,5" are both understood, and a number past either end of the range
+  comes back as that end rather than being ignored.
 - **The rail opens with a chat, for the questions that belong to no project.**
   Asking one used to mean leaving Relay for a terminal, or adopting a directory
   as a project to hold a conversation that was never about it. Sessions started

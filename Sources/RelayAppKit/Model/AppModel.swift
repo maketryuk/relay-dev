@@ -2827,6 +2827,13 @@ final class AppModel {
         setTerminalFontSize(Double(TerminalZoom.defaultSize))
     }
 
+    /// Typed into rather than stepped to: every other reader lets the size be
+    /// said outright, and reaching 20 from 13 is seven presses of a button.
+    func setTerminalFontSize(typed text: String) {
+        guard let size = TerminalZoom.parsed(text) else { return }
+        setTerminalFontSize(Double(size))
+    }
+
     private func setTerminalFontSize(_ size: Double) {
         guard size != terminalFontSize else { return }
         terminalFontSize = size
