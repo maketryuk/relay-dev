@@ -44,6 +44,13 @@ breaking change to stored data.
   is started, so an agent begins there knowing nothing about any codebase. It
   cannot be removed, reordered or renamed, and the panel beside it shows its
   conversations and nothing else.
+- **⌘← and ⌘→ go to the ends of the line in a terminal.** They mean that in
+  every text field on this system and meant nothing at all here: ⌘ has no
+  encoding a terminal can send, so the keystroke was offered to the menus and
+  then dropped. They are now sent as `^A` and `^E`, which is the same
+  instruction in the only alphabet the other end reads — and left alone once
+  a program has negotiated the Kitty keyboard protocol, since it is then told
+  about the ⌘ itself.
 
 ## 0.4.0 — 2026-09-20
 

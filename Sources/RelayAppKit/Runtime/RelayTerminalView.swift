@@ -104,6 +104,8 @@ enum TerminalKeyTranslation {
     static let returnKeyCode: UInt16 = 36
     static let keypadEnterKeyCode: UInt16 = 76
     static let deleteKeyCode: UInt16 = 51
+    static let leftArrowKeyCode: UInt16 = 123
+    static let rightArrowKeyCode: UInt16 = 124
 
     /// `ESC CR`, which is what `⌥↩` has always sent and what both agents read as
     /// "another line, do not send this yet".
@@ -111,6 +113,10 @@ enum TerminalKeyTranslation {
     /// `^U`. Shells and both agents' prompts read it as "clear the line", which
     /// is what `⌘⌫` means everywhere else on this system.
     static let killLine: [UInt8] = [0x15]
+    /// `^A` and `^E`, which are the beginning and the end of the line to
+    /// readline, to zsh and to both agents' prompts.
+    static let lineStart: [UInt8] = [0x01]
+    static let lineEnd: [UInt8] = [0x05]
 
     static func bytes(
         keyCode: UInt16,
@@ -123,7 +129,35 @@ enum TerminalKeyTranslation {
         if killsLine(keyCode: keyCode, modifiers: modifiers) {
             return killLine
         }
+        if movesToLineEdge(keyCode: keyCode, modifiers: modifiers, isReportingKeysItself: isReportingKeysItself) {
+            return keyCode == leftArrowKeyCode ? lineStart : lineEnd
+        }
         return nil
+    }
+
+    /// Whether `⌘←` and `⌘→` should mean the ends of the line.
+    ///
+    /// They mean that in every text field on this system, and nothing at all
+    /// in a terminal: ⌘ has no encoding to send, so AppKit offers the
+    /// keystroke to the menus and then drops it. What the other end does
+    /// understand is `^A` and `^E`, which is the same instruction written in
+    /// the only alphabet it reads.
+    ///
+    /// Left alone once the program has negotiated the Kitty keyboard
+    /// protocol: it is then told about the ⌘ itself and can answer for it,
+    /// and sending `^A` as well would be one keystroke delivered twice.
+    static func movesToLineEdge(
+        keyCode: UInt16,
+        modifiers: NSEvent.ModifierFlags,
+        isReportingKeysItself: Bool
+    ) -> Bool {
+        guard !isReportingKeysItself else { return false }
+        guard keyCode == leftArrowKeyCode || keyCode == rightArrowKeyCode else { return false }
+        guard modifiers.contains(.command) else { return false }
+        // Held alone: `⇧⌘←` selects to the end of the line in a text field and
+        // a terminal has no selection to make, so answering it would be
+        // guessing on the user's behalf.
+        return !modifiers.contains(.control) && !modifiers.contains(.option) && !modifiers.contains(.shift)
     }
 
     /// Whether `⇧↩` should mean a newline rather than a submitted prompt.

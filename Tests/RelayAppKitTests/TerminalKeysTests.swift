@@ -147,4 +147,53 @@ struct TerminalKeysTests {
         terminal.view.prefersAcceleratedRendering = false
         #expect(!terminal.view.isUsingMetalRenderer)
     }
+
+    @Test("⌘← and ⌘→ are the ends of the line, said in the alphabet a terminal reads")
+    func lineEdges() {
+        // They mean that in every text field on this system and nothing at
+        // all in a terminal: ⌘ has no encoding to send, so AppKit offers the
+        // keystroke to the menus and then drops it.
+        #expect(TerminalKeyTranslation.bytes(
+            keyCode: 123,
+            modifiers: [.command],
+            isReportingKeysItself: false
+        ) == [0x01])
+        #expect(TerminalKeyTranslation.bytes(
+            keyCode: 124,
+            modifiers: [.command],
+            isReportingKeysItself: false
+        ) == [0x05])
+    }
+
+    @Test("Held with anything else, they are somebody else's shortcut")
+    func lineEdgesAlone() {
+        #expect(!TerminalKeyTranslation.movesToLineEdge(
+            keyCode: 123,
+            modifiers: [.command, .shift],
+            isReportingKeysItself: false
+        ))
+        #expect(!TerminalKeyTranslation.movesToLineEdge(
+            keyCode: 123,
+            modifiers: [.command, .option],
+            isReportingKeysItself: false
+        ))
+        // ⌥← is the terminal's own word-wise jump, and ours would be a second
+        // meaning for one key.
+        #expect(!TerminalKeyTranslation.movesToLineEdge(
+            keyCode: 123,
+            modifiers: [.option],
+            isReportingKeysItself: false
+        ))
+    }
+
+    @Test("A program that reads the keys itself is left to read them")
+    func lineEdgesUnderTheProtocol() {
+        // It is told about the ⌘ outright, and sending `^A` as well would
+        // deliver one keystroke twice.
+        #expect(!TerminalKeyTranslation.movesToLineEdge(
+            keyCode: 123,
+            modifiers: [.command],
+            isReportingKeysItself: true
+        ))
+    }
 }
