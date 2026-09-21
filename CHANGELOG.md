@@ -17,6 +17,16 @@ breaking change to stored data.
   moved on first launch, so there is nothing to do; the development build uses
   `~/.relay-dev`, as separate from it as it ever was.
 
+### Added
+
+- **The rail opens with a chat, for the questions that belong to no project.**
+  Asking one used to mean leaving Relay for a terminal, or adopting a directory
+  as a project to hold a conversation that was never about it. Sessions started
+  in the chat run in `~/.relay/chat`, a directory Relay makes the first time one
+  is started, so an agent begins there knowing nothing about any codebase. It
+  cannot be removed, reordered or renamed, and the panel beside it shows its
+  conversations and nothing else.
+
 ## 0.4.0 — 2026-09-20
 
 ### Changed

@@ -129,6 +129,26 @@ gave up in both cases and left an empty workspace beside a full one. Anything
 already at the destination is never overwritten, and the old directory is
 removed only once it is empty.
 
+## The chat is a project
+
+Some questions have nothing to do with any codebase, and answering them used to
+mean leaving Relay or adopting a directory as a project to hold a conversation
+that was never about it. The rail therefore opens with a chat: sessions started
+in it run in `~/.relay/chat`, which is created the first time one is started and
+not before.
+
+It is a `Project` — `Project.chat`, with the fixed identifier `relay.chat` —
+because everything a session needs is keyed by one: the pane layout, the
+last-selected session, the row order, the history. A nullable project identifier
+would have put a `nil` branch through all of it to save a directory that has to
+exist anyway, since the agent has to be started somewhere.
+
+It is never in `projects`, so it cannot be removed, reordered, renamed or
+configured, and nothing about it reaches the workspace file except the sessions
+that happen to be in it. The right-hand panel offers it one tab, its
+conversations: a directory with no repository, no services and no containers
+would otherwise show four tabs that are permanently empty.
+
 ## Idle cost
 
 - The classification timer only runs while at least one session is alive.

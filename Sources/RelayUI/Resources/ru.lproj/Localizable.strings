@@ -75,6 +75,7 @@
 "Cached" = "Из кэша";
 "Cancel" = "Отмена";
 "Case sensitive; letters only." = "Регистр важен, только буквы.";
+"Chat" = "Чат";
 "Check automatically" = "Проверять автоматически";
 "Check for updates" = "Проверка обновлений";
 "Check now" = "Проверить";
@@ -213,6 +214,7 @@
 "Focus Next Pane" = "Следующая панель";
 "Focus Terminal" = "Фокус в терминал";
 "Folder name" = "Имя папки";
+"For the questions that belong to no project. Agents start here knowing nothing about your code." = "Для вопросов, у которых нет проекта. Агент здесь ничего не знает о вашем коде.";
 "Force push (with lease)" = "Force push (с проверкой)";
 "Force push" = "Force push";
 "Force push?" = "Force push?";

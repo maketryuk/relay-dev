@@ -37,7 +37,15 @@ struct ProjectSidebarView: View {
     /// the pair that belongs on a shared line.
     private var header: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
-            if isRenamingProject {
+            if project.isChat {
+                // Nothing to rename: the name is the app's, and it is in the
+                // window's language rather than in a workspace file.
+                Text(project.name)
+                    .font(Theme.Typography.title)
+                    .foregroundStyle(Theme.Palette.textPrimary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else if isRenamingProject {
                 InlineRenameField(
                     relayLocalized("Project name"),
                     text: $projectNameDraft,
@@ -81,10 +89,12 @@ struct ProjectSidebarView: View {
                     }
                 }
 
-                IconButton(systemImage: "gearshape", help: "", size: 22) {
-                    model.openProjectSettings()
+                if !project.isChat {
+                    IconButton(systemImage: "gearshape", help: "", size: 22) {
+                        model.openProjectSettings()
+                    }
+                    .relayTooltip(relayLocalized("Project settings"), shortcut: model.binding(for: .projectSettings))
                 }
-                .relayTooltip(relayLocalized("Project settings"), shortcut: model.binding(for: .projectSettings))
             }
         }
         .padding(.horizontal, Theme.Spacing.medium)

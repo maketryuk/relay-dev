@@ -13,6 +13,7 @@ public struct ProjectIcon: View {
     private let isSelected: Bool
     private let size: CGFloat
     private let artwork: ProjectArtwork?
+    private let symbolName: String?
 
     @State private var isHovering = false
 
@@ -24,7 +25,10 @@ public struct ProjectIcon: View {
         size: CGFloat = Theme.Metrics.projectIconSize,
         /// The project's own artwork, when it has any. Initials are the
         /// fallback, not the design.
-        artwork: ProjectArtwork? = nil
+        artwork: ProjectArtwork? = nil,
+        /// A symbol in place of initials, for the one tile in the rail that
+        /// stands for something other than a directory.
+        symbolName: String? = nil
     ) {
         self.initials = initials
         self.tint = tint
@@ -32,6 +36,7 @@ public struct ProjectIcon: View {
         self.isSelected = isSelected
         self.size = size
         self.artwork = artwork
+        self.symbolName = symbolName
     }
 
     public var body: some View {
@@ -96,6 +101,10 @@ public struct ProjectIcon: View {
                 .interpolation(.high)
                 .aspectRatio(contentMode: .fit)
                 .padding(artwork.isFullBleed ? 0 : size * 0.1)
+        } else if let symbolName {
+            Image(systemName: symbolName)
+                .font(.system(size: size * 0.42, weight: .medium))
+                .foregroundStyle(Color.white.opacity(0.95))
         } else {
             Text(initials)
                 .font(.system(size: size * 0.38, weight: .semibold, design: .rounded))

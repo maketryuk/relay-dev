@@ -371,7 +371,7 @@ struct CommandPaletteView: View {
             }
         }
 
-        for project in model.projects {
+        for project in model.railProjects {
             commands.append(PaletteCommand(
                 id: "switch-\(project.id.rawValue)",
                 titleKey: "Switch to %@",

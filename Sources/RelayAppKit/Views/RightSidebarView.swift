@@ -7,6 +7,14 @@ struct RightSidebarView: View {
     @Environment(AppModel.self) private var model
     let project: Project
 
+    /// What the panel is actually showing. A project the panel does not offer
+    /// the selected tab for — the chat, which offers one — shows the first tab
+    /// it does offer rather than nothing.
+    private var visibleTab: RightSidebarTab {
+        let offered = model.tabs(for: project)
+        return offered.contains(model.rightSidebarTab) ? model.rightSidebarTab : (offered.first ?? .history)
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             RightSidebarResizeHandle()
@@ -15,7 +23,7 @@ struct RightSidebarView: View {
                 tabStrip
                 RelayDivider()
                 content
-                if !model.rightSidebarTab.fillsPanel {
+                if !visibleTab.fillsPanel {
                     Spacer(minLength: 0)
                 }
             }
@@ -26,7 +34,7 @@ struct RightSidebarView: View {
 
     private var tabStrip: some View {
         HStack(spacing: Theme.Spacing.xsmall) {
-            ForEach(RightSidebarTab.allCases) { tab in
+            ForEach(model.tabs(for: project)) { tab in
                 tabButton(tab)
             }
             Spacer(minLength: 0)
@@ -37,7 +45,7 @@ struct RightSidebarView: View {
 
     private func tabButton(_ tab: RightSidebarTab) -> some View {
         let isAvailable = model.isTabAvailable(tab, for: project)
-        let isSelected = model.rightSidebarTab == tab && model.isRightSidebarVisible
+        let isSelected = visibleTab == tab && model.isRightSidebarVisible
         // A tab that found nothing is off, not finished: containers get
         // started and repositories get cloned after a project is opened, and
         // clicking is how you ask again.
@@ -65,7 +73,7 @@ struct RightSidebarView: View {
 
     @ViewBuilder
     private var content: some View {
-        switch model.rightSidebarTab {
+        switch visibleTab {
         // These scroll their own list and keep the box at the bottom in view;
         // wrapped in the shared scroll view, the box would be somewhere below
         // fifty rows.
@@ -78,7 +86,7 @@ struct RightSidebarView: View {
         default:
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    switch model.rightSidebarTab {
+                    switch visibleTab {
                     case .services: ServicesPane(project: project)
                     case .docker: DockerPane(project: project)
                     case .history: HistoryPane(project: project)

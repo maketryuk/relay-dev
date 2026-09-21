@@ -16,16 +16,27 @@ struct ProjectRailView: View {
 
         return VStack(spacing: Theme.Spacing.small) {
             ScrollView(.vertical, showsIndicators: false) {
-                ReorderableColumn(
-                    ids: model.projects.map(\.id),
-                    spacing: Theme.Spacing.small,
-                    space: "relay.projects",
-                    onMove: { moved, target, side in
-                        model.moveProject(moved, beside: target, side: side)
+                VStack(spacing: Theme.Spacing.small) {
+                    // Outside the column that can be dragged into order: the
+                    // chat is not one of the projects, and the rule that it
+                    // comes first is not the user's to rearrange.
+                    chatTile
+                    if !model.projects.isEmpty {
+                        RelayDivider()
+                            .frame(width: 24)
                     }
-                ) { projectID in
-                    if let project = model.project(projectID) {
-                        projectTile(project)
+
+                    ReorderableColumn(
+                        ids: model.projects.map(\.id),
+                        spacing: Theme.Spacing.small,
+                        space: "relay.projects",
+                        onMove: { moved, target, side in
+                            model.moveProject(moved, beside: target, side: side)
+                        }
+                    ) { projectID in
+                        if let project = model.project(projectID) {
+                            projectTile(project)
+                        }
                     }
                 }
                 .padding(.vertical, Theme.Spacing.small)
@@ -33,15 +44,10 @@ struct ProjectRailView: View {
 
             Spacer(minLength: 0)
 
-            // With nothing above it, a lone plus at the foot of an empty strip
-            // is the smallest target in the window for the one thing there is
-            // to do. The welcome pane takes it until there is a rail to add to.
-            if !model.projects.isEmpty {
-                addButton
-                RelayDivider()
-                    .frame(width: 24)
-                    .padding(.vertical, 2)
-            }
+            addButton
+            RelayDivider()
+                .frame(width: 24)
+                .padding(.vertical, 2)
             portsButton
             sshButton
         }
@@ -63,6 +69,47 @@ struct ProjectRailView: View {
             }
             return true
         }
+    }
+
+    /// The chat sits above the divider, outside the column that can be
+    /// dragged into order: it is not one of the projects and never moves.
+    private var chatTile: some View {
+        let project = Project.chat
+        let isSelected = model.selectedProjectID == project.id
+        let status = model.aggregatedStatus(for: project.id)
+        return ZStack(alignment: .leading) {
+            Capsule()
+                .fill(Theme.Palette.textPrimary)
+                .frame(width: 3, height: isSelected ? 24 : 0)
+                .offset(x: -8)
+                .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isSelected)
+
+            ProjectIcon(
+                initials: "",
+                tint: Theme.Palette.accent,
+                status: status,
+                isSelected: isSelected,
+                symbolName: "bubble.left.and.text.bubble.right"
+            )
+            .clickable()
+            .onTapGesture { model.selectProject(project.id) }
+            .relayTooltip(
+                relayLocalized("Chat"),
+                shortcut: status.isQuiet ? nil : status.localizedName,
+                edge: .trailing
+            )
+            .contextMenu { chatMenu }
+        }
+    }
+
+    @ViewBuilder
+    private var chatMenu: some View {
+        Button(relayLocalized("Open")) { model.selectProject(.chat) }
+        Button(relayLocalized("Open in Finder")) { model.revealInFinder(.chat) }
+        Divider()
+        Button(relayLocalized("New Claude Session")) { model.createSession(kind: .claude, in: .chat) }
+        Button(relayLocalized("New Codex Session")) { model.createSession(kind: .codex, in: .chat) }
+        Button(relayLocalized("New Shell")) { model.createSession(kind: .shell, in: .chat) }
     }
 
     private func projectTile(_ project: Project) -> some View {

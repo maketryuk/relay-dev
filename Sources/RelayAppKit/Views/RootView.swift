@@ -208,11 +208,12 @@ struct ProjectOverviewPane: View {
             VStack(spacing: Theme.Spacing.small) {
                 ProjectIcon(
                     initials: ProjectAppearance.initials(for: project.name),
-                    tint: ProjectAppearance.tint(for: project.rootPath),
+                    tint: project.isChat ? Theme.Palette.accent : ProjectAppearance.tint(for: project.rootPath),
                     status: model.aggregatedStatus(for: project.id),
                     isSelected: true,
                     size: 56,
-                    artwork: model.projectIcons[project.id]
+                    artwork: model.projectIcons[project.id],
+                    symbolName: project.isChat ? "bubble.left.and.text.bubble.right" : nil
                 )
                 Text(project.name)
                     .font(.system(size: 18, weight: .semibold))
@@ -220,6 +221,17 @@ struct ProjectOverviewPane: View {
                 Text(project.displayPath)
                     .font(Theme.Typography.mono)
                     .foregroundStyle(Theme.Palette.textTertiary)
+                if project.isChat {
+                    // The one pane where the directory needs explaining: it is
+                    // Relay's rather than the user's, and what is started here
+                    // knows nothing about any project.
+                    Text(relayLocalized("For the questions that belong to no project. Agents start here knowing nothing about your code."))
+                        .font(Theme.Typography.rowSecondary)
+                        .foregroundStyle(Theme.Palette.textTertiary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 360)
+                        .padding(.top, Theme.Spacing.xsmall)
+                }
             }
 
             // The same presets the sidebar's + offers, because there is no

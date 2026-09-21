@@ -514,11 +514,22 @@ final class AppModel {
     // MARK: - Projects
 
     func project(_ id: ProjectID) -> Project? {
-        projects.first { $0.id == id }
+        if id == .chat { return .chat }
+        return projects.first { $0.id == id }
     }
 
     var selectedProject: Project? {
         selectedProjectID.flatMap(project)
+    }
+
+    /// What the rail shows, in the order it shows it: the chat, then the
+    /// projects the user adopted.
+    ///
+    /// The chat is first and stays first. It is the one entry that is always
+    /// there, so anything that walks the rail — the palette, ⌘⇧] — walks this
+    /// rather than `projects`.
+    var railProjects: [Project] {
+        [.chat] + projects
     }
 
     func addProject(at url: URL) {
@@ -543,6 +554,8 @@ final class AppModel {
     }
 
     func removeProject(_ id: ProjectID) {
+        // The chat is not in the workspace to be forgotten from it.
+        guard id != .chat else { return }
         // Sessions are the daemon's, not the project's: closing them is an
         // explicit action, so removing a project only forgets configuration.
         if let root = project(id)?.rootPath { lint.stop(root: root) }
@@ -581,16 +594,22 @@ final class AppModel {
         selectedProjectID = id
         selectedSessionID = nil
         restoreSelection()
+        // The chat offers one tab, and a panel left on a tab it no longer
+        // shows would draw the previous project's services beside it.
+        if id == .chat { rightSidebarTab = .history }
         persist()
+        // Nothing to ask about a directory Relay made for itself: it is not a
+        // repository and holds no stack.
+        guard id != .chat else { return }
         refreshGit(for: id)
         refreshDocker(for: id)
     }
 
     func selectNextProject(offset: Int) {
-        guard !projects.isEmpty else { return }
-        let currentIndex = projects.firstIndex { $0.id == selectedProjectID } ?? 0
-        let nextIndex = (currentIndex + offset + projects.count) % projects.count
-        selectProject(projects[nextIndex].id)
+        let rail = railProjects
+        let currentIndex = rail.firstIndex { $0.id == selectedProjectID } ?? 0
+        let nextIndex = (currentIndex + offset + rail.count) % rail.count
+        selectProject(rail[nextIndex].id)
     }
 
     /// Puts a project beside another one in the rail.
@@ -599,6 +618,7 @@ final class AppModel {
     /// it is whatever the user arranged, which is why the arrangement is worth
     /// remembering.
     func moveProject(_ moved: ProjectID, beside target: ProjectID, side: RowDropSide) {
+        guard moved != .chat, target != .chat else { return }
         guard let movedProject = project(moved), let targetProject = project(target) else { return }
         let reordered = ListReordering.moving(movedProject, beside: targetProject, side: side, in: projects)
         guard reordered.map(\.id) != projects.map(\.id) else { return }
@@ -607,6 +627,9 @@ final class AppModel {
     }
 
     func revealInFinder(_ project: Project) {
+        // Asking Finder for a directory that is not there yet opens nothing and
+        // says nothing; the chat's is made the first time anyone looks.
+        if project.isChat { _ = try? RelayPaths.ensureChatDirectory() }
         NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: project.rootPath)
     }
 
@@ -751,6 +774,11 @@ final class AppModel {
     }
 
     private func launch(_ spec: SessionSpec, selecting: Bool = true, pendingInput: PendingInput? = nil) {
+        // The chat's directory is made here rather than at launch, so an
+        // install where nobody ever asks a question outside a project has
+        // nothing on disk to explain. Every route to a session goes through
+        // this one function, reopening a closed one included.
+        if spec.projectID == .chat { _ = try? RelayPaths.ensureChatDirectory() }
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -2962,6 +2990,15 @@ final class AppModel {
     /// Docker is the case that matters: a project with no containers and no
     /// compose file has nothing behind that tab, and an empty panel is a worse
     /// answer than a disabled tab that says why.
+    /// Which tabs the panel offers for a project.
+    ///
+    /// The chat has no repository, no services, no containers and no codebase
+    /// to scan for TODOs, and four tabs that are permanently empty say less
+    /// than none. Its conversations are the whole of what there is to show.
+    func tabs(for project: Project) -> [RightSidebarTab] {
+        project.isChat ? [.history] : RightSidebarTab.allCases
+    }
+
     func isTabAvailable(_ tab: RightSidebarTab, for project: Project) -> Bool {
         switch tab {
         case .services, .history:
@@ -3064,7 +3101,9 @@ final class AppModel {
     /// The settings of whichever project is in front, which is the only one the
     /// command and the shortcut could mean.
     func openProjectSettings() {
-        guard let projectID = selectedProjectID else { return }
+        // The chat has no settings — the keyboard shortcut reaches this too,
+        // and a panel of controls that write nowhere is worse than none.
+        guard let projectID = selectedProjectID, projectID != .chat else { return }
         toggleModal(.projectSettings(projectID))
     }
 
@@ -3088,7 +3127,10 @@ final class AppModel {
     /// already showing what was asked for. Closing it is the toggle in the
     /// title bar, and its shortcut.
     func selectRightSidebarTab(_ tab: RightSidebarTab) {
-        guard let project = selectedProject, isTabAvailable(tab, for: project) else { return }
+        guard let project = selectedProject,
+              tabs(for: project).contains(tab),
+              isTabAvailable(tab, for: project)
+        else { return }
         rightSidebarTab = tab
         isRightSidebarVisible = true
         persist()

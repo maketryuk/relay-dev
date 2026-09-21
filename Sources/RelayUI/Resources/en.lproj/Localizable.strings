@@ -75,6 +75,7 @@
 "Cached" = "Cached";
 "Cancel" = "Cancel";
 "Case sensitive; letters only." = "Case sensitive; letters only.";
+"Chat" = "Chat";
 "Check automatically" = "Check automatically";
 "Check for updates" = "Check for updates";
 "Check now" = "Check now";
@@ -213,6 +214,7 @@
 "Focus Next Pane" = "Focus Next Pane";
 "Focus Terminal" = "Focus Terminal";
 "Folder name" = "Folder name";
+"For the questions that belong to no project. Agents start here knowing nothing about your code." = "For the questions that belong to no project. Agents start here knowing nothing about your code.";
 "Force push (with lease)" = "Force push (with lease)";
 "Force push" = "Force push";
 "Force push?" = "Force push?";
