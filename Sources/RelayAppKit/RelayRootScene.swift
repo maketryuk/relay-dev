@@ -11,6 +11,10 @@ public enum RelayApplication {
     /// rather than left to the compiler's mood.
     @MainActor
     public static func main() {
+        // Before the model reads anything: an install written by a build that
+        // kept its files in Application Support has to be found where this one
+        // looks, and the first thing to look is the workspace store.
+        RelayPaths.migrateFromLegacyLocation()
         RelayMainApp.main()
     }
 }

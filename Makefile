@@ -32,4 +32,4 @@ clean:
 	rm -rf .build build
 
 logs:
-	tail -f "$$HOME/Library/Application Support/Relay/Logs/daemon.log"
+	tail -f "$$HOME/.relay/Logs/daemon.log"

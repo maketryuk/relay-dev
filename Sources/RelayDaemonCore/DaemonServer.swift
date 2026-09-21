@@ -73,6 +73,10 @@ public final class DaemonServer: @unchecked Sendable {
     // MARK: - Server lifecycle
 
     public func start() throws {
+        // Before the log is opened, since the log is one of the things that
+        // moves: the daemon outlives the app, so it is regularly the first
+        // process of a new build to touch the directory.
+        RelayPaths.migrateFromLegacyLocation()
         DaemonLog.shared.open(url: logURL)
         try RelayPaths.ensureDirectories()
 

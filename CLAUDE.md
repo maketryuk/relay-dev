@@ -149,10 +149,10 @@ instead of replacing it. Work in Relay; build in Relay Dev.
 
 They are two identities, not two copies. Everything that would let them reach
 each other is keyed by `RelayFlavour`: the bundle identifier, the name, the
-Application Support directory, the socket, the log, and whether the updater is
-allowed to run at all. `RELAY_FLAVOUR=dev` is read by the build script, the
-install script and the code alike, so the bundle and what runs inside it cannot
-disagree.
+home directory it keeps its files in — `~/.relay` against `~/.relay-dev` — the
+socket, the log, and whether the updater is allowed to run at all.
+`RELAY_FLAVOUR=dev` is read by the build script, the install script and the code
+alike, so the bundle and what runs inside it cannot disagree.
 
 Two copies of one identity does not work, and the reason is worth knowing. The
 client replaces a daemon whose binary is not the one it shipped with — right for

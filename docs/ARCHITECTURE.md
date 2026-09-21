@@ -111,6 +111,24 @@ migratable.
 `WorkspaceStore` is the only type that touches disk, so swapping in SQLite or
 SwiftData is contained.
 
+It writes to `~/.relay` — `~/.relay-dev` for the development build — rather than
+to Application Support. What is in there is not the opaque state of a
+document-based app: a workspace file worth reading when something looks wrong, a
+daemon log worth tailing, and a scratch directory an agent writes files into.
+All three are reached from a terminal, and `~/Library/Application Support/Relay
+Dev` is a path nobody types twice.
+
+An install written by an earlier build is moved by
+`RelayPaths.migrateSupportDirectory`, called once by whichever of the app and
+the daemon starts first — the daemon outlives the GUI, so it is regularly the
+new build's first process to touch the directory. It moves file by file rather
+than the directory in one go, because the destination existing says nothing
+about whether anything is in it: the daemon creates it when it opens its log,
+and `swift test` creates it through the workspace store. A whole-directory move
+gave up in both cases and left an empty workspace beside a full one. Anything
+already at the destination is never overwritten, and the old directory is
+removed only once it is empty.
+
 ## Idle cost
 
 - The classification timer only runs while at least one session is alive.

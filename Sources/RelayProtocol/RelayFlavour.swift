@@ -71,6 +71,19 @@ public enum RelayFlavour: String, Sendable, CaseIterable {
         }
     }
 
+    /// What the directory under the home folder is called.
+    ///
+    /// A dotted name rather than the display one: everything in it is written
+    /// by Relay for Relay, and a path a person types into a terminal — to read
+    /// a log, to keep a chat note — should be short and lower case, the way
+    /// every other tool of this kind names its own.
+    public var supportDirectoryName: String {
+        switch self {
+        case .release: ".relay"
+        case .development: ".relay-dev"
+        }
+    }
+
     /// A build being worked on has no business replacing itself with the one
     /// that shipped.
     public var allowsUpdates: Bool { self == .release }

@@ -162,7 +162,7 @@ Logs, список контейнеров с их состоянием и опу
 pgrep -lf relay-daemon
 
 # Логи
-tail -f ~/Library/Application\ Support/Relay/Logs/daemon.log
+tail -f ~/.relay/Logs/daemon.log
 
 # Остановить демон вместе со всеми сессиями
 pkill -f relay-daemon
@@ -175,8 +175,8 @@ pkill -f relay-daemon
 
 | Путь | Содержимое |
 |---|---|
-| `~/Library/Application Support/Relay/workspace.json` | проекты и настройки |
-| `~/Library/Application Support/Relay/Logs/daemon.log` | лог демона |
+| `~/.relay/workspace.json` | проекты и настройки |
+| `~/.relay/Logs/daemon.log` | лог демона |
 | `/tmp/relay-<uid>.sock` | сокет связи GUI ↔ демон |
 
 Секреты не сохраняются: SSH-ключи, пароли и содержимое окружения на диск не

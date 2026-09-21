@@ -5,6 +5,18 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Changed
+
+- **Relay keeps its files in `~/.relay`.** They were in Application Support,
+  where a document-based app puts state nobody opens; these are not that — a
+  workspace file worth reading when something looks wrong, a daemon log worth
+  tailing, and now a directory agents write into. All three are reached from a
+  terminal, and the old path was one nobody types twice. An existing install is
+  moved on first launch, so there is nothing to do; the development build uses
+  `~/.relay-dev`, as separate from it as it ever was.
+
 ## 0.4.0 — 2026-09-20
 
 ### Changed
