@@ -9,5 +9,5 @@ public enum RelayVersion {
     /// rather than bug fixes: it goes up for every build that ships and resets
     /// when the minor moves. Bumped with `Scripts/bump-version.sh`, never by
     /// hand, so that nothing else in the file can be edited by mistake.
-    public static let current = "0.5.0"
+    public static let current = "0.5.1"
 }

@@ -5,6 +5,18 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## 0.5.1 — 2026-09-21
+
+### Fixed
+
+- **Nothing in the app: this is 0.5.0 with a green build behind it.** The suite
+  that has to pass before a release is cut had been failing for a day, on two
+  things that were never about the app — a compiler older than the one it is
+  written on reading a rule about threads more strictly, and a three-core build
+  machine running a hundred tests at once and then timing one of them. Both are
+  fixed where they belong, in the tests and in CI. The number moves because a
+  published build takes the next one, whatever went into it.
+
 ## 0.5.0 — 2026-09-21
 
 ### Changed
