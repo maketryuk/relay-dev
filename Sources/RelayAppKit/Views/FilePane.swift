@@ -23,7 +23,6 @@ struct FilePane: View {
     @FocusState private var isFindFocused: Bool
 
     private var file: OpenFile? { model.editors[path] }
-    private var isFocused: Bool { model.editors.focused == path }
 
     var body: some View {
         if let file {
@@ -80,6 +79,12 @@ struct FilePane: View {
             .onChange(of: file.isModified) { _, isModified in
                 if !isModified { model.checkOpenFile(in: projectID, immediately: true) }
             }
+        } else if let preview = model.editors.previews[path] {
+            // One pane per file rather than one reused: a picture opened in
+            // place of another would otherwise show the last one, with the new
+            // one's name above it, until it had been read.
+            FilePreviewPane(preview: preview, projectID: projectID)
+                .id(preview.path)
         } else {
             EmptyStateView(
                 systemImage: "doc.text",
@@ -91,39 +96,23 @@ struct FilePane: View {
     }
 
     private func header(_ file: OpenFile) -> some View {
-        HStack(spacing: Theme.Spacing.small) {
+        FilePaneHeader(path: path, projectID: projectID) {
             // One slot, two things to say. A saved file shows what it is; a
             // file with unsaved work shows the dot every editor uses for it,
             // which is rarely up for long — leaving the pane writes the file
             // — but the moment between typing and leaving is exactly when a
             // person wants to be sure. An empty slot, which is what an
             // invisible dot left behind, reads as a gap nobody meant.
-            ZStack {
-                if file.isModified {
-                    Circle()
-                        .fill(Theme.Palette.statusWaiting)
-                        .frame(width: 6, height: 6)
-                } else {
-                    Image(systemName: file.isVendored ? "lock.doc" : "doc.text")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Theme.Palette.textTertiary)
-                }
+            if file.isModified {
+                Circle()
+                    .fill(Theme.Palette.statusWaiting)
+                    .frame(width: 6, height: 6)
+            } else {
+                Image(systemName: file.isVendored ? "lock.doc" : "doc.text")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.Palette.textTertiary)
             }
-            .frame(width: 14)
-
-            Text(verbatim: file.name)
-                .font(Theme.Typography.row)
-                .foregroundStyle(isFocused ? Theme.Palette.textPrimary : Theme.Palette.textSecondary)
-                .lineLimit(1)
-
-            Text(verbatim: relativePath)
-                .font(Theme.Typography.caption)
-                .foregroundStyle(Theme.Palette.textTertiary)
-                .lineLimit(1)
-                .truncationMode(.head)
-
-            Spacer(minLength: Theme.Spacing.small)
-
+        } accessories: {
             // Said rather than left to be discovered by typing into it and
             // watching nothing happen.
             if file.isVendored {
@@ -138,17 +127,7 @@ struct FilePane: View {
                     .foregroundStyle(Theme.Palette.statusError)
                     .lineLimit(1)
             }
-
-            IconButton(systemImage: "xmark", help: "", size: 20) {
-                model.closeFile(at: path, in: projectID)
-            }
-            .relayTooltip(relayLocalized("Close File"), shortcut: model.binding(for: .closeSession))
         }
-        .padding(.horizontal, Theme.Spacing.small)
-        .frame(height: Theme.Metrics.contextBarHeight + 4)
-        .background(Theme.Palette.sidebar)
-        .contentShape(Rectangle())
-        .onTapGesture { model.focusFile(at: path) }
     }
 
     /// A field at the top of the pane, the way every editor puts it.
@@ -317,6 +296,61 @@ struct FilePane: View {
         isFindFocused = false
         findQuery = ""
         found = CodeTextView.FindMatches()
+    }
+}
+
+/// The strip along the top of a file pane: what the file is, where it lives,
+/// and the way to close it — the same for a file being edited and one being
+/// looked at, since both are one pane in the arrangement.
+struct FilePaneHeader<Icon: View, Accessories: View>: View {
+    @Environment(AppModel.self) private var model
+    let path: String
+    let projectID: ProjectID
+    private let icon: Icon
+    private let accessories: Accessories
+
+    init(
+        path: String,
+        projectID: ProjectID,
+        @ViewBuilder icon: () -> Icon,
+        @ViewBuilder accessories: () -> Accessories
+    ) {
+        self.path = path
+        self.projectID = projectID
+        self.icon = icon()
+        self.accessories = accessories()
+    }
+
+    var body: some View {
+        HStack(spacing: Theme.Spacing.small) {
+            ZStack { icon }
+                .frame(width: 14)
+
+            Text(verbatim: (path as NSString).lastPathComponent)
+                .font(Theme.Typography.row)
+                .foregroundStyle(model.editors.focused == path ? Theme.Palette.textPrimary : Theme.Palette.textSecondary)
+                .lineLimit(1)
+
+            Text(verbatim: relativePath)
+                .font(Theme.Typography.caption)
+                .foregroundStyle(Theme.Palette.textTertiary)
+                .lineLimit(1)
+                .truncationMode(.head)
+
+            Spacer(minLength: Theme.Spacing.small)
+
+            accessories
+
+            IconButton(systemImage: "xmark", help: "", size: 20) {
+                model.closeFile(at: path, in: projectID)
+            }
+            .relayTooltip(relayLocalized("Close File"), shortcut: model.binding(for: .closeSession))
+        }
+        .padding(.horizontal, Theme.Spacing.small)
+        .frame(height: Theme.Metrics.contextBarHeight + 4)
+        .background(Theme.Palette.sidebar)
+        .contentShape(Rectangle())
+        .onTapGesture { model.focusFile(at: path) }
     }
 
     /// The path as it reads inside the project, since the project name is

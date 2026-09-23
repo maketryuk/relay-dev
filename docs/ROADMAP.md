@@ -83,6 +83,10 @@ workspace is usually a git worktree.
 - **Everywhere a name is used, not only where it comes from.** The tags queries
   the jump is built on capture references as well as declarations, so the other
   half — "show me the callers" — is the same index read the other way round.
+- **The rest of the previews.** Pictures, PDFs and recordings are shown; a PDF
+  cannot be searched yet — ⌘F on one searches the project — and a preview,
+  like a buffer, does not notice the file changing under it until the
+  directory is watched.
 - **Compiling a grammar query off the main thread.** Colouring a file compiles
   its highlight query the first time that language is opened, and for Swift
   that measures at a second — on the main thread, where it is a second of a

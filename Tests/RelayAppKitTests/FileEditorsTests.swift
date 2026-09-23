@@ -24,7 +24,8 @@ struct FileEditorsTests {
     func opening() throws {
         let path = try temporaryFile()
         let editors = FileEditors()
-        let file = try #require(editors.open(path))
+        #expect(editors.open(path))
+        let file = try #require(editors[path])
 
         #expect(file.text == "one\ntwo\n")
         #expect(file.isModified == false)
@@ -37,9 +38,11 @@ struct FileEditorsTests {
         // each other, and the loser would be whichever was saved first.
         let path = try temporaryFile()
         let editors = FileEditors()
-        let first = try #require(editors.open(path))
+        #expect(editors.open(path))
+        let first = try #require(editors[path])
         first.text = "edited"
-        let second = try #require(editors.open(path))
+        #expect(editors.open(path))
+        let second = try #require(editors[path])
 
         #expect(second === first)
         #expect(second.text == "edited")
@@ -69,7 +72,8 @@ struct FileEditorsTests {
         let first = try temporaryFile()
         let second = try temporaryFile(contents: "two\n")
         let editors = FileEditors()
-        let opened = try #require(editors.open(first))
+        #expect(editors.open(first))
+        let opened = try #require(editors[first])
         opened.text = "edited\n"
         editors.focused = first
 
@@ -84,7 +88,7 @@ struct FileEditorsTests {
     @Test("A file that cannot be read is not opened at all")
     func missingFile() {
         let editors = FileEditors()
-        #expect(editors.open("/definitely/not/here.swift") == nil)
+        #expect(editors.open("/definitely/not/here.swift") == false)
         #expect(editors.files.isEmpty)
     }
 
@@ -95,7 +99,8 @@ struct FileEditorsTests {
         // the editor.
         let path = try temporaryFile()
         let editors = FileEditors()
-        let file = try #require(editors.open(path))
+        #expect(editors.open(path))
+        let file = try #require(editors[path])
         editors.focused = path
         file.text = "changed on screen\n"
 
@@ -111,7 +116,8 @@ struct FileEditorsTests {
     func savesOnClose() throws {
         let path = try temporaryFile()
         let editors = FileEditors()
-        let file = try #require(editors.open(path))
+        #expect(editors.open(path))
+        let file = try #require(editors[path])
         file.text = "closed with changes\n"
         editors.close(path)
 
@@ -126,7 +132,7 @@ struct FileEditorsTests {
         // rebuilds for nothing.
         let path = try temporaryFile()
         let editors = FileEditors()
-        _ = editors.open(path)
+        editors.open(path)
         let before = try FileManager.default.attributesOfItem(atPath: path)[.modificationDate] as? Date
 
         editors.save(path)
@@ -139,7 +145,8 @@ struct FileEditorsTests {
     func reloading() throws {
         let path = try temporaryFile()
         let editors = FileEditors()
-        let file = try #require(editors.open(path))
+        #expect(editors.open(path))
+        let file = try #require(editors[path])
         try "written by an agent\n".write(toFile: path, atomically: true, encoding: .utf8)
 
         file.reload()

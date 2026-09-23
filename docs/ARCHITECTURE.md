@@ -412,3 +412,18 @@ anyway. Between polls the last answer stands, and when there is no token or no
 answer at all the cache on disk stands in — minus any window whose reset has
 already passed, because a five-hour bar from a window that ended two days ago
 describes nothing.
+
+# Files that are not text
+
+A picture, a PDF or a recording opens in the same pane a file does, under the
+same one-at-a-time rule, and is a `FilePreview` rather than an `OpenFile`.
+Everything that holds an `OpenFile` — saving on losing focus, the checker, find,
+⌘-click — is asking for text, and a buffer full of a PNG's bytes would answer
+each of them wrongly instead of not at all. `FileEditors` holds both, so the
+layout, ⌘W and a relaunch treat them alike.
+
+**What counts as a preview is a list of extensions, not the system's type
+tree.** macOS knows `.ts` as an MPEG transport stream and `.mts` as a
+camcorder's, so asking `UTType` whether a file is a video would open every
+TypeScript module in a player. SVG is left to the editor: it is a picture, but
+in a project it is almost always opened to be changed.

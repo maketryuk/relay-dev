@@ -262,7 +262,7 @@ final class AppModel {
         }
         for (projectID, layout) in paneLayouts {
             var pruned: PaneNode? = layout
-            for path in PaneLayout.files(in: layout) where editors[path] == nil {
+            for path in PaneLayout.files(in: layout) where !editors.openPaths.contains(path) {
                 pruned = pruned.flatMap { PaneLayout.removing(.file(path), from: $0) }
             }
             paneLayouts[projectID] = pruned
@@ -1088,7 +1088,7 @@ final class AppModel {
     @discardableResult
     func openFile(at path: String, in projectID: ProjectID) -> Bool {
         let previous = editors.openPath.flatMap { $0 == path ? nil : $0 }
-        guard editors.open(path) != nil else {
+        guard editors.open(path) else {
             present(ToastContent(
                 kind: .error,
                 title: relayLocalized("Could not open file"),
@@ -1173,7 +1173,7 @@ final class AppModel {
         editors.save(path)
         do {
             let moved = try FileActions.rename(path, to: name)
-            let wasOpen = editors[path] != nil
+            let wasOpen = editors.openPaths.contains(path)
             editors.close(path)
             if let layout = paneLayouts[projectID] {
                 paneLayouts[projectID] = PaneLayout.replacing(.file(path), with: .file(moved), in: layout)
@@ -1432,7 +1432,9 @@ final class AppModel {
     /// is looking for something, and the panel that searches everything is
     /// the only honest thing to offer them.
     func findInFocusedFile() {
-        guard editors.focused != nil else {
+        // A picture or a recording has no text to look through, which makes
+        // it the terminal's case rather than the file's.
+        guard let path = editors.focused, editors[path] != nil else {
             if let projectID = selectedProjectID { presentModal(.search(projectID)) }
             return
         }
@@ -2766,13 +2768,19 @@ final class AppModel {
     /// is about, and the terminal behind it is not. One size for every
     /// terminal and one for every file rather than per pane — it is how the
     /// user reads, not something about a particular file.
+    ///
+    /// A picture or a PDF in front of you has no text size to change, so
+    /// there the same keys zoom it — which is what they do in every viewer
+    /// on the machine.
     func stepFontSize(by delta: Double) {
-        guard editors.focused != nil else { return stepTerminalFontSize(by: delta) }
+        guard let path = editors.focused else { return stepTerminalFontSize(by: delta) }
+        if let preview = editors.previews[path] { return preview.zoom(delta > 0 ? .zoomIn : .zoomOut) }
         setEditorFontSize(Double(TerminalZoom.stepped(CGFloat(editorFontSize), by: CGFloat(delta))))
     }
 
     func resetFontSize() {
-        guard editors.focused != nil else { return resetTerminalFontSize() }
+        guard let path = editors.focused else { return resetTerminalFontSize() }
+        if let preview = editors.previews[path] { return preview.zoom(.fit) }
         setEditorFontSize(Double(TerminalZoom.defaultSize))
     }
 

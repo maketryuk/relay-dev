@@ -74,6 +74,8 @@
 "CUSTOM COMMAND" = "CUSTOM COMMAND";
 "Cached" = "Cached";
 "Cancel" = "Cancel";
+"Cannot be played here" = "Cannot be played here";
+"Cannot be shown" = "Cannot be shown";
 "Case sensitive; letters only." = "Case sensitive; letters only.";
 "Chat" = "Chat";
 "Check automatically" = "Check automatically";
@@ -335,6 +337,7 @@
 "Open URL" = "Open URL";
 "Open a terminal inside this container" = "Open a terminal inside this container";
 "Open in Browser" = "Open in Browser";
+"Open in Default App" = "Open in Default App";
 "Open in Editor" = "Open in Editor";
 "Open in Finder" = "Open in Finder";
 "Open in browser" = "Open in browser";
@@ -351,6 +354,7 @@
 "Output" = "Output";
 "Overwrite the remote branch, refusing if it moved since you last fetched" = "Overwrite the remote branch, refusing if it moved since you last fetched";
 "Overwrites the remote branch, but refuses if it moved since you last fetched" = "Overwrites the remote branch, but refuses if it moved since you last fetched";
+"Pages: %@" = "Pages: %@";
 "Passphrase" = "Passphrase";
 "Past conversations with Claude and Codex in this project appear here, wherever they were started." = "Past conversations with Claude and Codex in this project appear here, wherever they were started.";
 "Pin to Project" = "Pin to Project";
@@ -544,6 +548,7 @@
 "There is no git repository in this project." = "There is no git repository in this project.";
 "This block also names: %@" = "This block also names: %@";
 "This build updates by being rebuilt" = "This build updates by being rebuilt";
+"This file could not be read as what its name says it is." = "This file could not be read as what its name says it is.";
 "This file could not be read from disk." = "This file could not be read from disk.";
 "This is the newest release" = "This is the newest release";
 "This project" = "This project";
@@ -600,6 +605,7 @@
 "its signature is not valid" = "its signature is not valid";
 "listening" = "listening";
 "logs" = "logs";
+"macOS has no player for this format. Open it in the app it belongs to." = "macOS has no player for this format. Open it in the app it belongs to.";
 "new" = "new";
 "not a git repository. Click to look again." = "not a git repository. Click to look again.";
 "ours" = "ours";

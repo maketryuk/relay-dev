@@ -74,6 +74,8 @@
 "CUSTOM COMMAND" = "СВОЯ КОМАНДА";
 "Cached" = "Из кэша";
 "Cancel" = "Отмена";
+"Cannot be played here" = "Здесь не воспроизводится";
+"Cannot be shown" = "Не удаётся показать";
 "Case sensitive; letters only." = "Регистр важен, только буквы.";
 "Chat" = "Чат";
 "Check automatically" = "Проверять автоматически";
@@ -335,6 +337,7 @@
 "Open URL" = "Открыть URL";
 "Open a terminal inside this container" = "Открыть терминал внутри контейнера";
 "Open in Browser" = "Открыть в браузере";
+"Open in Default App" = "Открыть в приложении по умолчанию";
 "Open in Editor" = "Открыть в редакторе";
 "Open in Finder" = "Показать в Finder";
 "Open in browser" = "Открыть в браузере";
@@ -351,6 +354,7 @@
 "Output" = "Ответ";
 "Overwrite the remote branch, refusing if it moved since you last fetched" = "Перезаписать ветку на удалённом; откажется, если она сдвинулась после вашего fetch";
 "Overwrites the remote branch, but refuses if it moved since you last fetched" = "Перезапишет ветку на удалённом, но откажется, если она сдвинулась после вашего fetch";
+"Pages: %@" = "Страниц: %@";
 "Passphrase" = "Парольная фраза";
 "Past conversations with Claude and Codex in this project appear here, wherever they were started." = "Здесь появляются прошлые разговоры с Claude и Codex в этом проекте — где бы они ни были начаты.";
 "Pin to Project" = "Закрепить за проектом";
@@ -544,6 +548,7 @@
 "There is no git repository in this project." = "В этом проекте нет git-репозитория.";
 "This block also names: %@" = "Этот блок также описывает: %@";
 "This build updates by being rebuilt" = "Эта сборка обновляется пересборкой";
+"This file could not be read as what its name says it is." = "Файл не читается как то, чем его называет расширение.";
 "This file could not be read from disk." = "Этот файл не удалось прочитать с диска.";
 "This is the newest release" = "Это самый свежий релиз";
 "This project" = "Этот проект";
@@ -600,6 +605,7 @@
 "its signature is not valid" = "её подпись недействительна";
 "listening" = "слушает";
 "logs" = "logs";
+"macOS has no player for this format. Open it in the app it belongs to." = "В macOS нет проигрывателя для этого формата. Откройте файл в приложении, для которого он предназначен.";
 "new" = "новый";
 "not a git repository. Click to look again." = "не git-репозиторий. Нажмите, чтобы проверить снова.";
 "ours" = "наше";

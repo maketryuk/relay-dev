@@ -213,7 +213,7 @@ struct FileTreeLevel: View {
                         entry: entry,
                         depth: depth,
                         isExpanded: state.expanded.contains(entry.path),
-                        isOpen: model.editors[entry.path] != nil,
+                        isOpen: model.editors.openPaths.contains(entry.path),
                         isCurrent: model.editors.recent == entry.path,
                         isModified: model.editors[entry.path]?.isModified == true
                     ) {

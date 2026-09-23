@@ -11,6 +11,10 @@ import Observation
 @Observable
 final class FileEditors {
     private(set) var files: [String: OpenFile] = [:]
+    /// What is open to be looked at rather than edited. Under the same
+    /// one-at-a-time rule as the buffers: a picture opened beside an agent
+    /// takes the place of the file that was there, not a second pane.
+    private(set) var previews: [String: FilePreview] = [:]
 
     /// Called with a file that was just written out.
     ///
@@ -37,32 +41,47 @@ final class FileEditors {
     /// about which file is being worked on.
     private(set) var recent: String?
 
-    var openPaths: Set<String> { Set(files.keys) }
+    var openPaths: Set<String> { Set(files.keys).union(previews.keys) }
 
+    /// The buffer open on this path. Nil for a preview as well as for a file
+    /// that is not open: everything that asks is asking for text.
     subscript(path: String) -> OpenFile? { files[path] }
 
     /// The file open at the moment, if there is one.
-    var openPath: String? { files.keys.first }
+    var openPath: String? { files.keys.first ?? previews.keys.first }
 
-    /// Opens the file, or hands back the buffer already open on it.
+    /// Opens the file — as a buffer when it is text, as a preview when it is
+    /// a picture, a document or a recording — or keeps the one already open.
+    /// False when it cannot be read either way.
     ///
     /// One at a time: opening another writes this one out and forgets it. The
     /// pane is somewhere to read and correct the file an agent is working on,
     /// beside the agent — not a desk to stack documents on, which is what the
     /// editor in the other window is for.
     @discardableResult
-    func open(_ path: String) -> OpenFile? {
-        if let existing = files[path] { return existing }
-        guard let file = OpenFile(path: path) else { return nil }
-        for other in files.keys where other != path { close(other) }
-        files[path] = file
-        return file
+    func open(_ path: String) -> Bool {
+        guard !openPaths.contains(path) else { return true }
+        if FilePreview.Kind(path: path) != nil {
+            guard let preview = FilePreview(path: path) else { return false }
+            closeAll(except: path)
+            previews[path] = preview
+        } else {
+            guard let file = OpenFile(path: path) else { return false }
+            closeAll(except: path)
+            files[path] = file
+        }
+        return true
+    }
+
+    private func closeAll(except path: String) {
+        for other in openPaths where other != path { close(other) }
     }
 
     /// Writes the file out and forgets it.
     func close(_ path: String) {
         write(files[path])
         files[path] = nil
+        previews[path] = nil
         if recent == path { recent = nil }
         if focused == path { focused = nil }
     }

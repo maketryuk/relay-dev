@@ -15,6 +15,13 @@ breaking change to stored data.
   would read as syntax, so one drop works in a shell and in an agent's prompt
   alike; and it goes over as a paste, one per file, so an image dropped on
   Claude Code or Codex is attached as an image rather than typed out as text.
+- **Pictures, PDFs, videos and recordings open in the file pane** instead of
+  failing to: a picture fitted to the pane, zoomed with a pinch or ⌘+ and ⌘−
+  and put back with ⌘0 or a double click; a PDF as pages to scroll, select and
+  follow links in; a video or a recording with the system's own player, which
+  says so plainly when macOS cannot play the format. The header shows the size,
+  the dimensions, the page count or the length, and opens the file in the app
+  it belongs to.
 
 ## 0.5.1 — 2026-09-21
 
