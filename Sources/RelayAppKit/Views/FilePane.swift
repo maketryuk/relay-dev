@@ -20,9 +20,16 @@ struct FilePane: View {
     @State private var isFinding = false
     @State private var findQuery = ""
     @State private var found = CodeTextView.FindMatches()
+    /// The same bar over a rendered page, which answers only whether the text
+    /// is there — not how many times, nor where the next one is.
+    @State private var previewFind: MarkdownPreviewView.Find?
+    @State private var previewFound = true
     @FocusState private var isFindFocused: Bool
 
     private var file: OpenFile? { model.editors[path] }
+
+    private var isMarkdown: Bool { MarkdownHTML.isMarkdown(path: path) }
+    private var showsPreview: Bool { isMarkdown && model.showsMarkdownPreview }
 
     var body: some View {
         if let file {
@@ -35,28 +42,24 @@ struct FilePane: View {
                     RelayDivider()
                 }
 
-                if !model.diagnostics.isEmpty {
+                if !model.diagnostics.isEmpty, !showsPreview {
                     RelayDivider()
                     problemBar(file)
                 }
 
-                CodeTextView(
-                    text: Binding(get: { file.text }, set: { file.text = $0 }),
-                    isEditable: !file.isVendored,
-                    fontSize: CGFloat(model.editorFontSize),
-                    language: file.language,
-                    onFocus: { model.focusFile(at: path, caret: $0) },
-                    onCommandClick: { model.goToDefinition(at: $0, in: path, projectID: projectID) },
-                    onLink: { isLinking = $0 },
-                    reveal: file.reveal,
-                    find: isFinding && !found.isEmpty ? found : nil,
-                    occurrences: file.occurrences,
-                    problems: problems(in: file)
-                )
-                // The underline says the name can be clicked; so should the
-                // pointer, which is the half of that promise a hand reaches
-                // for first.
-                .relayPointer(isLinking ? .clickable : .text)
+                if showsPreview {
+                    MarkdownPreviewView(
+                        text: file.text,
+                        path: path,
+                        fontSize: CGFloat(model.editorFontSize),
+                        find: previewFind,
+                        onFound: { previewFound = $0 },
+                        onFocus: { model.focusFile(at: path) },
+                        onLink: { model.follow($0, in: projectID) }
+                    )
+                } else {
+                    codeView(file)
+                }
             }
             .background(Theme.Palette.base)
             // Only the pane being worked in answers ⌘F; the others are not
@@ -68,6 +71,9 @@ struct FilePane: View {
                 refreshMatches(file)
             }
             .onChange(of: findQuery) { _, _ in refreshMatches(file) }
+            .onChange(of: showsPreview) { _, _ in
+                if isFinding { refreshMatches(file) }
+            }
             .onChange(of: file.text) { _, _ in
                 if isFinding { refreshMatches(file) }
                 model.checkOpenFile(in: projectID)
@@ -93,6 +99,26 @@ struct FilePane: View {
             )
             .background(Theme.Palette.base)
         }
+    }
+
+    private func codeView(_ file: OpenFile) -> some View {
+        CodeTextView(
+            text: Binding(get: { file.text }, set: { file.text = $0 }),
+            isEditable: !file.isVendored,
+            fontSize: CGFloat(model.editorFontSize),
+            language: file.language,
+            onFocus: { model.focusFile(at: path, caret: $0) },
+            onCommandClick: { model.goToDefinition(at: $0, in: path, projectID: projectID) },
+            onLink: { isLinking = $0 },
+            reveal: file.reveal,
+            find: isFinding && !found.isEmpty ? found : nil,
+            occurrences: file.occurrences,
+            problems: problems(in: file)
+        )
+        // The underline says the name can be clicked; so should the
+        // pointer, which is the half of that promise a hand reaches
+        // for first.
+        .relayPointer(isLinking ? .clickable : .text)
     }
 
     private func header(_ file: OpenFile) -> some View {
@@ -127,6 +153,31 @@ struct FilePane: View {
                     .foregroundStyle(Theme.Palette.statusError)
                     .lineLimit(1)
             }
+
+            if isMarkdown { markdownModes }
+        }
+    }
+
+    /// Source or the page it makes. Both, rather than one button that flips,
+    /// because a toggle whose glyph shows the mode you are not in is read the
+    /// wrong way round half the time.
+    private var markdownModes: some View {
+        HStack(spacing: 2) {
+            IconButton(
+                systemImage: "chevron.left.forwardslash.chevron.right",
+                help: "",
+                size: 20,
+                prominence: .selectable,
+                isSelected: !showsPreview
+            ) {
+                model.setShowsMarkdownPreview(false)
+            }
+            .relayTooltip(relayLocalized("Source"), shortcut: model.binding(for: .toggleMarkdownPreview))
+
+            IconButton(systemImage: "eye", help: "", size: 20, prominence: .selectable, isSelected: showsPreview) {
+                model.setShowsMarkdownPreview(true)
+            }
+            .relayTooltip(relayLocalized("Preview"), shortcut: model.binding(for: .toggleMarkdownPreview))
         }
     }
 
@@ -149,17 +200,15 @@ struct FilePane: View {
                     return .handled
                 }
 
-            Text(verbatim: found.counter(for: findQuery))
+            Text(verbatim: findCounter)
                 .font(Theme.Typography.caption)
-                .foregroundStyle(found.isEmpty && !findQuery.isEmpty
-                    ? Theme.Palette.statusError
-                    : Theme.Palette.textTertiary)
+                .foregroundStyle(foundNothing ? Theme.Palette.statusError : Theme.Palette.textTertiary)
                 .monospacedDigit()
 
             IconButton(systemImage: "chevron.up", help: "", size: 20) { step(-1) }
-                .disabled(found.isEmpty)
+                .disabled(!canStep)
             IconButton(systemImage: "chevron.down", help: "", size: 20) { step(1) }
-                .disabled(found.isEmpty)
+                .disabled(!canStep)
             IconButton(systemImage: "xmark", help: "", size: 20) { endFind() }
         }
         .padding(.horizontal, Theme.Spacing.small)
@@ -283,11 +332,36 @@ struct FilePane: View {
         isFindFocused || model.editors.focused == path
     }
 
+    /// `3/12` over the source. Over the page, only the `0` for a search that
+    /// found nothing: the page does not count, and a counter that guessed
+    /// would be wrong exactly when somebody relied on it.
+    private var findCounter: String {
+        guard showsPreview else { return found.counter(for: findQuery) }
+        return foundNothing ? "0" : ""
+    }
+
+    private var foundNothing: Bool {
+        guard !findQuery.isEmpty else { return false }
+        return showsPreview ? !previewFound : found.isEmpty
+    }
+
+    private var canStep: Bool {
+        showsPreview ? !findQuery.isEmpty && previewFound : !found.isEmpty
+    }
+
     private func refreshMatches(_ file: OpenFile) {
+        guard !showsPreview else {
+            previewFind = MarkdownPreviewView.Find(query: findQuery, backwards: false)
+            return
+        }
         found = CodeTextView.FindMatches(ranges: TextSearch.ranges(of: findQuery, in: file.text), current: 0)
     }
 
     private func step(_ direction: Int) {
+        guard !showsPreview else {
+            previewFind = MarkdownPreviewView.Find(query: findQuery, backwards: direction < 0)
+            return
+        }
         found = found.stepped(direction)
     }
 
@@ -296,6 +370,9 @@ struct FilePane: View {
         isFindFocused = false
         findQuery = ""
         found = CodeTextView.FindMatches()
+        // An empty find is what takes the page's highlight off the last match.
+        if showsPreview { previewFind = MarkdownPreviewView.Find(query: "", backwards: false) }
+        previewFound = true
     }
 }
 

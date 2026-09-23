@@ -120,6 +120,10 @@ struct RelayCommands: Commands {
             }
             .relayShortcut(model.binding(for: .searchProject))
 
+            Button(RelayCommand.toggleMarkdownPreview.localizedTitle) { model.toggleMarkdownPreview() }
+                .relayShortcut(model.binding(for: .toggleMarkdownPreview))
+                .disabled(!model.isMarkdownFocused)
+
             Divider()
 
             Button(RelayCommand.goToDefinition.localizedTitle) { model.goToDefinitionFromCaret() }

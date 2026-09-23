@@ -366,6 +366,7 @@
 "Press %@ for a terminal, or + to choose" = "Press %@ for a terminal, or + to choose";
 "Press + to start one" = "Press + to start one";
 "Press keys…" = "Press keys…";
+"Preview" = "Preview";
 "Previous Project" = "Previous Project";
 "Previous Session" = "Previous Session";
 "Project Settings" = "Project Settings";
@@ -497,6 +498,7 @@
 "Shows what each agent has left of its rate limits" = "Shows what each agent has left of its rate limits";
 "Sidebar width" = "Sidebar width";
 "Something failed" = "Something failed";
+"Source" = "Source";
 "Split Down" = "Split Down";
 "Split Right" = "Split Right";
 "Stage all" = "Stage all";
@@ -554,6 +556,7 @@
 "This project" = "This project";
 "This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand." = "This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand.";
 "This session is no longer known to the daemon." = "This session is no longer known to the daemon.";
+"Toggle Markdown Preview" = "Toggle Markdown Preview";
 "Toggle Project Panel" = "Toggle Project Panel";
 "Toggle Sessions Sidebar" = "Toggle Sessions Sidebar";
 "Too large to show" = "Too large to show";

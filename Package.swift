@@ -20,6 +20,10 @@ let package = Package(
         // above short: a node's range is already the range `NSTextStorage`
         // counts in, with no byte arithmetic in between to get wrong.
         .package(url: "https://github.com/ChimeHQ/SwiftTreeSitter.git", exact: "0.9.0"),
+        // GitHub's own Markdown parser, with its tables, task lists and
+        // strikethrough, so a README reads in the preview the way it will on
+        // GitHub. C with a module map and no dependencies of its own.
+        .package(url: "https://github.com/swiftlang/swift-cmark.git", exact: "0.9.0"),
     ],
     targets: [
         .target(name: "RelayProtocol"),
@@ -38,6 +42,8 @@ let package = Package(
                 .product(name: "SwiftTerm", package: "SwiftTerm"),
                 .product(name: "CodeEditLanguages", package: "CodeEditLanguages"),
                 .product(name: "SwiftTreeSitter", package: "SwiftTreeSitter"),
+                .product(name: "cmark-gfm", package: "swift-cmark"),
+                .product(name: "cmark-gfm-extensions", package: "swift-cmark"),
             ]
         ),
         .executableTarget(name: "RelayApp", dependencies: ["RelayAppKit"]),

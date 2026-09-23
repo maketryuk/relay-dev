@@ -56,6 +56,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     case goBack
     case findInFile
     case searchProject
+    case toggleMarkdownPreview
 
     case nextProject
     case previousProject
@@ -101,6 +102,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .goBack: "Back"
         case .findInFile: "Find"
         case .searchProject: "Find in Files"
+        case .toggleMarkdownPreview: "Toggle Markdown Preview"
         }
     }
 
@@ -115,7 +117,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .startDefaultService, .restartDefaultService: .services
         case .nextProject, .previousProject, .addProject, .revealProject,
              .projectSettings, .reviewChanges, .switchBranch: .projects
-        case .goToDefinition, .goBack, .findInFile, .searchProject: .editor
+        case .goToDefinition, .goBack, .findInFile, .searchProject, .toggleMarkdownPreview: .editor
         }
     }
 
@@ -179,6 +181,9 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         // way every editor on this machine divides the two.
         case .findInFile: KeyBinding("f", .command)
         case .searchProject: KeyBinding("f", [.command, .shift])
+        // VS Code's. Paste-and-match-style, which it means in a text view,
+        // has nothing to do in a plain-text editor or a terminal.
+        case .toggleMarkdownPreview: KeyBinding("v", [.command, .shift])
         }
     }
 }

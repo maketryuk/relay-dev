@@ -366,6 +366,7 @@
 "Press %@ for a terminal, or + to choose" = "%@ — терминал, или + для выбора";
 "Press + to start one" = "Нажмите +, чтобы начать";
 "Press keys…" = "Нажмите сочетание…";
+"Preview" = "Превью";
 "Previous Project" = "Предыдущий проект";
 "Previous Session" = "Предыдущая сессия";
 "Project Settings" = "Настройки проекта";
@@ -497,6 +498,7 @@
 "Shows what each agent has left of its rate limits" = "Показывает, сколько у каждого агента осталось от лимитов";
 "Sidebar width" = "Ширина панели";
 "Something failed" = "Что-то упало";
+"Source" = "Исходный текст";
 "Split Down" = "Разделить вниз";
 "Split Right" = "Разделить вправо";
 "Stage all" = "Добавить всё в индекс";
@@ -554,6 +556,7 @@
 "This project" = "Этот проект";
 "This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand." = "Это перезапишет ветку на удалённом сервере. Всем, кто её уже забрал, придётся восстанавливаться вручную.";
 "This session is no longer known to the daemon." = "Демон больше не знает об этой сессии.";
+"Toggle Markdown Preview" = "Переключить превью Markdown";
 "Toggle Project Panel" = "Показать панель проекта";
 "Toggle Sessions Sidebar" = "Показать панель сессий";
 "Too large to show" = "Слишком большой для показа";

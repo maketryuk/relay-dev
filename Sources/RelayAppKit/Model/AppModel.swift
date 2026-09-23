@@ -137,6 +137,10 @@ final class AppModel {
     /// How large a file is drawn. Apart from the terminal's: code is read
     /// closer than a log is.
     private(set) var editorFontSize = Double(TerminalZoom.defaultSize)
+    /// Markdown as the page it makes rather than as its source. On until it is
+    /// turned off: a Markdown file opened beside an agent is almost always a
+    /// plan or a README it wrote, and those are opened to be read.
+    private(set) var showsMarkdownPreview = true
     /// Whether terminals are drawn on the GPU. On by default, because scrolling
     /// a full window of text is what the CPU path is worst at; a machine where
     /// it cannot be had falls back on its own, and the switch is here for one
@@ -247,6 +251,7 @@ final class AppModel {
         usageBarDetail = state.usageBarDetail
         terminalFontSize = state.terminalFontSize
         editorFontSize = state.editorFontSize
+        showsMarkdownPreview = state.showsMarkdownPreview
         terminalUsesGPURendering = state.terminalUsesGPURendering
         reviewComments = state.reviewComments
         paneLayouts = Dictionary(uniqueKeysWithValues: state.paneLayouts.map {
@@ -1148,6 +1153,34 @@ final class AppModel {
             }
         }
         return true
+    }
+
+    /// Where a link clicked in a Markdown preview goes: another file into the
+    /// pane, the way the tree would open it, and the web to the browser.
+    func follow(_ link: MarkdownLink, in projectID: ProjectID) {
+        switch link {
+        case .withinPage: break
+        case let .file(path): openFile(at: path, in: projectID)
+        case let .external(url): NSWorkspace.shared.open(url)
+        }
+    }
+
+    func setShowsMarkdownPreview(_ shows: Bool) {
+        guard shows != showsMarkdownPreview else { return }
+        showsMarkdownPreview = shows
+        persist()
+    }
+
+    /// Whether the file the keyboard is in is one a preview can be shown for.
+    var isMarkdownFocused: Bool {
+        guard let path = editors.focused, editors[path] != nil else { return false }
+        return MarkdownHTML.isMarkdown(path: path)
+    }
+
+    /// ⇧⌘V, as in the editors that have it.
+    func toggleMarkdownPreview() {
+        guard isMarkdownFocused else { return }
+        setShowsMarkdownPreview(!showsMarkdownPreview)
     }
 
     /// Writes the file out and takes its pane down.
@@ -3790,6 +3823,7 @@ final class AppModel {
             usageBarDetail: usageBarDetail,
             terminalFontSize: terminalFontSize,
             editorFontSize: editorFontSize,
+            showsMarkdownPreview: showsMarkdownPreview,
             terminalUsesGPURendering: terminalUsesGPURendering,
             reviewComments: reviewComments,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })

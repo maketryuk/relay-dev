@@ -22,6 +22,12 @@ breaking change to stored data.
   says so plainly when macOS cannot play the format. The header shows the size,
   the dimensions, the page count or the length, and opens the file in the app
   it belongs to.
+- **Markdown can be read as the page it makes** — with GitHub's tables, task
+  lists and anchors, fenced code coloured the way the editor colours it, and
+  pictures beside the file shown in place. Links open other files in Relay and
+  web addresses in the browser; the page runs no scripts. The header, or ⇧⌘V,
+  switches between the page and its source, and a Markdown file opens as
+  whichever was chosen last.
 
 ## 0.5.1 — 2026-09-21
 

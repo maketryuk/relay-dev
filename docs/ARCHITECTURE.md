@@ -427,3 +427,21 @@ tree.** macOS knows `.ts` as an MPEG transport stream and `.mts` as a
 camcorder's, so asking `UTType` whether a file is a video would open every
 TypeScript module in a player. SVG is left to the editor: it is a picture, but
 in a project it is almost always opened to be changed.
+
+**Markdown is rendered by cmark-gfm into a web view that runs nothing.**
+cmark-gfm is what GitHub renders with, so a README reads the way it will there;
+a web view because what Markdown becomes is HTML, and every native way of
+drawing HTML is a web view with fewer features. Raw HTML is let through — a
+README's centred logo and its badges are raw HTML — so the page is fenced in
+three times over: GitHub's `tagfilter` escapes `script`, `iframe` and the rest,
+the web view has JavaScript switched off, and the page's own
+Content-Security-Policy allows images from disk and HTTPS and nothing else. The
+only script that runs is Relay's, in a content world of its own, and all it
+does is read and restore the scroll position across a re-render.
+
+The page is given an address under Relay's own `relay-file:` scheme rather than
+a `file:` one, because a web view handed HTML as a string will not read `file:`
+at all. A relative `docs/shot.png` then resolves beside the document the way it
+does on disk, and Relay answers the request — synchronously, and only for a
+file small enough for that to stay true, because answering a request the web
+view has since cancelled is an exception rather than an error.

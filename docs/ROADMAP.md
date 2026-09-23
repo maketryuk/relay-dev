@@ -83,16 +83,20 @@ workspace is usually a git worktree.
 - **Everywhere a name is used, not only where it comes from.** The tags queries
   the jump is built on capture references as well as declarations, so the other
   half — "show me the callers" — is the same index read the other way round.
-- **The rest of the previews.** Pictures, PDFs and recordings are shown; a PDF
-  cannot be searched yet — ⌘F on one searches the project — and a preview,
-  like a buffer, does not notice the file changing under it until the
-  directory is watched.
+- **The rest of the previews.** Pictures, PDFs, recordings and Markdown are
+  shown; a PDF cannot be searched yet — ⌘F on one searches the project — and a
+  preview, like a buffer, does not notice the file changing under it until the
+  directory is watched. Mermaid diagrams need a script to
+  draw them, and the Markdown page runs none: worth doing only as a picture
+  made outside the page.
 - **Compiling a grammar query off the main thread.** Colouring a file compiles
   its highlight query the first time that language is opened, and for Swift
   that measures at a second — on the main thread, where it is a second of a
   window that does not move. Every other grammar is a hundredth of that, which
   is why it went unnoticed. The symbol index already compiles its own queries
-  in the background and shares them; the colouring should join it.
+  in the background and shares them; the colouring should join it. The
+  Markdown preview colours fenced code with the same queries, so a README with
+  a Swift block in it pays the same second the first time it is shown.
 - **Richer status adapters.** Per-CLI adapters for Claude and Codex that read
   their specific UI rather than generic prompt patterns.
 - **Session and project templates.** "New project from template" that creates

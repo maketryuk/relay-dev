@@ -133,6 +133,9 @@ struct WorkspaceState: Codable {
     var terminalFontSize: Double
     /// And the files, which are read at a different distance.
     var editorFontSize: Double
+    /// Whether a Markdown file opens as the page it makes or as its source:
+    /// whichever was chosen last.
+    var showsMarkdownPreview: Bool
     /// Whether terminals are drawn on the GPU.
     var terminalUsesGPURendering: Bool
     /// Review notes that have not been handed to an agent yet. Kept because
@@ -168,6 +171,7 @@ struct WorkspaceState: Codable {
         usageBarDetail: UsageDetail = .compact,
         terminalFontSize: Double = 13,
         editorFontSize: Double = 13,
+        showsMarkdownPreview: Bool = true,
         terminalUsesGPURendering: Bool = true,
         reviewComments: [ReviewComment] = [],
         paneLayouts: [String: PaneNode] = [:]
@@ -196,6 +200,7 @@ struct WorkspaceState: Codable {
         self.usageBarDetail = usageBarDetail
         self.terminalFontSize = terminalFontSize
         self.editorFontSize = editorFontSize
+        self.showsMarkdownPreview = showsMarkdownPreview
         self.terminalUsesGPURendering = terminalUsesGPURendering
         self.reviewComments = reviewComments
         self.paneLayouts = paneLayouts
@@ -229,6 +234,7 @@ struct WorkspaceState: Codable {
         usageBarDetail = try container.decodeIfPresent(UsageDetail.self, forKey: .usageBarDetail) ?? .compact
         terminalFontSize = try container.decodeIfPresent(Double.self, forKey: .terminalFontSize) ?? 13
         editorFontSize = try container.decodeIfPresent(Double.self, forKey: .editorFontSize) ?? 13
+        showsMarkdownPreview = try container.decodeIfPresent(Bool.self, forKey: .showsMarkdownPreview) ?? true
         terminalUsesGPURendering = try container
             .decodeIfPresent(Bool.self, forKey: .terminalUsesGPURendering) ?? true
         reviewComments = try container.decodeIfPresent([ReviewComment].self, forKey: .reviewComments) ?? []

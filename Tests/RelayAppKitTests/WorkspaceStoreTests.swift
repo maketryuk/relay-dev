@@ -43,6 +43,18 @@ struct WorkspaceStoreTests {
         #expect(WorkspaceStore(url: url).load().reviewComments.isEmpty)
     }
 
+    @Test("Markdown opens as a page until the source is chosen, and the choice is kept")
+    func markdownPreviewChoice() throws {
+        let directory = try TemporaryDirectory()
+        let url = directory.url.appendingPathComponent("workspace.json")
+        try #"{"version":1,"projects":[]}"#.write(to: url, atomically: true, encoding: .utf8)
+        #expect(WorkspaceStore(url: url).load().showsMarkdownPreview)
+
+        let store = WorkspaceStore(url: url)
+        store.saveNow(WorkspaceState(showsMarkdownPreview: false))
+        #expect(WorkspaceStore(url: url).load().showsMarkdownPreview == false)
+    }
+
     @Test("State survives a save and load round trip")
     func roundTrip() throws {
         let directory = try TemporaryDirectory()
