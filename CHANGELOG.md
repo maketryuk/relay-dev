@@ -5,6 +5,17 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Added
+
+- **A file dragged onto a terminal arrives as its full path** — from Finder
+  or from the project's file tree, several at once if need be. It is spelled
+  the way Terminal.app spells it, with a backslash before anything a shell
+  would read as syntax, so one drop works in a shell and in an agent's prompt
+  alike; and it goes over as a paste, one per file, so an image dropped on
+  Claude Code or Codex is attached as an image rather than typed out as text.
+
 ## 0.5.1 — 2026-09-21
 
 ### Fixed

@@ -22,6 +22,8 @@ struct TerminalHostView: NSViewRepresentable {
         container.layer?.backgroundColor = NSColor(srgbRed: 0x08 / 255, green: 0x09 / 255, blue: 0x0A / 255, alpha: 1).cgColor
         container.onClick = onClick
         container.embed(surface.terminalView)
+        // Files landing in a pane say where the work is as plainly as a click.
+        surface.terminalView.onFilesDropped = onClick
         return container
     }
 
@@ -29,6 +31,7 @@ struct TerminalHostView: NSViewRepresentable {
         guard let container = nsView as? FlippedContainerView else { return }
         container.onClick = onClick
         container.embed(surface.terminalView)
+        surface.terminalView.onFilesDropped = onClick
         // Only the focused pane may claim the keyboard. Every pane taking it on
         // every update means two of them trade it back and forth, and typing
         // lands wherever the last redraw happened to leave it.

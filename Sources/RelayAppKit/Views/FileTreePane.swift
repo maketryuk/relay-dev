@@ -221,6 +221,9 @@ struct FileTreeLevel: View {
                     }
                     .id(entry.path)
                     .contextMenu { menu(for: entry) }
+                    // As a file URL, which is what Finder hands over too: a
+                    // terminal takes its path, and any other app the file.
+                    .onDrag { NSItemProvider(object: URL(fileURLWithPath: entry.path) as NSURL) }
                 }
 
                 if entry.isDirectory, state.expanded.contains(entry.path) {

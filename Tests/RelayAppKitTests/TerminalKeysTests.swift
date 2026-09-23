@@ -6,7 +6,7 @@ import Testing
 
 /// Catches what the view sends to the program on the other end.
 @MainActor
-private final class RecordingDelegate: NSObject, @preconcurrency TerminalViewDelegate {
+final class RecordingDelegate: NSObject, @preconcurrency TerminalViewDelegate {
     var sent: [UInt8] = []
 
     func send(source: TerminalView, data: ArraySlice<UInt8>) { sent.append(contentsOf: data) }

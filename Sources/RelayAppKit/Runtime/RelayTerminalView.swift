@@ -1,11 +1,12 @@
 import AppKit
 import SwiftTerm
 
-/// SwiftTerm's view with the two things Relay has to decide for itself.
+/// SwiftTerm's view with the things Relay has to decide for itself.
 ///
-/// The renderer, which SwiftTerm leaves on the CPU unless asked; and the
-/// newline an agent expects from `⇧↩`, which no terminal sends on its own.
-/// Everything else the class does is SwiftTerm's.
+/// The renderer, which SwiftTerm leaves on the CPU unless asked; the newline
+/// an agent expects from `⇧↩`, which no terminal sends on its own; and a file
+/// dropped onto it, which SwiftTerm does not accept at all. Everything else the
+/// class does is SwiftTerm's.
 final class RelayTerminalView: TerminalView {
     /// Whether to draw on the GPU. Off is always available and always correct,
     /// so a machine that cannot manage it loses speed rather than the terminal.
@@ -20,14 +21,29 @@ final class RelayTerminalView: TerminalView {
     /// try again on every window change for the rest of the session.
     private var isAccelerationUnavailable = false
 
+    /// Called once dropped files have been sent, so that the pane they landed
+    /// in becomes the one the keyboard belongs to — which is where whoever
+    /// dropped them is about to type.
+    var onFilesDropped: (() -> Void)?
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         Self.startWatchingKeys()
+        acceptFileDrops()
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         Self.startWatchingKeys()
+        acceptFileDrops()
+    }
+
+    /// File URLs and nothing else. A session dragged onto a pane travels as
+    /// text, and the pane's own drop target has to go on seeing it: this view
+    /// is the deepest one under the pointer, so whatever it registers for, it
+    /// takes.
+    private func acceptFileDrops() {
+        registerForDraggedTypes([.fileURL])
     }
 
     /// A CAMetalLayer binds to a window's surface, so there has to be a window
@@ -47,6 +63,37 @@ final class RelayTerminalView: TerminalView {
             isAccelerationUnavailable = true
             NSLog("Relay: GPU terminal rendering is unavailable (\(error)); drawing on the CPU instead")
         }
+    }
+
+    override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
+        Self.filePaths(on: sender.draggingPasteboard).isEmpty ? [] : .copy
+    }
+
+    override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
+        let paths = Self.filePaths(on: sender.draggingPasteboard)
+        guard !paths.isEmpty else { return false }
+        insertDroppedPaths(paths)
+        return true
+    }
+
+    /// Resolved through `filePathURL` because Finder can put a file reference
+    /// on the pasteboard, whose path is an inode number rather than anything
+    /// a person or a program could open.
+    private static func filePaths(on pasteboard: NSPasteboard) -> [String] {
+        let urls = pasteboard.readObjects(
+            forClasses: [NSURL.self],
+            options: [.urlReadingFileURLsOnly: true]
+        ) as? [NSURL] ?? []
+        return urls.compactMap { $0.filePathURL?.path }
+    }
+
+    /// Sends the paths as a paste, the way ⌘V would have sent them.
+    func insertDroppedPaths(_ paths: [String]) {
+        let input = TerminalFileDrop.input(for: paths, bracketedPaste: getTerminal().bracketedPasteMode)
+        guard !input.isEmpty else { return }
+        send(data: input[...])
+        window?.makeFirstResponder(self)
+        onFilesDropped?()
     }
 
     /// Watches for the keystrokes Relay has to answer before the terminal does,
