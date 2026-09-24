@@ -73,8 +73,13 @@ No API integration, per the spec. Status is derived from terminal behaviour:
 
 Two distinctions matter in practice and are both handled explicitly:
 
-- **A session that has never been typed into cannot be `finished`.** Otherwise a
-  `.zshrc` banner on startup reads as completed work.
+- **A key is not a command; a submitted line is.** Only a line sent to the
+  process marks it working, and output within 0.25 s of a key that edits a
+  line is its echo or its input box redrawing, not work. Before this, typing a
+  question into an agent made it "Working" and then "Finished" before it was
+  sent.
+- **A session that has never been sent a line cannot be `finished`.**
+  Otherwise a `.zshrc` banner on startup reads as completed work.
 - **A user-requested `terminate` is not an error.** SIGHUP makes a shell exit
   non-zero; reporting that as a failure would be noise.
 

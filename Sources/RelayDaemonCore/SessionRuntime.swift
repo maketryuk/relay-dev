@@ -8,9 +8,12 @@ public final class SessionRuntime: @unchecked Sendable {
     /// Grace period between SIGHUP and SIGKILL. Agents that trap SIGHUP to save
     /// state get a chance to do so; ones that ignore it still go away.
     private static let terminationGrace: TimeInterval = 3.0
-    /// Output below this many bytes since the last keystroke is assumed to be
-    /// terminal echo rather than real work.
+    /// Output below this many bytes since the last command is assumed to be
+    /// the interface redrawing rather than real work.
     private static let meaningfulOutputBytes = 120
+    /// Output this soon after a key that edits a line is the key's echo, or
+    /// the input box it was typed into redrawing — never work.
+    private static let echoWindow: TimeInterval = 0.25
     /// How much raw output the classifier looks at.
     private static let recentBytesCapacity = 8 * 1024
 
@@ -34,6 +37,7 @@ public final class SessionRuntime: @unchecked Sendable {
     /// stream, and the same output could then classify differently run to run.
     private var recentBytes = Data()
     private var titleParser = TerminalTitleParser()
+    private var lastEditAt = Date.distantPast
     private var reportedTitle: String?
     private var isNameUserDefined = false
     private var hasReceivedUserInput = false
@@ -113,18 +117,31 @@ public final class SessionRuntime: @unchecked Sendable {
         DaemonQueue.assertIsolated()
         guard let process else { return }
         process.write(data)
-        // A keystroke means the user handed control back to the process, and
-        // whatever comes next is judged on its own rather than as part of
-        // whatever the terminal happened to be redrawing.
         let now = Date()
-        hasReceivedUserInput = true
-        bytesSinceUserInput = 0
         needsReclassification = true
+        // What the terminal redraws in answer to a key is judged on its own
+        // rather than as the tail of whatever came before it.
         activity.noteUserInput(at: now)
         lastActivityAt = now
+
+        // A key is not a command. Every letter typed into an agent's prompt
+        // used to mark it working, and the prompt redrawing around the letter
+        // then read as work done — so typing a question turned the session
+        // "Working" and then "Finished" before it was sent. Only a submitted
+        // line hands control to the process.
+        guard Self.submits(data) else {
+            lastEditAt = now
+            return
+        }
+        hasReceivedUserInput = true
+        bytesSinceUserInput = 0
         if isAlive {
             status = .working
         }
+    }
+
+    static func submits(_ data: Data) -> Bool {
+        data.contains(0x0D) || data.contains(0x0A)
     }
 
     public func resize(columns newColumns: Int, rows newRows: Int) {
@@ -176,7 +193,9 @@ public final class SessionRuntime: @unchecked Sendable {
     private func ingest(output data: Data) {
         let now = Date()
         scrollback.append(data)
-        bytesSinceUserInput += data.count
+        if now.timeIntervalSince(lastEditAt) > Self.echoWindow {
+            bytesSinceUserInput += data.count
+        }
         activity.noteOutput(at: now)
         lastActivityAt = now
         needsReclassification = true

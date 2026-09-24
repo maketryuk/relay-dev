@@ -56,6 +56,9 @@ breaking change to stored data.
 - **A workspace saved by a newer build no longer loses every project when an
   older one opens it.** An arrangement of panes the older build cannot read is
   dropped on its own, instead of the whole workspace being set aside.
+- **Typing into an agent no longer marks it working, and then finished, before
+  anything is sent.** Every key counted as a command, and the input box
+  redrawing around it as work done; only a line that is sent counts now.
 
 ## 0.6.0 — 2026-09-23
 
