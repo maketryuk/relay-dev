@@ -47,6 +47,15 @@ breaking change to stored data.
 - **Relay is larger to download, because it now carries Chromium** — about
   150 MB where it was 14. Chromium starts the first time a browser tab is
   looked at, and costs nothing before that.
+- **An agent's status comes from the agent.** Relay adds its own hook to
+  Claude Code's and Codex's settings, beside whatever hooks are already there,
+  and the agent reports every prompt, tool call, permission prompt and end of
+  turn through it; outside a Relay terminal the hook does nothing.
+  "Waiting for you" now means a permission prompt or a question, not a
+  sentence that happened to end in a question mark, and an agent that has
+  finished no longer goes on showing as working. Where there is no hook, the
+  mark the agent puts in the terminal's title is read instead. Codex is told
+  to trust the hook in its own `config.toml`, so it runs without asking.
 
 ### Fixed
 

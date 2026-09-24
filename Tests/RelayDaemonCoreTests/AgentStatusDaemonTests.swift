@@ -4,7 +4,8 @@ import Testing
 @testable import RelayDaemonCore
 @testable import RelayProtocol
 
-/// A real daemon and real terminals.
+/// A real daemon, real terminals, and hooks delivered the way `relay-hook`
+/// delivers them.
 @Suite("Agent status in the daemon", .serialized)
 final class AgentStatusDaemonTests {
     private let harness: DaemonHarness
@@ -40,6 +41,18 @@ final class AgentStatusDaemonTests {
         return snapshot
     }
 
+    private func send(_ name: String, to session: SessionSnapshot, from pid: Int32? = nil, tool: String? = nil) throws {
+        let event = AgentHookEvent(
+            sessionID: session.id.rawValue,
+            agent: .claude,
+            name: name,
+            toolName: tool,
+            ancestry: [ProcessAncestor(pid: try #require(pid ?? session.pid), name: "sh")]
+        )
+        let socket = RelayPaths.hookSocketURL(beside: harness.socketURL).path
+        #expect(AgentHookDelivery.send(event, to: socket))
+    }
+
     /// Redraws two hundred bytes for every key it reads, which is what an
     /// agent's input box does and a shell's echo does not. Says when it is
     /// reading keys one at a time, since a key sent before that waits for a
@@ -47,6 +60,10 @@ final class AgentStatusDaemonTests {
     private static let inputBox = """
     stty -icanon -echo; printf 'ready\\n'; while dd bs=1 count=1 >/dev/null 2>&1; do printf '%0200d\\r' 0; done
     """
+
+    /// An agent that says nothing on its own, as a process the session's pid
+    /// stays with.
+    private static let quietAgent = ["/bin/sh", "-c", "printf 'ready\\n'; exec sleep 60"]
 
     /// Whether a snapshot matching `predicate` arrives within `window`, counting
     /// only snapshots after the first `skipping`.
@@ -76,5 +93,31 @@ final class AgentStatusDaemonTests {
             $0.status == .working || $0.status == .finished
         }
         #expect(!judgedBusy)
+    }
+
+    @Test("What the session's agent reports through its hooks is its status")
+    func hooksSetTheStatus() throws {
+        let session = try createSession(kind: .claude, command: Self.quietAgent)
+        try client.wait(timeout: 30) { $0.snapshots(for: session.id).contains { $0.status == .idle } }
+
+        try send("PermissionRequest", to: session, tool: "Bash")
+        try client.wait(timeout: 10) { $0.snapshots(for: session.id).last?.status == .waiting }
+
+        try send("PostToolUse", to: session, tool: "Bash")
+        try client.wait(timeout: 10) { $0.snapshots(for: session.id).last?.status == .working }
+
+        try send("Stop", to: session)
+        let messages = try client.wait(timeout: 10) { $0.snapshots(for: session.id).last?.status == .finished }
+        #expect(messages.snapshots(for: session.id).last?.status == .finished)
+    }
+
+    @Test("A hook from a terminal the session does not own changes nothing")
+    func foreignHookIsIgnored() throws {
+        let session = try createSession(kind: .claude, command: Self.quietAgent)
+        try client.wait(timeout: 30) { $0.snapshots(for: session.id).contains { $0.status == .idle } }
+
+        let settled = client.messages.snapshots(for: session.id).count
+        try send("PermissionRequest", to: session, from: 1, tool: "Bash")
+        #expect(!arrives(for: session, within: 2, skipping: settled) { $0.status == .waiting })
     }
 }

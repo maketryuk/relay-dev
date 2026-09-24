@@ -69,6 +69,17 @@ public enum RelayPaths {
         URL(fileURLWithPath: "/tmp/\(RelayFlavour.current.socketName)-\(getuid()).sock")
     }
 
+    /// Where agents' hooks reach the daemon listening on `socketURL`.
+    ///
+    /// Beside it rather than inside it: a hook is not a client, speaks one line
+    /// and hangs up, and must never be able to ask the daemon for anything. Derived
+    /// rather than fixed, so a test daemon on a throwaway socket has hooks of
+    /// its own.
+    public static func hookSocketURL(beside socketURL: URL) -> URL {
+        let name = socketURL.deletingPathExtension().lastPathComponent + "-hooks.sock"
+        return socketURL.deletingLastPathComponent().appendingPathComponent(name, isDirectory: false)
+    }
+
     public static var workspaceFileURL: URL {
         supportDirectory.appendingPathComponent("workspace.json", isDirectory: false)
     }

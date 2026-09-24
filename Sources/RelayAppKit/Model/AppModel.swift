@@ -319,6 +319,11 @@ final class AppModel {
         // nobody is.
         Task.detached(priority: .utility) { _ = LoginPath.value }
 
+        // Where Claude Code and Codex tell a terminal what they are doing.
+        // Checked every launch, written only when Relay's entry is missing
+        // or out of date.
+        Task.detached(priority: .utility) { AgentHookInstaller.installAll() }
+
         // Before the daemon, because git has nothing to do with it: waiting for
         // a session host to start is what left the Git tab dead for the first
         // seconds of a launch.

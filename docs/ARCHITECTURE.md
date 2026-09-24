@@ -64,24 +64,89 @@ travel over a socket. Replacing it with a Mach service means one new conformance
 
 ## Status detection
 
-No API integration, per the spec. Status is derived from terminal behaviour:
+An agent's status is what the agent says it is. Only when it says nothing is it
+read off the terminal. `AgentStatusTracker` takes the first answer it has, in
+this order:
 
-1. output arrives → `working`, reset the quiet timer;
-2. quiet for 0.7 s → hand the ANSI-stripped tail to a per-kind `ActivityAdapter`;
-3. adapter returns `waitingForUser` / `completed` / `idle`;
-4. process exit → `finished` (code 0, or user-requested) or `error`.
+1. **The agent's hooks.** Claude Code and Codex run a command at every prompt,
+   tool call, permission prompt and end of turn, and describe the event on its
+   stdin.
+   - The command is `relay-hook`, installed into `~/.claude/settings.json` and
+     `~/.codex/hooks.json` (see below).
+   - It sends the event's name, its tool and its tool-call id to the daemon, as
+     one JSON line over `/tmp/relay-<uid>-hooks.sock`, which sits beside the
+     daemon's own socket.
+   - Mapping:
+     - `UserPromptSubmit`, `PreToolUse` and `PostToolUse` → `working`;
+     - `PermissionRequest`, or a question tool (`AskUserQuestion`,
+       `request_user_input`) → `waiting`;
+     - `Stop` → `finished`;
+     - `SessionStart` from a start, a resume or a `/clear` → `idle`.
+   - A permission wait holds until the call it is about runs — the id comes from
+     the `PreToolUse` before it, because Claude leaves it off the request — since
+     tools running beside it keep reporting.
+   - A hook is believed for 30 minutes.
+2. **The agent's title.**
+   - Claude Code puts `✳` in front of its title when it waits for a prompt, and
+     a spinner frame — Braille, or `◐◓◑◒` — while it works. Codex draws a Braille
+     spinner. Gemini has a glyph for each state.
+   - A spinner that has not moved for 3 s has stopped.
+   - `✳` coming back after work is a finished turn.
+   - `✳` held for 1.5 s after the last hook said `working` is a cancelled one,
+     because no hook fires when the person cancels.
+3. **The terminal's behaviour**, for everything else — shells, and agents that
+   say nothing at all:
+   1. output arrives → reset the quiet timer;
+   2. quiet for 0.7 s → hand the ANSI-stripped tail to a per-kind
+      `ActivityAdapter`;
+   3. the adapter returns `waitingForUser` / `completed` / `idle`.
 
-Two distinctions matter in practice and are both handled explicitly:
+Process exit is `finished` (code 0, or user-requested) or `error`, whatever came
+before it.
 
-- **A key is not a command; a submitted line is.** Only a line sent to the
-  process marks it working, and output within 0.25 s of a key that edits a
-  line is its echo or its input box redrawing, not work. Before this, typing a
-  question into an agent made it "Working" and then "Finished" before it was
-  sent.
+The terminal's behaviour was once the only source, and its failures are why it
+is now the last:
+- The tail is the raw stream with its escapes removed, not the screen. An agent
+  that redraws in place leaves every recent frame in it, so an old
+  `esc to interrupt` kept a finished agent working.
+- A line of prose that asked a question made one "wait".
+
+What the terminal is still trusted with has rules of its own:
+
+- **A key is not a command; a submitted line is.** Output within 0.25 s of a
+  key that edits a line is its echo or its input box redrawing, and is not
+  counted as work. Before this, typing a question into an agent made it
+  "Working" and then "Finished" before it was sent.
 - **A session that has never been sent a line cannot be `finished`.**
   Otherwise a `.zshrc` banner on startup reads as completed work.
 - **A user-requested `terminate` is not an error.** SIGHUP makes a shell exit
   non-zero; reporting that as a failure would be noise.
+
+**The hooks are installed globally and do nothing outside Relay.**
+- The entry names no path. It runs `$RELAY_HOOK` if that is set, and otherwise
+  drains stdin — and for Claude prints `{}`, since Claude reads a permission hook
+  that says nothing as one that refused.
+- Only a terminal Relay started has `RELAY_HOOK`, `RELAY_HOOK_SOCKET` and
+  `RELAY_SESSION_ID`, so the same entry is right for every terminal on the
+  machine, every build and both flavours. Other tools install theirs the
+  same way, beside it.
+- The app checks the entry at every launch and writes only when it is missing
+  or out of date. `OrderedJSON` keeps the rest of the file as it was: key order,
+  number spelling, the lot.
+- Codex also needs a trust record in `config.toml`: the `sha256` of the entry's
+  canonical JSON, keyed by the file, the event and the entry's position. It is
+  the same hash Codex computes itself. A config that defines hooks in a
+  form a new table could clash with is left alone, and Codex asks about the hook
+  itself.
+
+**An agent can start another.** `claude -p` from a shell tool inherits the
+terminal and its environment, and its `Stop` would end the outer turn. The helper
+sends the processes above it. The daemon accepts an event only if the session's
+own process is reached through at most one agent.
+
+**When a shell session's agent quits**, the terminal's foreground process group
+becomes the shell's again. That clears what the agent last said, which would
+otherwise outlive it.
 
 `RuntimeStatus` is deliberately decoupled from process liveness: an agent that
 reports `finished` after a task is still running and must be able to return to

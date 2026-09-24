@@ -133,8 +133,14 @@ workspace is a git worktree.
   which the picker does not reach. React 19 keeps no file name, so its lines
   are the dev server's and can be off; reading the page's source maps would
   make them exact.
-- **Richer status adapters.** Per-CLI adapters for Claude and Codex that read
-  their specific UI rather than generic prompt patterns.
+- **Hooks for the other agents.** Claude Code and Codex report their state
+  through hooks; Gemini, OpenCode and the rest still go by their titles.
+  The two to start from:
+  - Gemini's `BeforeAgent` and `AfterAgent`;
+  - an OpenCode plugin listening for `session.status` and `permission.asked`.
+- **Removing the hooks.** Nothing takes Relay's entry out of an agent's
+  settings when Relay goes. The entry is harmless without it, but tidiness
+  would be a setting that removes it.
 - **Session and project templates.** "New project from template" that creates
   the services and sessions a project always needs.
 - **Activity history.** What ran, when, and how it ended.

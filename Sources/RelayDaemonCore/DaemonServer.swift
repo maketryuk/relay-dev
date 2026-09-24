@@ -24,6 +24,7 @@ public final class DaemonServer: @unchecked Sendable {
     private static let dockerCommandTimeout: TimeInterval = 150
 
     private var listener: SocketListener?
+    private var hookListener: SocketListener?
     private var sessions: [SessionID: SessionRuntime] = [:]
     private var sessionOrder: [SessionID] = []
     private var clients: [UInt64: ClientConnection] = [:]
@@ -50,7 +51,12 @@ public final class DaemonServer: @unchecked Sendable {
     private var idleTimer: DispatchSourceTimer?
     private let startedAt = Date()
     private let socketURL: URL
+    private let hookSocketURL: URL
     private let logURL: URL
+    /// What every terminal is told about reaching this daemon from an agent's
+    /// hook. Empty when the helper is not beside the daemon, which leaves the
+    /// hooks installed in the agents' settings with nothing to run.
+    private let hookEnvironment: [String: String]
 
     /// The socket path and the command runner are injectable so tests can run a
     /// real daemon on a throwaway path, and can make `lsof` or `docker` take as
@@ -63,11 +69,24 @@ public final class DaemonServer: @unchecked Sendable {
     public init(
         socketURL: URL = RelayPaths.socketURL,
         logURL: URL = RelayPaths.daemonLogURL,
-        commandRunner: any CommandRunning = SystemCommandRunner()
+        commandRunner: any CommandRunning = SystemCommandRunner(),
+        hookHelperURL: URL? = DaemonServer.bundledHookHelper
     ) {
+        let hooks = RelayPaths.hookSocketURL(beside: socketURL)
         self.socketURL = socketURL
+        hookSocketURL = hooks
         self.logURL = logURL
         self.commandRunner = commandRunner
+        hookEnvironment = hookHelperURL.map {
+            [AgentHookEnvironment.helperKey: $0.path, AgentHookEnvironment.socketKey: hooks.path]
+        } ?? [:]
+    }
+
+    /// `relay-hook`, which is built and shipped beside the daemon.
+    public static var bundledHookHelper: URL? {
+        guard let directory = Bundle.main.executableURL?.deletingLastPathComponent() else { return nil }
+        let helper = directory.appendingPathComponent("relay-hook", isDirectory: false)
+        return FileManager.default.isExecutableFile(atPath: helper.path) ? helper : nil
     }
 
     // MARK: - Server lifecycle
@@ -85,6 +104,17 @@ public final class DaemonServer: @unchecked Sendable {
         }
         try listener.start()
         self.listener = listener
+        // Without it statuses fall back to the agents' titles, which is worse
+        // but not broken; the daemon is still worth running.
+        let hookListener = SocketListener(url: hookSocketURL) { [weak self] descriptor in
+            self?.acceptHook(descriptor: descriptor)
+        }
+        do {
+            try hookListener.start()
+            self.hookListener = hookListener
+        } catch {
+            DaemonLog.shared.write("agent hooks unavailable: \(error)")
+        }
         // Read now rather than at the first handshake. An update deletes the
         // bundle this daemon was started from while it keeps running, and a
         // hash taken afterwards is "unknown" — which reads to the new GUI as a
@@ -118,6 +148,30 @@ public final class DaemonServer: @unchecked Sendable {
             client.close()
         }
         listener?.stop()
+        hookListener?.stop()
+    }
+
+    // MARK: - Agent hooks
+
+    /// A hook says one line and hangs up. It is read off the daemon queue,
+    /// because a hook that connects and says nothing must not hold up a
+    /// terminal, and applied on it.
+    private func acceptHook(descriptor: Int32) {
+        commandQueue.async { [weak self] in
+            let event = AgentHookReader.read(from: descriptor)
+            close(descriptor)
+            guard let event, let self else { return }
+            DaemonQueue.shared.async { self.apply(hook: event) }
+        }
+    }
+
+    private func apply(hook event: AgentHookEvent) {
+        DaemonQueue.assertIsolated()
+        let identifier = SessionID(rawValue: event.sessionID)
+        guard let session = sessions[identifier] else { return }
+        if session.apply(hook: event) {
+            broadcastSnapshot(identifier)
+        }
     }
 
     // MARK: - Clients
@@ -306,6 +360,7 @@ public final class DaemonServer: @unchecked Sendable {
 
         do {
             try runtime.start(
+                hookEnvironment: hookEnvironment,
                 onOutput: { [weak self] sessionID, data in
                     self?.broadcastOutput(sessionID, data)
                 },

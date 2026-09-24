@@ -37,6 +37,7 @@ public final class SessionRuntime: @unchecked Sendable {
     /// stream, and the same output could then classify differently run to run.
     private var recentBytes = Data()
     private var titleParser = TerminalTitleParser()
+    private var agentStatus = AgentStatusTracker()
     private var lastEditAt = Date.distantPast
     private var reportedTitle: String?
     private var isNameUserDefined = false
@@ -86,12 +87,19 @@ public final class SessionRuntime: @unchecked Sendable {
 
     // MARK: - Lifecycle
 
+    /// - Parameter hookEnvironment: what an agent's hooks need to find the
+    ///   daemon, handed to the terminal along with this session's id.
     public func start(
+        hookEnvironment: [String: String] = [:],
         onOutput: @escaping @Sendable (SessionID, Data) -> Void,
         onChange: @escaping @Sendable (SessionID) -> Void
     ) throws {
         DaemonQueue.assertIsolated()
-        let plan = LaunchPlanBuilder.makePlan(for: spec)
+        var plan = LaunchPlanBuilder.makePlan(for: spec)
+        if !hookEnvironment.isEmpty {
+            plan.environment.merge(hookEnvironment) { _, hooks in hooks }
+            plan.environment[AgentHookEnvironment.sessionKey] = id.rawValue
+        }
         let child = try PTYProcess.launch(plan)
         process = child
         pid = child.pid
@@ -123,6 +131,7 @@ public final class SessionRuntime: @unchecked Sendable {
         // rather than as the tail of whatever came before it.
         activity.noteUserInput(at: now)
         lastActivityAt = now
+        agentStatus.noteInput(data, at: now)
 
         // A key is not a command. Every letter typed into an agent's prompt
         // used to mark it working, and the prompt redrawing around the letter
@@ -135,13 +144,23 @@ public final class SessionRuntime: @unchecked Sendable {
         }
         hasReceivedUserInput = true
         bytesSinceUserInput = 0
-        if isAlive {
+        if isAlive, !agentStatus.isAuthoritative(now: now) {
             status = .working
         }
     }
 
     static func submits(_ data: Data) -> Bool {
         data.contains(0x0D) || data.contains(0x0A)
+    }
+
+    /// Applies what an agent's hook reported. Returns `true` when the status
+    /// changed and observers should be notified.
+    public func apply(hook event: AgentHookEvent, now: Date = Date()) -> Bool {
+        DaemonQueue.assertIsolated()
+        guard isAlive, let pid, event.comesFromSessionAgent(sessionPID: pid) else { return false }
+        agentStatus.apply(event, at: now)
+        lastActivityAt = now
+        return reclassify(now: now)
     }
 
     public func resize(columns newColumns: Int, rows newRows: Int) {
@@ -204,7 +223,11 @@ public final class SessionRuntime: @unchecked Sendable {
         // made an idle agent flicker between Working and Idle forever. Whether
         // this output is work is decided on the tick, by how long it lasts.
 
-        if let title = titleParser.consume(data), title != reportedTitle {
+        let titles = titleParser.consumeTitles(data)
+        for title in titles {
+            agentStatus.noteTitle(title, at: now)
+        }
+        if let title = titles.compactMap(TerminalTitleParser.sanitise).last, title != reportedTitle {
             reportedTitle = title
         }
 
@@ -212,6 +235,14 @@ public final class SessionRuntime: @unchecked Sendable {
         if recentBytes.count > Self.recentBytesCapacity {
             recentBytes.removeFirst(recentBytes.count - Self.recentBytesCapacity)
         }
+    }
+
+    /// Whether nothing but the session's own shell is running in it: the
+    /// terminal's foreground process group is the one the shell leads.
+    private var isShellInForeground: Bool {
+        guard let process, let pid else { return false }
+        let foreground = tcgetpgrp(process.masterFD)
+        return foreground > 0 && foreground == pid
     }
 
     private func handleExit(code: Int32) {
@@ -228,6 +259,17 @@ public final class SessionRuntime: @unchecked Sendable {
     public func reclassify(now: Date) -> Bool {
         DaemonQueue.assertIsolated()
         guard isAlive else { return false }
+
+        // An agent started from a shell leaves its last words behind when it
+        // quits; the shell taking the terminal back is what says it has gone.
+        if agentStatus.hasEvidence, !spec.kind.isAgent, isShellInForeground {
+            agentStatus.forgetAgent()
+        }
+        if let reported = agentStatus.status(now: now) {
+            guard reported != status else { return false }
+            status = reported
+            return true
+        }
 
         let tail = TerminalText.tail(of: TerminalText.plainText(from: recentBytes))
 

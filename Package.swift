@@ -9,6 +9,7 @@ let package = Package(
         .executable(name: "relay-daemon", targets: ["relay-daemon"]),
         .executable(name: "Relay", targets: ["RelayApp"]),
         .executable(name: "relay-browser-helper", targets: ["relay-browser-helper"]),
+        .executable(name: "relay-hook", targets: ["relay-hook"]),
     ],
     dependencies: [
         .package(url: "https://github.com/migueldeicaza/SwiftTerm.git", from: "1.20.0"),
@@ -30,6 +31,10 @@ let package = Package(
         .target(name: "RelayProtocol"),
         .target(name: "RelayDaemonCore", dependencies: ["RelayProtocol"]),
         .executableTarget(name: "relay-daemon", dependencies: ["RelayDaemonCore"]),
+        // What an agent's hook runs inside a Relay terminal. Its own executable
+        // because an agent waits for its hooks: it starts in milliseconds and
+        // links nothing but the protocol.
+        .executableTarget(name: "relay-hook", dependencies: ["RelayProtocol"]),
         .target(
             name: "RelayUI",
             dependencies: ["RelayProtocol"],

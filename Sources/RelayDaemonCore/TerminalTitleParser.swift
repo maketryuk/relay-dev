@@ -27,9 +27,17 @@ public struct TerminalTitleParser: Sendable {
 
     public init() {}
 
-    /// Feeds raw output and returns the most recent title it completed, if any.
+    /// Feeds raw output and returns the most recent title it completed, if any,
+    /// as a name: without its spinner frame, and short enough for a sidebar.
     public mutating func consume(_ data: Data) -> String? {
-        var latest: String?
+        consumeTitles(data).compactMap(Self.sanitise).last
+    }
+
+    /// Feeds raw output and returns every title it completed, as the program
+    /// wrote them, spinner frame and all — which is where an agent says whether
+    /// it is working.
+    public mutating func consumeTitles(_ data: Data) -> [String] {
+        var titles: [String] = []
 
         for byte in data {
             switch state {
@@ -48,7 +56,7 @@ public struct TerminalTitleParser: Sendable {
 
             case .sequence:
                 if byte == 0x07 {
-                    latest = title(from: buffer) ?? latest
+                    if let title = title(from: buffer) { titles.append(title) }
                     state = .normal
                 } else if byte == 0x1B {
                     state = .sequenceEscape
@@ -63,7 +71,7 @@ public struct TerminalTitleParser: Sendable {
             case .sequenceEscape:
                 if byte == 0x5C {
                     // String Terminator.
-                    latest = title(from: buffer) ?? latest
+                    if let title = title(from: buffer) { titles.append(title) }
                     state = .normal
                 } else {
                     // A stray escape inside the payload.
@@ -74,17 +82,27 @@ public struct TerminalTitleParser: Sendable {
             }
         }
 
-        return latest
+        return titles
     }
 
-    /// `Ps ; text`, where 0, 1 and 2 all set a title of some kind.
+    /// `Ps ; text`, where 0, 1 and 2 all set a title of some kind. Control
+    /// characters are dropped here, and nothing else.
     private func title(from payload: [UInt8]) -> String? {
         guard let separator = payload.firstIndex(of: 0x3B) else { return nil }
         let code = String(decoding: payload[payload.startIndex ..< separator], as: UTF8.self)
         guard ["0", "1", "2"].contains(code) else { return nil }
 
         let text = String(decoding: payload[payload.index(after: separator)...], as: UTF8.self)
-        return Self.sanitise(text)
+        let printable = Self.printable(text)
+        return printable.isEmpty ? nil : printable
+    }
+
+    private static func printable(_ raw: String) -> String {
+        raw
+            .unicodeScalars
+            .filter { !$0.properties.isDefaultIgnorableCodePoint && ($0.value >= 0x20 || $0 == " ") }
+            .reduce(into: "") { $0.unicodeScalars.append($1) }
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// The glyphs a CLI puts at the front of its title while it is thinking.
@@ -124,13 +142,7 @@ public struct TerminalTitleParser: Sendable {
 
     /// Strips control characters and rejects titles that carry no information.
     static func sanitise(_ raw: String) -> String? {
-        let cleaned = strippingSpinner(
-            raw
-                .unicodeScalars
-                .filter { !$0.properties.isDefaultIgnorableCodePoint && ($0.value >= 0x20 || $0 == " ") }
-                .reduce(into: "") { $0.unicodeScalars.append($1) }
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-        )
+        let cleaned = strippingSpinner(printable(raw))
 
         guard !cleaned.isEmpty else { return nil }
         guard cleaned.count <= maximumTitleLength else {

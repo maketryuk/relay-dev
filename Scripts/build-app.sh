@@ -46,6 +46,7 @@ echo "==> Building $APP_NAME ($CONFIGURATION)"
 swift build -c "$CONFIGURATION" --product Relay
 swift build -c "$CONFIGURATION" --product relay-daemon
 swift build -c "$CONFIGURATION" --product relay-browser-helper
+swift build -c "$CONFIGURATION" --product relay-hook
 BIN_PATH="$(swift build -c "$CONFIGURATION" --show-bin-path)"
 
 echo "==> Assembling $APP"
@@ -56,6 +57,9 @@ cp "$BIN_PATH/Relay" "$APP/Contents/MacOS/$EXECUTABLE"
 # The daemon ships inside the bundle so a released app never picks up a stale
 # binary from a developer's build directory.
 cp "$BIN_PATH/relay-daemon" "$APP/Contents/MacOS/relay-daemon"
+# What an agent's hook runs in a Relay terminal. Beside the daemon, which is
+# where the daemon looks for it and tells its terminals it is.
+cp "$BIN_PATH/relay-hook" "$APP/Contents/MacOS/relay-hook"
 
 # The framework and the helper apps its processes run in. Downloaded once per
 # machine, pinned and checked, by Scripts/chromium.sh.
@@ -186,6 +190,7 @@ if [ -n "$IDENTITY" ]; then
   # Nested binaries first, then the bundle, which is what --deep did badly.
   chromium_sign "$APP" "$BUILD_DIR/entitlements" "${SIGN_FLAGS[@]}"
   codesign "${SIGN_FLAGS[@]}" "$APP/Contents/MacOS/relay-daemon"
+  codesign "${SIGN_FLAGS[@]}" "$APP/Contents/MacOS/relay-hook"
   # SwiftPM resource bundles hold no executable code and codesign refuses them
   # outright ("bundle format unrecognized"); the outer signature seals them as
   # ordinary resources, which is what they are.
@@ -196,6 +201,7 @@ else
   echo "    Set RELAY_CODESIGN_IDENTITY, or install an Apple Development certificate."
   chromium_sign "$APP" "$BUILD_DIR/entitlements" --force --sign - >/dev/null 2>&1 || true
   codesign --force --sign - "$APP/Contents/MacOS/relay-daemon" >/dev/null 2>&1 || true
+  codesign --force --sign - "$APP/Contents/MacOS/relay-hook" >/dev/null 2>&1 || true
   codesign --force --sign - "$APP" >/dev/null 2>&1 || true
 fi
 
