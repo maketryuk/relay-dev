@@ -43,6 +43,10 @@ struct NewSessionMenu: View {
                     ForEach(model.sessionPresets) { preset in
                         row(preset)
                     }
+                    BrowserEntryRow(shortcut: model.binding(for: .newBrowserTab)?.displayString) {
+                        model.newBrowserTab(in: projectID)
+                        onDismiss()
+                    }
                 }
                 .padding(.horizontal, Theme.Spacing.xsmall)
             }
@@ -146,6 +150,51 @@ struct NewSessionMenu: View {
         model.addPreset(preset)
         model.createSession(from: preset, in: projectID)
         onDismiss()
+    }
+}
+
+/// A browser tab, offered where sessions are started: it is opened for the
+/// same reason one is, to watch the work, and it sits in the same list.
+private struct BrowserEntryRow: View {
+    let shortcut: String?
+    let onOpen: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        HStack(spacing: Theme.Spacing.small) {
+            Image(systemName: "globe")
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.Palette.accent)
+                .frame(width: 18)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(relayLocalized("Browser"))
+                    .font(Theme.Typography.row)
+                    .foregroundStyle(Theme.Palette.textPrimary)
+                    .lineLimit(1)
+                Text(relayLocalized("A Chromium tab, with design mode"))
+                    .font(Theme.Typography.caption)
+                    .foregroundStyle(Theme.Palette.textTertiary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: Theme.Spacing.xsmall)
+
+            if let shortcut {
+                Text(verbatim: shortcut)
+                    .font(Theme.Typography.caption)
+                    .foregroundStyle(Theme.Palette.textTertiary)
+            }
+        }
+        .padding(.horizontal, Theme.Spacing.small)
+        .padding(.vertical, 6)
+        .background(isHovering ? Theme.Palette.surfaceHover : .clear)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+        .contentShape(Rectangle())
+        .clickable()
+        .onHover { isHovering = $0 }
+        .onTapGesture(perform: onOpen)
     }
 }
 

@@ -124,6 +124,15 @@ workspace is a git worktree.
   in the background and shares them; the colouring should join it. The
   Markdown preview colours fenced code with the same queries, so a README with
   a Swift block in it pays the same second the first time it is shown.
+- **The rest of the browser tabs.** One pick at a time, and tabs that do not
+  come back once closed. It is worth going further in four places:
+  several picks, each with its remark, handed over as one message; the page at
+  a phone's or a tablet's width, which the DevTools channel already offers as
+  device emulation; agents driving the page themselves — reading it, clicking,
+  filling a form — over that same channel; and picking inside an iframe,
+  which the picker does not reach. React 19 keeps no file name, so its lines
+  are the dev server's and can be off; reading the page's source maps would
+  make them exact.
 - **Richer status adapters.** Per-CLI adapters for Claude and Codex that read
   their specific UI rather than generic prompt patterns.
 - **Session and project templates.** "New project from template" that creates

@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# Builds Relay.app with the session daemon embedded as a helper executable.
+# Builds Relay.app with the session daemon embedded as a helper executable, and
+# the Chromium the browser pane draws with.
 set -euo pipefail
 
 CONFIGURATION="${1:-release}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=Scripts/chromium.sh
+source "$ROOT/Scripts/chromium.sh"
 
 # Which build this is. `RELAY_FLAVOUR=dev` assembles the one that stands beside
 # the released app rather than replacing it: its own identity, its own name, its
@@ -42,6 +45,7 @@ APP="$BUILD_DIR/$APP_NAME.app"
 echo "==> Building $APP_NAME ($CONFIGURATION)"
 swift build -c "$CONFIGURATION" --product Relay
 swift build -c "$CONFIGURATION" --product relay-daemon
+swift build -c "$CONFIGURATION" --product relay-browser-helper
 BIN_PATH="$(swift build -c "$CONFIGURATION" --show-bin-path)"
 
 echo "==> Assembling $APP"
@@ -52,6 +56,11 @@ cp "$BIN_PATH/Relay" "$APP/Contents/MacOS/$EXECUTABLE"
 # The daemon ships inside the bundle so a released app never picks up a stale
 # binary from a developer's build directory.
 cp "$BIN_PATH/relay-daemon" "$APP/Contents/MacOS/relay-daemon"
+
+# The framework and the helper apps its processes run in. Downloaded once per
+# machine, pinned and checked, by Scripts/chromium.sh.
+echo "==> Embedding Chromium"
+chromium_embed "$APP" "$BIN_PATH/relay-browser-helper" "$BUNDLE_ID" "$VERSION"
 
 # Named AppIcon inside the bundle whichever source it came from, so the plist
 # does not have to know which build this is.
@@ -175,6 +184,7 @@ if [ -n "$IDENTITY" ]; then
   fi
 
   # Nested binaries first, then the bundle, which is what --deep did badly.
+  chromium_sign "$APP" "$BUILD_DIR/entitlements" "${SIGN_FLAGS[@]}"
   codesign "${SIGN_FLAGS[@]}" "$APP/Contents/MacOS/relay-daemon"
   # SwiftPM resource bundles hold no executable code and codesign refuses them
   # outright ("bundle format unrecognized"); the outer signature seals them as
@@ -184,6 +194,7 @@ if [ -n "$IDENTITY" ]; then
 else
   echo "==> Signing (ad-hoc — macOS will re-ask for permissions after each build)"
   echo "    Set RELAY_CODESIGN_IDENTITY, or install an Apple Development certificate."
+  chromium_sign "$APP" "$BUILD_DIR/entitlements" --force --sign - >/dev/null 2>&1 || true
   codesign --force --sign - "$APP/Contents/MacOS/relay-daemon" >/dev/null 2>&1 || true
   codesign --force --sign - "$APP" >/dev/null 2>&1 || true
 fi

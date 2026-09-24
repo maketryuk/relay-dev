@@ -23,6 +23,7 @@
 "%d unmodified lines" = "%d unmodified lines";
 "%d unread" = "%d unread";
 "A branch of its own, checked out in a folder of its own." = "A branch of its own, checked out in a folder of its own.";
+"A Chromium tab, with design mode" = "A Chromium tab, with design mode";
 "A development build stands beside the released one; it does not replace itself with it." = "A development build stands beside the released one; it does not replace itself with it.";
 "A host needs a name to be connected by." = "A host needs a name to be connected by.";
 "A port is a number between 1 and 65535." = "A port is a number between 1 and 65535.";
@@ -44,6 +45,7 @@
 "Add to agent and Keychain" = "Add to agent and Keychain";
 "Add" = "Add";
 "Added" = "Added";
+"Address or search" = "Address or search";
 "Add…" = "Add…";
 "After a restart the agent is empty again. AddKeysToAgent and UseKeychain in Host * let macOS answer for the key." = "After a restart the agent is empty again. AddKeysToAgent and UseKeychain in Host * let macOS answer for the key.";
 "Agent is waiting for you" = "Agent is waiting for you";
@@ -70,7 +72,9 @@
 "Being rebased: %@" = "Being rebased: %@";
 "Binary file" = "Binary file";
 "Branch" = "Branch";
+"Blank page" = "Blank page";
 "Branches" = "Branches";
+"Browser" = "Browser";
 "Built-in" = "Built-in";
 "Bypass the pre-merge and commit message hooks" = "Bypass the pre-merge and commit message hooks";
 "Bypass the pre-push hook" = "Bypass the pre-push hook";
@@ -90,6 +94,11 @@
 "Cherry-pick in progress" = "Cherry-pick in progress";
 "Choose Folder…" = "Choose Folder…";
 "Choose…" = "Choose…";
+"Chromium could not be loaded." = "Chromium could not be loaded.";
+"Chromium could not be started." = "Chromium could not be started.";
+"Chromium could not open the page." = "Chromium could not open the page.";
+"Chromium has stopped." = "Chromium has stopped.";
+"Chromium is not available" = "Chromium is not available";
 "Claude Code records the model without saying which window it runs with" = "Claude Code records the model without saying which window it runs with";
 "Claude context window" = "Claude context window";
 "Claude · ask first" = "Claude · ask first";
@@ -97,9 +106,11 @@
 "Clear all" = "Clear all";
 "Clear history" = "Clear history";
 "Clear" = "Clear";
+"Click an element to hand it to an agent. Esc stops." = "Click an element to hand it to an agent. Esc stops.";
 "Close File" = "Close File";
 "Close Pane" = "Close Pane";
 "Close Session" = "Close Session";
+"Close Tab" = "Close Tab";
 "Close session" = "Close session";
 "Close this view — the service keeps running" = "Close this view — the service keeps running";
 "Close" = "Close";
@@ -128,6 +139,7 @@
 "Copy Native Path" = "Copy Native Path";
 "Copy Path" = "Copy Path";
 "Copy URL" = "Copy URL";
+"Copy for an agent" = "Copy for an agent";
 "Copy notes" = "Copy notes";
 "Copy path" = "Copy path";
 "Copy session ID" = "Copy session ID";
@@ -140,6 +152,7 @@
 "Could not delete" = "Could not delete";
 "Could not discard" = "Could not discard";
 "Could not open file" = "Could not open file";
+"Could not open the page" = "Could not open the page";
 "Could not reach the session daemon" = "Could not reach the session daemon";
 "Could not remove %@" = "Could not remove %@";
 "Could not rename" = "Could not rename";
@@ -165,8 +178,10 @@
 "Delete this host?" = "Delete this host?";
 "Delete" = "Delete";
 "Deleted" = "Deleted";
+"Design Mode" = "Design Mode";
 "Detailed" = "Detailed";
 "Dev command" = "Dev command";
+"Developer Tools" = "Developer Tools";
 "Discard these changes?" = "Discard these changes?";
 "Discard" = "Discard";
 "Disconnected" = "Disconnected";
@@ -230,6 +245,7 @@
 "Force push" = "Force push";
 "Force push?" = "Force push?";
 "Force quit" = "Force quit";
+"Forward" = "Forward";
 "Forward agent" = "Forward agent";
 "Fresh" = "Fresh";
 "From the project" = "From the project";
@@ -257,6 +273,7 @@
 "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing." = "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing.";
 "It is in the agent and the keychain; ssh will not ask again." = "It is in the agent and the keychain; ssh will not ask again.";
 "Its branch is deleted only if Relay created it and everything on it is merged." = "Its branch is deleted only if Relay created it and everything on it is merged.";
+"Its renderer quit. Reloading starts a new one." = "Its renderer quit. Reloading starts a new one.";
 "Jump by number" = "Jump by number";
 "Kept branch %@" = "Kept branch %@";
 "Key unlocked" = "Key unlocked";
@@ -265,6 +282,7 @@
 "Leave empty to detect the port automatically." = "Leave empty to detect the port automatically.";
 "Leave unset" = "Leave unset";
 "Listening on this Mac" = "Listening on this Mac";
+"Loading…" = "Loading…";
 "Local" = "Local";
 "Locked: git will not remove it until it is unlocked" = "Locked: git will not remove it until it is unlocked";
 "Logs" = "Logs";
@@ -292,6 +310,7 @@
 "NOTIFICATIONS" = "NOTIFICATIONS";
 "Name" = "Name";
 "New %@ Session" = "New %@ Session";
+"New Browser Tab" = "New Browser Tab";
 "New Claude Session" = "New Claude Session";
 "New Codex Session" = "New Codex Session";
 "New File" = "New File";
@@ -301,6 +320,7 @@
 "New Service" = "New Service";
 "New Shell" = "New Shell";
 "New Worktree" = "New Worktree";
+"New Tab" = "New Tab";
 "New agent" = "New agent";
 "New branch %@ from %@, in %@" = "New branch %@ from %@, in %@";
 "New session" = "New session";
@@ -351,12 +371,15 @@
 "One per line, written into the block as they are." = "One per line, written into the block as they are.";
 "Open %@ URL" = "Open %@ URL";
 "Open %@" = "Open %@";
+"Open %@ in Browser Pane" = "Open %@ in Browser Pane";
 "Open Project in Editor" = "Open Project in Editor";
 "Open Project in Finder" = "Open Project in Finder";
 "Open URL" = "Open URL";
 "Open a terminal inside this container" = "Open a terminal inside this container";
 "Open in Browser" = "Open in Browser";
+"Open in Browser Pane" = "Open in Browser Pane";
 "Open in Default App" = "Open in Default App";
+"Open in Default Browser" = "Open in Default Browser";
 "Open in Editor" = "Open in Editor";
 "Open in Finder" = "Open in Finder";
 "Open in browser" = "Open in browser";
@@ -380,6 +403,7 @@
 "Pin to Project" = "Pin to Project";
 "Pin to current project" = "Pin to current project";
 "Pinned to %@" = "Pinned to %@";
+"Point at an element and hand it to an agent" = "Point at an element and hand it to an agent";
 "Port" = "Port";
 "Ports" = "Ports";
 "Preferred editor command" = "Preferred editor command";
@@ -411,6 +435,7 @@
 "Re-read the working copy" = "Re-read the working copy";
 "Read-only" = "Read-only";
 "Reading dependencies…" = "Reading dependencies…";
+"Reading the element…" = "Reading the element…";
 "Reading the project…" = "Reading the project…";
 "Reading…" = "Reading…";
 "Reasoning" = "Reasoning";
@@ -429,6 +454,8 @@
 "Relay reads ~/.ssh/config, including Include directives. Nothing there yet." = "Relay reads ~/.ssh/config, including Include directives. Nothing there yet.";
 "Relay takes over supervising them once they are closed." = "Relay takes over supervising them once they are closed.";
 "Relay" = "Relay";
+"Reload" = "Reload";
+"Reload Page" = "Reload Page";
 "Reload config" = "Reload config";
 "Remote" = "Remote";
 "Remove Project" = "Remove Project";
@@ -489,9 +516,12 @@
 "Search in files" = "Search in files";
 "Search sessions, services, hosts…" = "Search sessions, services, hosts…";
 "Searching…" = "Searching…";
+"Send elsewhere" = "Send elsewhere";
 "Send notes to" = "Send notes to";
 "Send notes" = "Send notes";
 "Send tags along with the commits" = "Send tags along with the commits";
+"Send to %@" = "Send to %@";
+"Send to a new %@" = "Send to a new %@";
 "Send to an agent" = "Send to an agent";
 "Send to" = "Send to";
 "Sends tags along with the commits" = "Sends tags along with the commits";
@@ -550,6 +580,7 @@
 "Switch to %@" = "Switch to %@";
 "TODO markers" = "TODO markers";
 "TODO" = "TODO";
+"Tab unavailable" = "Tab unavailable";
 "Take left" = "Take left";
 "Take right" = "Take right";
 "Terminal" = "Terminal";
@@ -559,6 +590,7 @@
 "That is a file. Drop the folder that contains it." = "That is a file. Drop the folder that contains it.";
 "That is not a file name." = "That is not a file name.";
 "That passphrase does not open this key." = "That passphrase does not open this key.";
+"The Chromium in this build is not the version Relay was made for." = "The Chromium in this build is not the version Relay was made for.";
 "The Docker engine is not running." = "The Docker engine is not running.";
 "The block naming %@ is removed from %@." = "The block naming %@ is removed from %@.";
 "The download did not contain Relay." = "The download did not contain Relay.";
@@ -569,12 +601,14 @@
 "The folder %@ will be deleted." = "The folder %@ will be deleted.";
 "The host to connect through first." = "The host to connect through first.";
 "The only notification that plays a sound" = "The only notification that plays a sound";
+"The page stopped working" = "The page stopped working";
 "The update check failed: HTTP %d" = "The update check failed: HTTP %d";
 "The working copy has changes" = "The working copy has changes";
 "The working copy matches the last commit." = "The working copy matches the last commit.";
 "Then start" = "Then start";
 "There is no git repository in this project." = "There is no git repository in this project.";
 "This block also names: %@" = "This block also names: %@";
+"This build of Relay was made without Chromium." = "This build of Relay was made without Chromium.";
 "This build updates by being rebuilt" = "This build updates by being rebuilt";
 "This file could not be read as what its name says it is." = "This file could not be read as what its name says it is.";
 "This file could not be read from disk." = "This file could not be read from disk.";
@@ -582,10 +616,13 @@
 "This project" = "This project";
 "This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand." = "This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand.";
 "This session is no longer known to the daemon." = "This session is no longer known to the daemon.";
+"This tab has been closed." = "This tab has been closed.";
+"Toggle Design Mode" = "Toggle Design Mode";
 "Toggle Markdown Preview" = "Toggle Markdown Preview";
 "Toggle Project Panel" = "Toggle Project Panel";
 "Toggle Sessions Sidebar" = "Toggle Sessions Sidebar";
 "Too large to show" = "Too large to show";
+"Try Again" = "Try Again";
 "Turn everything off without losing your other choices" = "Turn everything off without losing your other choices";
 "Two letters or more, and only the project's own files." = "Two letters or more, and only the project's own files.";
 "URL override" = "URL override";
@@ -611,6 +648,7 @@
 "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly" = "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly";
 "What should be done about these?" = "What should be done about these?";
 "What should it do?" = "What should it do?";
+"What should change?" = "What should change?";
 "When to interrupt" = "When to interrupt";
 "Which words to look for" = "Which words to look for";
 "Whole words" = "Whole words";

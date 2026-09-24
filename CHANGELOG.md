@@ -24,6 +24,18 @@ breaking change to stored data.
   closes what was running in it, and deletes its branch only if Relay made it
   and nothing on it is unmerged. The branch switcher sends a branch that is
   already open elsewhere to where it is, instead of failing on it.
+- **Browser tabs, and design mode in them.** A tab opens from the "+" beside
+  the sessions, or with ⇧⌘B, and is listed under them — as many as a project
+  needs, each in Chromium, the engine the page is being built for, and a new one
+  starting at the project's dev service when it is running. The Services panel,
+  the Ports window and the palette open an address in the tab already on that
+  server, or in a new one. ⇧⌘E turns on design mode: point at an element,
+  click it, and what it is goes into an agent's prompt — its markup, the styles
+  it computes to, the component that rendered it and the file and line that
+  component is written in (React, Vue and Svelte in development), a picture of
+  it, and a line saying what you want changed. It is typed and not sent, and
+  the overlay comes back for the next click, so the change can be checked where
+  it was asked for. ⌘R reloads the page and ⌥⌘I opens Chromium's inspector.
 
 ### Changed
 
@@ -32,6 +44,9 @@ breaking change to stored data.
   tick when it has finished, and a plain dot for an error or for rest. Nothing
   pulses any more, and every spinner on screen turns in step; with Reduce
   Motion on, the ring closes and holds still.
+- **Relay is larger to download, because it now carries Chromium** — about
+  150 MB where it was 14. Chromium starts the first time a browser tab is
+  looked at, and costs nothing before that.
 
 ### Fixed
 

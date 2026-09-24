@@ -305,6 +305,18 @@ struct CommandPaletteView: View {
                 systemImage: "doc.text.magnifyingglass"
             ) { model.reviewChanges(in: project.id) })
             commands.append(PaletteCommand(
+                id: "new-browser-tab",
+                titleKey: "New Browser Tab",
+                subtitle: project.name,
+                systemImage: "globe"
+            ) { model.newBrowserTab(in: project.id) })
+            commands.append(PaletteCommand(
+                id: "design-mode",
+                titleKey: "Toggle Design Mode",
+                subtitle: relayLocalized("Point at an element and hand it to an agent"),
+                systemImage: "cursorarrow.rays"
+            ) { model.toggleDesignMode() })
+            commands.append(PaletteCommand(
                 id: "ports-window",
                 titleKey: "Ports",
                 subtitle: relayLocalized("Everything listening on this Mac"),
@@ -351,6 +363,13 @@ struct CommandPaletteView: View {
                         subtitle: model.url(of: service, in: project.id)?.absoluteString ?? "",
                         systemImage: "arrow.up.forward.app"
                     ) { model.openService(service, in: project.id) })
+                    commands.append(PaletteCommand(
+                        id: "browse-\(service.id)",
+                        titleKey: "Open %@ in Browser Pane",
+                        titleArguments: [service.name],
+                        subtitle: model.url(of: service, in: project.id)?.absoluteString ?? "",
+                        systemImage: "rectangle.split.2x1"
+                    ) { model.openServiceInBrowser(service, in: project.id) })
                 }
             }
 

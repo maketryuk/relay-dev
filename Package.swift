@@ -8,6 +8,7 @@ let package = Package(
     products: [
         .executable(name: "relay-daemon", targets: ["relay-daemon"]),
         .executable(name: "Relay", targets: ["RelayApp"]),
+        .executable(name: "relay-browser-helper", targets: ["relay-browser-helper"]),
     ],
     dependencies: [
         .package(url: "https://github.com/migueldeicaza/SwiftTerm.git", from: "1.20.0"),
@@ -34,9 +35,28 @@ let package = Package(
             dependencies: ["RelayProtocol"],
             resources: [.process("Resources")]
         ),
+        // The browser pane's Chromium, reached through CEF's C API. Only the
+        // headers live here: the framework is loaded at run time from the app
+        // bundle, which `Scripts/build-app.sh` fills, so a build or a test run
+        // needs nothing downloaded. The API version pins the layout of every
+        // structure in those headers; `Chromium.c` refuses a framework whose
+        // layout differs.
+        .target(
+            name: "CChromium",
+            exclude: ["cef/LICENSE.txt"],
+            cSettings: [
+                .headerSearchPath("cef"),
+                .define("CEF_API_VERSION", to: "15400"),
+            ],
+            linkerSettings: [.linkedFramework("AppKit")]
+        ),
+        // The executable Chromium runs its renderer, GPU and utility processes
+        // in, copied into the bundle once per kind of process.
+        .executableTarget(name: "relay-browser-helper", dependencies: ["CChromium"]),
         .target(
             name: "RelayAppKit",
             dependencies: [
+                "CChromium",
                 "RelayProtocol",
                 "RelayUI",
                 .product(name: "SwiftTerm", package: "SwiftTerm"),

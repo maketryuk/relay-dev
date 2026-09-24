@@ -60,8 +60,9 @@ enum PaneDropEdge: Hashable, Sendable {
 
 /// What a pane is showing.
 ///
-/// A session or a file, because those are the two things worth putting side by
-/// side: the agent working and the file it is working on.
+/// A session, a file or a page, because those are the things worth putting
+/// side by side: the agent working, the file it is working on, and what that
+/// file draws.
 enum PaneItem: Codable, Hashable, Sendable {
     case session(SessionID)
     /// An absolute path. Relative would have to be resolved against a project
@@ -69,12 +70,15 @@ enum PaneItem: Codable, Hashable, Sendable {
     /// project — a log, a config in the home directory — would have no way to
     /// be named at all.
     case file(String)
+    /// A browser tab. Named by the tab rather than by its address, which
+    /// changes with every click.
+    case browser(BrowserID)
 
     /// Whether two panes show the same sort of thing. A terminal replaces a
     /// terminal; it does not replace the file being read beside it.
     func isSameKind(as other: PaneItem) -> Bool {
         switch (self, other) {
-        case (.session, .session), (.file, .file): true
+        case (.session, .session), (.file, .file), (.browser, .browser): true
         default: false
         }
     }
@@ -89,11 +93,13 @@ enum PaneItem: Codable, Hashable, Sendable {
 /// `file` was added after `session` and deliberately as a third case rather
 /// than by folding both into one: the encoded form of the first two is what
 /// every saved workspace on disk already contains, and a workspace that stops
-/// opening is a day's arrangement of panes lost.
+/// opening is a day's arrangement of panes lost. `browser` came after `file`
+/// on the same terms.
 indirect enum PaneNode: Codable, Hashable, Sendable {
     case session(SessionID)
     case file(String)
     case split(PaneSplit)
+    case browser(BrowserID)
 }
 
 extension PaneNode {
@@ -102,6 +108,7 @@ extension PaneNode {
         switch self {
         case let .session(id): .session(id)
         case let .file(path): .file(path)
+        case let .browser(id): .browser(id)
         case .split: nil
         }
     }
@@ -110,6 +117,7 @@ extension PaneNode {
         switch item {
         case let .session(id): self = .session(id)
         case let .file(path): self = .file(path)
+        case let .browser(id): self = .browser(id)
         }
     }
 }
@@ -126,6 +134,7 @@ enum PaneLayout {
         switch node {
         case let .session(id): [.session(id)]
         case let .file(path): [.file(path)]
+        case let .browser(id): [.browser(id)]
         case let .split(split): items(in: split.first) + items(in: split.second)
         }
     }
@@ -163,7 +172,7 @@ enum PaneLayout {
         insertingBefore: Bool = false
     ) -> PaneNode {
         switch node {
-        case .session, .file:
+        case .session, .file, .browser:
             guard node.item == target else { return node }
             let existing = node
             let newcomer = PaneNode(arriving)
@@ -240,7 +249,7 @@ enum PaneLayout {
     /// Swaps whichever pane shows `target` for one showing `replacement`.
     static func replacing(_ target: PaneItem, with replacement: PaneItem, in node: PaneNode) -> PaneNode {
         switch node {
-        case .session, .file:
+        case .session, .file, .browser:
             return node.item == target ? PaneNode(replacement) : node
         case let .split(split):
             var updated = split
@@ -264,7 +273,7 @@ enum PaneLayout {
 
     static func removing(_ target: PaneItem, from node: PaneNode) -> PaneNode? {
         switch node {
-        case .session, .file:
+        case .session, .file, .browser:
             return node.item == target ? nil : node
         case let .split(split):
             let first = removing(target, from: split.first)
@@ -283,20 +292,23 @@ enum PaneLayout {
     }
 
     /// Drops panes whose session the daemon no longer knows about, and files
-    /// that are no longer open.
+    /// and browser tabs that are no longer open.
     static func pruning(
         _ node: PaneNode,
         keeping known: Set<SessionID>,
-        openFiles: Set<String> = []
+        openFiles: Set<String> = [],
+        openBrowsers: Set<BrowserID> = []
     ) -> PaneNode? {
         switch node {
         case let .session(id):
             return known.contains(id) ? node : nil
         case let .file(path):
             return openFiles.contains(path) ? node : nil
+        case let .browser(id):
+            return openBrowsers.contains(id) ? node : nil
         case let .split(split):
-            let first = pruning(split.first, keeping: known, openFiles: openFiles)
-            let second = pruning(split.second, keeping: known, openFiles: openFiles)
+            let first = pruning(split.first, keeping: known, openFiles: openFiles, openBrowsers: openBrowsers)
+            let second = pruning(split.second, keeping: known, openFiles: openFiles, openBrowsers: openBrowsers)
             switch (first, second) {
             case (nil, nil): return nil
             case let (value?, nil): return value
@@ -312,7 +324,7 @@ enum PaneLayout {
 
     static func setting(fraction: Double, forSplit id: UUID, in node: PaneNode) -> PaneNode {
         switch node {
-        case .session, .file:
+        case .session, .file, .browser:
             return node
         case let .split(split):
             var updated = split
@@ -337,7 +349,10 @@ enum PaneLayout {
     /// The pane being worked in is taken over only by its own kind. A session
     /// chosen from the sidebar is selected before the pane being worked in is
     /// read, and that reading then falls back to the first pane on screen —
-    /// a file, when the file is on the left, and the file lost its place.
+    /// a file, when the file is on the left, and the file lost its place. And
+    /// handing a picked element to an agent selects the agent's session while
+    /// a browser tab has the keyboard: the page has to stay on screen to check
+    /// the change on.
     static func showing(_ item: PaneItem, in node: PaneNode?, focused: PaneItem?) -> PaneNode {
         guard let node else { return PaneNode(item) }
         guard !contains(item, in: node) else { return node }

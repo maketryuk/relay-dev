@@ -165,6 +165,17 @@ final class AppModel {
     private(set) var terminalUsesGPURendering = true
     var isUsagePopoverOpen = false
     private(set) var paneLayouts: [ProjectID: PaneNode] = [:]
+    /// Every open browser tab.
+    private(set) var browserPages: [BrowserID: BrowserPage] = [:]
+    /// The order tabs are listed in, as dragged.
+    private(set) var browserOrder: [BrowserID] = []
+    /// The tab that has the keyboard, when one does. Beside `editors.focused`
+    /// and the selected session, it is the third answer to "which pane is
+    /// being worked in".
+    private(set) var focusedBrowser: BrowserID?
+    /// The tab each project was last in, for the Browser menu to act on while
+    /// the keyboard is somewhere else.
+    @ObservationIgnored private var lastBrowserByProject: [ProjectID: BrowserID] = [:]
     var rightSidebarTab: RightSidebarTab = .services
 
     // MARK: - Selection and UI
@@ -288,6 +299,13 @@ final class AppModel {
                 pruned = pruned.flatMap { PaneLayout.removing(.file(path), from: $0) }
             }
             paneLayouts[projectID] = pruned
+        }
+        // Tabs come back with the pages they were showing. Chromium itself
+        // waits until a tab is on screen, so a dozen of them cost nothing
+        // until they are looked at.
+        let knownProjects = Set(projects.map(\.id)).union([ProjectID.chat])
+        for tab in state.browserTabs where knownProjects.contains(tab.projectID) {
+            addBrowserPage(BrowserPage(id: tab.id, projectID: tab.projectID, address: tab.address, title: tab.title))
         }
         Localization.shared.language = state.language
         rightSidebarTab = state.rightSidebarTab.flatMap(RightSidebarTab.init(rawValue:)) ?? .services
@@ -575,6 +593,9 @@ final class AppModel {
         }
         worktrees.removeValue(forKey: id)
         activeWorktreePaths.removeValue(forKey: id)
+        for tab in browsers(in: id) {
+            closeBrowser(tab.id)
+        }
         projects.removeAll { $0.id == id }
         projectFacts.removeValue(forKey: id)
         gitStatuses.removeValue(forKey: id)
@@ -831,6 +852,7 @@ final class AppModel {
         // Leaving a file is one of the three moments it is written out, and
         // clicking into a terminal is leaving it.
         editors.focused = nil
+        focusedBrowser = nil
         surfaceCache.touch(id)
         if let session = sessions[id] {
             let projectID = session.projectID
@@ -1166,6 +1188,7 @@ final class AppModel {
 
         selectedProjectID = projectID
         editors.focused = path
+        focusedBrowser = nil
         persist()
         // Reading the project for what it declares takes a moment, and the
         // moment to spend it is now rather than when somebody is waiting on a
@@ -1314,7 +1337,11 @@ final class AppModel {
     /// agent in the pane next door instead.
     func closeFocusedPane() {
         guard let path = editors.focused else {
-            if let id = selectedSessionID { dismissSession(id) }
+            if let browser = focusedBrowser {
+                closeBrowser(browser)
+            } else if let id = selectedSessionID {
+                dismissSession(id)
+            }
             return
         }
         // The project whose arrangement holds it, which is not always the one
@@ -1326,6 +1353,7 @@ final class AppModel {
 
     func focusFile(at path: String, caret: Int? = nil) {
         editors.focused = path
+        focusedBrowser = nil
         guard let caret, let file = editors[path] else { return }
         file.caret = caret
         // The marks belong to the name the caret is in. Moved off it, they
@@ -1853,6 +1881,9 @@ final class AppModel {
         if let path = editors.focused, PaneLayout.contains(.file(path), in: layout) {
             return .file(path)
         }
+        if let browser = focusedBrowser, PaneLayout.contains(.browser(browser), in: layout) {
+            return .browser(browser)
+        }
         if let session = selectedSessionID, PaneLayout.contains(.session(session), in: layout) {
             return .session(session)
         }
@@ -1926,8 +1957,191 @@ final class AppModel {
         let known = Set(sessions.keys)
         let open = editors.openPaths
         for (projectID, layout) in paneLayouts {
-            paneLayouts[projectID] = PaneLayout.pruning(layout, keeping: known, openFiles: open)
+            paneLayouts[projectID] = PaneLayout.pruning(
+                layout,
+                keeping: known,
+                openFiles: open,
+                openBrowsers: Set(browserPages.keys)
+            )
         }
+    }
+
+    // MARK: - Browser
+
+    /// The project's tabs, in the order the sidebar lists them.
+    func browsers(in projectID: ProjectID) -> [BrowserPage] {
+        browserOrder.compactMap { browserPages[$0] }.filter { $0.projectID == projectID }
+    }
+
+    /// Opens a new tab and shows it, at `url` or else at the project's own dev
+    /// server, since that is what a tab is usually opened for.
+    func newBrowserTab(in projectID: ProjectID, at url: URL? = nil) {
+        let page = BrowserPage(projectID: projectID, address: url?.absoluteString ?? startingAddress(for: projectID))
+        addBrowserPage(page)
+        selectBrowser(page.id)
+    }
+
+    /// Shows a tab in the pane being worked in, the way choosing a session
+    /// does: a tab takes the place of the tab on screen, and arrives beside
+    /// the terminals when there is none.
+    func selectBrowser(_ id: BrowserID) {
+        guard let page = browserPages[id] else { return }
+        let projectID = page.projectID
+        // Read before the tab takes the keyboard, or the pane being worked in
+        // would be the one that is not on screen yet.
+        let focused = focusedPaneItem(in: projectID)
+        let layout = paneLayouts[projectID]
+        let hasTabOnScreen = layout.map { PaneLayout.items(in: $0).contains { $0.isSameKind(as: .browser(id)) } } ?? false
+        if let layout, let focused, !hasTabOnScreen {
+            // The first tab on screen goes to the right of what is being
+            // worked in: the page beside the code that makes it.
+            paneLayouts[projectID] = PaneLayout.split(layout, target: focused, with: .browser(id), axis: .horizontal)
+        } else {
+            paneLayouts[projectID] = PaneLayout.showing(.browser(id), in: layout, focused: focused)
+        }
+        selectedProjectID = projectID
+        focusBrowser(id)
+        page.focus()
+        persist()
+    }
+
+    /// The tab took the keyboard: a click in it, or its page asking for focus.
+    func focusBrowser(_ id: BrowserID) {
+        guard let page = browserPages[id] else { return }
+        lastBrowserByProject[page.projectID] = id
+        guard focusedBrowser != id || editors.focused != nil else { return }
+        focusedBrowser = id
+        // Leaving a file writes it out, whichever pane is left for.
+        editors.focused = nil
+    }
+
+    /// Whether one of the project's tabs has the keyboard, which is when its
+    /// selected session must neither look nor act like the pane being typed in.
+    func browserHasKeyboard(in projectID: ProjectID) -> Bool {
+        focusedBrowser.flatMap { browserPages[$0] }?.projectID == projectID
+    }
+
+    /// The tab the Browser menu acts on: the one with the keyboard, or else
+    /// the one the selected project was last in.
+    var activeBrowserPage: BrowserPage? {
+        if let id = focusedBrowser, let page = browserPages[id] { return page }
+        guard let projectID = selectedProjectID else { return nil }
+        if let id = lastBrowserByProject[projectID], let page = browserPages[id] { return page }
+        let layout = paneLayouts[projectID]
+        return browsers(in: projectID).first { page in
+            layout.map { PaneLayout.contains(.browser(page.id), in: $0) } == true
+        }
+    }
+
+    /// Closes a tab. The next of the project's tabs that is not on screen
+    /// takes its pane, the way closing a terminal shows the next session.
+    func closeBrowser(_ id: BrowserID) {
+        guard let page = browserPages.removeValue(forKey: id) else { return }
+        page.close()
+        browserOrder.removeAll { $0 == id }
+        let projectID = page.projectID
+        if lastBrowserByProject[projectID] == id { lastBrowserByProject.removeValue(forKey: projectID) }
+        let hadKeyboard = focusedBrowser == id
+        if hadKeyboard { focusedBrowser = nil }
+
+        if let layout = paneLayouts[projectID], PaneLayout.contains(.browser(id), in: layout) {
+            let next = browsers(in: projectID).first { !PaneLayout.contains(.browser($0.id), in: layout) }
+            if let next {
+                paneLayouts[projectID] = PaneLayout.replacing(.browser(id), with: .browser(next.id), in: layout)
+                if hadKeyboard { focusBrowser(next.id) }
+            } else {
+                paneLayouts[projectID] = PaneLayout.removing(.browser(id), from: layout)
+            }
+        }
+        persist()
+    }
+
+    func moveBrowser(_ moved: BrowserID, beside target: BrowserID, side: RowDropSide) {
+        let reordered = ListReordering.moving(moved, beside: target, side: side, in: browserOrder)
+        guard reordered != browserOrder else { return }
+        browserOrder = reordered
+        persist()
+    }
+
+    /// Opens an address from somewhere in Relay: in the project's tab already
+    /// on that server, or in a new one.
+    func openInBrowser(_ url: URL, in projectID: ProjectID) {
+        let sameServer = browsers(in: projectID).first { page in
+            guard let current = URL(string: page.address) else { return false }
+            return current.scheme == url.scheme && current.host == url.host && current.port == url.port
+        }
+        guard let page = sameServer else {
+            newBrowserTab(in: projectID, at: url)
+            return
+        }
+        if page.address != url.absoluteString { page.open(url) }
+        selectBrowser(page.id)
+    }
+
+    /// Design mode, from the menu: turned on in a tab opened for it when the
+    /// project has none yet.
+    func toggleDesignMode() {
+        if let page = activeBrowserPage {
+            if !page.isDesignModeOn { selectBrowser(page.id) }
+            page.toggleDesignMode()
+            return
+        }
+        guard let projectID = selectedProjectID else { return }
+        newBrowserTab(in: projectID)
+        activeBrowserPage?.startDesignMode()
+    }
+
+    func openServiceInBrowser(_ service: ServiceDefinition, in projectID: ProjectID) {
+        guard let url = url(of: service, in: projectID) else { return }
+        openInBrowser(url, in: projectID)
+    }
+
+    func openPortInBrowser(_ port: ListeningPort) {
+        guard let url = port.url, let projectID = selectedProjectID ?? projects.first?.id else { return }
+        openInBrowser(url, in: projectID)
+    }
+
+    /// Hands a picked element to an agent: its description typed into the
+    /// prompt, not sent, and the overlay back up for the next pick.
+    func send(_ selection: DesignSelection, from page: BrowserPage, to sessionID: SessionID) {
+        deliver(PendingInput(text: transcript(of: selection, from: page)), to: sessionID)
+        page.resumePicking()
+    }
+
+    func send(_ selection: DesignSelection, from page: BrowserPage, toNewSessionFrom preset: SessionPreset) {
+        createSession(from: preset, in: page.projectID, thenType: PendingInput(text: transcript(of: selection, from: page)))
+        page.resumePicking()
+    }
+
+    func copy(_ selection: DesignSelection, from page: BrowserPage) {
+        copyToClipboard(transcript(of: selection, from: page))
+    }
+
+    private func transcript(of selection: DesignSelection, from page: BrowserPage) -> String {
+        DesignNoteTranscript.compose(selection.pick, note: page.note, screenshot: selection.screenshot)
+    }
+
+    private func addBrowserPage(_ page: BrowserPage) {
+        let id = page.id
+        page.onFocus = { [weak self] in self?.focusBrowser(id) }
+        page.onRecordChange = { [weak self] in self?.persist() }
+        // The page has tabs to open things in now, so a link that wants one
+        // gets one, beside the tab it came from.
+        page.onNewTab = { [weak self] url in
+            guard let self, let projectID = self.browserPages[id]?.projectID else { return }
+            self.newBrowserTab(in: projectID, at: url)
+        }
+        browserPages[id] = page
+        browserOrder.append(id)
+    }
+
+    /// Where a new tab starts: the project's own dev server when it is up, and
+    /// a blank page otherwise.
+    private func startingAddress(for projectID: ProjectID) -> String {
+        guard let service = project(projectID)?.defaultService,
+              let url = url(of: service, in: projectID)
+        else { return "" }
+        return url.absoluteString
     }
 
     // MARK: - Terminal surfaces
@@ -2790,14 +3004,17 @@ final class AppModel {
     /// being typed is worse than one that waits to be told.
     func send(_ comments: [ReviewComment], to sessionID: SessionID) {
         guard !comments.isEmpty else { return }
+        deliver(
+            PendingInput(text: ReviewCommentTranscript.compose(comments), commentIDs: comments.map(\.id)),
+            to: sessionID
+        )
+    }
+
+    /// Types into a session that is already running, once it is listening.
+    private func deliver(_ pending: PendingInput, to sessionID: SessionID) {
         // Selected first, so the terminal exists to be asked how it wants its
         // text before anything is typed into it.
         selectSession(sessionID)
-
-        let pending = PendingInput(
-            text: ReviewCommentTranscript.compose(comments),
-            commentIDs: comments.map(\.id)
-        )
         queuedInput[sessionID] = pending
         if let snapshot = sessions[sessionID] {
             flushQueuedInput(for: snapshot)
@@ -4148,7 +4365,8 @@ final class AppModel {
             showsMarkdownPreview: showsMarkdownPreview,
             terminalUsesGPURendering: terminalUsesGPURendering,
             reviewComments: reviewComments,
-            paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) })
+            paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) }),
+            browserTabs: browserOrder.compactMap { browserPages[$0]?.record }
         )
     }
 

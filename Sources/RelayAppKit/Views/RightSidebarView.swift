@@ -139,6 +139,10 @@ struct ServicesPane: View {
         ) {
             HStack(spacing: 1) {
                 if url != nil {
+                    IconButton(systemImage: "rectangle.split.2x1", help: "", size: Theme.Metrics.action) {
+                        model.openServiceInBrowser(service, in: project.id)
+                    }
+                    .relayTooltip(relayLocalized("Open in Browser Pane"))
                     IconButton(systemImage: "arrow.up.forward.app", help: "", size: Theme.Metrics.action) {
                         model.openService(service, in: project.id)
                     }
@@ -178,6 +182,7 @@ struct ServicesPane: View {
             Button(relayLocalized("Logs")) { model.showServiceLogs(service, in: project.id) }
             if url != nil {
                 Divider()
+                Button(relayLocalized("Open in Browser Pane")) { model.openServiceInBrowser(service, in: project.id) }
                 Button(relayLocalized("Open URL")) { model.openService(service, in: project.id) }
                 Button(relayLocalized("Copy URL")) { model.copyServiceURL(service, in: project.id) }
             }

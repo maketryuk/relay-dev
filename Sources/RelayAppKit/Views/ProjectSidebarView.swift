@@ -108,11 +108,12 @@ struct ProjectSidebarView: View {
     /// heading would be labelling the whole panel.
     private var sessions: some View {
         let list = model.interactiveSessions(in: project.id)
+        let tabs = model.browsers(in: project.id)
 
         return Group {
             if model.showsWorktrees(in: project.id) {
                 worktrees
-            } else if list.isEmpty {
+            } else if list.isEmpty, tabs.isEmpty {
                 VStack(spacing: Theme.Spacing.small) {
                     Text(relayLocalized("No sessions yet"))
                         .font(Theme.Typography.row)
@@ -127,17 +128,21 @@ struct ProjectSidebarView: View {
                 .padding(.top, Theme.Spacing.xlarge)
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
-                    ReorderableColumn(
-                        ids: list.map(\.id),
-                        spacing: 2,
-                        space: "relay.sessions",
-                        onMove: { moved, target, side in
-                            model.moveSession(moved, beside: target, side: side)
+                    VStack(spacing: 2) {
+                        ReorderableColumn(
+                            ids: list.map(\.id),
+                            spacing: 2,
+                            space: "relay.sessions",
+                            onMove: { moved, target, side in
+                                model.moveSession(moved, beside: target, side: side)
+                            }
+                        ) { sessionID in
+                            if let session = model.sessions[sessionID] {
+                                row(session)
+                            }
                         }
-                    ) { sessionID in
-                        if let session = model.sessions[sessionID] {
-                            row(session)
-                        }
+
+                        browserTabs
                     }
                     .padding(.horizontal, Theme.Spacing.small)
                     .padding(.vertical, Theme.Spacing.small)
@@ -201,6 +206,23 @@ struct ProjectSidebarView: View {
         }
     }
 
+    /// Below the sessions, in an order of their own: a tab is not a process,
+    /// and the two lists are dragged apart.
+    private var browserTabs: some View {
+        ReorderableColumn(
+            ids: model.browsers(in: project.id).map(\.id),
+            spacing: 2,
+            space: "relay.browsers",
+            onMove: { moved, target, side in
+                model.moveBrowser(moved, beside: target, side: side)
+            }
+        ) { browserID in
+            if let page = model.browserPages[browserID] {
+                BrowserTabRow(page: page, isSelected: model.focusedBrowser == browserID)
+            }
+        }
+    }
+
     private func removalMessage(for worktree: GitWorktree) -> String {
         var lines = [String(
             format: relayLocalized("The folder %@ will be deleted."),
@@ -260,7 +282,7 @@ struct ProjectSidebarView: View {
         } else {
             SessionRow(
                 session: session,
-                isSelected: model.selectedSessionID == session.id,
+                isSelected: model.selectedSessionID == session.id && !model.browserHasKeyboard(in: project.id),
                 onSelect: { model.selectSession(session.id) },
                 onRename: {
                     renameText = session.displayName

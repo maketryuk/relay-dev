@@ -19,6 +19,9 @@ struct PaneTreeView: View {
         case let .file(path):
             FilePane(path: path, projectID: projectID)
                 .overlay(alignment: .top) { fileFocusIndicator(for: path) }
+        case let .browser(browserID):
+            BrowserPane(browserID: browserID)
+                .overlay(alignment: .top) { browserFocusIndicator(for: browserID) }
         case let .split(split):
             SplitPaneView(split: split, projectID: projectID)
         }
@@ -59,6 +62,19 @@ struct PaneTreeView: View {
         }
     }
 
+    @ViewBuilder
+    private func browserFocusIndicator(for browserID: BrowserID) -> some View {
+        let layout = model.paneLayout(for: projectID)
+        let paneCount = layout.map { PaneLayout.items(in: $0).count } ?? 1
+
+        if paneCount > 1 {
+            Rectangle()
+                .fill(model.focusedBrowser == browserID ? Theme.Palette.accent : .clear)
+                .frame(height: 2)
+                .animation(.easeOut(duration: 0.12), value: model.focusedBrowser)
+        }
+    }
+
     /// Which pane the keyboard is talking to. Only drawn when there is more
     /// than one, because a lone pane is unambiguous.
     @ViewBuilder
@@ -68,7 +84,9 @@ struct PaneTreeView: View {
 
         if paneCount > 1 {
             Rectangle()
-                .fill(model.selectedSessionID == sessionID ? Theme.Palette.accent : .clear)
+                // The session stays selected while the page beside it has the
+                // keyboard; one strip, on the pane being typed into.
+                .fill(model.selectedSessionID == sessionID && !model.browserHasKeyboard(in: projectID) ? Theme.Palette.accent : .clear)
                 .frame(height: 2)
                 .animation(.easeOut(duration: 0.12), value: model.selectedSessionID)
         }

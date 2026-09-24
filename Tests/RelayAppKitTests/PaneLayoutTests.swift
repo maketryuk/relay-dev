@@ -163,6 +163,52 @@ struct PaneLayoutTests {
         #expect(decoded == layout)
     }
 
+    // MARK: - Browser tabs
+
+    private let page = BrowserID(rawValue: "page")
+    private let docs = BrowserID(rawValue: "docs")
+
+    private let sessionBesidePage = PaneLayout.split(
+        .session(SessionID(rawValue: "a")),
+        target: .session(SessionID(rawValue: "a")),
+        with: .browser(BrowserID(rawValue: "page")),
+        axis: .horizontal
+    )
+
+    @Test("A browser tab survives persistence beside a session")
+    func browserCodable() throws {
+        let decoded = try JSONDecoder().decode(PaneNode.self, from: JSONEncoder().encode(sessionBesidePage))
+        #expect(decoded == sessionBesidePage)
+        #expect(PaneLayout.items(in: decoded) == [.session(a), .browser(page)])
+    }
+
+    @Test("A closed tab's pane goes, and an open one's stays")
+    func pruningBrowser() {
+        #expect(PaneLayout.pruning(sessionBesidePage, keeping: [a], openBrowsers: [page]) == sessionBesidePage)
+        #expect(PaneLayout.pruning(sessionBesidePage, keeping: [a], openBrowsers: [docs]) == .session(a))
+    }
+
+    @Test("A tab takes the place of the tab on screen, the way a session replaces a session")
+    func tabReplacesTab() {
+        let shown = PaneLayout.showing(.browser(docs), in: sessionBesidePage, focused: .browser(page))
+        #expect(PaneLayout.items(in: shown) == [.session(a), .browser(docs)])
+    }
+
+    @Test("Handing a pick to an agent does not take the place of the page it came from")
+    func sessionDoesNotReplaceFocusedBrowser() {
+        // The page has the keyboard when design mode sends a pick, and the
+        // agent's session is selected to receive it. The page has to stay on
+        // screen to check the change on.
+        let shown = PaneLayout.showing(.session(b), in: sessionBesidePage, focused: .browser(page))
+        #expect(PaneLayout.items(in: shown) == [.session(b), .browser(page)])
+    }
+
+    @Test("With no terminal on screen, an agent arrives beside the page")
+    func sessionArrivesBesideBrowser() {
+        let shown = PaneLayout.showing(.session(b), in: .browser(page), focused: .browser(page))
+        #expect(PaneLayout.items(in: shown) == [.session(b), .browser(page)])
+    }
+
     @Test("A session does not take the place of the file being worked in")
     func sessionDoesNotReplaceFocusedFile() {
         let layout = PaneLayout.split(.file("/p/a.swift"), target: .file("/p/a.swift"), with: .session(a), axis: .horizontal)

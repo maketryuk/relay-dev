@@ -505,3 +505,160 @@ projects does not fill up with siblings. The development build uses
 
 What is not done yet — getting a fresh worktree ready to run, services and ports
 per worktree, finishing a piece of work — is in `ROADMAP.md`.
+
+---
+
+# The browser pane is Chromium
+
+A browser tab opens in a pane beside the agent building what it shows, and
+design mode turns it into a pointer: click an element, and what it is — its markup, its
+computed styles, the component that rendered it and the file that component is
+written in, a picture of it — is typed into an agent's prompt. An Electron app
+gets Chromium for free; Relay embeds it with CEF, the Chromium Embedded
+Framework.
+
+It is not free here. The framework is 320 MB unpacked and 130 MB in the
+download, which takes the release archive from 14 MB to about 150 MB, and the
+bundle gains five helper apps. WebKit was the alternative with no cost at all,
+and was turned down because the pages being built are built for Chromium.
+
+## The C API, against headers kept in the tree
+
+`Sources/CChromium` holds CEF's C headers — 84 of them, the closure of the
+dozen that are used — and a few hundred lines of C that implement the handlers
+Relay needs and hand Swift a plain interface: an opaque page, strings, and a
+table of callbacks. The C++ wrapper that CEF recommends is not used, because it
+would mean building 200 C++ files with CMake before `swift build` could link.
+
+The headers are compiled against an explicit API version, `CEF_API_VERSION`
+15400, which fixes the layout of every structure in them. The framework is
+loaded with `dlopen` at run time — which CEF requires on macOS anyway, for the
+sandbox — and the first call asks it for the hash of the layout it speaks. A
+framework that disagrees is refused before any structure is handed to it. The
+consequence that matters day to day is that `swift build` and `swift test` need
+nothing downloaded: only `Scripts/build-app.sh` fetches the framework, pinned by
+version and checksum in `Scripts/chromium.sh`, and caches it outside the
+checkout. Moving to another CEF version means replacing the headers and the pin
+in the same change.
+
+## One executable, five helpers
+
+Chromium runs its renderers, its GPU process and its utilities as separate
+processes, each started from a helper app beside the framework — `Relay
+Helper.app`, and `Relay Helper (GPU).app` and three more whose names Chromium
+derives from the first. They are one small executable, `relay-browser-helper`,
+copied five times, each with an Info.plist that keeps it out of the Dock.
+
+The helper starts CEF's sandbox before it loads the framework, from the
+`libcef_sandbox.dylib` inside it. The helpers are signed with
+`com.apple.security.cs.allow-jit`, since that is where JavaScript and the GPU
+code run and the hardened runtime forbids writable executable memory without
+it; the app itself is signed with no entitlement at all.
+
+CEF also requires the application object to answer whether `-sendEvent:` is on
+the stack, which a plain `NSApplication` cannot, and asks every host to
+subclass it. Relay cannot: SwiftUI makes the application from a private
+subclass of its own and never reads `NSPrincipalClass` — checked, not assumed,
+since the subclass that was first written for this would never have been
+created. So just before CEF starts, that class is given the two methods, a
+`-sendEvent:` that keeps the flag, and the protocols Chromium looks for, which
+the runtime matches by name.
+
+## Started late, pumped from SwiftUI's run loop, stopped at quit
+
+Chromium starts the first time a page is opened, not at launch: a GPU process
+and a network service before a page is drawn are a cost most sessions of Relay
+never need to pay. It cannot be started a second time in one process, so it
+then stays.
+
+Relay's run loop is SwiftUI's, so Chromium's work is interleaved with it rather
+than given the thread: CEF names a delay, and a timer in the common modes gives
+it a turn after it, which keeps pages working while a window is resized or a
+menu is open. This is the scheme of CEF's own sample for such hosts; the turn
+that comes anyway, for work that does not ask, comes thirty times a second
+while a page is open and once a second when none is.
+
+Quitting is the one place the terminals' rule — closing the window is not a
+teardown — does not hold. The pages are in the app's process, and CEF has to be
+shut down before the process ends and only once every page has closed. The app
+delegate closes them, gives them two seconds of run loop to go, and shuts CEF
+down if they went.
+
+## Closing a page takes its view away
+
+CEF's default answer to closing a page embedded in someone else's view is to
+send `performClose:` to that view's window. For a pane that window is Relay's
+only one, and closing it quits the app. Found in testing, where the window
+being closed had no close button and nothing happened.
+
+So the handler says it will close the page itself, and does it by taking the
+page's view out of the hierarchy on the next turn of the main queue — CEF
+destroys a page when its view is released. Nothing in Swift keeps a reference
+to that view for the same reason. A popup, and the inspector, are in windows
+CEF made for them, and those keep the default.
+
+## The DevTools protocol is the only channel into the page
+
+Everything Relay asks of a page — evaluating a script, waiting for a click,
+taking a picture — goes through the DevTools protocol, from the browser
+process, on the message channel CEF exposes. Nothing of Relay's runs in the
+renderer, which is why the helper can be the few lines it is.
+`DevToolsSession` numbers requests and matches replies, knowing nothing about
+Chromium, and is tested without it.
+
+Replies are handed on a turn after they arrive. Answering one usually means
+sending the next question, and Chromium does not allow a message to be sent
+from inside the delivery of another — it logs a failed check when that
+happens, which is how this was found.
+
+## Tabs are listed with the sessions
+
+A project can have as many tabs as it likes, and they are opened where
+sessions are — the "+" beside them, or ⇧⌘B —
+and listed under them in the sidebar, because they are used the same way: to
+watch the work, beside the agent doing it. They sit below the sessions in an
+order of their own rather than among them; a tab is not a process, and the
+daemon, which owns the session list, knows nothing about tabs. Their
+identifiers are made by Relay, and the workspace file keeps them as an ordered
+list with each tab's address and title.
+
+A tab moves through the panes by the rule a session does: choosing one takes
+the place of the tab on screen, and a tab never takes the place of a terminal
+or a file. The first tab on screen goes to the right of the pane being worked
+in. Closing a tab shows the next one that is not already on screen, the way
+closing a terminal shows the next session. A link that asks for a new tab gets
+one.
+
+A tab costs nothing until it is looked at: its Chromium page is created the
+first time its pane reaches the window, so a relaunch that restores a dozen
+tabs starts none of them.
+
+## Design mode trusts the page with nothing
+
+The picker runs in the page's own JavaScript world rather than an isolated one,
+because React, Vue and Svelte keep what rendered an element as properties on
+the element, and those are invisible from anywhere else. The page can
+therefore see the picker and replace anything it calls, so what comes back is
+treated as untrusted: `DesignPick` clamps every field again on the way in, and
+the script itself drops query strings, fragments, secret-looking values and
+event handlers before anything leaves the page. The overlay is a closed shadow
+root, out of reach of the page's styles and selectors.
+
+Waiting for the click is one `Runtime.evaluate` of a promise that settles on
+it, rather than polling. The promise is made by an `async` function, because a
+page that has replaced `Promise` — Angular's zone does — would otherwise hand
+back an object the protocol does not wait for. A navigation takes the overlay
+with the document, and the next finished load puts it back.
+
+Where an element is written comes from what each framework leaves in
+development builds: React 18's `_debugSource`, exact; React 19's `_debugStack`,
+the line as the dev server serves the file, which transpiling may have moved
+and which the transcript says so about; Vue's `__file`; Svelte's
+`__svelte_meta`. The picture is `Page.captureScreenshot` clipped to the part of
+the element on screen, saved under `~/.relay/design` and cleared after a week,
+and handed to the agent by path — a terminal carries text, and both Claude Code
+and Codex open an image named by its path.
+
+The transcript is typed into the prompt the way review notes are, as one paste
+and not submitted, and the overlay comes back for the next click: the loop is
+point, hand over, watch it change, point again.

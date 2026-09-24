@@ -43,6 +43,40 @@ struct WorkspaceStoreTests {
         #expect(WorkspaceStore(url: url).load().reviewComments.isEmpty)
     }
 
+    @Test("Browser tabs come back in their order, on the pages they were showing")
+    func browserTabsRoundTrip() throws {
+        let directory = try TemporaryDirectory()
+        let url = directory.url.appendingPathComponent("workspace.json")
+        let project = ProjectID(rawValue: "storefront")
+        let tabs = [
+            BrowserTab(id: BrowserID(rawValue: "cart"), projectID: project, address: "http://localhost:5173/cart", title: "Cart"),
+            BrowserTab(id: BrowserID(rawValue: "docs"), projectID: project, address: "https://vitejs.dev", title: ""),
+        ]
+        let layout = PaneNode.split(PaneSplit(
+            axis: .horizontal,
+            first: .session(SessionID(rawValue: "a")),
+            second: .browser(BrowserID(rawValue: "cart"))
+        ))
+
+        WorkspaceStore(url: url).saveNow(WorkspaceState(paneLayouts: ["storefront": layout], browserTabs: tabs))
+
+        let loaded = WorkspaceStore(url: url).load()
+        #expect(loaded.browserTabs == tabs)
+        #expect(loaded.paneLayouts["storefront"] == layout)
+    }
+
+    @Test("A workspace written before browser tabs existed still opens")
+    func olderFileWithoutBrowser() throws {
+        let directory = try TemporaryDirectory()
+        let url = directory.url.appendingPathComponent("workspace.json")
+        try #"{"version":1,"projects":[],"paneLayouts":{"p":{"session":{"_0":"a"}}}}"#
+            .write(to: url, atomically: true, encoding: .utf8)
+
+        let loaded = WorkspaceStore(url: url).load()
+        #expect(loaded.browserTabs.isEmpty)
+        #expect(loaded.paneLayouts["p"] == .session(SessionID(rawValue: "a")))
+    }
+
     @Test("An arrangement this build cannot read costs that arrangement, not the workspace")
     func unreadableLayoutIsDroppedAlone() throws {
         // What a build with a kind of pane this one does not know leaves

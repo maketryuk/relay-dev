@@ -232,13 +232,13 @@ struct SessionDisplayNameTests {
         #expect(SessionNaming.nextName(for: .shell, existing: []) == "Terminal")
     }
 
-    @Test("⌘R is left alone")
-    func plainCommandRIsReserved() {
+    @Test("⌘R reloads, and does nothing else")
+    func plainCommandRIsReload() {
         // It means reload everywhere else on the machine. Spending it on "start
-        // the dev service" surprised people and used up the key Relay will want
-        // for reloading something of its own.
+        // the dev service" surprised people; it was kept for reloading something
+        // of Relay's own, which the browser pane's page now is.
         let taken = ShortcutResolver.allBindings(settings: ShortcutSettings())
-        #expect(!taken.values.contains(KeyBinding("r", .command)))
+        #expect(taken.filter { $0.value == KeyBinding("r", .command) }.map(\.key) == [.reloadBrowser])
         #expect(RelayCommand.startDefaultService.defaultBinding == nil)
     }
 

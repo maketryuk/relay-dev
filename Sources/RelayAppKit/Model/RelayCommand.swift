@@ -7,6 +7,7 @@ enum ShortcutCategory: String, CaseIterable, Identifiable, Sendable {
     case services
     case projects
     case editor
+    case browser
 
     var id: String { rawValue }
 
@@ -17,6 +18,7 @@ enum ShortcutCategory: String, CaseIterable, Identifiable, Sendable {
         case .services: "Services"
         case .projects: "Projects"
         case .editor: "Editor"
+        case .browser: "Browser"
         }
     }
 }
@@ -65,6 +67,11 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     case revealProject
     case projectSettings
 
+    case newBrowserTab
+    case toggleDesignMode
+    case reloadBrowser
+    case openBrowserDevTools
+
     var id: String { rawValue }
 
     var title: String {
@@ -105,6 +112,10 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .findInFile: "Find"
         case .searchProject: "Find in Files"
         case .toggleMarkdownPreview: "Toggle Markdown Preview"
+        case .newBrowserTab: "New Browser Tab"
+        case .toggleDesignMode: "Toggle Design Mode"
+        case .reloadBrowser: "Reload Page"
+        case .openBrowserDevTools: "Developer Tools"
         }
     }
 
@@ -120,6 +131,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .nextProject, .previousProject, .addProject, .revealProject,
              .projectSettings, .reviewChanges, .switchBranch, .newWorktree: .projects
         case .goToDefinition, .goBack, .findInFile, .searchProject, .toggleMarkdownPreview: .editor
+        case .newBrowserTab, .toggleDesignMode, .reloadBrowser, .openBrowserDevTools: .browser
         }
     }
 
@@ -158,9 +170,9 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .focusNextPane: KeyBinding("]", [.command, .option])
         // Deliberately unbound. `⌘R` means reload everywhere else on this
         // machine, and spending it on "start the dev service" would both
-        // surprise people and burn the key Relay will want for reloading
-        // something of its own. The command is still in the palette and the
-        // menu, and still rebindable.
+        // surprise people and burn the key the browser pane reloads its page
+        // with. The command is still in the palette and the menu, and still
+        // rebindable.
         case .startDefaultService: nil
         case .restartDefaultService: KeyBinding("r", [.command, .option])
         // `⌘G` is "find again" in a document app; Relay has no find, and
@@ -189,6 +201,16 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         // VS Code's. Paste-and-match-style, which it means in a text view,
         // has nothing to do in a plain-text editor or a terminal.
         case .toggleMarkdownPreview: KeyBinding("v", [.command, .shift])
+        // `⌘B` is the sidebar and `⌥⌘B` the other one, so the shift is what is
+        // left of the letter a browser starts with.
+        case .newBrowserTab: KeyBinding("b", [.command, .shift])
+        // E for element, which is what design mode is for pointing at.
+        case .toggleDesignMode: KeyBinding("e", [.command, .shift])
+        // The key that was kept free for exactly this.
+        case .reloadBrowser: KeyBinding("r", .command)
+        // Chrome's and Safari's, so a hand that has opened an inspector
+        // before does not have to learn it again.
+        case .openBrowserDevTools: KeyBinding("i", [.command, .option])
         }
     }
 }

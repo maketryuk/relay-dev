@@ -250,7 +250,9 @@ struct TerminalPane: View {
         if let surface = model.surface(for: session.id) {
             TerminalHostView(
                 surface: surface,
-                isFocused: model.selectedSessionID == session.id,
+                // The session stays selected while the page beside it has the
+                // keyboard, and must not take it back on the next redraw.
+                isFocused: model.selectedSessionID == session.id && !model.browserHasKeyboard(in: session.projectID),
                 onClick: { model.selectSession(session.id) }
             )
                 .id(session.id)

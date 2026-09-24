@@ -44,6 +44,24 @@ public enum RelayPaths {
         supportDirectory.appendingPathComponent("worktrees", isDirectory: true)
     }
 
+    /// The browser pane's profile: cookies, local storage and the cache, so a
+    /// development server signed into once stays signed in across launches.
+    /// Chromium locks it while it runs, which is one more reason the
+    /// development build must not share it.
+    public static var browserDirectory: URL {
+        supportDirectory.appendingPathComponent("browser", isDirectory: true)
+    }
+
+    /// Pictures of elements picked in design mode, kept where an agent handed
+    /// the path can read them.
+    public static var designDirectory: URL {
+        supportDirectory.appendingPathComponent("design", isDirectory: true)
+    }
+
+    public static var chromiumLogURL: URL {
+        logsDirectory.appendingPathComponent("chromium.log", isDirectory: false)
+    }
+
     /// Unix domain socket paths are capped at 104 bytes, so the socket lives in
     /// the sandbox-friendly temporary directory keyed by UID instead of inside
     /// Application Support.

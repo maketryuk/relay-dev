@@ -251,6 +251,7 @@ struct PortRow: View {
         )
         .contextMenu {
             if port.url != nil {
+                Button(relayLocalized("Open in Browser Pane")) { model.openPortInBrowser(port) }
                 Button(relayLocalized("Open in Browser")) { model.openPort(port) }
                 Button(relayLocalized("Copy URL")) { model.copyPortURL(port) }
             }

@@ -145,6 +145,9 @@ struct WorkspaceState: Codable {
     /// Terminal arrangement per project, so a split survives a relaunch the
     /// way the sessions in it do.
     var paneLayouts: [String: PaneNode]
+    /// Every browser tab, in the order the sidebar lists them, so each comes
+    /// back on the page it was showing.
+    var browserTabs: [BrowserTab]
 
     init(
         version: Int = 1,
@@ -174,7 +177,8 @@ struct WorkspaceState: Codable {
         showsMarkdownPreview: Bool = true,
         terminalUsesGPURendering: Bool = true,
         reviewComments: [ReviewComment] = [],
-        paneLayouts: [String: PaneNode] = [:]
+        paneLayouts: [String: PaneNode] = [:],
+        browserTabs: [BrowserTab] = []
     ) {
         self.version = version
         self.projects = projects
@@ -204,6 +208,7 @@ struct WorkspaceState: Codable {
         self.terminalUsesGPURendering = terminalUsesGPURendering
         self.reviewComments = reviewComments
         self.paneLayouts = paneLayouts
+        self.browserTabs = browserTabs
     }
 
     init(from decoder: Decoder) throws {
@@ -244,6 +249,7 @@ struct WorkspaceState: Codable {
         // project in it included, into quarantine over a split.
         paneLayouts = try (container.decodeIfPresent([String: ReadableLayout].self, forKey: .paneLayouts) ?? [:])
             .compactMapValues(\.node)
+        browserTabs = try container.decodeIfPresent([BrowserTab].self, forKey: .browserTabs) ?? []
     }
 }
 

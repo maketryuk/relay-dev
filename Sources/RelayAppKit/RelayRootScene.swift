@@ -62,6 +62,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         true
     }
+
+    /// The one thing quitting does have to coordinate: Chromium's pages are
+    /// in this process, unlike the terminals, and CEF has to be stopped before
+    /// the process ends.
+    func applicationWillTerminate(_ notification: Notification) {
+        ChromiumEngine.shared.shutdown()
+    }
 }
 
 extension View {
@@ -176,6 +183,28 @@ struct RelayCommands: Commands {
                         .hidden()
                 }
             }
+        }
+
+        CommandMenu("Browser") {
+            Button(RelayCommand.newBrowserTab.localizedTitle) {
+                if let projectID = model.selectedProjectID { model.newBrowserTab(in: projectID) }
+            }
+            .relayShortcut(model.binding(for: .newBrowserTab))
+            .disabled(model.selectedProjectID == nil)
+
+            Button(RelayCommand.toggleDesignMode.localizedTitle) { model.toggleDesignMode() }
+                .relayShortcut(model.binding(for: .toggleDesignMode))
+                .disabled(model.selectedProjectID == nil)
+
+            Divider()
+
+            Button(RelayCommand.reloadBrowser.localizedTitle) { model.activeBrowserPage?.reload() }
+                .relayShortcut(model.binding(for: .reloadBrowser))
+                .disabled(model.activeBrowserPage == nil)
+
+            Button(RelayCommand.openBrowserDevTools.localizedTitle) { model.activeBrowserPage?.showDevTools() }
+                .relayShortcut(model.binding(for: .openBrowserDevTools))
+                .disabled(model.activeBrowserPage == nil)
         }
 
         CommandMenu("Service") {

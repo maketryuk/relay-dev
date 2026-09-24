@@ -188,6 +188,19 @@ not the same kind of change as reordering one. Adding cases stays backwards comp
 not — `Tests/RelayProtocolTests/WireCompatibilityTests.swift` pins the encodings
 the upgrade path depends on.
 
+## Chromium
+
+The browser pane is CEF, reached through its C API. `Sources/CChromium/cef`
+holds the headers of one pinned build, compiled at `CEF_API_VERSION` 15400,
+and the framework is refused at launch if its API hash disagrees.
+`Scripts/chromium.sh` pins the same build by version and checksum and is the
+only thing that downloads it — once per machine, into
+`~/Library/Caches/com.maketryuk.relay/chromium` — so `swift build` and
+`swift test` never need it, and an app run with `swift run` has no browser.
+Moving to another CEF build is one change: the headers, `CHROMIUM_VERSION` and
+the checksum together. `docs/ARCHITECTURE.md` has the traps found on the way,
+closing a page among them.
+
 ## Tests
 
 - Real behaviour is tested against the real thing: the daemon suite starts an
