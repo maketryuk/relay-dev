@@ -56,6 +56,10 @@ breaking change to stored data.
   finished no longer goes on showing as working. Where there is no hook, the
   mark the agent puts in the terminal's title is read instead. Codex is told
   to trust the hook in its own `config.toml`, so it runs without asking.
+- **A plain terminal carries no status mark.** A shell, a build running in it
+  or an editor is not news on a project's tile, and marking one said
+  "working" whenever it printed anything. An agent started by hand in a
+  terminal still shows its status for as long as it runs there.
 
 ### Fixed
 

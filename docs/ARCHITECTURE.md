@@ -148,6 +148,16 @@ own process is reached through at most one agent.
 becomes the shell's again. That clears what the agent last said, which would
 otherwise outlive it.
 
+**Only agents are marked.** A plain terminal still has a status, which the
+Services panel and notifications read. But it has no mark in the sidebar or the
+pane header, and no say in the project's tile: a terminal printing is what a
+terminal does, not news.
+
+A shell session in which an agent has announced itself, through a hook or its
+title, is `hostsAgent` in its snapshot and is marked while the agent runs. The
+field is decoded leniently, so a daemon that predates it reads as "no agent in
+the shell".
+
 `RuntimeStatus` is deliberately decoupled from process liveness: an agent that
 reports `finished` after a task is still running and must be able to return to
 `working` on the next prompt.

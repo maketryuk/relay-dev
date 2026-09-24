@@ -66,8 +66,9 @@ struct WorktreeHeader: View {
             }
 
             // Folded, the rows are not there to say who needs attention.
-            if isCollapsed, !group.sessions.isEmpty {
-                StatusDot(status: RuntimeStatus.aggregate(group.sessions.map(\.status)), size: 7)
+            let reporting = group.sessions.filter(\.reportsStatus)
+            if isCollapsed, !reporting.isEmpty {
+                StatusDot(status: RuntimeStatus.aggregate(reporting.map(\.status)), size: 7)
             }
 
             if let status, status.hasDiff {

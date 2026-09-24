@@ -156,13 +156,8 @@ struct SessionRow: View {
         }
     }
 
-    /// An idle shell does not need a coloured dot; an agent always does.
     private var showsStatusBadge: Bool {
-        if session.exitCode != nil { return true }
-        switch session.status {
-        case .idle, .offline: return session.kind != .shell
-        default: return true
-        }
+        session.reportsStatus
     }
 
     private var background: Color {

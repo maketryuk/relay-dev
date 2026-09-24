@@ -76,6 +76,46 @@ struct WireTests {
         #expect(decoded == snapshot)
     }
 
+    @Test("A snapshot from a daemon that does not know about agents in shells still reads")
+    func snapshotWithoutHostsAgent() throws {
+        let snapshot = SessionSnapshot(
+            id: .generate(),
+            projectID: .generate(),
+            kind: .shell,
+            name: "Terminal",
+            workingDirectory: "/tmp",
+            command: [],
+            status: .idle,
+            pid: 1,
+            exitCode: nil,
+            startedAt: Date(timeIntervalSince1970: 1_700_000_000),
+            lastActivityAt: Date(timeIntervalSince1970: 1_700_000_000),
+            columns: 80,
+            rows: 24,
+            hostsAgent: true
+        )
+        var object = try #require(JSONSerialization.jsonObject(with: encoder.encode(snapshot)) as? [String: Any])
+        object.removeValue(forKey: "hostsAgent")
+        let older = try JSONSerialization.data(withJSONObject: object)
+        #expect(try decoder.decode(SessionSnapshot.self, from: older).hostsAgent == false)
+    }
+
+    @Test("Only an agent, or a terminal with one in it, has a status to mark")
+    func reportsStatus() {
+        func snapshot(_ kind: SessionKind, hostsAgent: Bool = false) -> SessionSnapshot {
+            SessionSnapshot(
+                id: .generate(), projectID: .generate(), kind: kind, name: "", workingDirectory: "/",
+                command: [], status: .working, pid: nil, exitCode: nil, startedAt: Date(), lastActivityAt: Date(),
+                columns: 80, rows: 24, hostsAgent: hostsAgent
+            )
+        }
+        #expect(snapshot(.claude).reportsStatus)
+        #expect(snapshot(.codex).reportsStatus)
+        #expect(!snapshot(.shell).reportsStatus)
+        #expect(!snapshot(.ssh).reportsStatus)
+        #expect(snapshot(.shell, hostsAgent: true).reportsStatus)
+    }
+
     @Test("Identifiers encode as bare strings, not objects")
     func identifierEncoding() throws {
         let identifier = SessionID(rawValue: "abc-123")

@@ -111,6 +111,20 @@ final class AgentStatusDaemonTests {
         #expect(messages.snapshots(for: session.id).last?.status == .finished)
     }
 
+    @Test("A plain terminal hosts no agent until one announces itself in it")
+    func agentInShell() throws {
+        let session = try createSession(kind: .shell, command: [])
+        #expect(!session.hostsAgent)
+        try client.wait(timeout: 30) { $0.snapshots(for: session.id).contains { $0.status == .idle } }
+
+        // What Claude Code's title looks like, from a job the shell runs in
+        // the foreground, as it would run `claude`.
+        let job = "sh -c 'printf \"\\033]0;\u{2733} Claude Code\\007\"; sleep 20'\n"
+        try client.send(.input(session.id, Data(job.utf8)))
+        let messages = try client.wait(timeout: 10) { $0.snapshots(for: session.id).contains { $0.hostsAgent } }
+        #expect(messages.snapshots(for: session.id).contains { $0.reportsStatus })
+    }
+
     @Test("A hook from a terminal the session does not own changes nothing")
     func foreignHookIsIgnored() throws {
         let session = try createSession(kind: .claude, command: Self.quietAgent)

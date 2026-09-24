@@ -745,8 +745,10 @@ final class AppModel {
     }
 
     /// The rail indicator: one glance tells the user which project needs them.
+    /// What the project's agents and services are doing. A plain terminal is
+    /// left out: its prompt, its build and its editor are not news on a tile.
     func aggregatedStatus(for projectID: ProjectID) -> RuntimeStatus {
-        let statuses = sessions(in: projectID).map(\.status)
+        let statuses = sessions(in: projectID).filter { $0.reportsStatus || $0.role.isService }.map(\.status)
         return statuses.isEmpty ? .offline : RuntimeStatus.aggregate(statuses)
     }
 

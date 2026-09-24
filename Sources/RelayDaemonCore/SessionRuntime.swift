@@ -81,7 +81,8 @@ public final class SessionRuntime: @unchecked Sendable {
             rows: rows,
             role: spec.role,
             title: reportedTitle,
-            isNameUserDefined: isNameUserDefined
+            isNameUserDefined: isNameUserDefined,
+            hostsAgent: spec.kind.isAgent || agentStatus.hasEvidence
         )
     }
 

@@ -179,12 +179,14 @@ struct TerminalPane: View {
                 .layoutPriority(1)
                 .relayTooltip(model.label(for: session), edge: .bottom)
 
-            StatusDot(status: session.status)
-            if detail.showsStatusText {
-                Text(session.status.localizedName)
-                    .font(Theme.Typography.rowSecondary)
-                    .foregroundStyle(Theme.Palette.textTertiary)
-                    .lineLimit(1)
+            if session.reportsStatus {
+                StatusDot(status: session.status)
+                if detail.showsStatusText {
+                    Text(session.status.localizedName)
+                        .font(Theme.Typography.rowSecondary)
+                        .foregroundStyle(Theme.Palette.textTertiary)
+                        .lineLimit(1)
+                }
             }
 
             Spacer(minLength: Theme.Spacing.small)

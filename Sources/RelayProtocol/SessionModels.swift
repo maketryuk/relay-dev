@@ -71,6 +71,10 @@ public struct SessionSnapshot: Codable, Sendable, Hashable, Identifiable {
     /// True once the user has renamed the session by hand, after which the
     /// reported title stops overriding it.
     public var isNameUserDefined: Bool
+    /// Whether an agent has said, through its hooks or its title, that it is
+    /// running in this terminal — the way a shell session learns that
+    /// somebody typed `claude` into it.
+    public var hostsAgent: Bool
 
     public init(
         id: SessionID,
@@ -88,7 +92,8 @@ public struct SessionSnapshot: Codable, Sendable, Hashable, Identifiable {
         rows: Int,
         role: SessionRole = .interactive,
         title: String? = nil,
-        isNameUserDefined: Bool = false
+        isNameUserDefined: Bool = false,
+        hostsAgent: Bool = false
     ) {
         self.id = id
         self.projectID = projectID
@@ -106,6 +111,15 @@ public struct SessionSnapshot: Codable, Sendable, Hashable, Identifiable {
         self.role = role
         self.title = title
         self.isNameUserDefined = isNameUserDefined
+        self.hostsAgent = hostsAgent
+    }
+
+    /// Whether this session has a status worth marking: it is an agent, or has
+    /// one in it. A plain terminal does not — a shell at its prompt, a build
+    /// running in it, a `vim` — and marking one said "working" whenever it
+    /// printed anything, which is what a terminal is for.
+    public var reportsStatus: Bool {
+        kind.isAgent || hostsAgent
     }
 
     /// The name to show: what the user chose, otherwise what the program calls
@@ -135,5 +149,6 @@ public struct SessionSnapshot: Codable, Sendable, Hashable, Identifiable {
         role = try container.decodeIfPresent(SessionRole.self, forKey: .role) ?? .interactive
         title = try container.decodeIfPresent(String.self, forKey: .title)
         isNameUserDefined = try container.decodeIfPresent(Bool.self, forKey: .isNameUserDefined) ?? false
+        hostsAgent = try container.decodeIfPresent(Bool.self, forKey: .hostsAgent) ?? false
     }
 }
