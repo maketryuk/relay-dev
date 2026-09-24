@@ -2437,46 +2437,99 @@ final class AppModel {
         prompt: String,
         in projectID: ProjectID
     ) {
-        guard let home = project(projectID)?.rootPath, !isCreatingWorktree else { return }
+        guard let project = project(projectID), !isCreatingWorktree else { return }
         let branch = WorktreeNaming.branchName(from: name)
         guard !branch.isEmpty else { return }
-        if let holder = visibleWorktrees(in: projectID).first(where: { $0.branch == branch }) {
-            worktreeCreationFailure = String(
-                format: relayLocalized("%@ is already open in %@."),
-                branch,
-                HomeRelativePath.abbreviating(holder.path)
-            )
+        if let holder = worktree(holding: branch, in: projectID) {
+            worktreeCreationFailure = Self.alreadyOpenMessage(branch, in: holder)
             return
         }
-        let main = visibleWorktrees(in: projectID).first(where: \.isMain)?.path ?? home
-        let repository = WorktreeNaming.repositoryName(mainWorktree: main)
-        let parent = RelayPaths.worktreesDirectory
 
         isCreatingWorktree = true
         worktreeCreationFailure = nil
         Task { [weak self] in
-            let (failure, found) = await Task.detached(priority: .userInitiated) {
-                () -> (String?, [GitWorktree]?) in
-                let directory = WorktreeNaming.directory(for: branch, repository: repository, in: parent) {
-                    FileManager.default.fileExists(atPath: $0)
-                }
-                let failure = GitWorktreeActions.add(branch: branch, from: base, at: directory, in: home)
-                return (failure, GitWorktreeActions.list(at: home))
-            }.value
             guard let self else { return }
+            let creation = await self.addWorktree(named: name, from: base, in: project)
             self.isCreatingWorktree = false
-            if let found { self.adopt(found, in: projectID) }
-            if let failure {
+            switch creation {
+            case let .created(created):
+                self.dismissModal()
+                self.openCreatedWorktree(created, starting: preset, prompt: prompt, in: projectID)
+            case let .refused(failure):
                 self.worktreeCreationFailure = Self.summarised(failure)
+            case let .alreadyOpen(branch, holder):
+                self.worktreeCreationFailure = Self.alreadyOpenMessage(branch, in: holder)
+            case .unusableName, .unlisted:
                 return
             }
-            guard let created = found?.first(where: { $0.branch == branch }) else { return }
-            self.dismissModal()
-            self.activateWorktree(created.path, in: projectID)
-            guard let preset else { return }
-            let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-            self.createSession(from: preset, in: projectID, thenType: text.isEmpty ? nil : PendingInput(text: text))
         }
+    }
+
+    /// What asking git for a worktree came to.
+    enum WorktreeCreation: Equatable, Sendable {
+        case created(GitWorktree)
+        /// Nothing git would accept as a branch is left of the name.
+        case unusableName
+        /// Git will not check a branch out twice, and this one already is.
+        case alreadyOpen(branch: String, in: GitWorktree)
+        /// What git said when it refused.
+        case refused(String)
+        /// Git made it, but its list does not show it, so there is nothing to open.
+        case unlisted(branch: String)
+    }
+
+    /// Makes a worktree for `name` in Relay's folder for the repository, with
+    /// the same branch, folder and marker whoever asks, and takes git's list
+    /// again. Opens nothing and says nothing: that is the caller's.
+    func addWorktree(named name: String, from base: String?, in project: Project) async -> WorktreeCreation {
+        let projectID = project.id
+        let home = project.rootPath
+        let branch = WorktreeNaming.branchName(from: name)
+        guard !branch.isEmpty else { return .unusableName }
+        if let holder = worktree(holding: branch, in: projectID) { return .alreadyOpen(branch: branch, in: holder) }
+        let main = visibleWorktrees(in: projectID).first(where: \.isMain)?.path ?? home
+        let repository = WorktreeNaming.repositoryName(mainWorktree: main)
+        let parent = RelayPaths.worktreesDirectory
+
+        let (failure, found) = await Task.detached(priority: .userInitiated) {
+            () -> (String?, [GitWorktree]?) in
+            let directory = WorktreeNaming.directory(for: branch, repository: repository, in: parent) {
+                FileManager.default.fileExists(atPath: $0)
+            }
+            let failure = GitWorktreeActions.add(branch: branch, from: base, at: directory, in: home)
+            return (failure, GitWorktreeActions.list(at: home))
+        }.value
+        if let found { adopt(found, in: projectID) }
+        if let failure { return .refused(failure) }
+        guard let created = found?.first(where: { $0.branch == branch }) else { return .unlisted(branch: branch) }
+        return .created(created)
+    }
+
+    /// Turns the panel to a worktree just made and starts `preset` in it, with
+    /// `prompt` typed once the agent is ready for it.
+    func openCreatedWorktree(
+        _ created: GitWorktree,
+        starting preset: SessionPreset?,
+        prompt: String,
+        in projectID: ProjectID
+    ) {
+        activateWorktree(created.path, in: projectID)
+        guard let preset else { return }
+        let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        createSession(from: preset, in: projectID, thenType: text.isEmpty ? nil : PendingInput(text: text))
+    }
+
+    /// The worktree that has `branch` checked out already, if one has.
+    func worktree(holding branch: String, in projectID: ProjectID) -> GitWorktree? {
+        visibleWorktrees(in: projectID).first { $0.branch == branch }
+    }
+
+    private static func alreadyOpenMessage(_ branch: String, in holder: GitWorktree) -> String {
+        String(
+            format: relayLocalized("%@ is already open in %@."),
+            branch,
+            HomeRelativePath.abbreviating(holder.path)
+        )
     }
 
     /// Removes the folder, closes what ran in it and settles its branch, and
