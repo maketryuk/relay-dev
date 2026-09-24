@@ -148,6 +148,9 @@ struct WorkspaceState: Codable {
     /// Every browser tab, in the order the sidebar lists them, so each comes
     /// back on the page it was showing.
     var browserTabs: [BrowserTab]
+    /// The status and comment given to each worktree, by project and then by
+    /// the worktree's path as git spells it.
+    var worktreeNotes: [String: [String: WorktreeNote]]
 
     init(
         version: Int = 1,
@@ -178,7 +181,8 @@ struct WorkspaceState: Codable {
         terminalUsesGPURendering: Bool = true,
         reviewComments: [ReviewComment] = [],
         paneLayouts: [String: PaneNode] = [:],
-        browserTabs: [BrowserTab] = []
+        browserTabs: [BrowserTab] = [],
+        worktreeNotes: [String: [String: WorktreeNote]] = [:]
     ) {
         self.version = version
         self.projects = projects
@@ -209,6 +213,7 @@ struct WorkspaceState: Codable {
         self.reviewComments = reviewComments
         self.paneLayouts = paneLayouts
         self.browserTabs = browserTabs
+        self.worktreeNotes = worktreeNotes
     }
 
     init(from decoder: Decoder) throws {
@@ -250,6 +255,10 @@ struct WorkspaceState: Codable {
         paneLayouts = try (container.decodeIfPresent([String: ReadableLayout].self, forKey: .paneLayouts) ?? [:])
             .compactMapValues(\.node)
         browserTabs = try container.decodeIfPresent([BrowserTab].self, forKey: .browserTabs) ?? []
+        // Like the arrangements: a note this build cannot read costs that note.
+        worktreeNotes = try (container
+            .decodeIfPresent([String: [String: ReadableNote]].self, forKey: .worktreeNotes) ?? [:])
+            .mapValues { $0.compactMapValues(\.note) }
     }
 }
 
@@ -259,5 +268,14 @@ private struct ReadableLayout: Decodable {
 
     init(from decoder: any Decoder) throws {
         node = try? PaneNode(from: decoder)
+    }
+}
+
+/// A saved worktree note, or nothing when it cannot be read.
+private struct ReadableNote: Decodable {
+    let note: WorktreeNote?
+
+    init(from decoder: any Decoder) throws {
+        note = try? WorktreeNote(from: decoder)
     }
 }

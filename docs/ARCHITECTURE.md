@@ -540,13 +540,31 @@ the files under every session at once. A worktree gives each piece of work a
 folder and a branch of its own, sharing the repository's history, and costs a
 few seconds rather than a clone.
 
-**Nothing about a worktree is stored.** The list is `git worktree list`, read on
-the same 12-second tick as the branch. A record of Relay's own would disagree
-with git the moment anyone typed `git worktree add` — and agents do: Claude Code
-and Codex both have a `--worktree` flag. The one fact git could not otherwise
-answer, whether Relay made a branch and may therefore delete it, is kept in the
-repository as `branch.<name>.relayCreated`, which git forgets along with the
-branch.
+**Nothing git knows about a worktree is stored.** The list is `git worktree
+list`, read on the same 12-second tick as the branch. A record of Relay's own
+would disagree with git the moment anyone typed `git worktree add` — and agents
+do: Claude Code and Codex both have a `--worktree` flag. One fact git could not
+otherwise answer, whether Relay made a branch and may therefore delete it, is
+kept in the repository as `branch.<name>.relayCreated`, which git forgets along
+with the branch.
+
+**What has been said about a worktree is the other thing git cannot answer.**
+A status — to do, in progress, in review, completed — and a comment, set from
+the heading's menu or by an agent through `relay`, are kept in the workspace
+file as `worktreeNotes`, filed by project and then by the path git reports.
+By project, because the only thing that says a worktree has gone is its
+repository's list, and a list speaks for one repository: each fresh list lets
+go of the notes of the worktrees it no longer names. Keyed by path alone, a
+worktree removed while Relay was closed would never be seen to go, and its note
+would turn up on the next worktree made in that folder — which, for the same
+branch, is the same folder. A list that could not be read lets go of nothing,
+and neither does an empty one, which git never gives for a repository: what
+people wrote cannot be read back from anywhere once it is dropped. A path no
+project's list names is not noted at all, since nothing would show the note and
+nothing would ever take it away. On the heading the status is a disc filling up
+inside a ring beside the name — a family of shapes apart from the agents'
+spinner, question, check and dot, in their colours for the same meanings — and
+the comment is a second line under it.
 
 **Sessions were not given a worktree identifier.** The plan was a workspace id
 beside the project id in the daemon, which is a protocol change and a retired

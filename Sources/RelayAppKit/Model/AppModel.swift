@@ -44,6 +44,11 @@ final class AppModel {
     /// Branch and diff of every worktree, by path, for the headers the sidebar
     /// groups sessions under.
     private(set) var worktreeStatuses: [String: GitStatus] = [:]
+    /// The status and comment each worktree has been given, by a person from
+    /// its heading or by an agent through `relay`. Remembered, unlike the rest:
+    /// git has nowhere to keep it. Not `private(set)`, because what changes it
+    /// is in `AppModel+WorktreeNotes.swift`.
+    var worktreeNotes = WorktreeNotes()
     /// Which checkout of each project is being looked at, by path: the one the
     /// right-hand panel describes and a new session starts in. It follows the
     /// selected session, which is remembered, so it need not be.
@@ -284,6 +289,7 @@ final class AppModel {
         showsMarkdownPreview = state.showsMarkdownPreview
         terminalUsesGPURendering = state.terminalUsesGPURendering
         reviewComments = state.reviewComments
+        worktreeNotes = WorktreeNotes(persisted: state.worktreeNotes)
         paneLayouts = Dictionary(uniqueKeysWithValues: state.paneLayouts.map {
             (ProjectID(rawValue: $0.key), $0.value)
         })
@@ -600,6 +606,7 @@ final class AppModel {
         }
         worktrees.removeValue(forKey: id)
         activeWorktreePaths.removeValue(forKey: id)
+        worktreeNotes.forget(id)
         for tab in browsers(in: id) {
             closeBrowser(tab.id)
         }
@@ -2378,6 +2385,7 @@ final class AppModel {
         let gone = Set((worktrees[projectID] ?? []).map(\.path)).subtracting(found.map(\.path))
         for path in gone { worktreeStatuses.removeValue(forKey: path) }
         worktrees[projectID] = found
+        keepWorktreeNotes(listedIn: found, in: projectID)
 
         if let active = activeWorktreePaths[projectID],
            !found.contains(where: { $0.path == active && !$0.isPrunable }) {
@@ -4398,7 +4406,8 @@ final class AppModel {
             terminalUsesGPURendering: terminalUsesGPURendering,
             reviewComments: reviewComments,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) }),
-            browserTabs: browserOrder.compactMap { browserPages[$0]?.record }
+            browserTabs: browserOrder.compactMap { browserPages[$0]?.record },
+            worktreeNotes: worktreeNotes.persisted
         )
     }
 

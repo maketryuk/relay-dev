@@ -8,6 +8,10 @@ import SwiftUI
 /// work on it has got. A click anywhere on it folds it, the way a heading
 /// does everywhere else; turning the right-hand panel to this checkout is what
 /// choosing one of its sessions does, and "Review Changes" for one with none.
+///
+/// It also says where the work stands, as whoever is doing it put it — a
+/// person from the menu, an agent through `relay`: a status beside the name,
+/// and a comment under it.
 struct WorktreeHeader: View {
     @Environment(AppModel.self) private var model
     let project: Project
@@ -15,16 +19,30 @@ struct WorktreeHeader: View {
 
     @State private var isHovering = false
     @State private var isShowingNewSessionMenu = false
+    @State private var isEditingComment = false
 
     private static let buttonSize: CGFloat = 18
+    /// Where the name starts: past the chevron's box, the branch mark's and
+    /// the gaps after each, so the comment is read as the name's second line.
+    private static let commentInset: CGFloat = 12 + 10 + Theme.Spacing.xsmall * 2
 
     private var worktree: GitWorktree { group.worktree }
     private var collapseKey: String { "worktree:\(worktree.path)" }
     private var isCollapsed: Bool { model.isSectionCollapsed(collapseKey) }
     private var isActive: Bool { model.isActiveWorktree(worktree, in: project.id) }
     private var status: GitStatus? { model.worktreeStatuses[worktree.path] }
+    private var note: WorktreeNote? { model.worktreeNote(at: worktree.path) }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            heading
+            if isEditingComment {
+                WorktreeCommentEditor(path: worktree.path, comment: note?.comment) { isEditingComment = false }
+            }
+        }
+    }
+
+    private var heading: some View {
         HStack(spacing: Theme.Spacing.xsmall) {
             Image(systemName: "chevron.right")
                 .font(.system(size: 8, weight: .semibold))
@@ -35,12 +53,18 @@ struct WorktreeHeader: View {
             Image(systemName: worktree.branch == nil ? "circle.dashed" : "arrow.triangle.branch")
                 .font(.system(size: 9))
                 .foregroundStyle(Theme.Palette.textTertiary)
+                .frame(width: 10)
 
             Text(verbatim: worktree.name)
                 .font(Theme.Typography.rowSecondary.weight(.semibold))
                 .foregroundStyle(isActive ? Theme.Palette.textPrimary : Theme.Palette.textSecondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
+
+            if let workStatus = note?.status {
+                WorktreeStatusMark(status: workStatus)
+                    .relayTooltip(workStatus.localizedDescription)
+            }
 
             if worktree.isLocked {
                 Image(systemName: "lock.fill")
@@ -78,6 +102,7 @@ struct WorktreeHeader: View {
         // As tall as the button that comes and goes, so the row does not
         // grow under the pointer when it appears.
         .frame(height: Self.buttonSize)
+        .worktreeComment(isEditingComment ? nil : note?.comment, inset: Self.commentInset)
         .padding(.leading, Theme.Spacing.xsmall)
         .padding(.trailing, Theme.Spacing.xsmall)
         .padding(.vertical, 3)
@@ -97,6 +122,8 @@ struct WorktreeHeader: View {
             model.openWorktree(worktree, in: project.id)
             model.reviewChanges(in: project.id)
         }
+        Divider()
+        WorktreeNoteMenu(model: model, path: worktree.path) { isEditingComment = true }
         Divider()
         Button(relayLocalized("Reveal in Finder")) { model.revealInFinder(worktree.path) }
         Button(relayLocalized("Copy Path")) { model.copyToClipboard(worktree.path) }

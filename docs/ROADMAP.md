@@ -66,6 +66,10 @@ workspace is a git worktree.
   detached `HEAD` alone holds — filters it to the merged, the clean and the
   idle, ticks the finished ones, and removes what is ticked one at a time.
   Nothing goes on its own.
+- **A status and a comment on every worktree**, set from its heading's menu
+  and shown on the heading: to do, in progress, in review or completed as a
+  disc filling up beside the name, the comment as a line under it. Kept in the
+  workspace file, and let go of when git stops listing the worktree.
 
 ### Still to do
 

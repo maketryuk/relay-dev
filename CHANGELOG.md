@@ -27,6 +27,12 @@ breaking change to stored data.
   branches were kept and what git refused. Nothing is ever removed without
   being ticked.
 
+- **Say where the work in each worktree stands.** A worktree heading's menu
+  sets a status — To Do, In Progress, In Review or Completed — shown as a small
+  disc filling up beside the name, and a comment, shown as a line under the
+  heading with the whole of it on hover. Both survive a relaunch, and go when
+  the worktree does.
+
 ### Fixed
 
 - **A branch squashed or rebased in by a pull request goes with its worktree.**

@@ -491,19 +491,24 @@ public struct RelayValueField: View {
 public struct InlineRenameField: View {
     private let placeholder: String
     @Binding private var text: String
+    private let allowsBlank: Bool
     private let onCommit: () -> Void
     private let onCancel: () -> Void
 
     @FocusState private var isFocused: Bool
 
+    /// `allowsBlank` is for text whose absence is an answer — a comment taken
+    /// away — rather than a name, which cannot be nothing.
     public init(
         _ placeholder: String,
         text: Binding<String>,
+        allowsBlank: Bool = false,
         onCommit: @escaping () -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.placeholder = placeholder
         _text = text
+        self.allowsBlank = allowsBlank
         self.onCommit = onCommit
         self.onCancel = onCancel
     }
@@ -523,7 +528,7 @@ public struct InlineRenameField: View {
             IconButton(
                 systemImage: "checkmark",
                 size: 20,
-                isEnabled: !isBlank,
+                isEnabled: allowsBlank || !isBlank,
                 tint: Theme.Palette.statusFinished,
                 action: commit
             )
@@ -549,7 +554,7 @@ public struct InlineRenameField: View {
     }
 
     private func commit() {
-        guard !isBlank else { return }
+        guard allowsBlank || !isBlank else { return }
         onCommit()
     }
 }
