@@ -238,6 +238,20 @@ struct WorkspaceState: Codable {
         terminalUsesGPURendering = try container
             .decodeIfPresent(Bool.self, forKey: .terminalUsesGPURendering) ?? true
         reviewComments = try container.decodeIfPresent([ReviewComment].self, forKey: .reviewComments) ?? []
-        paneLayouts = try container.decodeIfPresent([String: PaneNode].self, forKey: .paneLayouts) ?? [:]
+        // One project's arrangement that cannot be read — written by a build
+        // with a kind of pane this one does not know — costs that arrangement
+        // alone. Letting it fail the whole file would put the workspace, every
+        // project in it included, into quarantine over a split.
+        paneLayouts = try (container.decodeIfPresent([String: ReadableLayout].self, forKey: .paneLayouts) ?? [:])
+            .compactMapValues(\.node)
+    }
+}
+
+/// A saved arrangement, or nothing when it cannot be read.
+private struct ReadableLayout: Decodable {
+    let node: PaneNode?
+
+    init(from decoder: any Decoder) throws {
+        node = try? PaneNode(from: decoder)
     }
 }

@@ -38,6 +38,9 @@ breaking change to stored data.
 - **A session chosen from the sidebar no longer takes the place of a file open
   to the left of the terminals.** A session takes a terminal's pane, and
   arrives beside the others when there is none.
+- **A workspace saved by a newer build no longer loses every project when an
+  older one opens it.** An arrangement of panes the older build cannot read is
+  dropped on its own, instead of the whole workspace being set aside.
 
 ## 0.6.0 — 2026-09-23
 

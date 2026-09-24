@@ -43,6 +43,24 @@ struct WorkspaceStoreTests {
         #expect(WorkspaceStore(url: url).load().reviewComments.isEmpty)
     }
 
+    @Test("An arrangement this build cannot read costs that arrangement, not the workspace")
+    func unreadableLayoutIsDroppedAlone() throws {
+        // What a build with a kind of pane this one does not know leaves
+        // behind — which is what an older build finds after a newer one.
+        let directory = try TemporaryDirectory()
+        let url = directory.url.appendingPathComponent("workspace.json")
+        try #"""
+        {"version":1,
+         "projects":[{"id":"p","name":"Storefront","rootPath":"/tmp"}],
+         "paneLayouts":{"p":{"session":{"_0":"a"}},"q":{"hologram":{}}}}
+        """#.write(to: url, atomically: true, encoding: .utf8)
+
+        let loaded = WorkspaceStore(url: url).load()
+        #expect(loaded.projects.map(\.name) == ["Storefront"])
+        #expect(loaded.paneLayouts["p"] == .session(SessionID(rawValue: "a")))
+        #expect(loaded.paneLayouts["q"] == nil)
+    }
+
     @Test("Markdown opens as a page until the source is chosen, and the choice is kept")
     func markdownPreviewChoice() throws {
         let directory = try TemporaryDirectory()

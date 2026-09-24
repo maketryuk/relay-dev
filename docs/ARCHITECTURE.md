@@ -111,6 +111,11 @@ migratable.
 `WorkspaceStore` is the only type that touches disk, so swapping in SQLite or
 SwiftData is contained.
 
+A saved arrangement this build cannot read — one naming a kind of pane it does
+not know, which is what an older build finds after a newer one — is dropped on
+its own. It used to fail the whole workspace file, which the store then put in
+quarantine, projects and all.
+
 It writes to `~/.relay` — `~/.relay-dev` for the development build — rather than
 to Application Support. What is in there is not the opaque state of a
 document-based app: a workspace file worth reading when something looks wrong, a
