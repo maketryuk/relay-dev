@@ -27,12 +27,17 @@ public enum RelayFlavour: String, Sendable, CaseIterable {
         bundleIdentifier: Bundle.main.bundleIdentifier
     )
 
+    /// An identifier of Relay's own outranks the environment, which is
+    /// inherited: every terminal carries its daemon's flavour, and an app
+    /// started with `open` from one of the other build's terminals would
+    /// otherwise take that build's daemon, sockets and workspace for its own.
+    ///
     /// Release is the answer when nothing says otherwise: a daemon started by
     /// hand, or a binary run straight out of the build directory, belongs to
     /// the ordinary app until something claims it.
     public static func resolve(environment: String?, bundleIdentifier: String?) -> RelayFlavour {
+        if let own = allCases.first(where: { $0.bundleIdentifier == bundleIdentifier }) { return own }
         if let named = environment.flatMap(named) { return named }
-        if bundleIdentifier?.hasSuffix(".dev") == true { return .development }
         return .release
     }
 

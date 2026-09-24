@@ -53,6 +53,11 @@ breaking change to stored data.
   default branch — fetching that one branch first when it has to — and
   deletes the branch when git proves it is. A branch Relay did not make is
   still never touched.
+- **Relay Dev opened from a Relay terminal is Relay Dev.** Started with
+  `open -a "Relay Dev"` in a terminal of the released app, it took that
+  terminal's build for its own: it connected to the released app's daemon and
+  read and wrote its workspace. The app now goes by its own identity, whatever
+  it inherits.
 
 ## 0.7.0 — 2026-09-24
 

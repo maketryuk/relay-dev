@@ -14,15 +14,25 @@ struct RelayFlavourTests {
     }
 
     @Test("The daemon is told, because it has no identifier to read")
-    func environmentWins() {
+    func environmentTellsWhatHasNoIdentifier() {
         // A bare executable inside Contents/MacOS has no bundle identifier of
         // its own, so the app that launches it says which build it belongs to.
         #expect(
             RelayFlavour.resolve(environment: "development", bundleIdentifier: nil) == .development
         )
         #expect(
-            RelayFlavour.resolve(environment: "release", bundleIdentifier: "com.maketryuk.relay.dev") == .release
+            RelayFlavour.resolve(environment: "dev", bundleIdentifier: "com.apple.dt.xctest.tool") == .development
         )
+    }
+
+    @Test("An app started from the other build's terminal is still itself")
+    func identifierOutranksAnInheritedEnvironment() {
+        // `open -a "Relay Dev"` typed into a Relay terminal hands the app that
+        // terminal's environment, the daemon's flavour included.
+        #expect(
+            RelayFlavour.resolve(environment: "release", bundleIdentifier: "com.maketryuk.relay.dev") == .development
+        )
+        #expect(RelayFlavour.resolve(environment: "dev", bundleIdentifier: "com.maketryuk.relay") == .release)
     }
 
     @Test("Anything unclaimed is the ordinary app")

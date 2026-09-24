@@ -175,7 +175,10 @@ when working on the daemon, close the sessions, or end it outright with
 The daemon cannot read its own flavour: it is a bare executable inside
 `Contents/MacOS` with no bundle identifier, so `DaemonLauncher` puts it in the
 environment. A daemon started by hand is the released one, which is the safe
-default for `make daemon`.
+default for `make daemon`. The app goes by its identifier whatever the
+environment says: every terminal inherits its daemon's `RELAY_FLAVOUR`, and
+`open -a "Relay Dev"` typed into a Relay terminal passes it on, which used to
+start Relay Dev on the released app's daemon and workspace.
 
 ## Daemon protocol
 
