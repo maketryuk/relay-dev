@@ -253,6 +253,21 @@ struct BranchIntegrationTests {
         #expect(integration("feature", in: repository) == .squashMerged)
     }
 
+    @Test("A detached worktree's commit is measured by its hash")
+    func detachedCommit() throws {
+        let repository = try BranchTestRepository()
+        let folder = repository.base.appendingPathComponent("worktrees/shop/spike").path
+        try Git.run(["worktree", "add", "--detach", folder, "main"], in: repository.root)
+        try repository.commit("spike\n", to: "spike.txt", in: folder, message: "Spike")
+        let head = try #require(repository.output(["rev-parse", "HEAD"], in: folder))
+        #expect(integration(head, in: repository) == .unmerged)
+
+        try Git.run(["merge", "--squash", head], in: repository.root)
+        try Git.run(["commit", "-m", "Spike (#1)"], in: repository.root)
+        #expect(integration(head, in: repository) == .squashMerged)
+        #expect(integration(String(head.prefix(12)), in: repository) == .squashMerged)
+    }
+
     @Test("A branch with work of its own is unmerged")
     func unmerged() throws {
         let repository = try BranchTestRepository()
@@ -296,7 +311,7 @@ struct DefaultBaseTests {
     @Test("The remote's default branch, as the clone was told it")
     func remoteHead() throws {
         let repository = try BranchTestRepository(remote: true)
-        #expect(GitBranchIntegration.defaultBase(in: repository.root) == "refs/remotes/origin/main")
+        #expect(GitBranchIntegration.defaultBase(in: repository.root) == "origin/main")
     }
 
     @Test("Whatever the remote's default branch is called")
@@ -304,7 +319,7 @@ struct DefaultBaseTests {
         let repository = try BranchTestRepository(remote: true)
         try Git.run(["push", "origin", "main:develop"], in: repository.root)
         try Git.run(["remote", "set-head", "origin", "develop"], in: repository.root)
-        #expect(GitBranchIntegration.defaultBase(in: repository.root) == "refs/remotes/origin/develop")
+        #expect(GitBranchIntegration.defaultBase(in: repository.root) == "origin/develop")
     }
 
     @Test("The remote's main when nothing says which branch is its default")
@@ -315,13 +330,13 @@ struct DefaultBaseTests {
         try Git.run(["remote", "add", "origin", bare], in: repository.root)
         try Git.run(["fetch", "origin"], in: repository.root)
         try Git.run(["remote", "set-head", "origin", "--delete"], in: repository.root)
-        #expect(GitBranchIntegration.defaultBase(in: repository.root) == "refs/remotes/origin/main")
+        #expect(GitBranchIntegration.defaultBase(in: repository.root) == "origin/main")
     }
 
     @Test("The local main when there is no remote")
     func localMain() throws {
         let repository = try BranchTestRepository()
-        #expect(GitBranchIntegration.defaultBase(in: repository.root) == "refs/heads/main")
+        #expect(GitBranchIntegration.defaultBase(in: repository.root) == "main")
     }
 
     @Test("Nothing when there is neither")

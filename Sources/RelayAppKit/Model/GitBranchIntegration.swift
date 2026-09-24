@@ -40,6 +40,10 @@ enum GitBranchIntegration {
     /// pulls. A remote added with `git remote add` has no `origin/HEAD`, so
     /// its `main` and `master` are tried by name; a repository with no
     /// remote keeps its finished work in its own `main` or `master`.
+    ///
+    /// Spelled as short as git can spell it without it meaning something
+    /// else — `origin/main`, `main` — which is how a person reads a ref and
+    /// how every git command takes one.
     static func defaultBase(in root: String) -> String? {
         var candidates: [String] = []
         if let remote = preferredRemote(in: root) {
@@ -49,17 +53,18 @@ enum GitBranchIntegration {
             candidates += ["main", "master"].map { "refs/remotes/\(remote)/\($0)" }
         }
         candidates += ["refs/heads/main", "refs/heads/master"]
-        return candidates.first { commit($0, in: root) != nil }
+        guard let found = candidates.first(where: { commit($0, in: root) != nil }) else { return nil }
+        return output(["rev-parse", "--abbrev-ref", found], in: root) ?? found
     }
 
-    /// `branch` is a branch's name, or any commit git can name; `base` is a
-    /// ref such as `defaultBase` gives.
+    /// `branch` is anything git names a commit by — a branch, or the hash a
+    /// detached worktree is at; `base` is a ref such as `defaultBase` gives.
     ///
     /// Both are read once and the rest is asked of the commits they named,
     /// so a branch that moves while it is being measured is measured as it
     /// was rather than as a mixture.
     static func integration(of branch: String, into base: String, in root: String) -> BranchIntegration {
-        guard let tip = commit("refs/heads/\(branch)", in: root) ?? commit(branch, in: root),
+        guard let tip = commit(branch, in: root),
               let target = commit(base, in: root)
         else { return .unknown }
 
@@ -91,8 +96,11 @@ enum GitBranchIntegration {
     /// cannot be reached leaves the answer what it was.
     static func refresh(_ base: String, in root: String) -> Bool {
         let prefix = "refs/remotes/"
-        guard base.hasPrefix(prefix) else { return false }
-        let tracked = base.dropFirst(prefix.count)
+        guard !base.hasPrefix("-"),
+              let full = output(["rev-parse", "--symbolic-full-name", base], in: root),
+              full.hasPrefix(prefix)
+        else { return false }
+        let tracked = full.dropFirst(prefix.count)
         guard let remote = lines(output(["remote"], in: root))
             .filter({ tracked.hasPrefix($0 + "/") })
             .max(by: { $0.count < $1.count })
