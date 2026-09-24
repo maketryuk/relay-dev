@@ -169,8 +169,15 @@ public final class DaemonServer: @unchecked Sendable {
         DaemonQueue.assertIsolated()
         let identifier = SessionID(rawValue: event.sessionID)
         guard let session = sessions[identifier] else { return }
+        let isFirst = !session.hasHeardFromHooks
         if session.apply(hook: event) {
             broadcastSnapshot(identifier)
+        }
+        // Once per session: whether the hooks are reaching it at all is the
+        // first question when a status looks wrong, and every tool call after
+        // that would bury the answer.
+        if isFirst, session.hasHeardFromHooks {
+            DaemonLog.shared.write("session \(identifier) reports through \(event.agent.rawValue)'s hooks")
         }
     }
 

@@ -154,11 +154,15 @@ public final class SessionRuntime: @unchecked Sendable {
         data.contains(0x0D) || data.contains(0x0A)
     }
 
+    /// Whether an agent's hook has reached this session yet.
+    public private(set) var hasHeardFromHooks = false
+
     /// Applies what an agent's hook reported. Returns `true` when the status
     /// changed and observers should be notified.
     public func apply(hook event: AgentHookEvent, now: Date = Date()) -> Bool {
         DaemonQueue.assertIsolated()
         guard isAlive, let pid, event.comesFromSessionAgent(sessionPID: pid) else { return false }
+        hasHeardFromHooks = true
         agentStatus.apply(event, at: now)
         lastActivityAt = now
         return reclassify(now: now)
