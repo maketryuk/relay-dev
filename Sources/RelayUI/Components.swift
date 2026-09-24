@@ -3,14 +3,22 @@ import SwiftUI
 
 // MARK: - StatusDot
 
-/// The atom of the whole product: one glance, one colour, one meaning.
+/// The atom of the whole product: one glance, one shape, one meaning.
+///
+/// The shape says which state it is and the colour confirms it. Seven dots
+/// told apart by hue alone asked for eyes that can tell amber from green at
+/// seven points across, and three of them pulsed, which said "something is
+/// going on" three ways that looked the same. Work in progress turns, a
+/// question is a question, a result is a tick, and a plain dot is left to the
+/// states at rest.
 public struct StatusDot: View {
     private let status: RuntimeStatus
     private let size: CGFloat
     private let showsRing: Bool
 
-    @State private var isPulsing = false
-
+    /// `size` is the diameter of a plain dot. Any other mark is drawn a third
+    /// larger: a ring weighs less than a disc of the same width, and a question
+    /// mark at seven points is a smudge.
     public init(status: RuntimeStatus, size: CGFloat = 7, showsRing: Bool = false) {
         self.status = status
         self.size = size
@@ -22,22 +30,86 @@ public struct StatusDot: View {
             if showsRing {
                 Circle()
                     .fill(Theme.Palette.rail)
-                    .frame(width: size + 4, height: size + 4)
+                    .frame(width: markDiameter + 4, height: markDiameter + 4)
             }
+            mark
+        }
+        // The same box whatever the state, so a title beside it does not
+        // shift sideways when its session starts asking something.
+        .frame(width: boxSize, height: boxSize)
+        .accessibilityElement()
+        .accessibilityLabel(status.displayName)
+    }
+
+    @ViewBuilder
+    private var mark: some View {
+        switch status.mark {
+        case .spinner:
+            WorkingSpinner(tint: status.tint, diameter: glyphSize)
+        case .question:
+            // A circle rather than a speech bubble, whose tail would stick out
+            // of the ring that parts a badge from the artwork under it.
+            glyph("questionmark.circle.fill")
+        case .check:
+            glyph("checkmark.circle.fill")
+        case .dot:
             Circle()
                 .fill(status.tint)
                 .frame(width: size, height: size)
-                .opacity(status.pulses && isPulsing ? 0.45 : 1)
         }
-        .animation(
-            status.pulses
-                ? .easeInOut(duration: 1.1).repeatForever(autoreverses: true)
-                : .default,
-            value: isPulsing
-        )
-        .onAppear { isPulsing = status.pulses }
-        .onChange(of: status) { _, newValue in isPulsing = newValue.pulses }
-        .accessibilityLabel(status.displayName)
+    }
+
+    private func glyph(_ systemName: String) -> some View {
+        Image(systemName: systemName)
+            .resizable()
+            .scaledToFit()
+            .foregroundStyle(status.tint)
+            .frame(width: glyphSize, height: glyphSize)
+    }
+
+    private var glyphSize: CGFloat { (size * 4 / 3).rounded() }
+
+    private var markDiameter: CGFloat {
+        switch status.mark {
+        case .spinner, .question, .check: glyphSize
+        case .dot: size
+        }
+    }
+
+    private var boxSize: CGFloat { glyphSize + (showsRing ? 4 : 0) }
+}
+
+/// An open ring turning once a second in twelve steps: as smooth as a few
+/// points of arc can show, for a fifth of the redraws of a continuous
+/// animation. The angle is read off the clock rather than counted from when
+/// the view appeared, so every spinner on screen turns in step — a sidebar of
+/// them out of phase looks like a fault rather than like work.
+struct WorkingSpinner: View {
+    let tint: Color
+    let diameter: CGFloat
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    nonisolated static let stepsPerTurn: Double = 12
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / Self.stepsPerTurn, paused: reduceMotion)) { context in
+            Circle()
+                .inset(by: lineWidth / 2)
+                // Held still, an open ring looks like a spinner that has hung;
+                // a closed one looks like what it is.
+                .trim(from: 0, to: reduceMotion ? 1 : 0.75)
+                .stroke(tint, lineWidth: lineWidth)
+                .rotationEffect(reduceMotion ? .zero : Self.angle(at: context.date))
+        }
+        .frame(width: diameter, height: diameter)
+    }
+
+    private var lineWidth: CGFloat { max(1.5, diameter / 4.5) }
+
+    nonisolated static func angle(at date: Date) -> Angle {
+        let turn = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1)
+        return .degrees((turn * stepsPerTurn).rounded(.down) * (360 / stepsPerTurn))
     }
 }
 

@@ -13,13 +13,27 @@ public extension RuntimeStatus {
         case .offline: Theme.Palette.statusOffline
         }
     }
+}
 
-    /// Only genuinely transient states animate; a wall of pulsing dots would be
-    /// noise rather than signal.
-    var pulses: Bool {
+/// The shape a status is drawn as. Colour only confirms it.
+enum StatusMark: Equatable {
+    /// Something is under way — the one mark that moves.
+    case spinner
+    /// An agent has asked something and nothing goes on until it is answered.
+    case question
+    /// Done, with a result waiting to be read.
+    case check
+    /// At rest or stopped, where a colour is all there is to say.
+    case dot
+}
+
+extension RuntimeStatus {
+    var mark: StatusMark {
         switch self {
-        case .working, .starting, .waiting: true
-        default: false
+        case .working, .starting: .spinner
+        case .waiting: .question
+        case .finished: .check
+        case .error, .idle, .offline: .dot
         }
     }
 }

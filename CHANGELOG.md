@@ -5,6 +5,16 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Changed
+
+- **A session's status is told by its shape, not only its colour** — a ring
+  that turns while it works, a question mark when it is waiting for you, a
+  tick when it has finished, and a plain dot for an error or for rest. Nothing
+  pulses any more, and every spinner on screen turns in step; with Reduce
+  Motion on, the ring closes and holds still.
+
 ## 0.6.0 — 2026-09-23
 
 ### Added

@@ -1,3 +1,4 @@
+import SwiftUI
 import Testing
 
 import RelayProtocol
@@ -45,15 +46,33 @@ struct ProjectAppearanceTests {
 
 @Suite("Status styling")
 struct StatusStyleTests {
-    @Test("Only transient states animate")
-    func pulseSelection() {
-        #expect(RuntimeStatus.working.pulses)
-        #expect(RuntimeStatus.starting.pulses)
-        #expect(RuntimeStatus.waiting.pulses)
-        #expect(!RuntimeStatus.idle.pulses)
-        #expect(!RuntimeStatus.finished.pulses)
-        #expect(!RuntimeStatus.error.pulses)
-        #expect(!RuntimeStatus.offline.pulses)
+    @Test("Only work in progress moves")
+    func spinnerSelection() {
+        let moving = RuntimeStatus.allCases.filter { $0.mark == .spinner }
+        #expect(Set(moving) == [.working, .starting])
+    }
+
+    @Test("A question and a result each have a shape of their own, not just a colour")
+    func glyphSelection() {
+        #expect(RuntimeStatus.waiting.mark == .question)
+        #expect(RuntimeStatus.finished.mark == .check)
+        #expect(RuntimeStatus.allCases.filter { $0.mark == .question } == [.waiting])
+        #expect(RuntimeStatus.allCases.filter { $0.mark == .check } == [.finished])
+    }
+
+    @Test("A spinner steps a twelfth of a turn at a time")
+    func spinnerSteps() {
+        let start = Date(timeIntervalSinceReferenceDate: 1000)
+        #expect(WorkingSpinner.angle(at: start) == .degrees(0))
+        #expect(WorkingSpinner.angle(at: start.addingTimeInterval(0.5)) == .degrees(180))
+        #expect(WorkingSpinner.angle(at: start.addingTimeInterval(0.1)) == .degrees(30))
+        #expect(WorkingSpinner.angle(at: start.addingTimeInterval(0.08)) == .degrees(0))
+    }
+
+    @Test("Spinners that appear at different moments turn in step")
+    func spinnerPhase() {
+        let moment = Date(timeIntervalSinceReferenceDate: 12345.25)
+        #expect(WorkingSpinner.angle(at: moment) == WorkingSpinner.angle(at: moment.addingTimeInterval(3)))
     }
 
     @Test("Every status maps to a colour and distinct states look distinct")
