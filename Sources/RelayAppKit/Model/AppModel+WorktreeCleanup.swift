@@ -65,10 +65,11 @@ extension AppModel {
                 }.value
                 guard let self else { return }
                 self.worktreeCleanups[projectID]?.record(reading, for: worktree.path)
-                self.worktreeCleanups[projectID]?.suggest(
-                    among: self.worktreeCleanupCandidates(in: projectID),
-                    now: Date()
-                )
+                // Read before the state is opened for writing: the candidates
+                // are made from that same state, and reading it while a write
+                // to it is under way is a conflict Swift stops the app over.
+                let candidates = self.worktreeCleanupCandidates(in: projectID)
+                self.worktreeCleanups[projectID]?.suggest(among: candidates, now: Date())
             }
             self?.worktreeCleanups[projectID]?.isReading = false
         }

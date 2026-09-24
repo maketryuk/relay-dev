@@ -441,6 +441,52 @@ struct WorktreeFactsReaderTests {
     }
 }
 
+/// The window's model against a real repository, since what it reads and how
+/// it stores what it read only meet there.
+@Suite("The cleanup window in the app", .serialized)
+@MainActor
+struct WorktreeCleanupModelTests {
+    @Test("Opening the window reads every worktree and suggests the finished ones")
+    func openingReadsAndSuggests() async throws {
+        let directory = try TemporaryDirectory()
+        let base = URL(fileURLWithPath: WorktreeMembership.canonical(directory.url.path))
+        let root = base.appendingPathComponent("shop").path
+        try FileManager.default.createDirectory(atPath: root, withIntermediateDirectories: true)
+        try Git.run(["init", "-b", "main"], in: root)
+        try Git.run(["config", "user.email", "tests@relay.local"], in: root)
+        try Git.run(["config", "user.name", "Relay Tests"], in: root)
+        try Git.run(["config", "commit.gpgsign", "false"], in: root)
+        try "hello\n".write(toFile: root + "/file.txt", atomically: true, encoding: .utf8)
+        try Git.run(["add", "."], in: root)
+        try Git.run(["commit", "-m", "initial"], in: root)
+        let linked = base.appendingPathComponent("worktrees/shop/done").path
+        try #require(GitWorktreeActions.add(branch: "done", from: "main", at: linked, in: root) == nil)
+
+        let model = AppModel(store: WorkspaceStore(url: base.appendingPathComponent("workspace.json")))
+        model.addProject(at: URL(fileURLWithPath: root))
+        let project = try #require(model.projects.first?.id)
+        try await waitUntil { model.offersWorktreeCleanup(in: project) }
+
+        model.beginWorktreeCleanup(in: project)
+        model.readWorktreeCleanupFacts(in: project)
+        try await waitUntil { model.worktreeCleanups[project]?.isReading == false }
+
+        guard case .read = model.worktreeCleanups[project]?.readings[linked] else {
+            Issue.record("not read: \(String(describing: model.worktreeCleanups[project]?.readings[linked]))")
+            return
+        }
+    }
+
+    /// Waits for git to have answered rather than for a time to have passed;
+    /// the bound only turns a git that never answers into a failure.
+    private func waitUntil(_ condition: () -> Bool) async throws {
+        for _ in 0 ..< 750 where !condition() {
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        try #require(condition())
+    }
+}
+
 private extension Date {
     /// File dates keep whole seconds on some volumes; comparing against one
     /// that was never rounded would be testing the file system.
