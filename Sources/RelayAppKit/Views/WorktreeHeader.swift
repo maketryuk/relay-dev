@@ -5,9 +5,10 @@ import SwiftUI
 /// The line a worktree's sessions are grouped under.
 ///
 /// It carries what the session rows used to repeat: the branch and how far the
-/// work on it has got. A click anywhere on it folds it, the way a heading
-/// does everywhere else; turning the right-hand panel to this checkout is what
-/// choosing one of its sessions does, and "Review Changes" for one with none.
+/// work on it has got. A click on it goes to the worktree — the right-hand
+/// panel turns to it, new sessions start in it, and one of its sessions is
+/// shown if it has any — because a worktree with nothing running in it had no
+/// other way in but its menu. Folding is the chevron's.
 ///
 /// It also says where the work stands, as whoever is doing it put it — a
 /// person from the menu, an agent through `relay`: a status beside the name,
@@ -49,10 +50,13 @@ struct WorktreeHeader: View {
                 .foregroundStyle(Theme.Palette.textTertiary)
                 .rotationEffect(.degrees(isCollapsed ? 0 : 90))
                 .frame(width: 12, height: 16)
+                .contentShape(Rectangle())
+                .onTapGesture { model.toggleSection(collapseKey) }
+                .accessibilityAddTraits(.isButton)
 
             Image(systemName: worktree.branch == nil ? "circle.dashed" : "arrow.triangle.branch")
                 .font(.system(size: 9))
-                .foregroundStyle(Theme.Palette.textTertiary)
+                .foregroundStyle(isActive ? Theme.Palette.accent : Theme.Palette.textTertiary)
                 .frame(width: 10)
 
             Text(verbatim: worktree.name)
@@ -106,12 +110,12 @@ struct WorktreeHeader: View {
         .padding(.leading, Theme.Spacing.xsmall)
         .padding(.trailing, Theme.Spacing.xsmall)
         .padding(.vertical, 3)
-        .background(isHovering ? Theme.Palette.surfaceHover : .clear)
+        .background(isHovering ? Theme.Palette.surfaceHover : isActive ? Theme.Palette.surfaceRaised : .clear)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
         .contentShape(Rectangle())
         .clickable()
         .onHover { isHovering = $0 }
-        .onTapGesture { model.toggleSection(collapseKey) }
+        .onTapGesture { model.openWorktree(worktree, in: project.id) }
         .relayTooltip(HomeRelativePath.abbreviating(worktree.path), edge: .trailing)
         .contextMenu { menu }
     }

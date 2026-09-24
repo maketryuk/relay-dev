@@ -34,6 +34,34 @@ struct WorktreeSidebarTests {
         #expect(model.showsWorktrees(in: project))
     }
 
+    @Test("Going to a worktree with nothing running in it turns the project to it")
+    func goingToAnEmptyWorktree() async throws {
+        let directory = try TemporaryDirectory()
+        let base = URL(fileURLWithPath: WorktreeMembership.canonical(directory.url.path))
+        let root = base.appendingPathComponent("shop").path
+        try FileManager.default.createDirectory(atPath: root, withIntermediateDirectories: true)
+        try Git.run(["init", "-b", "main"], in: root)
+        try Git.run(["config", "user.email", "tests@relay.local"], in: root)
+        try Git.run(["config", "user.name", "Relay Tests"], in: root)
+        try Git.run(["config", "commit.gpgsign", "false"], in: root)
+        try "hello\n".write(toFile: root + "/file.txt", atomically: true, encoding: .utf8)
+        try Git.run(["add", "."], in: root)
+        try Git.run(["commit", "-m", "initial"], in: root)
+        let linked = base.appendingPathComponent("worktrees/shop/fix-login").path
+        try #require(GitWorktreeActions.add(branch: "fix-login", from: "main", at: linked, in: root) == nil)
+
+        let model = AppModel(store: WorkspaceStore(url: base.appendingPathComponent("workspace.json")))
+        model.addProject(at: URL(fileURLWithPath: root))
+        let project = try #require(model.projects.first?.id)
+        try await waitUntil { !model.isReadingWorktrees(in: project) }
+        let worktree = try #require(model.worktrees[project]?.first { $0.path == linked })
+
+        model.openWorktree(worktree, in: project)
+
+        #expect(model.isActiveWorktree(worktree, in: project))
+        #expect(model.workingRoot(of: project) == linked)
+    }
+
     @Test("A folder that is not a repository ends the wait as well")
     func notARepository() async throws {
         let directory = try TemporaryDirectory()

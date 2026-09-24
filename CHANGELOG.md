@@ -53,6 +53,11 @@ breaking change to stored data.
   default branch — fetching that one branch first when it has to — and
   deletes the branch when git proves it is. A branch Relay did not make is
   still never touched.
+- **A worktree with no sessions in it can be gone to.** Its heading only
+  folded, so the way into a worktree was a session already running there. A
+  click on the heading now turns the right-hand panel and new sessions to it,
+  shows one of its sessions if it has any, and marks it as the worktree in
+  use; the chevron folds it.
 - **Relay Dev opened from a Relay terminal is Relay Dev.** Started with
   `open -a "Relay Dev"` in a terminal of the released app, it took that
   terminal's build for its own: it connected to the released app's daemon and
