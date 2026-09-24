@@ -162,8 +162,13 @@ extension AppModel {
         lines += summary.failures.map { "\($0.name): \($0.message)" }
 
         let isComplete = summary.failures.isEmpty
+        // A branch left behind with work on it is something to know about,
+        // not a job done: it is still there to be dealt with.
+        let kind: ToastKind = !isComplete && summary.removed == 0
+            ? .error
+            : (isComplete && summary.keptBranches.isEmpty ? .success : .warning)
         present(ToastContent(
-            kind: isComplete ? .success : (summary.removed == 0 ? .error : .warning),
+            kind: kind,
             title: isComplete
                 ? String(format: relayLocalized("Worktrees removed: %d"), summary.removed)
                 : String(format: relayLocalized("Worktrees removed: %d of %d"), summary.removed, summary.attempted),

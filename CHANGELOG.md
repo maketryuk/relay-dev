@@ -53,6 +53,14 @@ breaking change to stored data.
   default branch — fetching that one branch first when it has to — and
   deletes the branch when git proves it is. A branch Relay did not make is
   still never touched.
+- **Removing a worktree says what happens to its branch before it goes.** A
+  worktree whose branch had work merged nowhere disappeared on Remove, and
+  only a toast afterwards said the branch had been kept. The branch is now
+  judged first, and the question says whether it goes, stays with so many
+  unmerged commits, or stays because Relay did not make it; the button reads
+  "Remove, keep branch" when it stays, and the toast that follows is a warning.
+  Clean Up Worktrees names the branches that will stay before it removes
+  anything.
 - **A worktree with no sessions in it can be gone to.** Its heading only
   folded, so the way into a worktree was a session already running there. A
   click on the heading now turns the right-hand panel and new sessions to it,

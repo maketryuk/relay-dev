@@ -277,8 +277,17 @@ struct WorktreeCleanupView: View {
                 discarded
             ))
         }
+        let staying = removable
+            .filter { $0.facts.map { !$0.integration.isIntegrated } ?? true }
+            .compactMap(\.worktree.branch)
+        if !staying.isEmpty {
+            lines.append(String(
+                format: relayLocalized("Branches that stay, with work that is not merged: %@."),
+                staying.joined(separator: ", ")
+            ))
+        }
         lines.append(relayLocalized(
-            "Their branches are deleted only if Relay created them and everything on them is merged."
+            "Their branches are deleted only if Relay created them and their work is already merged, squashed or rebased in."
         ))
         return lines.joined(separator: "\n")
     }

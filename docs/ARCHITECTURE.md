@@ -641,6 +641,23 @@ with the commit it was judged at, and the toast's Delete Branch is held to that
 commit the same way: what the person agrees to lose is what they were told
 about, and a commit that landed after the toast appeared keeps the branch.
 
+**From the sidebar, the branch is judged before the question is asked.** A
+worktree whose branch was going to stay used to vanish on Remove and say so
+afterwards, in a toast, which is the wrong order for the one outcome worth
+stopping for. `forecastBranch` asks the same things while the worktree is still
+there — `-d` would refuse a branch that is checked out, so what it would accept,
+every commit already in the main checkout's `HEAD`, is asked directly — and the
+question is put only once it has answered: that the branch goes with it, that
+it stays and how many of its commits `git cherry` finds nowhere in the base, that
+it is somebody else's, or how many commits a detached `HEAD` would lose. The
+heading shows a spinner meanwhile, since the answer can include fetching the
+base. Removing then does what the question said: a branch that was to go goes
+only while it points where it was judged, and one that was to stay is not
+judged again, because the person agreed to lose the folder on the
+understanding that the branch stays. The cleanup window and `relay worktree rm`
+judge afterwards, as before; the window lists the branches that will stay in
+its own question.
+
 **Cleaning up is a list with reasons on it, never a sweep.** Clean Up
 Worktrees… lists every worktree `canRemoveWorktree` allows, reads each one off
 the main thread — uncommitted files, commits no remote has, whether its branch

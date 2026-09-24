@@ -77,15 +77,23 @@
 "Binary file" = "Двоичный файл";
 "Branch" = "Ветка";
 "Blank page" = "Пустая страница";
+"Branch %@ goes with it: everything on it is already merged." = "Ветка %@ удалится вместе с ним: всё в ней уже влито.";
+"Branch %@ goes with it: its work is already in %@." = "Ветка %@ удалится вместе с ним: её работа уже есть в %@.";
+"Branch %@ stays: Relay did not create it." = "Ветка %@ останется: её создал не Relay.";
+"Branch %@ stays: it has work that is not in %@." = "Ветка %@ останется: в ней есть работа, которой нет в %@.";
+"Branch %@ stays: it has work that is not merged anywhere yet." = "Ветка %@ останется: в ней есть работа, которая ещё никуда не влита.";
 "Branches" = "Ветки";
 "Branches kept, with commits not merged anywhere yet: %@." = "Оставлены ветки с коммитами, которые ещё никуда не влиты: %@.";
+"Branches that stay, with work that is not merged: %@." = "Останутся ветки с невлитой работой: %@.";
 "Browser" = "Браузер";
 "Built-in" = "Встроенный";
 "Bypass the pre-merge and commit message hooks" = "Пропустить хуки pre-merge и commit-msg";
 "Bypass the pre-push hook" = "Пропустить хук pre-push";
+"Checking whether its branch is merged…" = "Проверяю, влита ли его ветка…";
 "Clean" = "Без изменений";
 "Clean Up Worktrees" = "Убрать лишние worktrees";
 "Commits on no branch, lost with it: %d" = "Коммиты вне веток пропадут вместе с ним: %d";
+"Commits that are not merged: %d." = "Невлитых коммитов: %d.";
 "Could not compare it with %@" = "Не удалось сравнить с %@";
 "CUSTOM COMMAND" = "СВОЯ КОМАНДА";
 "Cached" = "Из кэша";
@@ -301,7 +309,6 @@
 "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing." = "Она передаётся ssh-add и хранится в Связке ключей macOS, откуда ssh дальше читает её сам. Relay не хранит ничего.";
 "It is in the agent and the keychain; ssh will not ask again." = "Он в агенте и в Связке ключей — ssh больше не спросит.";
 "It was at %@." = "Она указывала на %@.";
-"Its branch is deleted only if Relay created it and its work is already merged, squashed or rebased in." = "Ветка удаляется, только если её создал Relay и её работа уже влита — слиянием, squash или rebase.";
 "Its renderer quit. Reloading starts a new one." = "Процесс отрисовки завершился. Перезагрузка запустит новый.";
 "Jump by number" = "Переход по номеру";
 "Keep them" = "Оставить их";
@@ -505,6 +512,7 @@
 "Remote" = "Удалённые";
 "Remove %d" = "Удалить %d";
 "Remove Project" = "Удалить проект";
+"Remove and lose commits" = "Удалить вместе с коммитами";
 "Remove worktrees: %d?" = "Удалить worktrees: %d?";
 "Remove Worktree…" = "Удалить worktree…";
 "Remove and discard changes" = "Удалить вместе с изменениями";
@@ -512,6 +520,7 @@
 "Remove preset" = "Удалить пресет";
 "Remove" = "Удалить";
 "Remove this worktree?" = "Удалить этот worktree?";
+"Remove, keep branch" = "Удалить, ветку оставить";
 "Removing %@ (%d of %d)" = "Удаляется %@ (%d из %d)";
 "Rename" = "Переименовать";
 "Rename Session" = "Переименовать сессию";
@@ -632,7 +641,7 @@
 "Switch branch" = "Переключить ветку";
 "Switch to %@" = "Перейти в %@";
 "The project's own folder and the main worktree are never removed here." = "Папка самого проекта и основной worktree здесь никогда не удаляются.";
-"Their branches are deleted only if Relay created them and everything on them is merged." = "Ветки удаляются, только если их создал Relay и всё в них уже влито.";
+"Their branches are deleted only if Relay created them and their work is already merged, squashed or rebased in." = "Их ветки удаляются, только если их создал Relay и их работа уже влита — слиянием, squash или rebase.";
 "Their folders will be deleted." = "Их папки будут удалены.";
 "TODO markers" = "Маркеры TODO";
 "TODO" = "TODO";

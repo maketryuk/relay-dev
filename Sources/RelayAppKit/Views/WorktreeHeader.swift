@@ -99,7 +99,11 @@ struct WorktreeHeader: View {
                 StatusDot(status: RuntimeStatus.aggregate(reporting.map(\.status)), size: 7)
             }
 
-            if let status, status.hasDiff {
+            if model.worktreeRemovalsBeingChecked.contains(worktree.path) {
+                ProgressView()
+                    .controlSize(.mini)
+                    .relayTooltip(relayLocalized("Checking whether its branch is merged…"))
+            } else if let status, status.hasDiff {
                 DiffBadge(insertions: status.insertions, deletions: status.deletions)
             }
         }
@@ -133,7 +137,7 @@ struct WorktreeHeader: View {
         Button(relayLocalized("Copy Path")) { model.copyToClipboard(worktree.path) }
         if model.canRemoveWorktree(worktree, in: project.id) {
             Divider()
-            Button(relayLocalized("Remove Worktree…")) { model.worktreePendingRemoval = worktree }
+            Button(relayLocalized("Remove Worktree…")) { model.requestWorktreeRemoval(worktree, in: project.id) }
         }
         if model.offersWorktreeCleanup(in: project.id) {
             if !model.canRemoveWorktree(worktree, in: project.id) { Divider() }

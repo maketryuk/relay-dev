@@ -53,6 +53,114 @@ extension GitWorktreeActions {
         }
     }
 
+    /// What removing a worktree is going to do to its branch, worked out while
+    /// the worktree is still there, so that the question asked first can say
+    /// so rather than a toast after.
+    struct BranchForecast: Equatable, Sendable {
+        enum Fate: Equatable, Sendable {
+            /// Relay made it and its work is already in the base: it goes too.
+            case goes
+            /// Relay made it, and this many of its commits have changes the
+            /// base does not: it stays.
+            case staysUnmerged(commits: Int)
+            /// Somebody else made it, so it is theirs, merged or not.
+            case staysNotRelays
+            /// No branch: a detached `HEAD`, with this many commits no branch,
+            /// tag or remote reaches, which go with the folder.
+            case detached(strandedCommits: Int)
+        }
+
+        var fate: Fate
+        var branch: String?
+        /// Where the branch pointed when it was judged, which is what deleting
+        /// it is held to.
+        var head: String?
+        /// What it was measured against; nil when there was nothing to
+        /// measure it against, or no need.
+        var base: String?
+    }
+
+    /// Judges a worktree's branch before the worktree is removed.
+    ///
+    /// The same rule `settleBranch` applies afterwards, asked in a form that
+    /// works while the branch is still checked out: `-d` refuses a checked-out
+    /// branch, so what it would have accepted — every commit already in the
+    /// main checkout's `HEAD` — is asked of git directly.
+    static func forecastBranch(of worktree: GitWorktree, in root: String) -> BranchForecast {
+        guard let branch = worktree.branch else {
+            let stranded = worktree.isPrunable ? 0 : countCommits(
+                ["HEAD", "--not", "--branches", "--tags", "--remotes"],
+                at: worktree.path
+            ) ?? 0
+            return BranchForecast(fate: .detached(strandedCommits: stranded))
+        }
+        guard createdBranch(branch, in: root) else {
+            return BranchForecast(fate: .staysNotRelays, branch: branch)
+        }
+        guard let head = GitBranchIntegration.commit("refs/heads/\(branch)", in: root) else {
+            return BranchForecast(fate: .staysUnmerged(commits: 0), branch: branch)
+        }
+        if GitActions.run(["merge-base", "--is-ancestor", head, "HEAD"], at: root) == nil {
+            return BranchForecast(fate: .goes, branch: branch, head: head)
+        }
+        guard let base = GitBranchIntegration.defaultBase(in: root) else {
+            let commits = unmergedCommits(of: head, against: "HEAD", in: root)
+            return BranchForecast(fate: .staysUnmerged(commits: commits), branch: branch, head: head)
+        }
+        var integration = GitBranchIntegration.integration(of: head, into: base, in: root)
+        if !integration.isIntegrated, GitBranchIntegration.refresh(base, in: root) {
+            integration = GitBranchIntegration.integration(of: head, into: base, in: root)
+        }
+        let fate: BranchForecast.Fate = integration.isIntegrated
+            ? .goes
+            : .staysUnmerged(commits: unmergedCommits(of: head, against: base, in: root))
+        return BranchForecast(fate: fate, branch: branch, head: head, base: base)
+    }
+
+    /// Does to a removed worktree's branch what `forecastBranch` said would be
+    /// done. A branch that was to go goes only while it points where it did
+    /// when it was judged; one that was to stay is not judged again, since
+    /// the person agreed to the removal on the understanding that it stays.
+    static func settleBranch(following forecast: BranchForecast, in root: String) -> BranchSettlement {
+        switch forecast.fate {
+        case .goes:
+            guard let branch = forecast.branch, let head = forecast.head else {
+                return BranchSettlement(outcome: .untouched, head: nil)
+            }
+            switch deleteBranch(branch, at: head, in: root) {
+            case .deleted: return BranchSettlement(outcome: .deleted, head: head)
+            case .checkedOut: return BranchSettlement(outcome: .untouched, head: head)
+            case .moved, .failed: return BranchSettlement(outcome: .keptUnmerged, head: head)
+            }
+        case .staysUnmerged:
+            return BranchSettlement(outcome: .keptUnmerged, head: forecast.head)
+        case .staysNotRelays, .detached:
+            return BranchSettlement(outcome: .untouched, head: nil)
+        }
+    }
+
+    /// Commits whose changes `base` does not have, by `git cherry`, so that
+    /// one a pull request picked counts as merged although its hash is not
+    /// in the base.
+    static func unmergedCommits(of head: String, against base: String, in root: String) -> Int {
+        guard let output = Shell.run(
+            GitWorkingCopyReader.executable,
+            arguments: ["-C", root, "cherry", base, head],
+            timeout: 15
+        ) else {
+            return countCommits(["\(base)..\(head)"], at: root) ?? 0
+        }
+        return output.split(separator: "\n").filter { $0.hasPrefix("+") }.count
+    }
+
+    private static func countCommits(_ revisions: [String], at place: String) -> Int? {
+        Shell.run(
+            GitWorkingCopyReader.executable,
+            arguments: ["-C", place, "rev-list", "--count"] + revisions,
+            timeout: 15
+        ).flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+    }
+
     /// Why a branch was not deleted, or that it was.
     enum BranchDeletion: Equatable, Sendable {
         case deleted

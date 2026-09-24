@@ -56,8 +56,12 @@ final class AppModel {
     /// right-hand panel describes and a new session starts in. It follows the
     /// selected session, which is remembered, so it need not be.
     private(set) var activeWorktreePaths: [ProjectID: String] = [:]
-    /// The worktree a confirmation is asking about removing.
-    var worktreePendingRemoval: GitWorktree?
+    /// The worktree a confirmation is asking about removing, with what that
+    /// would do to its branch.
+    var worktreePendingRemoval: WorktreeRemovalRequest?
+    /// Worktrees whose branch is being judged before the question is put, by
+    /// path, for the heading to say it is looking.
+    private(set) var worktreeRemovalsBeingChecked: Set<String> = []
     private(set) var isCreatingWorktree = false
     /// What git said when it last refused to create one, for the panel.
     private(set) var worktreeCreationFailure: String?
@@ -2562,10 +2566,14 @@ final class AppModel {
     /// agrees nothing on it would be lost; it is settled last, once the
     /// sessions are closed and the sidebar has let go of the folder, so that
     /// judging it never holds either of them up.
+    ///
+    /// Given a `forecast`, the branch is settled the way the person was told
+    /// it would be rather than judged again.
     func performWorktreeRemoval(
         _ worktree: GitWorktree,
         discardingChanges: Bool,
-        in projectID: ProjectID
+        in projectID: ProjectID,
+        following forecast: GitWorktreeActions.BranchForecast? = nil
     ) async -> WorktreeRemoval {
         guard let home = project(projectID)?.rootPath else {
             return WorktreeRemoval(failure: relayLocalized("There is no such project."), branch: .untouched)
@@ -2589,19 +2597,50 @@ final class AppModel {
         for id in running { close(id, remembering: false) }
         if let found { adopt(found, in: projectID) }
         let settled = await Task.detached(priority: .userInitiated) { () -> GitWorktreeActions.BranchSettlement in
-            GitWorktreeActions.settleBranch(of: worktree, in: home)
+            if let forecast { return GitWorktreeActions.settleBranch(following: forecast, in: home) }
+            return GitWorktreeActions.settleBranch(of: worktree, in: home)
         }.value
         let kept = settled.outcome == .keptUnmerged ? settled.head : nil
         return WorktreeRemoval(failure: nil, branch: settled.outcome, branchHead: kept)
     }
 
+    /// Asks to remove a worktree once its branch has been judged, so that the
+    /// question can say whether the branch goes with it — and, when it
+    /// stays, how much on it is not merged — before anything is removed.
+    ///
+    /// Judging can mean fetching the base, which takes a moment on a slow
+    /// network; the heading says it is looking meanwhile.
+    func requestWorktreeRemoval(_ worktree: GitWorktree, in projectID: ProjectID) {
+        guard let home = project(projectID)?.rootPath, canRemoveWorktree(worktree, in: projectID),
+              !worktreeRemovalsBeingChecked.contains(worktree.path) else { return }
+        worktreeRemovalsBeingChecked.insert(worktree.path)
+        Task { [weak self] in
+            let forecast = await Task.detached(priority: .userInitiated) {
+                GitWorktreeActions.forecastBranch(of: worktree, in: home)
+            }.value
+            guard let self else { return }
+            self.worktreeRemovalsBeingChecked.remove(worktree.path)
+            self.worktreePendingRemoval = WorktreeRemovalRequest(worktree: worktree, forecast: forecast)
+        }
+    }
+
     /// The sidebar's way in: removes the worktree and says what did not go,
     /// the folder or its branch.
-    func removeWorktree(_ worktree: GitWorktree, discardingChanges: Bool, in projectID: ProjectID) {
+    func removeWorktree(
+        _ worktree: GitWorktree,
+        discardingChanges: Bool,
+        in projectID: ProjectID,
+        following forecast: GitWorktreeActions.BranchForecast? = nil
+    ) {
         worktreePendingRemoval = nil
         Task { [weak self] in
             guard let self else { return }
-            let removal = await self.performWorktreeRemoval(worktree, discardingChanges: discardingChanges, in: projectID)
+            let removal = await self.performWorktreeRemoval(
+                worktree,
+                discardingChanges: discardingChanges,
+                in: projectID,
+                following: forecast
+            )
             if let failure = removal.failure {
                 self.present(ToastContent(
                     kind: .error,
@@ -4492,6 +4531,15 @@ final class AppModel {
     func persistImmediately() {
         store.saveNow(snapshotState())
     }
+}
+
+/// A worktree someone asked to remove, with what removing it would do to its
+/// branch, judged before the question was put.
+struct WorktreeRemovalRequest: Equatable, Identifiable {
+    var worktree: GitWorktree
+    var forecast: GitWorktreeActions.BranchForecast
+
+    var id: String { worktree.path }
 }
 
 /// What became of removing a worktree.

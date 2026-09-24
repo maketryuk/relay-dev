@@ -17,7 +17,7 @@ extension AppModel {
     /// decision, and five seconds is not long enough to make it in.
     func presentKeptBranch(_ branch: String, at head: String, in projectID: ProjectID) {
         present(ToastContent(
-            kind: .info,
+            kind: .warning,
             title: String(format: relayLocalized("Kept branch %@"), branch),
             message: relayLocalized("It has commits that are not merged anywhere yet."),
             duration: nil,

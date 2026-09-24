@@ -162,19 +162,30 @@ struct ProjectSidebarView: View {
                 set: { if !$0 { model.worktreePendingRemoval = nil } }
             ),
             presenting: model.worktreePendingRemoval
-        ) { worktree in
+        ) { request in
             // Asked for by name, because the answer to "remove it" is not the
             // same question when there is work in it that exists nowhere else.
-            let isDirty = model.worktreeStatuses[worktree.path]?.isDirty ?? false
-            Button(
-                relayLocalized(isDirty ? "Remove and discard changes" : "Remove"),
-                role: .destructive
-            ) {
-                model.removeWorktree(worktree, discardingChanges: isDirty, in: project.id)
+            let isDirty = model.worktreeStatuses[request.worktree.path]?.isDirty ?? false
+            Button(removalButtonTitle(for: request, isDirty: isDirty), role: .destructive) {
+                model.removeWorktree(
+                    request.worktree,
+                    discardingChanges: isDirty,
+                    in: project.id,
+                    following: request.forecast
+                )
             }
             Button(relayLocalized("Cancel"), role: .cancel) { model.worktreePendingRemoval = nil }
-        } message: { worktree in
-            Text(verbatim: removalMessage(for: worktree))
+        } message: { request in
+            Text(verbatim: removalMessage(for: request))
+        }
+    }
+
+    private func removalButtonTitle(for request: WorktreeRemovalRequest, isDirty: Bool) -> String {
+        if isDirty { return relayLocalized("Remove and discard changes") }
+        switch request.forecast.fate {
+        case .staysUnmerged: return relayLocalized("Remove, keep branch")
+        case let .detached(stranded) where stranded > 0: return relayLocalized("Remove and lose commits")
+        default: return relayLocalized("Remove")
         }
     }
 
@@ -233,7 +244,8 @@ struct ProjectSidebarView: View {
         }
     }
 
-    private func removalMessage(for worktree: GitWorktree) -> String {
+    private func removalMessage(for request: WorktreeRemovalRequest) -> String {
+        let worktree = request.worktree
         var lines = [String(
             format: relayLocalized("The folder %@ will be deleted."),
             HomeRelativePath.abbreviating(worktree.path)
@@ -248,12 +260,34 @@ struct ProjectSidebarView: View {
                 status.changedFiles
             ))
         }
-        if worktree.branch != nil {
-            lines.append(relayLocalized(
-                "Its branch is deleted only if Relay created it and its work is already merged, squashed or rebased in."
-            ))
-        }
+        lines += branchLines(for: request.forecast)
         return lines.joined(separator: "\n")
+    }
+
+    /// What will become of the branch, judged before the question was put,
+    /// so that agreeing to the removal is agreeing to that.
+    private func branchLines(for forecast: GitWorktreeActions.BranchForecast) -> [String] {
+        let branch = forecast.branch ?? ""
+        switch forecast.fate {
+        case .goes:
+            guard let base = forecast.base else {
+                return [String(format: relayLocalized("Branch %@ goes with it: everything on it is already merged."), branch)]
+            }
+            return [String(format: relayLocalized("Branch %@ goes with it: its work is already in %@."), branch, base)]
+        case let .staysUnmerged(commits):
+            var lines = [forecast.base.map {
+                String(format: relayLocalized("Branch %@ stays: it has work that is not in %@."), branch, $0)
+            } ?? String(format: relayLocalized("Branch %@ stays: it has work that is not merged anywhere yet."), branch)]
+            if commits > 0 {
+                lines.append(String(format: relayLocalized("Commits that are not merged: %d."), commits))
+            }
+            return lines
+        case .staysNotRelays:
+            return [String(format: relayLocalized("Branch %@ stays: Relay did not create it."), branch)]
+        case let .detached(stranded):
+            guard stranded > 0 else { return [] }
+            return [String(format: relayLocalized("Commits on no branch, lost with it: %d"), stranded)]
+        }
     }
 
     private func commitProjectRename() {

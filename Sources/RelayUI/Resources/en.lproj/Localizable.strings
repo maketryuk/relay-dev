@@ -77,15 +77,23 @@
 "Binary file" = "Binary file";
 "Branch" = "Branch";
 "Blank page" = "Blank page";
+"Branch %@ goes with it: everything on it is already merged." = "Branch %@ goes with it: everything on it is already merged.";
+"Branch %@ goes with it: its work is already in %@." = "Branch %@ goes with it: its work is already in %@.";
+"Branch %@ stays: Relay did not create it." = "Branch %@ stays: Relay did not create it.";
+"Branch %@ stays: it has work that is not in %@." = "Branch %@ stays: it has work that is not in %@.";
+"Branch %@ stays: it has work that is not merged anywhere yet." = "Branch %@ stays: it has work that is not merged anywhere yet.";
 "Branches" = "Branches";
 "Branches kept, with commits not merged anywhere yet: %@." = "Branches kept, with commits not merged anywhere yet: %@.";
+"Branches that stay, with work that is not merged: %@." = "Branches that stay, with work that is not merged: %@.";
 "Browser" = "Browser";
 "Built-in" = "Built-in";
 "Bypass the pre-merge and commit message hooks" = "Bypass the pre-merge and commit message hooks";
 "Bypass the pre-push hook" = "Bypass the pre-push hook";
+"Checking whether its branch is merged…" = "Checking whether its branch is merged…";
 "Clean" = "Clean";
 "Clean Up Worktrees" = "Clean Up Worktrees";
 "Commits on no branch, lost with it: %d" = "Commits on no branch, lost with it: %d";
+"Commits that are not merged: %d." = "Commits that are not merged: %d.";
 "Could not compare it with %@" = "Could not compare it with %@";
 "CUSTOM COMMAND" = "CUSTOM COMMAND";
 "Cached" = "Cached";
@@ -301,7 +309,6 @@
 "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing." = "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing.";
 "It is in the agent and the keychain; ssh will not ask again." = "It is in the agent and the keychain; ssh will not ask again.";
 "It was at %@." = "It was at %@.";
-"Its branch is deleted only if Relay created it and its work is already merged, squashed or rebased in." = "Its branch is deleted only if Relay created it and its work is already merged, squashed or rebased in.";
 "Its renderer quit. Reloading starts a new one." = "Its renderer quit. Reloading starts a new one.";
 "Jump by number" = "Jump by number";
 "Keep them" = "Keep them";
@@ -505,6 +512,7 @@
 "Remote" = "Remote";
 "Remove %d" = "Remove %d";
 "Remove Project" = "Remove Project";
+"Remove and lose commits" = "Remove and lose commits";
 "Remove worktrees: %d?" = "Remove worktrees: %d?";
 "Remove Worktree…" = "Remove Worktree…";
 "Remove and discard changes" = "Remove and discard changes";
@@ -512,6 +520,7 @@
 "Remove preset" = "Remove preset";
 "Remove" = "Remove";
 "Remove this worktree?" = "Remove this worktree?";
+"Remove, keep branch" = "Remove, keep branch";
 "Removing %@ (%d of %d)" = "Removing %@ (%d of %d)";
 "Rename" = "Rename";
 "Rename Session" = "Rename Session";
@@ -632,7 +641,7 @@
 "Switch branch" = "Switch branch";
 "Switch to %@" = "Switch to %@";
 "The project's own folder and the main worktree are never removed here." = "The project's own folder and the main worktree are never removed here.";
-"Their branches are deleted only if Relay created them and everything on them is merged." = "Their branches are deleted only if Relay created them and everything on them is merged.";
+"Their branches are deleted only if Relay created them and their work is already merged, squashed or rebased in." = "Their branches are deleted only if Relay created them and their work is already merged, squashed or rebased in.";
 "Their folders will be deleted." = "Their folders will be deleted.";
 "TODO markers" = "TODO markers";
 "TODO" = "TODO";
