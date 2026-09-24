@@ -95,7 +95,7 @@ enum WorktreeCommands {
         group: "worktree",
         name: "rm",
         aliases: ["remove"],
-        summary: "Remove a worktree, and its branch if Relay made it and nothing on it is unmerged.",
+        summary: "Remove a worktree, and its branch if Relay made it and its work is already merged, squashed or rebased in.",
         argument: target,
         options: [
             CommandSpec.Option(name: "force", value: nil, summary: "Remove it even with uncommitted changes, which are lost."),
@@ -216,11 +216,11 @@ enum WorktreeReport {
         if let branch = worktree.branch {
             switch response.branch {
             case .deleted:
-                lines.append("Deleted branch \(branch): Relay made it, and nothing on it was unmerged.")
+                lines.append("Deleted branch \(branch): Relay made it, and its work is already in the base.")
             case .keptUnmerged:
                 lines.append("Kept branch \(branch): it has commits that are not merged anywhere yet.")
             case .untouched:
-                lines.append("Kept branch \(branch): Relay did not make it.")
+                lines.append("Kept branch \(branch): Relay did not make it, or another worktree has it checked out.")
             case nil:
                 break
             }

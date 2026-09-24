@@ -302,10 +302,12 @@ public struct ControlChanges: Codable, Sendable, Equatable {
 
 /// What removing a worktree did to its branch.
 public enum ControlBranchOutcome: String, Codable, Sendable, CaseIterable {
-    /// Relay made it and nothing on it was unmerged.
+    /// Relay made it, and its work is already in the base: merged, squashed
+    /// or rebased in.
     case deleted
     /// Relay made it, and it has commits that exist nowhere else.
     case keptUnmerged = "kept-unmerged"
-    /// Somebody else's branch, or none at all.
+    /// Somebody else's branch, one another worktree has checked out, or none
+    /// at all.
     case untouched
 }
