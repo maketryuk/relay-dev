@@ -583,6 +583,35 @@ under Relay's own directory rather than beside the repository, so a folder of
 projects does not fill up with siblings. The development build uses
 `~/.relay-dev`, like everything else of its own.
 
+**A branch goes with its worktree when git proves nothing on it would be
+lost**, and only a branch Relay made. `git branch -d` is asked first, since it
+is the rule people know, but on its own it asks the wrong question twice. It
+measures against HEAD, and the main checkout's `main` is behind `origin/main`
+until somebody pulls, so a branch merged on the forge was kept for as long as
+nobody did. And it asks whether the branch's commits are there, which after a
+squash or a rebase merge they never are: the forge wrote commits of its own.
+When `-d` refuses, `GitBranchIntegration` measures the branch against the
+remote's default branch — `origin/HEAD`, then `main` or `master` on the remote,
+then locally — and answers only with a proof: the branch is an ancestor of it;
+merging the branch in with `git merge-tree --write-tree` would leave its tree
+as it is; or one commit on it since the fork changes exactly the branch's files
+and is what merging the branch into that commit's parent gives, which is how a
+forge makes a squash. The last is what survives the base writing next to the
+squashed lines afterwards, as every pull request adding a changelog line does
+to the one before it. `git cherry` was the other candidate and is not used: it
+matches commit by commit, which a squash never does, and its patch ids ignore
+whitespace, which is right for a rebase deciding what to skip and wrong for a
+proof that decides what to delete. When the local copy of the base proves
+nothing, that one branch is fetched and the branch asked about again, because
+removing a worktree is what usually follows merging its pull request, and the
+merge is on the forge until something fetches it. The delete is
+`update-ref -d` with the commit that was judged — git's compare-and-delete —
+so a commit an agent makes between the check and the delete keeps the branch;
+its config section goes with it, as `branch -D` would take it, and a branch
+another worktree has checked out is left alone, since `update-ref` does not
+know that worktrees exist. A git older than 2.38 cannot merge without a
+working tree, proves nothing, and keeps the branch.
+
 What is not done yet — getting a fresh worktree ready to run, services and ports
 per worktree, finishing a piece of work — is in `ROADMAP.md`.
 

@@ -244,7 +244,7 @@ struct ProjectSidebarView: View {
         }
         if worktree.branch != nil {
             lines.append(relayLocalized(
-                "Its branch is deleted only if Relay created it and everything on it is merged."
+                "Its branch is deleted only if Relay created it and its work is already merged, squashed or rebased in."
             ))
         }
         return lines.joined(separator: "\n")

@@ -273,7 +273,7 @@
 "It has commits that are not merged anywhere yet." = "It has commits that are not merged anywhere yet.";
 "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing." = "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing.";
 "It is in the agent and the keychain; ssh will not ask again." = "It is in the agent and the keychain; ssh will not ask again.";
-"Its branch is deleted only if Relay created it and everything on it is merged." = "Its branch is deleted only if Relay created it and everything on it is merged.";
+"Its branch is deleted only if Relay created it and its work is already merged, squashed or rebased in." = "Its branch is deleted only if Relay created it and its work is already merged, squashed or rebased in.";
 "Its renderer quit. Reloading starts a new one." = "Its renderer quit. Reloading starts a new one.";
 "Jump by number" = "Jump by number";
 "Kept branch %@" = "Kept branch %@";

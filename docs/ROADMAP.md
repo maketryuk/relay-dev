@@ -50,7 +50,8 @@ workspace is a git worktree.
 - **Worktrees, read from git.** Created in `~/.relay/worktrees`, listed from
   `git worktree list` — so ones made in a terminal or by an agent appear too —
   and removed with a question first when there is uncommitted work. A branch
-  goes with its worktree only when Relay made it and it is merged.
+  goes with its worktree only when Relay made it and git proves its work is in
+  the remote's default branch — merged, squashed or rebased in.
 - **Sessions belong to a worktree by where they were started.** No protocol
   change was needed: the daemon already reports each session's directory, and
   the deepest worktree containing it is the one it is in.
@@ -77,7 +78,14 @@ workspace is a git worktree.
    worktree comes first and is nearly free: the daemon already maps ports to
    sessions.
 4. **Finishing a piece of work.** A pull request through `gh`, its state on the
-   heading, and tidying away worktrees whose branch has been merged.
+   heading, and tidying away worktrees whose branch has been merged. Telling
+   a finished branch from an unfinished one is done, squash and rebase merges
+   included, and removing a worktree goes by it. What it does not recognise
+   is a pull request the forge had more of than the local branch — a
+   suggestion accepted on the forge, a conflict resolved there — or a rebase
+   merge whose lines the base has since changed again; those branches are
+   kept. Asking the forge whether the pull request was merged would answer
+   both.
 5. **A session that moves.** `claude --worktree` started from the project's
    folder moves into a worktree of its own, but the session is grouped by where
    it started. Reading the process's current directory would place it where it

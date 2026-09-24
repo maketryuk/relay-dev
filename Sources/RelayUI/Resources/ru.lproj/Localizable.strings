@@ -273,7 +273,7 @@
 "It has commits that are not merged anywhere yet." = "В ней есть коммиты, которые ещё никуда не влиты.";
 "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing." = "Она передаётся ssh-add и хранится в Связке ключей macOS, откуда ssh дальше читает её сам. Relay не хранит ничего.";
 "It is in the agent and the keychain; ssh will not ask again." = "Он в агенте и в Связке ключей — ssh больше не спросит.";
-"Its branch is deleted only if Relay created it and everything on it is merged." = "Ветка удаляется, только если её создал Relay и всё в ней уже влито.";
+"Its branch is deleted only if Relay created it and its work is already merged, squashed or rebased in." = "Ветка удаляется, только если её создал Relay и её работа уже влита — слиянием, squash или rebase.";
 "Its renderer quit. Reloading starts a new one." = "Процесс отрисовки завершился. Перезагрузка запустит новый.";
 "Jump by number" = "Переход по номеру";
 "Kept branch %@" = "Ветка %@ оставлена";

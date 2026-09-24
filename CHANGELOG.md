@@ -5,6 +5,20 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Fixed
+
+- **A branch squashed or rebased in by a pull request goes with its worktree.**
+  Removing a worktree deleted its branch only when `git branch -d` agreed,
+  which it never does once a forge has squashed or rebased the pull request,
+  and not for one merged normally either until the local `main` had been
+  pulled: the branch stayed, with a toast saying it had commits merged
+  nowhere. Relay now asks git whether the branch's work is in the remote's
+  default branch — fetching that one branch first when it has to — and
+  deletes the branch when git proves it is. A branch Relay did not make is
+  still never touched.
+
 ## 0.7.0 — 2026-09-24
 
 ### Added

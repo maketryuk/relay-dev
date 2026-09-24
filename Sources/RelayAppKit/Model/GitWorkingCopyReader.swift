@@ -259,7 +259,7 @@ enum GitActions {
         run(["-C", root] + arguments, at: root, timeout: 120, interactive: false)
     }
 
-    private static func run(
+    static func run(
         _ arguments: [String],
         at root: String,
         timeout: TimeInterval = 20,

@@ -304,16 +304,17 @@ enum GitWorktreeActions {
 
     /// What removing a worktree does to its branch.
     enum BranchOutcome: Equatable, Sendable {
-        /// Relay made it and nothing on it was unmerged.
+        /// Relay made it and its work was merged, squashed or rebased in.
         case deleted
         /// Relay made it, and it has work that exists nowhere else.
         case keptUnmerged
-        /// Somebody else's branch, or no branch at all.
+        /// Somebody else's branch, one still checked out in another
+        /// worktree, or no branch at all.
         case untouched
     }
 
+    /// `settleBranch`, for a caller that only wants to know what became of it.
     static func removeBranch(of worktree: GitWorktree, in root: String) -> BranchOutcome {
-        guard let branch = worktree.branch, createdBranch(branch, in: root) else { return .untouched }
-        return deleteBranchIfMerged(branch, in: root) ? .deleted : .keptUnmerged
+        settleBranch(of: worktree, in: root).outcome
     }
 }
