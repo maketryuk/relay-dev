@@ -200,6 +200,10 @@ struct ProjectSidebarView: View {
                         }
                     }
                 }
+
+                // After every worktree rather than inside one: a tab shows an
+                // address, and a checkout is not something it is in.
+                browserTabs
             }
             .padding(.horizontal, Theme.Spacing.small)
             .padding(.vertical, Theme.Spacing.small)
