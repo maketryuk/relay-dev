@@ -2504,10 +2504,11 @@ final class AppModel {
         // Not remembered for ⌘⇧T: what they would reopen into is gone.
         for id in running { close(id, remembering: false) }
         if let found { adopt(found, in: projectID) }
-        let outcome = await Task.detached(priority: .userInitiated) { () -> GitWorktreeActions.BranchOutcome in
-            GitWorktreeActions.removeBranch(of: worktree, in: home)
+        let settled = await Task.detached(priority: .userInitiated) { () -> GitWorktreeActions.BranchSettlement in
+            GitWorktreeActions.settleBranch(of: worktree, in: home)
         }.value
-        return WorktreeRemoval(failure: nil, branch: outcome)
+        let kept = settled.outcome == .keptUnmerged ? settled.head : nil
+        return WorktreeRemoval(failure: nil, branch: settled.outcome, branchHead: kept)
     }
 
     /// The sidebar's way in: removes the worktree and says what did not go,
@@ -2525,12 +2526,8 @@ final class AppModel {
                 ))
                 return
             }
-            if removal.branch == .keptUnmerged, let branch = worktree.branch {
-                self.present(ToastContent(
-                    kind: .info,
-                    title: String(format: relayLocalized("Kept branch %@"), branch),
-                    message: relayLocalized("It has commits that are not merged anywhere yet.")
-                ))
+            if removal.branch == .keptUnmerged, let branch = worktree.branch, let head = removal.branchHead {
+                self.presentKeptBranch(branch, at: head, in: projectID)
             }
         }
     }
@@ -4417,4 +4414,7 @@ struct WorktreeRemoval: Equatable, Sendable {
     /// Why it was not removed; nil when it was.
     var failure: String?
     var branch: GitWorktreeActions.BranchOutcome
+    /// Where a kept branch pointed when it was judged, which is what deleting
+    /// it anyway is held to; nil unless the branch was kept.
+    var branchHead: String? = nil
 }

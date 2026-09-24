@@ -7,6 +7,14 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Added
+
+- **A branch kept when its worktree was removed can be deleted from the toast
+  that says so.** Delete Branch deletes it only while it is where it was when
+  it was kept, and says so instead when something was committed to it since;
+  the toast after it names the commit the branch was at, which is all it
+  takes to bring it back.
+
 ### Fixed
 
 - **A branch squashed or rebased in by a pull request goes with its worktree.**

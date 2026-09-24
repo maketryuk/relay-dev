@@ -149,6 +149,7 @@
 "Could not commit" = "Could not commit";
 "Could not continue" = "Could not continue";
 "Could not create" = "Could not create";
+"Could not delete branch %@" = "Could not delete branch %@";
 "Could not delete" = "Could not delete";
 "Could not discard" = "Could not discard";
 "Could not open file" = "Could not open file";
@@ -174,9 +175,11 @@
 "Default agent" = "Default agent";
 "Default dev service" = "Default dev service";
 "Definitions of %@" = "Definitions of %@";
+"Delete Branch" = "Delete Branch";
 "Delete Host" = "Delete Host";
 "Delete this host?" = "Delete this host?";
 "Delete" = "Delete";
+"Deleted branch %@" = "Deleted branch %@";
 "Deleted" = "Deleted";
 "Design Mode" = "Design Mode";
 "Detailed" = "Detailed";
@@ -270,9 +273,12 @@
 "Increase Font Size" = "Increase Font Size";
 "Install %@" = "Install %@";
 "Installing…" = "Installing…";
+"It has changed since its worktree was removed. Look at what is on it before deleting it." = "It has changed since its worktree was removed. Look at what is on it before deleting it.";
 "It has commits that are not merged anywhere yet." = "It has commits that are not merged anywhere yet.";
+"It is checked out in %@." = "It is checked out in %@.";
 "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing." = "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing.";
 "It is in the agent and the keychain; ssh will not ask again." = "It is in the agent and the keychain; ssh will not ask again.";
+"It was at %@." = "It was at %@.";
 "Its branch is deleted only if Relay created it and its work is already merged, squashed or rebased in." = "Its branch is deleted only if Relay created it and its work is already merged, squashed or rebased in.";
 "Its renderer quit. Reloading starts a new one." = "Its renderer quit. Reloading starts a new one.";
 "Jump by number" = "Jump by number";

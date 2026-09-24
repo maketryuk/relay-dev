@@ -84,8 +84,8 @@ workspace is a git worktree.
    is a pull request the forge had more of than the local branch — a
    suggestion accepted on the forge, a conflict resolved there — or a rebase
    merge whose lines the base has since changed again; those branches are
-   kept. Asking the forge whether the pull request was merged would answer
-   both.
+   kept, and the toast that says so deletes them when asked. Asking the forge
+   whether the pull request was merged would answer both.
 5. **A session that moves.** `claude --worktree` started from the project's
    folder moves into a worktree of its own, but the session is grouped by where
    it started. Reading the process's current directory would place it where it

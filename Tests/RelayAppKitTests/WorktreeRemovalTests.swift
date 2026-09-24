@@ -1,5 +1,6 @@
 import Foundation
 import RelayProtocol
+import RelayUI
 import Testing
 
 @testable import RelayAppKit
@@ -81,6 +82,71 @@ struct WorktreeRemovalTests {
     }
 }
 
+@Suite("Deleting a branch its worktree's removal kept", .serialized)
+@MainActor
+struct KeptBranchTests {
+    /// A project with a worktree whose branch has work on it that is merged
+    /// nowhere, so that removing it keeps the branch.
+    private func keptWork() throws -> (AppModel, ProjectID, BranchTestRepository, GitWorktree, TemporaryDirectory) {
+        let store = try TemporaryDirectory()
+        let model = AppModel(store: WorkspaceStore(url: store.url.appendingPathComponent("workspace.json")))
+        let repository = try BranchTestRepository()
+        model.addProject(at: URL(fileURLWithPath: repository.root))
+        let project = try #require(model.projects.first)
+        let (worktree, folder) = try repository.worktree("work")
+        try repository.commit("work\n", to: "work.txt", in: folder, message: "Work")
+        return (model, project.id, repository, worktree, store)
+    }
+
+    @Test("A kept branch is reported with the commit it was judged at")
+    func reportsHead() async throws {
+        let (model, project, repository, worktree, store) = try keptWork()
+        let head = try #require(repository.output(["rev-parse", "work"]))
+
+        let removal = await model.performWorktreeRemoval(worktree, discardingChanges: false, in: project)
+
+        #expect(removal == WorktreeRemoval(failure: nil, branch: .keptUnmerged, branchHead: head))
+        _ = store
+    }
+
+    @Test("The toast that says a branch was kept deletes it")
+    func deletesFromToast() async throws {
+        let (model, project, repository, worktree, store) = try keptWork()
+
+        model.removeWorktree(worktree, discardingChanges: false, in: project)
+        for _ in 0 ..< 500 where model.toasts.isEmpty {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        let kept = try #require(model.toasts.first)
+        #expect(kept.duration == nil)
+        let action = try #require(kept.action)
+        #expect(action.title == relayLocalized("Delete Branch"))
+
+        action.handler()
+        for _ in 0 ..< 500 where GitWorktreeActions.branchExists("work", in: repository.root) {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(!GitWorktreeActions.branchExists("work", in: repository.root))
+        #expect(!GitWorktreeActions.createdBranch("work", in: repository.root))
+        _ = store
+    }
+
+    @Test("A kept branch that moved since is not deleted")
+    func movedBranchStays() async throws {
+        let (model, project, repository, worktree, store) = try keptWork()
+        let removal = await model.performWorktreeRemoval(worktree, discardingChanges: false, in: project)
+        let judged = try #require(removal.branchHead)
+
+        let (reopened, folder) = try repository.reopen("work")
+        try repository.commit("more\n", to: "work.txt", in: folder, message: "More work")
+        #expect(GitWorktreeActions.remove(reopened, force: false, in: repository.root) == nil)
+
+        #expect(await model.performKeptBranchDeletion("work", at: judged, in: project) == .moved)
+        #expect(repository.output(["log", "-1", "--format=%s", "work"]) == "More work")
+        _ = store
+    }
+}
+
 /// A repository on disk to make worktrees and merges in.
 ///
 /// Everything git would otherwise take from the machine is set here — who
@@ -127,6 +193,16 @@ struct BranchTestRepository {
     func worktree(_ branch: String) throws -> (GitWorktree, String) {
         let folder = base.appendingPathComponent("worktrees/shop/\(branch)").path
         guard GitWorktreeActions.add(branch: branch, from: "main", at: folder, in: root) == nil else {
+            throw Git.GitError.failed("worktree add \(branch)")
+        }
+        let listed = try #require(GitWorktreeActions.list(at: root)?.first { $0.path == folder })
+        return (listed, folder)
+    }
+
+    /// A worktree on a branch that exists already, and its folder.
+    func reopen(_ branch: String) throws -> (GitWorktree, String) {
+        let folder = base.appendingPathComponent("worktrees/shop/\(branch)-again").path
+        guard GitWorktreeActions.add(branch: branch, from: nil, at: folder, in: root) == nil else {
             throw Git.GitError.failed("worktree add \(branch)")
         }
         let listed = try #require(GitWorktreeActions.list(at: root)?.first { $0.path == folder })

@@ -610,7 +610,10 @@ so a commit an agent makes between the check and the delete keeps the branch;
 its config section goes with it, as `branch -D` would take it, and a branch
 another worktree has checked out is left alone, since `update-ref` does not
 know that worktrees exist. A git older than 2.38 cannot merge without a
-working tree, proves nothing, and keeps the branch.
+working tree, proves nothing, and keeps the branch. A kept branch is reported
+with the commit it was judged at, and the toast's Delete Branch is held to that
+commit the same way: what the person agrees to lose is what they were told
+about, and a commit that landed after the toast appeared keeps the branch.
 
 What is not done yet — getting a fresh worktree ready to run, services and ports
 per worktree, finishing a piece of work — is in `ROADMAP.md`.
