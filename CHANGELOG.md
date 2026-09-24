@@ -5,16 +5,19 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
-## Unreleased
+## 0.7.1 — 2026-09-25
 
 ### Added
 
-- **A branch kept when its worktree was removed can be deleted from the toast
-  that says so.** Delete Branch deletes it only while it is where it was when
-  it was kept, and says so instead when something was committed to it since;
-  the toast after it names the commit the branch was at, which is all it
-  takes to bring it back.
-
+- **A `relay` command in every Relay terminal**, for the agent working there as
+  much as for you: `relay worktree list`, `current`, `create`, `rm` and `set`.
+  `create` makes a worktree the way New Worktree does and can start an agent
+  in it with a first prompt; `rm` removes one — and its branch, when Relay
+  made it and its work is already merged, squashed or rebased in — and asks
+  for `--force` before throwing away uncommitted work; `set` gives a worktree
+  a status and a comment. The app carries each one out, so it shows in the
+  sidebar at once. `--json` gives an answer a program can read, and
+  `relay help` says the rest.
 - **Clean Up Worktrees…** — in a worktree heading's menu, the Project menu and
   the palette — lists every worktree the project could lose, with what stands
   in the way of each on its row: a lock, an agent working or waiting for you,
@@ -26,33 +29,26 @@ breaking change to stored data.
   closing the sessions in each, and says once at the end how many went, which
   branches were kept and what git refused. Nothing is ever removed without
   being ticked.
-
 - **Say where the work in each worktree stands.** A worktree heading's menu
   sets a status — To Do, In Progress, In Review or Completed — shown as a small
   disc filling up beside the name, and a comment, shown as a line under the
   heading with the whole of it on hover. Both survive a relaunch, and go when
   the worktree does.
+- **A branch kept when its worktree was removed can be deleted from the toast
+  that says so.** Delete Branch deletes it only while it is where it was when
+  it was kept, and says so instead when something was committed to it since;
+  the toast after it names the commit the branch was at, which is all it
+  takes to bring it back.
 
-- **A `relay` command in every Relay terminal**, for the agent working there as
-  much as for you: `relay worktree list`, `current`, `create`, `rm` and `set`.
-  `create` makes a worktree the way New Worktree does and can start an agent
-  in it with a first prompt; `rm` removes one — and its branch, when Relay
-  made it and its work is already merged, squashed or rebased in — and asks
-  for `--force` before throwing away uncommitted work; `set` gives a worktree a status and a comment. The
-  app carries each one out, so it shows in the sidebar at once. `--json` gives
-  an answer a program can read, and `relay help` says the rest.
+### Changed
 
-### Fixed
+- **Relay has a new identifier, `com.maketryuk.relay`**, and Relay Dev
+  `com.maketryuk.relay.dev`. macOS takes it for a new app once: it asks again
+  for what Relay was allowed — notifications, folders such as Documents —
+  windows open where they first did, and the browser pane downloads Chromium
+  again. Projects, sessions and settings are untouched, since they live in
+  `~/.relay`, and the update itself arrives the usual way.
 
-- **A branch squashed or rebased in by a pull request goes with its worktree.**
-  Removing a worktree deleted its branch only when `git branch -d` agreed,
-  which it never does once a forge has squashed or rebased the pull request,
-  and not for one merged normally either until the local `main` had been
-  pulled: the branch stayed, with a toast saying it had commits merged
-  nowhere. Relay now asks git whether the branch's work is in the remote's
-  default branch — fetching that one branch first when it has to — and
-  deletes the branch when git proves it is. A branch Relay did not make is
-  still never touched.
 - **Removing a worktree says what happens to its branch before it goes.** A
   worktree whose branch had work merged nowhere disappeared on Remove, and
   only a toast afterwards said the branch had been kept. The branch is now
@@ -66,16 +62,28 @@ breaking change to stored data.
   click on the heading now turns the right-hand panel and new sessions to it,
   shows one of its sessions if it has any, and marks it as the worktree in
   use; the chevron folds it.
-- **Relay Dev opened from a Relay terminal is Relay Dev.** Started with
-  `open -a "Relay Dev"` in a terminal of the released app, it took that
-  terminal's build for its own: it connected to the released app's daemon and
-  read and wrote its workspace. The app now goes by its own identity, whatever
-  it inherits.
+
+### Fixed
+
+- **A branch squashed or rebased in by a pull request goes with its worktree.**
+  Removing a worktree deleted its branch only when `git branch -d` agreed,
+  which it never does once a forge has squashed or rebased the pull request,
+  and not for one merged normally either until the local `main` had been
+  pulled: the branch stayed, with a toast saying it had commits merged
+  nowhere. Relay now asks git whether the branch's work is in the remote's
+  default branch — fetching that one branch first when it has to — and
+  deletes the branch when git proves it is. A branch Relay did not make is
+  still never touched.
 - **The sidebar no longer rearranges itself at launch.** A project with
   worktrees showed its sessions as one list until git had read every
   worktree's status, then regrouped them all. It now shows a spinner until the
   worktrees are known, and knows them after one call to git rather than one
   per worktree.
+- **Relay Dev opened from a Relay terminal is Relay Dev.** Started with
+  `open -a "Relay Dev"` in a terminal of the released app, it took that
+  terminal's build for its own: it connected to the released app's daemon and
+  read and wrote its workspace. The app now goes by its own identity, whatever
+  it inherits.
 
 ## 0.7.0 — 2026-09-24
 
