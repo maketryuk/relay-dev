@@ -340,6 +340,10 @@ final class AppModel {
         )
         scheduleGitRefresh()
 
+        // Where the `relay` command in a terminal reaches this model. Before
+        // the daemon too: a worktree is git's, and needs no session host.
+        startControlServer()
+
         client.onDisconnect = { [weak self] in
             Task { @MainActor in self?.handleDisconnect() }
         }
@@ -2280,7 +2284,7 @@ final class AppModel {
     }
 
     /// The worktree the project's own folder is.
-    private func homeWorktree(of projectID: ProjectID) -> GitWorktree? {
+    func homeWorktree(of projectID: ProjectID) -> GitWorktree? {
         guard let root = project(projectID)?.rootPath else { return nil }
         return WorktreeMembership.worktree(containing: root, among: visibleWorktrees(in: projectID))
     }
@@ -2295,7 +2299,7 @@ final class AppModel {
     }
 
     /// A worktree whose directory is gone has nothing to show.
-    private func visibleWorktrees(in projectID: ProjectID) -> [GitWorktree] {
+    func visibleWorktrees(in projectID: ProjectID) -> [GitWorktree] {
         (worktrees[projectID] ?? []).filter { !$0.isPrunable }
     }
 
@@ -2381,7 +2385,7 @@ final class AppModel {
 
     /// Takes a fresh list of a project's worktrees and lets go of what was
     /// known about the ones that are gone.
-    private func adopt(_ found: [GitWorktree], in projectID: ProjectID) {
+    func adopt(_ found: [GitWorktree], in projectID: ProjectID) {
         let gone = Set((worktrees[projectID] ?? []).map(\.path)).subtracting(found.map(\.path))
         for path in gone { worktreeStatuses.removeValue(forKey: path) }
         worktrees[projectID] = found

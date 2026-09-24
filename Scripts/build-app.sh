@@ -47,11 +47,12 @@ swift build -c "$CONFIGURATION" --product Relay
 swift build -c "$CONFIGURATION" --product relay-daemon
 swift build -c "$CONFIGURATION" --product relay-browser-helper
 swift build -c "$CONFIGURATION" --product relay-hook
+swift build -c "$CONFIGURATION" --product relay-cli
 BIN_PATH="$(swift build -c "$CONFIGURATION" --show-bin-path)"
 
 echo "==> Assembling $APP"
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Helpers" "$APP/Contents/Resources"
 
 cp "$BIN_PATH/Relay" "$APP/Contents/MacOS/$EXECUTABLE"
 # The daemon ships inside the bundle so a released app never picks up a stale
@@ -60,6 +61,11 @@ cp "$BIN_PATH/relay-daemon" "$APP/Contents/MacOS/relay-daemon"
 # What an agent's hook runs in a Relay terminal. Beside the daemon, which is
 # where the daemon looks for it and tells its terminals it is.
 cp "$BIN_PATH/relay-hook" "$APP/Contents/MacOS/relay-hook"
+# The command agents run in a Relay terminal, named what they type. In a
+# directory of its own because the daemon puts that directory on every
+# terminal's PATH: MacOS would put the app there too, and on a file system that
+# does not tell `relay` from `Relay`, typing one would start the other.
+cp "$BIN_PATH/relay-cli" "$APP/Contents/Helpers/relay"
 
 # The framework and the helper apps its processes run in. Downloaded once per
 # machine, pinned and checked, by Scripts/chromium.sh.
@@ -191,6 +197,7 @@ if [ -n "$IDENTITY" ]; then
   chromium_sign "$APP" "$BUILD_DIR/entitlements" "${SIGN_FLAGS[@]}"
   codesign "${SIGN_FLAGS[@]}" "$APP/Contents/MacOS/relay-daemon"
   codesign "${SIGN_FLAGS[@]}" "$APP/Contents/MacOS/relay-hook"
+  codesign "${SIGN_FLAGS[@]}" "$APP/Contents/Helpers/relay"
   # SwiftPM resource bundles hold no executable code and codesign refuses them
   # outright ("bundle format unrecognized"); the outer signature seals them as
   # ordinary resources, which is what they are.
@@ -202,6 +209,7 @@ else
   chromium_sign "$APP" "$BUILD_DIR/entitlements" --force --sign - >/dev/null 2>&1 || true
   codesign --force --sign - "$APP/Contents/MacOS/relay-daemon" >/dev/null 2>&1 || true
   codesign --force --sign - "$APP/Contents/MacOS/relay-hook" >/dev/null 2>&1 || true
+  codesign --force --sign - "$APP/Contents/Helpers/relay" >/dev/null 2>&1 || true
   codesign --force --sign - "$APP" >/dev/null 2>&1 || true
 fi
 

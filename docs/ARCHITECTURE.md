@@ -676,6 +676,94 @@ per worktree, the rest of finishing a piece of work — is in `ROADMAP.md`.
 
 ---
 
+# The `relay` command talks to the app, not the daemon
+
+An agent in a Relay terminal runs `relay worktree create fix-login --agent
+claude --prompt "…"` and gets what New Worktree would have given a person: the
+branch named and placed the same way, an agent started in it and handed its
+prompt once it is ready. That is only true if the window's own code does it, so
+the command is a thin client of the app, and the app carries each request out
+with the functions the sidebar and the window call — `addWorktree`,
+`openCreatedWorktree`, `performWorktreeRemoval`, the worktree notes — on the
+model they draw from. What a command did is on screen when it returns, and
+there is no second account of a worktree to fall out of step with the first.
+
+The daemon was the other candidate, since it is always running. It knows
+processes and nothing else: projects, presets, worktrees and notes are the
+app's, and teaching the daemon them would be a second model and a protocol
+change for everyone updating. The price is that the command needs the app. It
+says so — "Relay is not running", exit status 1 — rather than doing half of it.
+
+**Three sockets side by side, all keyed by flavour through the daemon's name:**
+
+| Socket | Between |
+|---|---|
+| `/tmp/relay-<uid>.sock` | the app and the daemon |
+| `/tmp/relay-<uid>-hooks.sock` | an agent's hook and the daemon, one line and hang up |
+| `/tmp/relay-<uid>-control.sock` | the `relay` command and the app |
+
+The daemon tells every terminal where the control socket is
+(`RELAY_CONTROL_SOCKET`), because it knows which app it belongs to and the
+command does not: a command typed in Relay Dev reaches Relay Dev. Outside a
+Relay terminal the command takes the released app's, or Dev's with
+`RELAY_FLAVOUR=dev`. The same place in the daemon adds `RELAY_CLI`, the
+command's full path, and puts its directory first on `PATH` — first, though a
+login shell's `path_helper` moves the system's directories back in front of it;
+`RELAY_CLI` is for a profile that rebuilds `PATH` from nothing.
+
+**One JSON line each way, then the connection closes.** A request carries a
+version, the directory the command was run in, `RELAY_SESSION_ID`, and one
+command encoded as an object with its name as the only key — the shape the
+daemon's messages have. `ControlProtocol.version` is its own number, not
+`RelayProtocolVersion`: no daemon is involved, and none is retired when it
+moves. A command the app does not know is refused by name
+(`unknown_command`), so an app older than the command says "update Relay"
+rather than "bad request"; a new command or field needs no bump.
+`ControlProtocolTests` pins the lines.
+
+**Only this user.** The socket is `0600`, the app asks the kernel who is on the
+other end (`getpeereid`), and the command will not talk to a socket in `/tmp`
+that another user owns — what it sends includes the prompts it carries. A
+socket file nobody answers on was left by a crash and is replaced; one that
+answers belongs to another running copy of the same build, which keeps it.
+
+**Two things about macOS sockets were learned from the tests, not the manual:**
+- A connection accepted from a non-blocking listener is non-blocking too. Read
+  as it came, a request a moment late was "no request" at all; the connection
+  is made blocking and read with a five-second timeout instead.
+- `SO_NOSIGPIPE` cannot be set on a connection whose client has already hung up,
+  and answering one is then a `SIGPIPE`. The daemon ignores the signal; the app
+  does not, and probing a socket for life is exactly such a client. The option
+  is set on the listener, which every connection inherits it from.
+
+**What a command is about** is decided in the app, by `ControlTargets`: the
+project is the terminal's own when `RELAY_SESSION_ID` names one, or else the
+one with the deepest folder or worktree holding the directory; the worktree is
+the one named — a branch, a folder name, or the path of its folder — or else
+the one the directory is in. A path has to be a worktree's own folder, so
+`relay worktree rm src` inside a worktree does not remove it. Git's list is
+read again for every command and handed to the sidebar as well, so a worktree
+made in a terminal a second ago is found, and shown.
+
+**`create` does what the window does, front and all.** When it starts an agent
+in a project that is not the one in front, the project is brought forward
+first: the prompt waits for the agent's terminal to exist, and the window only
+ever opens on the project in front.
+
+**The executable is `Contents/Helpers/relay`.** Not `Contents/MacOS`: its
+directory goes on every terminal's `PATH`, and that one would put the app on
+it as well — as `relay`, since APFS does not tell `Relay` from it. For the
+same reason the SwiftPM product is `relay-cli`, and `build-app.sh` renames it.
+It links nothing but `RelayProtocol`, like the hook helper: something is
+waiting for it every time it runs.
+
+**A new group of commands** is a `CommandGroup` in `Sources/relay-cli` listed
+in `CommandTable`, a case and a `Name` for each command in `ControlCommand`,
+and its handling in `AppModel+Control.swift`. Help, argument parsing and
+`--json` come with the table.
+
+---
+
 # The browser pane is Chromium
 
 A browser tab opens in a pane beside the agent building what it shows, and

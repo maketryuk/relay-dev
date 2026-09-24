@@ -10,6 +10,10 @@ let package = Package(
         .executable(name: "Relay", targets: ["RelayApp"]),
         .executable(name: "relay-browser-helper", targets: ["relay-browser-helper"]),
         .executable(name: "relay-hook", targets: ["relay-hook"]),
+        // Not "relay": `.build/<config>/Relay` is the app, and APFS does not
+        // tell the two apart. The bundle ships it as `relay`, in a directory
+        // of its own.
+        .executable(name: "relay-cli", targets: ["relay-cli"]),
     ],
     dependencies: [
         .package(url: "https://github.com/migueldeicaza/SwiftTerm.git", from: "1.20.0"),
@@ -35,6 +39,10 @@ let package = Package(
         // because an agent waits for its hooks: it starts in milliseconds and
         // links nothing but the protocol.
         .executableTarget(name: "relay-hook", dependencies: ["RelayProtocol"]),
+        // The `relay` command agents run in a Relay terminal. Talks to the app,
+        // not the daemon, and links nothing but the protocol for the same
+        // reason the hook does: it is run often, by something waiting for it.
+        .executableTarget(name: "relay-cli", dependencies: ["RelayProtocol"]),
         .target(
             name: "RelayUI",
             dependencies: ["RelayProtocol"],
@@ -75,6 +83,7 @@ let package = Package(
 
         .testTarget(name: "RelayProtocolTests", dependencies: ["RelayProtocol"]),
         .testTarget(name: "RelayDaemonCoreTests", dependencies: ["RelayDaemonCore"]),
+        .testTarget(name: "RelayCLITests", dependencies: ["relay-cli", "RelayProtocol"]),
 .testTarget(name: "RelayAppKitTests", dependencies: ["RelayAppKit", "RelayUI"]),
     ]
 )

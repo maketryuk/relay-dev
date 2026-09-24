@@ -89,7 +89,8 @@ public final class SessionRuntime: @unchecked Sendable {
     // MARK: - Lifecycle
 
     /// - Parameter hookEnvironment: what an agent's hooks need to find the
-    ///   daemon, handed to the terminal along with this session's id.
+    ///   daemon and the `relay` command needs to find the app, handed to the
+    ///   terminal along with this session's id.
     public func start(
         hookEnvironment: [String: String] = [:],
         onOutput: @escaping @Sendable (SessionID, Data) -> Void,
@@ -97,10 +98,7 @@ public final class SessionRuntime: @unchecked Sendable {
     ) throws {
         DaemonQueue.assertIsolated()
         var plan = LaunchPlanBuilder.makePlan(for: spec)
-        if !hookEnvironment.isEmpty {
-            plan.environment.merge(hookEnvironment) { _, hooks in hooks }
-            plan.environment[AgentHookEnvironment.sessionKey] = id.rawValue
-        }
+        plan.environment = LaunchPlanBuilder.environment(plan.environment, telling: hookEnvironment, session: id)
         let child = try PTYProcess.launch(plan)
         process = child
         pid = child.pid

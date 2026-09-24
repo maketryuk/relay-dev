@@ -100,6 +100,37 @@ public enum LaunchPlanBuilder {
         return environment
     }
 
+    /// A terminal's environment with what reaches the daemon's hooks and the
+    /// app's `relay` command added, the session's own id, and the command's
+    /// directory first on `PATH`.
+    static func environment(
+        _ environment: [String: String],
+        telling relay: [String: String],
+        session: SessionID
+    ) -> [String: String] {
+        guard !relay.isEmpty else { return environment }
+        var environment = environment.merging(relay) { _, relay in relay }
+        environment[AgentHookEnvironment.sessionKey] = session.rawValue
+        if let tool = relay[ControlEnvironment.executableKey] {
+            environment["PATH"] = searchPath(
+                environment["PATH"],
+                prepending: URL(fileURLWithPath: tool).deletingLastPathComponent().path
+            )
+        }
+        return environment
+    }
+
+    /// `PATH` with `directory` first, and in it once.
+    ///
+    /// First, so `relay` is Relay's own. A login shell's `path_helper` puts the
+    /// system's directories back in front of it, which matters only if one of
+    /// them has a `relay` of its own; `RELAY_CLI` names this one whatever
+    /// `PATH` has become.
+    static func searchPath(_ path: String?, prepending directory: String) -> String {
+        let rest = (path ?? "").split(separator: ":").map(String.init).filter { !$0.isEmpty && $0 != directory }
+        return ([directory] + rest).joined(separator: ":")
+    }
+
     private static func shellQuoted(_ argument: String) -> String {
         guard !argument.isEmpty else { return "''" }
         let safe = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_./=:@%+,"))

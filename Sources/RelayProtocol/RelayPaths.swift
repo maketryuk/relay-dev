@@ -66,7 +66,13 @@ public enum RelayPaths {
     /// the sandbox-friendly temporary directory keyed by UID instead of inside
     /// Application Support.
     public static var socketURL: URL {
-        URL(fileURLWithPath: "/tmp/\(RelayFlavour.current.socketName)-\(getuid()).sock")
+        socketURL(for: .current)
+    }
+
+    /// The daemon socket of a flavour other than this process's own, for the
+    /// `relay` command, which belongs to no flavour until it is told.
+    public static func socketURL(for flavour: RelayFlavour) -> URL {
+        URL(fileURLWithPath: "/tmp/\(flavour.socketName)-\(getuid()).sock")
     }
 
     /// Where agents' hooks reach the daemon listening on `socketURL`.
@@ -77,6 +83,17 @@ public enum RelayPaths {
     /// its own.
     public static func hookSocketURL(beside socketURL: URL) -> URL {
         let name = socketURL.deletingPathExtension().lastPathComponent + "-hooks.sock"
+        return socketURL.deletingLastPathComponent().appendingPathComponent(name, isDirectory: false)
+    }
+
+    /// Where the app listens for the `relay` command.
+    ///
+    /// The app's, not the daemon's: a command is about projects and worktrees,
+    /// which the daemon never hears of. Named beside the daemon's socket so
+    /// that the daemon can tell its terminals where it is, and so that each
+    /// flavour, and each test, has one of its own.
+    public static func controlSocketURL(beside socketURL: URL) -> URL {
+        let name = socketURL.deletingPathExtension().lastPathComponent + "-control.sock"
         return socketURL.deletingLastPathComponent().appendingPathComponent(name, isDirectory: false)
     }
 

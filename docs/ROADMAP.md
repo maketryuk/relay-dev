@@ -70,6 +70,8 @@ workspace is a git worktree.
   and shown on the heading: to do, in progress, in review or completed as a
   disc filling up beside the name, the comment as a line under it. Kept in the
   workspace file, and let go of when git stops listing the worktree.
+- **The `relay` command**, in every Relay terminal: list, show, create, remove
+  and annotate worktrees, carried out by the app with the window's own code.
 
 ### Still to do
 
@@ -100,6 +102,21 @@ workspace is a git worktree.
    folder moves into a worktree of its own, but the session is grouped by where
    it started. Reading the process's current directory would place it where it
    is.
+6. **Telling the agents the `relay` command exists.** A skill for Claude Code
+   and instructions for Codex, installed the way the hooks are, saying what
+   the command does and when to reach for it: a worktree of its own for a
+   separate piece of work rather than a raw `git worktree add`, and `relay
+   worktree set` at each checkpoint so the sidebar says how the work is going.
+7. **More of the command.** Sessions — list them, start one in a worktree,
+   read a terminal, type into it, wait until an agent is ready — then projects
+   and browser tabs. Each is a group in `Sources/relay-cli` and a handful of
+   cases in `ControlCommand`.
+8. **Things the command does not do yet.** `create` brings the project and the
+   new agent to the front, as the window does, because the prompt waits for a
+   terminal to exist; making the worktree in the background needs a terminal
+   drawn off screen. `rm` run in the worktree it removes closes its own
+   terminal, and the answer can be lost with it — the sidebar still shows what
+   happened.
 
 ## Then
 

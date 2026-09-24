@@ -54,8 +54,11 @@ public final class DaemonServer: @unchecked Sendable {
     private let hookSocketURL: URL
     private let logURL: URL
     /// What every terminal is told about reaching this daemon from an agent's
-    /// hook. Empty when the helper is not beside the daemon, which leaves the
-    /// hooks installed in the agents' settings with nothing to run.
+    /// hook, and the app from the `relay` command. The hook's half is missing
+    /// when the helper is not beside the daemon, which leaves the hooks
+    /// installed in the agents' settings with nothing to run; the command's
+    /// socket is always named, so a command run by hand still finds the app
+    /// this daemon belongs to.
     private let hookEnvironment: [String: String]
 
     /// The socket path and the command runner are injectable so tests can run a
@@ -70,16 +73,23 @@ public final class DaemonServer: @unchecked Sendable {
         socketURL: URL = RelayPaths.socketURL,
         logURL: URL = RelayPaths.daemonLogURL,
         commandRunner: any CommandRunning = SystemCommandRunner(),
-        hookHelperURL: URL? = DaemonServer.bundledHookHelper
+        hookHelperURL: URL? = DaemonServer.bundledHookHelper,
+        commandLineToolURL: URL? = DaemonServer.bundledCommandLineTool
     ) {
         let hooks = RelayPaths.hookSocketURL(beside: socketURL)
         self.socketURL = socketURL
         hookSocketURL = hooks
         self.logURL = logURL
         self.commandRunner = commandRunner
-        hookEnvironment = hookHelperURL.map {
-            [AgentHookEnvironment.helperKey: $0.path, AgentHookEnvironment.socketKey: hooks.path]
-        } ?? [:]
+        var environment = [ControlEnvironment.socketKey: RelayPaths.controlSocketURL(beside: socketURL).path]
+        if let hookHelperURL {
+            environment[AgentHookEnvironment.helperKey] = hookHelperURL.path
+            environment[AgentHookEnvironment.socketKey] = hooks.path
+        }
+        if let commandLineToolURL {
+            environment[ControlEnvironment.executableKey] = commandLineToolURL.path
+        }
+        hookEnvironment = environment
     }
 
     /// `relay-hook`, which is built and shipped beside the daemon.
@@ -87,6 +97,18 @@ public final class DaemonServer: @unchecked Sendable {
         guard let directory = Bundle.main.executableURL?.deletingLastPathComponent() else { return nil }
         let helper = directory.appendingPathComponent("relay-hook", isDirectory: false)
         return FileManager.default.isExecutableFile(atPath: helper.path) ? helper : nil
+    }
+
+    /// `relay`, which the bundle keeps in `Contents/Helpers` rather than beside
+    /// the daemon: its directory goes on every terminal's `PATH`, and in
+    /// `Contents/MacOS` that would put the app itself there too — as `relay`,
+    /// on a file system that does not tell `Relay` from it.
+    public static var bundledCommandLineTool: URL? {
+        guard let directory = Bundle.main.executableURL?.deletingLastPathComponent() else { return nil }
+        let tool = directory.deletingLastPathComponent()
+            .appendingPathComponent("Helpers", isDirectory: true)
+            .appendingPathComponent("relay", isDirectory: false)
+        return FileManager.default.isExecutableFile(atPath: tool.path) ? tool : nil
     }
 
     // MARK: - Server lifecycle

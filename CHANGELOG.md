@@ -33,6 +33,15 @@ breaking change to stored data.
   heading with the whole of it on hover. Both survive a relaunch, and go when
   the worktree does.
 
+- **A `relay` command in every Relay terminal**, for the agent working there as
+  much as for you: `relay worktree list`, `current`, `create`, `rm` and `set`.
+  `create` makes a worktree the way New Worktree does and can start an agent
+  in it with a first prompt; `rm` removes one — and its branch, when Relay
+  made it and its work is already merged, squashed or rebased in — and asks
+  for `--force` before throwing away uncommitted work; `set` gives a worktree a status and a comment. The
+  app carries each one out, so it shows in the sidebar at once. `--json` gives
+  an answer a program can read, and `relay help` says the rest.
+
 ### Fixed
 
 - **A branch squashed or rebased in by a pull request goes with its worktree.**
