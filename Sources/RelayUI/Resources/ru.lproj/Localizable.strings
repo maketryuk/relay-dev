@@ -481,6 +481,7 @@
 "Reading dependencies…" = "Читаю зависимости…";
 "Reading the element…" = "Считываю элемент…";
 "Reading the project…" = "Читаю проект…";
+"Reading worktrees…" = "Читаю список worktrees…";
 "Reading…" = "Читаю…";
 "Reasoning" = "Рассуждение";
 "Rebase in progress" = "Идёт rebase";

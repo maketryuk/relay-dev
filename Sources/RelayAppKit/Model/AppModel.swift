@@ -41,6 +41,9 @@ final class AppModel {
     /// Read, never remembered: git is where a worktree exists or does not, and
     /// one made in a terminal belongs in the sidebar as much as one made here.
     private(set) var worktrees: [ProjectID: [GitWorktree]] = [:]
+    /// Projects git has answered for at least once since launch, with a list
+    /// or without one.
+    private(set) var worktreeListsRead: Set<ProjectID> = []
     /// Branch and diff of every worktree, by path, for the headers the sidebar
     /// groups sessions under.
     private(set) var worktreeStatuses: [String: GitStatus] = [:]
@@ -2231,40 +2234,54 @@ final class AppModel {
         Task { [weak self] in
             // Only Sendable values cross into the detached task; the model stays
             // firmly on the main actor.
-            let (status, found, others, own) = await Task.detached(priority: .utility) {
-                () -> (GitStatus?, [GitWorktree]?, [String: GitStatus], String?) in
+            let (status, found, own) = await Task.detached(priority: .utility) {
+                () -> (GitStatus?, [GitWorktree]?, String?) in
                 let status = GitProbe.status(at: path)
                 guard isRepository, let found = GitWorktreeActions.list(at: home) else {
-                    return (status, nil, [:], nil)
+                    return (status, nil, nil)
                 }
                 // Git's spelling of the checkout just read, which is what the
                 // sidebar looks its status up by.
-                let own = WorktreeMembership.worktree(containing: path, among: found)?.path
-                // The other checkouts only once there are others: a project
-                // with one pays for nothing it does not show.
-                var others: [String: GitStatus] = [:]
-                if found.count > 1 {
-                    for worktree in found where worktree.path != own && !worktree.isPrunable {
-                        others[worktree.path] = GitProbe.status(at: worktree.path)
-                    }
-                }
-                return (status, found, others, own)
+                return (status, found, WorktreeMembership.worktree(containing: path, among: found)?.path)
             }.value
             guard let self else { return }
             // A list that could not be read is not an empty one: keeping the
             // last answer is what stops a slow `git` sending the panel back to
             // the project's own checkout.
             if let found { self.adopt(found, in: projectID) }
-            self.worktreeStatuses.merge(others) { $1 }
+            self.worktreeListsRead.insert(projectID)
             // The answer is about the checkout that was open when it was asked.
-            guard self.workingRoot(of: projectID) == path else { return }
-            if let status {
-                self.gitStatuses[projectID] = status
-                if let own { self.worktreeStatuses[own] = status }
-            } else {
-                self.gitStatuses.removeValue(forKey: projectID)
+            if self.workingRoot(of: projectID) == path {
+                if let status {
+                    self.gitStatuses[projectID] = status
+                    if let own { self.worktreeStatuses[own] = status }
+                } else {
+                    self.gitStatuses.removeValue(forKey: projectID)
+                }
             }
+
+            // The other checkouts only once there are others, and only after
+            // the sidebar has been given the list: each is a `git status` of
+            // its own, and a project with a dozen worktrees would otherwise
+            // show its sessions ungrouped for as long as all of them take.
+            guard let found, found.count > 1 else { return }
+            let others = await Task.detached(priority: .utility) { () -> [String: GitStatus] in
+                var others: [String: GitStatus] = [:]
+                for worktree in found where worktree.path != own && !worktree.isPrunable {
+                    others[worktree.path] = GitProbe.status(at: worktree.path)
+                }
+                return others
+            }.value
+            self.worktreeStatuses.merge(others) { $1 }
         }
+    }
+
+    /// Whether the sidebar is still waiting for the project's first list of
+    /// worktrees. Until it arrives there is no telling whether its sessions
+    /// are one list or several groups, and drawing one then the other moves
+    /// every row under the pointer. The chat has no repository to ask.
+    func isReadingWorktrees(in projectID: ProjectID) -> Bool {
+        projectID != .chat && !worktreeListsRead.contains(projectID)
     }
 
     // MARK: - Worktrees

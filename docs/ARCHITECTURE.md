@@ -585,6 +585,14 @@ disk, and a session that matches nothing is listed with the project's own
 checkout rather than dropped: a hidden row would be a running process with no
 way back to it.
 
+**Until git has answered once, the sidebar shows a spinner, not the sessions.**
+Before the first list there is no telling one list from several groups, and
+drawing the flat list and then regrouping it moved every row under the pointer
+at each launch. The wait is kept short by adopting the list as soon as it
+arrives: the other worktrees' statuses, a `git status` each, follow in a second
+step, so a project with a dozen worktrees is grouped after one call rather than
+thirteen. A list git could not give still ends the wait.
+
 **Everything the right-hand panel reads is keyed by project and means "the
 worktree being looked at".** That worktree follows the selected session, and
 changing it throws away what was read from the previous one — the changes, the

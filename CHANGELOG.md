@@ -58,6 +58,11 @@ breaking change to stored data.
   terminal's build for its own: it connected to the released app's daemon and
   read and wrote its workspace. The app now goes by its own identity, whatever
   it inherits.
+- **The sidebar no longer rearranges itself at launch.** A project with
+  worktrees showed its sessions as one list until git had read every
+  worktree's status, then regrouped them all. It now shows a spinner until the
+  worktrees are known, and knows them after one call to git rather than one
+  per worktree.
 
 ## 0.7.0 — 2026-09-24
 

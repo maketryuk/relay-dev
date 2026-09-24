@@ -111,7 +111,13 @@ struct ProjectSidebarView: View {
         let tabs = model.browsers(in: project.id)
 
         return Group {
-            if model.showsWorktrees(in: project.id) {
+            if model.isReadingWorktrees(in: project.id) {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, Theme.Spacing.xlarge)
+                    .accessibilityLabel(relayLocalized("Reading worktrees…"))
+            } else if model.showsWorktrees(in: project.id) {
                 worktrees
             } else if list.isEmpty, tabs.isEmpty {
                 VStack(spacing: Theme.Spacing.small) {
