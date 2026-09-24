@@ -2469,26 +2469,55 @@ final class AppModel {
         }
     }
 
-    /// Removes a worktree and closes what was running in it.
+    /// Removes the folder, closes what ran in it and settles its branch, and
+    /// says how it went without showing anything: the caller decides what to
+    /// say.
     ///
     /// The directory goes first and the sessions after, so a refusal leaves
     /// everything as it was. The branch goes too when Relay made it and git
-    /// agrees nothing on it would be lost.
+    /// agrees nothing on it would be lost; it is settled last, once the
+    /// sessions are closed and the sidebar has let go of the folder, so that
+    /// judging it never holds either of them up.
+    func performWorktreeRemoval(
+        _ worktree: GitWorktree,
+        discardingChanges: Bool,
+        in projectID: ProjectID
+    ) async -> WorktreeRemoval {
+        guard let home = project(projectID)?.rootPath else {
+            return WorktreeRemoval(failure: relayLocalized("There is no such project."), branch: .untouched)
+        }
+        guard canRemoveWorktree(worktree, in: projectID) else {
+            let reason = worktree.isMain
+                ? relayLocalized("Git does not remove the main worktree: the repository lives in it.")
+                : relayLocalized("The project's own folder goes only with the project.")
+            return WorktreeRemoval(failure: reason, branch: .untouched)
+        }
+        let running = sessions(in: worktree, of: projectID).map(\.id)
+        let (failure, found) = await Task.detached(priority: .userInitiated) {
+            () -> (String?, [GitWorktree]?) in
+            if let failure = GitWorktreeActions.remove(worktree, force: discardingChanges, in: home) {
+                return (failure, nil)
+            }
+            return (nil, GitWorktreeActions.list(at: home))
+        }.value
+        if let failure { return WorktreeRemoval(failure: failure, branch: .untouched) }
+        // Not remembered for ⌘⇧T: what they would reopen into is gone.
+        for id in running { close(id, remembering: false) }
+        if let found { adopt(found, in: projectID) }
+        let outcome = await Task.detached(priority: .userInitiated) { () -> GitWorktreeActions.BranchOutcome in
+            GitWorktreeActions.removeBranch(of: worktree, in: home)
+        }.value
+        return WorktreeRemoval(failure: nil, branch: outcome)
+    }
+
+    /// The sidebar's way in: removes the worktree and says what did not go,
+    /// the folder or its branch.
     func removeWorktree(_ worktree: GitWorktree, discardingChanges: Bool, in projectID: ProjectID) {
         worktreePendingRemoval = nil
-        guard let home = project(projectID)?.rootPath, canRemoveWorktree(worktree, in: projectID) else { return }
-        let running = sessions(in: worktree, of: projectID).map(\.id)
         Task { [weak self] in
-            let (failure, outcome, found) = await Task.detached(priority: .userInitiated) {
-                () -> (String?, GitWorktreeActions.BranchOutcome, [GitWorktree]?) in
-                if let failure = GitWorktreeActions.remove(worktree, force: discardingChanges, in: home) {
-                    return (failure, .untouched, nil)
-                }
-                let outcome = GitWorktreeActions.removeBranch(of: worktree, in: home)
-                return (nil, outcome, GitWorktreeActions.list(at: home))
-            }.value
             guard let self else { return }
-            if let failure {
+            let removal = await self.performWorktreeRemoval(worktree, discardingChanges: discardingChanges, in: projectID)
+            if let failure = removal.failure {
                 self.present(ToastContent(
                     kind: .error,
                     title: String(format: relayLocalized("Could not remove %@"), worktree.name),
@@ -2496,10 +2525,7 @@ final class AppModel {
                 ))
                 return
             }
-            // Not remembered for ⌘⇧T: what they would reopen into is gone.
-            for id in running { self.close(id, remembering: false) }
-            if let found { self.adopt(found, in: projectID) }
-            if outcome == .keptUnmerged, let branch = worktree.branch {
+            if removal.branch == .keptUnmerged, let branch = worktree.branch {
                 self.present(ToastContent(
                     kind: .info,
                     title: String(format: relayLocalized("Kept branch %@"), branch),
@@ -4384,4 +4410,11 @@ final class AppModel {
     func persistImmediately() {
         store.saveNow(snapshotState())
     }
+}
+
+/// What became of removing a worktree.
+struct WorktreeRemoval: Equatable, Sendable {
+    /// Why it was not removed; nil when it was.
+    var failure: String?
+    var branch: GitWorktreeActions.BranchOutcome
 }

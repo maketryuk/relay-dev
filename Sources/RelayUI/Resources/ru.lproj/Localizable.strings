@@ -252,6 +252,7 @@
 "Gemini" = "Gemini";
 "General" = "Основные";
 "Git commands" = "Git-команды";
+"Git does not remove the main worktree: the repository lives in it." = "Git не удаляет основной worktree: в нём живёт сам репозиторий.";
 "Git" = "Git";
 "GitHub is rate-limiting the update check. It will try again later." = "GitHub ограничивает частоту проверки обновлений. Попробуем позже.";
 "Go to Definition" = "Перейти к определению";
@@ -602,11 +603,13 @@
 "The host to connect through first." = "Хост, через который идёт подключение.";
 "The only notification that plays a sound" = "Единственное уведомление со звуком";
 "The page stopped working" = "Страница перестала работать";
+"The project's own folder goes only with the project." = "Папка самого проекта удаляется только вместе с проектом.";
 "The update check failed: HTTP %d" = "Проверка обновлений не удалась: HTTP %d";
 "The working copy has changes" = "В рабочей копии есть изменения";
 "The working copy matches the last commit." = "Рабочая копия совпадает с последним коммитом.";
 "Then start" = "Затем запустить";
 "There is no git repository in this project." = "В этом проекте нет git-репозитория.";
+"There is no such project." = "Такого проекта нет.";
 "This block also names: %@" = "Этот блок также описывает: %@";
 "This build of Relay was made without Chromium." = "Эта сборка Relay собрана без Chromium.";
 "This build updates by being rebuilt" = "Эта сборка обновляется пересборкой";

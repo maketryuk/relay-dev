@@ -252,6 +252,7 @@
 "Gemini" = "Gemini";
 "General" = "General";
 "Git commands" = "Git commands";
+"Git does not remove the main worktree: the repository lives in it." = "Git does not remove the main worktree: the repository lives in it.";
 "Git" = "Git";
 "GitHub is rate-limiting the update check. It will try again later." = "GitHub is rate-limiting the update check. It will try again later.";
 "Go to Definition" = "Go to Definition";
@@ -602,11 +603,13 @@
 "The host to connect through first." = "The host to connect through first.";
 "The only notification that plays a sound" = "The only notification that plays a sound";
 "The page stopped working" = "The page stopped working";
+"The project's own folder goes only with the project." = "The project's own folder goes only with the project.";
 "The update check failed: HTTP %d" = "The update check failed: HTTP %d";
 "The working copy has changes" = "The working copy has changes";
 "The working copy matches the last commit." = "The working copy matches the last commit.";
 "Then start" = "Then start";
 "There is no git repository in this project." = "There is no git repository in this project.";
+"There is no such project." = "There is no such project.";
 "This block also names: %@" = "This block also names: %@";
 "This build of Relay was made without Chromium." = "This build of Relay was made without Chromium.";
 "This build updates by being rebuilt" = "This build updates by being rebuilt";
