@@ -254,7 +254,7 @@ struct DockerPane: View {
         // Containers are started and stopped from Docker Desktop, from a
         // terminal, and by whatever the project's own tooling does — none of
         // which Relay is told about.
-        .refreshingWhileVisible(id: project.id, every: .seconds(5)) {
+        .refreshingWhileVisible(id: model.workingRoot(of: project.id), every: .seconds(5)) {
             model.refreshDocker(for: project.id)
         }
     }
@@ -403,7 +403,7 @@ struct HistoryPane: View {
                 }
             }
         }
-        .refreshingWhileVisible(id: project.id, every: .seconds(10)) {
+        .refreshingWhileVisible(id: model.workingRoot(of: project.id), every: .seconds(10)) {
             model.loadConversations(for: project.id)
         }
     }

@@ -8,7 +8,8 @@ import SwiftUI
 /// question "what is this and does it need me" should be answerable without the
 /// eye travelling across the row. The working directory is deliberately absent —
 /// it is already in the project header — while the branch is present, because
-/// once worktrees land it stops being the same for every session.
+/// it is the branch of the worktree the session is in, and that is not the same
+/// for every session.
 struct SessionRow: View {
     @Environment(AppModel.self) private var model
 
@@ -114,7 +115,7 @@ struct SessionRow: View {
                     Spacer(minLength: Theme.Spacing.xsmall)
                 }
             }
-        } else if let git = model.gitStatuses[session.projectID] {
+        } else if let git = model.gitStatus(of: session) {
             HStack(spacing: Theme.Spacing.xsmall) {
                 Image(systemName: "arrow.triangle.branch")
                     .font(.system(size: 9))
@@ -189,6 +190,9 @@ struct DiffBadge: View {
             }
         }
         .font(.system(size: 10, weight: .semibold, design: .monospaced))
+        // Never narrower than its numbers: squeezed, a count wraps a digit
+        // onto a second line, and the name beside it is what should give way.
+        .fixedSize()
         .padding(.horizontal, 5)
         .padding(.vertical, 1)
         .background(Theme.Palette.surfaceRaised)

@@ -25,6 +25,7 @@ struct RelayPathsTests {
         #expect(RelayPaths.workspaceFileURL.deletingLastPathComponent() == root)
         #expect(RelayPaths.logsDirectory.deletingLastPathComponent() == root)
         #expect(RelayPaths.chatDirectory.deletingLastPathComponent() == root)
+        #expect(RelayPaths.worktreesDirectory.deletingLastPathComponent() == root)
         #expect(root.deletingLastPathComponent() == FileManager.default.homeDirectoryForCurrentUser)
     }
 

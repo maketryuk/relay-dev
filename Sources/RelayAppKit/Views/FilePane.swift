@@ -433,7 +433,7 @@ struct FilePaneHeader<Icon: View, Accessories: View>: View {
     /// The path as it reads inside the project, since the project name is
     /// already on the rail and the home directory is nobody's news.
     private var relativePath: String {
-        guard let root = model.project(projectID)?.rootPath else { return path }
+        guard let root = model.workingRoot(of: projectID) else { return path }
         let directory = (path as NSString).deletingLastPathComponent
         guard directory.hasPrefix(root) else {
             return HomeRelativePath.abbreviating(directory)

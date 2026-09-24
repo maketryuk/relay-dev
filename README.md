@@ -175,6 +175,7 @@ pkill -f relay-daemon
 | `~/.relay/workspace.json` | проекты и настройки |
 | `~/.relay/Logs/daemon.log` | лог демона |
 | `~/.relay/chat` | рабочая папка сессий вне проекта |
+| `~/.relay/worktrees/<репозиторий>/<ветка>` | worktrees, созданные в Relay |
 | `/tmp/relay-<uid>.sock` | сокет связи GUI ↔ демон |
 
 Секреты не сохраняются: SSH-ключи, пароли и содержимое окружения на диск не

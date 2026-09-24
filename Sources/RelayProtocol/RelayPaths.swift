@@ -38,6 +38,12 @@ public enum RelayPaths {
         supportDirectory.appendingPathComponent("chat", isDirectory: true)
     }
 
+    /// Where the worktrees Relay creates are checked out, one folder per
+    /// repository. Created by git, with the first of them.
+    public static var worktreesDirectory: URL {
+        supportDirectory.appendingPathComponent("worktrees", isDirectory: true)
+    }
+
     /// Unix domain socket paths are capped at 104 bytes, so the socket lives in
     /// the sandbox-friendly temporary directory keyed by UID instead of inside
     /// Application Support.

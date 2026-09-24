@@ -62,6 +62,10 @@ struct FileTreePane: View {
 
     @State private var state = FileTreeState()
 
+    /// The worktree being looked at, whose files are the ones an agent in it
+    /// is changing.
+    private var root: String { model.workingRoot(of: project.id) ?? project.rootPath }
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -69,7 +73,7 @@ struct FileTreePane: View {
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 0) {
-                        FileTreeLevel(directory: project.rootPath, depth: 0, project: project, state: state)
+                        FileTreeLevel(directory: root, depth: 0, project: project, state: state)
                     }
                     .padding(.vertical, Theme.Spacing.xsmall)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -120,8 +124,8 @@ struct FileTreePane: View {
                 state.reread()
                 // The names a file declares are read from the same disk, and
                 // go stale the same way. So does the list of the files.
-                model.symbols.invalidate(root: project.rootPath)
-                model.files.invalidate(root: project.rootPath)
+                model.symbols.invalidate(root: root)
+                model.files.invalidate(root: root)
             }
             .relayTooltip(relayLocalized("Re-read files"))
         }
@@ -131,17 +135,17 @@ struct FileTreePane: View {
 
     @ViewBuilder
     private var rootMenu: some View {
-        Button(relayLocalized("New File")) { state.begin(.newFile, at: project.rootPath) }
-        Button(relayLocalized("New Folder")) { state.begin(.newFolder, at: project.rootPath) }
+        Button(relayLocalized("New File")) { state.begin(.newFile, at: root) }
+        Button(relayLocalized("New Folder")) { state.begin(.newFolder, at: root) }
         Divider()
-        Button(relayLocalized("Reveal in Finder")) { model.revealInFinder(project) }
+        Button(relayLocalized("Reveal in Finder")) { model.revealInFinder(root) }
     }
 
     /// Opens every folder down to the file being worked in, and brings its row
     /// into view.
     private func reveal(_ path: String?, with proxy: ScrollViewProxy) async {
         guard let path else { return }
-        state.expanded.formUnion(FileTree.ancestors(of: path, under: project.rootPath))
+        state.expanded.formUnion(FileTree.ancestors(of: path, under: root))
 
         // A folder's rows are read from disk when it opens, so the row to
         // scroll to does not exist in the turn that opened its folder.

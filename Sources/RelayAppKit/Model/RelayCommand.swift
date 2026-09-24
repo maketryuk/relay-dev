@@ -51,6 +51,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
 
     case reviewChanges
     case switchBranch
+    case newWorktree
 
     case goToDefinition
     case goBack
@@ -93,6 +94,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .restartDefaultService: "Restart Dev Service"
         case .reviewChanges: "Review Changes"
         case .switchBranch: "Switch Branch"
+        case .newWorktree: "New Worktree"
         case .nextProject: "Next Project"
         case .previousProject: "Previous Project"
         case .addProject: "Add Project"
@@ -116,7 +118,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
              .splitRight, .splitDown, .focusNextPane: .sessions
         case .startDefaultService, .restartDefaultService: .services
         case .nextProject, .previousProject, .addProject, .revealProject,
-             .projectSettings, .reviewChanges, .switchBranch: .projects
+             .projectSettings, .reviewChanges, .switchBranch, .newWorktree: .projects
         case .goToDefinition, .goBack, .findInFile, .searchProject, .toggleMarkdownPreview: .editor
         }
     }
@@ -167,6 +169,9 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         // Deliberately unbound: it is one palette entry away, and the letters
         // left on `⌘` are worth more to things done many times an hour.
         case .switchBranch: nil
+        // Unbound for the same reason: a piece of work is started a few times
+        // a day, not a few times an hour.
+        case .newWorktree: nil
         case .nextProject: KeyBinding("down", [.command, .option])
         case .previousProject: KeyBinding("up", [.command, .option])
         case .addProject: KeyBinding("n", [.command, .shift])

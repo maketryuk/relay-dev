@@ -160,7 +160,7 @@ struct SearchPane: View {
                     .foregroundStyle(Theme.Palette.textPrimary)
                 Text(verbatim: FileMatching.relative(
                     (hit.path as NSString).deletingLastPathComponent,
-                    to: project.rootPath
+                    to: model.workingRoot(of: project.id) ?? project.rootPath
                 ))
                 .font(Theme.Typography.caption)
                 .foregroundStyle(Theme.Palette.textTertiary)

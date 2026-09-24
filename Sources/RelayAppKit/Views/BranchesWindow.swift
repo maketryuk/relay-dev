@@ -44,7 +44,7 @@ struct BranchesPane: View {
             guard ordered.indices.contains(focus.row) else { return }
             switchTo(ordered[focus.row])
         }
-        .refreshingWhileVisible(id: project.id, every: .seconds(10)) {
+        .refreshingWhileVisible(id: model.workingRoot(of: project.id), every: .seconds(10)) {
             model.refreshBranches(for: project.id)
         }
     }
@@ -136,9 +136,7 @@ struct BranchesPane: View {
                     row(
                         title: branch.name,
                         symbol: branch.isRemote ? "cloud" : "arrow.triangle.branch",
-                        subtitle: branch.isRemote
-                            ? relayLocalized("Checks out a local branch that follows it")
-                            : (branch.upstream ?? relayLocalized("No upstream")),
+                        subtitle: subtitle(of: branch),
                         isCurrent: branch.isCurrent,
                         isFocused: focus.row == offset + index
                     ) {
@@ -177,8 +175,28 @@ struct BranchesPane: View {
         }
     }
 
+    private func subtitle(of branch: GitBranch) -> String {
+        if branch.isRemote { return relayLocalized("Checks out a local branch that follows it") }
+        if let holder = holder(of: branch) {
+            return String(format: relayLocalized("Checked out in %@"), HomeRelativePath.abbreviating(holder.path))
+        }
+        return branch.upstream ?? relayLocalized("No upstream")
+    }
+
+    /// The worktree a local branch is already checked out in, if another.
+    private func holder(of branch: GitBranch) -> GitWorktree? {
+        guard !branch.isRemote else { return nil }
+        return model.worktree(checkingOut: branch.name, in: project.id)
+    }
+
     private func switchTo(_ branch: GitBranch) {
         guard !branch.isCurrent else { return model.dismissModal() }
+        // Git refuses to check one branch out twice, and is right to: going to
+        // that branch means going to where it already is.
+        if let holder = holder(of: branch) {
+            model.openWorktree(holder, in: project.id)
+            return model.dismissModal()
+        }
         model.switchBranch(to: branch.switchName, in: project.id)
         model.dismissModal()
     }

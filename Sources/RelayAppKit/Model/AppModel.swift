@@ -36,6 +36,23 @@ final class AppModel {
     /// the project was not a repository — which for the first seconds of every
     /// launch was a guess, and a wrong one.
     private(set) var gitRepositories: Set<ProjectID> = []
+    /// Every checkout of each project's repository, as git lists them.
+    ///
+    /// Read, never remembered: git is where a worktree exists or does not, and
+    /// one made in a terminal belongs in the sidebar as much as one made here.
+    private(set) var worktrees: [ProjectID: [GitWorktree]] = [:]
+    /// Branch and diff of every worktree, by path, for the headers the sidebar
+    /// groups sessions under.
+    private(set) var worktreeStatuses: [String: GitStatus] = [:]
+    /// Which checkout of each project is being looked at, by path: the one the
+    /// right-hand panel describes and a new session starts in. It follows the
+    /// selected session, which is remembered, so it need not be.
+    private(set) var activeWorktreePaths: [ProjectID: String] = [:]
+    /// The worktree a confirmation is asking about removing.
+    var worktreePendingRemoval: GitWorktree?
+    private(set) var isCreatingWorktree = false
+    /// What git said when it last refused to create one, for the panel.
+    private(set) var worktreeCreationFailure: String?
     /// What has changed in each project's working copy.
     ///
     /// Read only while something is looking: the list costs a process, and it
@@ -553,7 +570,11 @@ final class AppModel {
         guard id != .chat else { return }
         // Sessions are the daemon's, not the project's: closing them is an
         // explicit action, so removing a project only forgets configuration.
-        if let root = project(id)?.rootPath { lint.stop(root: root) }
+        for root in Set([project(id)?.rootPath, workingRoot(of: id)].compactMap { $0 }) {
+            lint.stop(root: root)
+        }
+        worktrees.removeValue(forKey: id)
+        activeWorktreePaths.removeValue(forKey: id)
         projects.removeAll { $0.id == id }
         projectFacts.removeValue(forKey: id)
         gitStatuses.removeValue(forKey: id)
@@ -631,7 +652,7 @@ final class AppModel {
     /// Opens one file the way the project opens files: the editor it names, or
     /// whatever macOS would open it with.
     func openFileInEditor(_ path: String, in project: Project) {
-        let url = URL(fileURLWithPath: project.rootPath).appendingPathComponent(path)
+        let url = URL(fileURLWithPath: workingRoot(of: project.id) ?? project.rootPath).appendingPathComponent(path)
         if let editor = project.preferredEditor, !editor.isEmpty {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
@@ -649,7 +670,7 @@ final class AppModel {
     /// plain path, which opens the right file at the wrong line — better than
     /// a filename it would fail to find.
     func openFileInEditor(_ path: String, line: Int, in project: Project) {
-        let url = URL(fileURLWithPath: project.rootPath).appendingPathComponent(path)
+        let url = URL(fileURLWithPath: workingRoot(of: project.id) ?? project.rootPath).appendingPathComponent(path)
         guard let editor = project.preferredEditor, !editor.isEmpty else {
             NSWorkspace.shared.open(url)
             return
@@ -669,14 +690,15 @@ final class AppModel {
     }
 
     func openInEditor(_ project: Project) {
+        let root = workingRoot(of: project.id) ?? project.rootPath
         if let editor = project.preferredEditor, !editor.isEmpty {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-            process.arguments = [editor, project.rootPath]
+            process.arguments = [editor, root]
             try? process.run()
             return
         }
-        NSWorkspace.shared.open(project.url)
+        NSWorkspace.shared.open(URL(fileURLWithPath: root))
     }
 
     // MARK: - Sessions
@@ -735,7 +757,7 @@ final class AppModel {
         in projectID: ProjectID,
         thenType pendingInput: PendingInput? = nil
     ) {
-        guard let project = project(projectID) else { return }
+        guard let root = workingRoot(of: projectID) else { return }
         let name = SessionNaming.nextName(
             base: preset.name,
             existing: sessions(in: projectID).map(\.name)
@@ -744,24 +766,23 @@ final class AppModel {
             projectID: projectID,
             kind: preset.kind,
             name: name,
-            workingDirectory: project.rootPath,
+            workingDirectory: root,
             command: preset.command
         ), pendingInput: pendingInput)
     }
 
     func createSession(kind: SessionKind, in projectID: ProjectID, command: [String] = []) {
-        guard let project = project(projectID) else { return }
+        guard let root = workingRoot(of: projectID) else { return }
         let name = SessionNaming.nextName(
             for: kind,
             existing: sessions(in: projectID).map(\.name)
         )
-        let rootPath = project.rootPath
 
         let spec = SessionSpec(
             projectID: projectID,
             kind: kind,
             name: name,
-            workingDirectory: rootPath,
+            workingDirectory: root,
             command: command
         )
 
@@ -811,7 +832,13 @@ final class AppModel {
         // clicking into a terminal is leaving it.
         editors.focused = nil
         surfaceCache.touch(id)
-        if let projectID = sessions[id]?.projectID {
+        if let session = sessions[id] {
+            let projectID = session.projectID
+            // The panel beside a terminal is about the checkout that terminal
+            // is working in.
+            if let owner = worktree(of: session) {
+                activateWorktree(owner.path, in: projectID)
+            }
             showInFocusedPane(id, projectID: projectID)
             lastActiveSessionByProject[projectID.rawValue] = id.rawValue
             persist()
@@ -821,7 +848,9 @@ final class AppModel {
 
     func selectAdjacentSession(offset: Int) {
         guard let projectID = selectedProjectID else { return }
-        let list = sessions(in: projectID)
+        let list = showsWorktrees(in: projectID)
+            ? listedSessions(in: projectID) + sessions(in: projectID).filter(\.role.isService)
+            : sessions(in: projectID)
         guard !list.isEmpty else { return }
         let currentIndex = list.firstIndex { $0.id == selectedSessionID } ?? 0
         let nextIndex = (currentIndex + offset + list.count) % list.count
@@ -996,7 +1025,7 @@ final class AppModel {
 
     /// Splits the pane showing `sessionID`, starting a terminal beside it.
     func splitPane(showing sessionID: SessionID?, axis: PaneAxis) {
-        guard let projectID = selectedProjectID, let project = project(projectID) else { return }
+        guard let projectID = selectedProjectID, let root = workingRoot(of: projectID) else { return }
         let preset = SessionPresets.preferred(for: .shell, in: presets)
         let name = SessionNaming.nextName(base: preset.name, existing: sessions(in: projectID).map(\.name))
 
@@ -1004,7 +1033,7 @@ final class AppModel {
             projectID: projectID,
             kind: preset.kind,
             name: name,
-            workingDirectory: project.rootPath,
+            workingDirectory: root,
             command: preset.command
         )
 
@@ -1142,7 +1171,7 @@ final class AppModel {
         // moment to spend it is now rather than when somebody is waiting on a
         // ⌘-click. Idempotent: a reading already done or under way is joined
         // rather than started again.
-        if let root = project(projectID)?.rootPath {
+        if let root = workingRoot(of: projectID) {
             Task {
                 await symbols.prepare(root: root)
                 // And then the dependencies, which are slower, wanted less
@@ -1254,7 +1283,7 @@ final class AppModel {
 
     /// The path, as the project reads it or as the disk does.
     func copyPath(of path: String, native: Bool, in projectID: ProjectID) {
-        let root = project(projectID)?.rootPath ?? ""
+        let root = workingRoot(of: projectID) ?? ""
         let copied = native ? path : FileMatching.relative(path, to: root)
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
@@ -1267,7 +1296,7 @@ final class AppModel {
 
     /// Everything read off the disk for this project is now a guess.
     private func forgetFiles(of projectID: ProjectID) {
-        guard let root = project(projectID)?.rootPath else { return }
+        guard let root = workingRoot(of: projectID) else { return }
         files.invalidate(root: root)
         symbols.invalidate(root: root)
     }
@@ -1324,7 +1353,7 @@ final class AppModel {
             editors.focused.map { editors.save($0) }
             return
         }
-        guard let projectID = selectedProjectID, let root = project(projectID)?.rootPath else {
+        guard let projectID = selectedProjectID, let root = workingRoot(of: projectID) else {
             editors.save(path)
             return
         }
@@ -1402,7 +1431,7 @@ final class AppModel {
         guard let path = editors.openPath,
               let file = editors[path],
               !file.isVendored,
-              let root = project(projectID)?.rootPath
+              let root = workingRoot(of: projectID)
         else {
             diagnostics = []
             checkerName = nil
@@ -1494,7 +1523,7 @@ final class AppModel {
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
 
         // One letter matches most of a codebase, which is not an answer.
-        guard query.count >= 2, let root = project(projectID)?.rootPath else {
+        guard query.count >= 2, let root = workingRoot(of: projectID) else {
             searchHits = []
             searchWasTruncated = false
             isSearching = false
@@ -1585,7 +1614,7 @@ final class AppModel {
 
     /// A translation key, which lives in a locale file rather than in code.
     private func resolveKey(_ key: String, from origin: SymbolOrigin, fallback name: String) async {
-        guard let root = project(origin.projectID)?.rootPath else { return }
+        guard let root = workingRoot(of: origin.projectID) else { return }
         await files.prepare(root: root)
 
         let paths = files.files(in: root)
@@ -1640,7 +1669,7 @@ final class AppModel {
     private func resolveDefinition(named name: String, from origin: SymbolOrigin, quietly: Bool = false) async {
         var candidates = declarations(of: name, in: origin.path)
 
-        if candidates.count != 1, let root = project(origin.projectID)?.rootPath {
+        if candidates.count != 1, let root = workingRoot(of: origin.projectID) {
             // The first jump into a project can wait for it to be read, and a
             // click that appears to do nothing for a few seconds reads as a
             // click that missed. The key is shared with the answer below, so
@@ -1802,8 +1831,13 @@ final class AppModel {
 
     /// Replaces what one saved file declares, when its project has been read.
     private func reindex(_ file: OpenFile) {
+        // The deepest root, because Claude Code keeps its worktrees inside the
+        // checkout they came from.
+        let roots = projects.map(\.rootPath) + worktrees.values.flatMap { $0.map(\.path) }
         guard let language = file.language,
-              let root = projects.map(\.rootPath).first(where: { file.path.hasPrefix($0) }),
+              let root = roots
+                  .filter({ DirectoryContainment.contains(file.path, in: $0) })
+                  .max(by: { $0.count < $1.count }),
               symbols.isReady(root)
         else { return }
         symbols.replace(
@@ -1848,11 +1882,12 @@ final class AppModel {
     /// Reading a transcript each is not free, so it happens when the History
     /// panel asks rather than on a timer.
     func loadConversations(for projectID: ProjectID) {
-        guard let project = project(projectID) else { return }
+        // The agents file conversations by the directory they ran in, so each
+        // worktree has a history of its own.
+        guard let path = workingRoot(of: projectID) else { return }
         conversationsTask?.cancel()
         isLoadingConversations = true
 
-        let path = project.rootPath
         conversationsTask = Task { [weak self] in
             let found = await Task.detached(priority: .utility) { () -> [Conversation] in
                 ConversationSorting.byRecency(
@@ -1873,7 +1908,7 @@ final class AppModel {
     /// was rather than starting again with its history pasted in — which is the
     /// difference between resuming and quoting.
     func resume(_ conversation: Conversation, in projectID: ProjectID) {
-        guard let project = project(projectID) else { return }
+        guard let root = workingRoot(of: projectID) else { return }
         launch(SessionSpec(
             projectID: projectID,
             kind: conversation.kind,
@@ -1881,7 +1916,7 @@ final class AppModel {
                 base: conversation.sessionName,
                 existing: sessions(in: projectID).map(\.name)
             ),
-            workingDirectory: project.rootPath,
+            workingDirectory: root,
             command: conversation.resumeCommand
         ))
     }
@@ -1949,11 +1984,12 @@ final class AppModel {
     // MARK: - Git and discovery
 
     func refreshGit(for projectID: ProjectID) {
-        guard let path = project(projectID)?.rootPath else { return }
+        guard let home = project(projectID)?.rootPath, let path = workingRoot(of: projectID) else { return }
         // Re-read each time rather than only at launch: a repository cloned
         // into a project that is already open must not need a relaunch to be
         // noticed, and asking is one look at the filesystem.
-        if GitProbe.isRepository(at: path) {
+        let isRepository = GitProbe.isRepository(at: home)
+        if isRepository {
             gitRepositories.insert(projectID)
         } else {
             gitRepositories.remove(projectID)
@@ -1961,14 +1997,293 @@ final class AppModel {
         Task { [weak self] in
             // Only Sendable values cross into the detached task; the model stays
             // firmly on the main actor.
-            let status = await Task.detached(priority: .utility) {
-                GitProbe.status(at: path)
+            let (status, found, others, own) = await Task.detached(priority: .utility) {
+                () -> (GitStatus?, [GitWorktree]?, [String: GitStatus], String?) in
+                let status = GitProbe.status(at: path)
+                guard isRepository, let found = GitWorktreeActions.list(at: home) else {
+                    return (status, nil, [:], nil)
+                }
+                // Git's spelling of the checkout just read, which is what the
+                // sidebar looks its status up by.
+                let own = WorktreeMembership.worktree(containing: path, among: found)?.path
+                // The other checkouts only once there are others: a project
+                // with one pays for nothing it does not show.
+                var others: [String: GitStatus] = [:]
+                if found.count > 1 {
+                    for worktree in found where worktree.path != own && !worktree.isPrunable {
+                        others[worktree.path] = GitProbe.status(at: worktree.path)
+                    }
+                }
+                return (status, found, others, own)
             }.value
             guard let self else { return }
+            // A list that could not be read is not an empty one: keeping the
+            // last answer is what stops a slow `git` sending the panel back to
+            // the project's own checkout.
+            if let found { self.adopt(found, in: projectID) }
+            self.worktreeStatuses.merge(others) { $1 }
+            // The answer is about the checkout that was open when it was asked.
+            guard self.workingRoot(of: projectID) == path else { return }
             if let status {
                 self.gitStatuses[projectID] = status
+                if let own { self.worktreeStatuses[own] = status }
             } else {
                 self.gitStatuses.removeValue(forKey: projectID)
+            }
+        }
+    }
+
+    // MARK: - Worktrees
+
+    /// The folder a project's working copy is read from, and a new session
+    /// starts in: the worktree being looked at, or the project's own.
+    ///
+    /// The project's own folder is given as the project spells it rather than
+    /// as git does: they differ when it was added through a symlink, and
+    /// everything already read about it is filed under the former.
+    func workingRoot(of projectID: ProjectID) -> String? {
+        guard let project = project(projectID) else { return nil }
+        guard let active = activeWorktree(of: projectID), active != homeWorktree(of: projectID) else {
+            return project.rootPath
+        }
+        return active.path
+    }
+
+    /// The worktree the project's own folder is.
+    private func homeWorktree(of projectID: ProjectID) -> GitWorktree? {
+        guard let root = project(projectID)?.rootPath else { return nil }
+        return WorktreeMembership.worktree(containing: root, among: visibleWorktrees(in: projectID))
+    }
+
+    /// The worktree being looked at: the one chosen, or the project's own.
+    func activeWorktree(of projectID: ProjectID) -> GitWorktree? {
+        let visible = visibleWorktrees(in: projectID)
+        if let active = activeWorktreePaths[projectID], let chosen = visible.first(where: { $0.path == active }) {
+            return chosen
+        }
+        return homeWorktree(of: projectID)
+    }
+
+    /// A worktree whose directory is gone has nothing to show.
+    private func visibleWorktrees(in projectID: ProjectID) -> [GitWorktree] {
+        (worktrees[projectID] ?? []).filter { !$0.isPrunable }
+    }
+
+    /// Only once there is a second one: a project with a single checkout looks
+    /// exactly as it did before worktrees existed.
+    func showsWorktrees(in projectID: ProjectID) -> Bool {
+        visibleWorktrees(in: projectID).count > 1
+    }
+
+    /// The terminals in the order the sidebar shows them, which is the order
+    /// `⌘1`…`⌘9` count in: grouped by worktree once there are several.
+    func listedSessions(in projectID: ProjectID) -> [SessionSnapshot] {
+        guard showsWorktrees(in: projectID) else { return interactiveSessions(in: projectID) }
+        return worktreeGroups(in: projectID).flatMap(\.sessions)
+    }
+
+    func worktreeGroups(in projectID: ProjectID) -> [WorktreeGroup] {
+        guard let project = project(projectID) else { return [] }
+        return WorktreeMembership.groups(
+            of: interactiveSessions(in: projectID),
+            among: worktrees[projectID] ?? [],
+            home: project.rootPath
+        )
+    }
+
+    func worktree(of session: SessionSnapshot) -> GitWorktree? {
+        WorktreeMembership.worktree(
+            containing: session.workingDirectory,
+            among: visibleWorktrees(in: session.projectID)
+        )
+    }
+
+    /// The branch under a session is its own worktree's.
+    func gitStatus(of session: SessionSnapshot) -> GitStatus? {
+        if let path = worktree(of: session)?.path, let status = worktreeStatuses[path] {
+            return status
+        }
+        return gitStatuses[session.projectID]
+    }
+
+    func isActiveWorktree(_ worktree: GitWorktree, in projectID: ProjectID) -> Bool {
+        activeWorktree(of: projectID) == worktree
+    }
+
+    /// The project's own folder, which is removed by removing the project, and
+    /// the main worktree, which git will not remove at all.
+    func canRemoveWorktree(_ worktree: GitWorktree, in projectID: ProjectID) -> Bool {
+        !worktree.isMain && worktree != homeWorktree(of: projectID)
+    }
+
+    /// Where a branch is checked out, when that is somewhere other than the
+    /// worktree being looked at. Git will not check one branch out twice, so
+    /// going to that branch means going to where it already is.
+    func worktree(checkingOut branch: String, in projectID: ProjectID) -> GitWorktree? {
+        let active = activeWorktree(of: projectID)
+        return visibleWorktrees(in: projectID).first { $0.branch == branch && $0 != active }
+    }
+
+    func sessions(in worktree: GitWorktree, of projectID: ProjectID) -> [SessionSnapshot] {
+        sessions(in: projectID).filter { self.worktree(of: $0) == worktree }
+    }
+
+    /// Makes a worktree the one the panel describes and new sessions start in.
+    func activateWorktree(_ path: String, in projectID: ProjectID) {
+        let previous = workingRoot(of: projectID)
+        // Recorded even when it changes nothing, so that the selected session
+        // is not followed later over a choice that was made by hand.
+        activeWorktreePaths[projectID] = path
+        guard workingRoot(of: projectID) != previous else { return }
+        forgetWorkingCopy(of: projectID)
+        gitStatuses[projectID] = worktreeStatuses[path]
+        refreshGit(for: projectID)
+    }
+
+    /// Goes to a worktree: the panel turns to it, and so does the terminal
+    /// when there is a session in it to show.
+    func openWorktree(_ worktree: GitWorktree, in projectID: ProjectID) {
+        activateWorktree(worktree.path, in: projectID)
+        let inside = sessions(in: worktree, of: projectID).filter { !$0.role.isService }
+        guard let first = inside.first, !inside.contains(where: { $0.id == selectedSessionID }) else { return }
+        selectSession(first.id)
+    }
+
+    /// Takes a fresh list of a project's worktrees and lets go of what was
+    /// known about the ones that are gone.
+    private func adopt(_ found: [GitWorktree], in projectID: ProjectID) {
+        let gone = Set((worktrees[projectID] ?? []).map(\.path)).subtracting(found.map(\.path))
+        for path in gone { worktreeStatuses.removeValue(forKey: path) }
+        worktrees[projectID] = found
+
+        if let active = activeWorktreePaths[projectID],
+           !found.contains(where: { $0.path == active && !$0.isPrunable }) {
+            // Removed somewhere else while it was being looked at.
+            activeWorktreePaths.removeValue(forKey: projectID)
+            forgetWorkingCopy(of: projectID)
+            refreshGit(for: projectID)
+        } else if activeWorktreePaths[projectID] == nil,
+                  let selected = selectedSessionID.flatMap({ sessions[$0] }),
+                  selected.projectID == projectID,
+                  let owner = worktree(of: selected) {
+            // The session restored at launch was selected before git had said
+            // which worktree it is in.
+            activateWorktree(owner.path, in: projectID)
+        }
+    }
+
+    /// Drops what was read from the previous worktree, so the panel does not
+    /// spend a refresh showing one checkout's changes under another's name.
+    private func forgetWorkingCopy(of projectID: ProjectID) {
+        gitChanges.removeValue(forKey: projectID)
+        mergeStates.removeValue(forKey: projectID)
+        todoScans.removeValue(forKey: projectID)
+        pickedTodoIDs.removeValue(forKey: projectID)
+        branches.removeValue(forKey: projectID)
+        expandedChanges.removeAll()
+        fileDiffs.removeAll()
+        diffContext.removeAll()
+        let prefix = key(projectID, "")
+        conflicts = conflicts.filter { !$0.key.hasPrefix(prefix) }
+        outgoing = outgoing.filter { !$0.key.hasPrefix(prefix) }
+        refsWithNoRemoteBranch = refsWithNoRemoteBranch.filter { !$0.hasPrefix(prefix) }
+    }
+
+    /// Opens the panel that starts a worktree, reading the branches it can
+    /// start from while it appears.
+    func beginNewWorktree(in projectID: ProjectID) {
+        worktreeCreationFailure = nil
+        presentModal(.newWorktree(projectID))
+        refreshBranches(for: projectID)
+    }
+
+    /// Makes a worktree for `name` and opens it, starting `preset` in it with
+    /// `prompt` handed over once the agent is ready for it.
+    func createWorktree(
+        named name: String,
+        from base: String?,
+        starting preset: SessionPreset?,
+        prompt: String,
+        in projectID: ProjectID
+    ) {
+        guard let home = project(projectID)?.rootPath, !isCreatingWorktree else { return }
+        let branch = WorktreeNaming.branchName(from: name)
+        guard !branch.isEmpty else { return }
+        if let holder = visibleWorktrees(in: projectID).first(where: { $0.branch == branch }) {
+            worktreeCreationFailure = String(
+                format: relayLocalized("%@ is already open in %@."),
+                branch,
+                HomeRelativePath.abbreviating(holder.path)
+            )
+            return
+        }
+        let main = visibleWorktrees(in: projectID).first(where: \.isMain)?.path ?? home
+        let repository = WorktreeNaming.repositoryName(mainWorktree: main)
+        let parent = RelayPaths.worktreesDirectory
+
+        isCreatingWorktree = true
+        worktreeCreationFailure = nil
+        Task { [weak self] in
+            let (failure, found) = await Task.detached(priority: .userInitiated) {
+                () -> (String?, [GitWorktree]?) in
+                let directory = WorktreeNaming.directory(for: branch, repository: repository, in: parent) {
+                    FileManager.default.fileExists(atPath: $0)
+                }
+                let failure = GitWorktreeActions.add(branch: branch, from: base, at: directory, in: home)
+                return (failure, GitWorktreeActions.list(at: home))
+            }.value
+            guard let self else { return }
+            self.isCreatingWorktree = false
+            if let found { self.adopt(found, in: projectID) }
+            if let failure {
+                self.worktreeCreationFailure = Self.summarised(failure)
+                return
+            }
+            guard let created = found?.first(where: { $0.branch == branch }) else { return }
+            self.dismissModal()
+            self.activateWorktree(created.path, in: projectID)
+            guard let preset else { return }
+            let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+            self.createSession(from: preset, in: projectID, thenType: text.isEmpty ? nil : PendingInput(text: text))
+        }
+    }
+
+    /// Removes a worktree and closes what was running in it.
+    ///
+    /// The directory goes first and the sessions after, so a refusal leaves
+    /// everything as it was. The branch goes too when Relay made it and git
+    /// agrees nothing on it would be lost.
+    func removeWorktree(_ worktree: GitWorktree, discardingChanges: Bool, in projectID: ProjectID) {
+        worktreePendingRemoval = nil
+        guard let home = project(projectID)?.rootPath, canRemoveWorktree(worktree, in: projectID) else { return }
+        let running = sessions(in: worktree, of: projectID).map(\.id)
+        Task { [weak self] in
+            let (failure, outcome, found) = await Task.detached(priority: .userInitiated) {
+                () -> (String?, GitWorktreeActions.BranchOutcome, [GitWorktree]?) in
+                if let failure = GitWorktreeActions.remove(worktree, force: discardingChanges, in: home) {
+                    return (failure, .untouched, nil)
+                }
+                let outcome = GitWorktreeActions.removeBranch(of: worktree, in: home)
+                return (nil, outcome, GitWorktreeActions.list(at: home))
+            }.value
+            guard let self else { return }
+            if let failure {
+                self.present(ToastContent(
+                    kind: .error,
+                    title: String(format: relayLocalized("Could not remove %@"), worktree.name),
+                    message: Self.summarised(failure)
+                ))
+                return
+            }
+            // Not remembered for ⌘⇧T: what they would reopen into is gone.
+            for id in running { self.close(id, remembering: false) }
+            if let found { self.adopt(found, in: projectID) }
+            if outcome == .keptUnmerged, let branch = worktree.branch {
+                self.present(ToastContent(
+                    kind: .info,
+                    title: String(format: relayLocalized("Kept branch %@"), branch),
+                    message: relayLocalized("It has commits that are not merged anywhere yet.")
+                ))
             }
         }
     }
@@ -1987,7 +2302,7 @@ final class AppModel {
     }
 
     func refreshChanges(for projectID: ProjectID) {
-        guard let path = project(projectID)?.rootPath else { return }
+        guard let path = workingRoot(of: projectID) else { return }
         Task { [weak self] in
             let copy = await Task.detached(priority: .utility) {
                 GitWorkingCopyReader.changes(at: path)
@@ -1995,8 +2310,8 @@ final class AppModel {
             let merge = await Task.detached(priority: .utility) {
                 GitMergeStateReader.read(at: path)
             }.value
-            self?.mergeStates[projectID] = merge
-            guard let self else { return }
+            guard let self, self.workingRoot(of: projectID) == path else { return }
+            self.mergeStates[projectID] = merge
             let previous = self.gitChanges[projectID]
             guard previous != copy else { return }
 
@@ -2062,7 +2377,7 @@ final class AppModel {
     }
 
     private func loadDiff(_ change: GitChange, in projectID: ProjectID) {
-        guard let root = project(projectID)?.rootPath else { return }
+        guard let root = workingRoot(of: projectID) else { return }
         let context = diffContext[change.path] ?? Self.diffContextLines
         loadingDiffs.insert(change.path)
         Task { [weak self] in
@@ -2143,7 +2458,7 @@ final class AppModel {
     }
 
     func refreshRemotes(for projectID: ProjectID) {
-        guard let path = project(projectID)?.rootPath else { return }
+        guard let path = workingRoot(of: projectID) else { return }
         Task { [weak self] in
             let found = await Task.detached(priority: .userInitiated) {
                 GitTransferReader.remotes(at: path)
@@ -2174,7 +2489,7 @@ final class AppModel {
     }
 
     func loadOutgoingCommits(in projectID: ProjectID, against ref: String) {
-        guard let path = project(projectID)?.rootPath else { return }
+        guard let path = workingRoot(of: projectID) else { return }
         let identifier = key(projectID, ref)
         Task { [weak self] in
             let found = await Task.detached(priority: .utility) {
@@ -2256,7 +2571,7 @@ final class AppModel {
 
     /// Reads one conflicted file as the three versions of itself.
     func loadConflict(_ path: String, in projectID: ProjectID) {
-        guard let root = project(projectID)?.rootPath else { return }
+        guard let root = workingRoot(of: projectID) else { return }
         let identifier = key(projectID, path)
         Task { [weak self] in
             let parsed = await Task.detached(priority: .userInitiated) { () -> GitConflictFile? in
@@ -2373,7 +2688,7 @@ final class AppModel {
     }
 
     func refreshBranches(for projectID: ProjectID) {
-        guard let path = project(projectID)?.rootPath else { return }
+        guard let path = workingRoot(of: projectID) else { return }
         projectsReadingBranches.insert(projectID)
         Task { [weak self] in
             let found = await Task.detached(priority: .userInitiated) {
@@ -2381,6 +2696,8 @@ final class AppModel {
             }.value
             guard let self else { return }
             self.projectsReadingBranches.remove(projectID)
+            // Which branch is current is an answer about one checkout.
+            guard self.workingRoot(of: projectID) == path else { return }
             self.branches[projectID] = found
         }
     }
@@ -2541,9 +2858,9 @@ final class AppModel {
     /// it is open, and a sweep of a large repository outlasts the interval.
     func refreshTodos(for projectID: ProjectID) {
         guard let project = project(projectID),
+              let root = workingRoot(of: projectID),
               !projectsScanningTodos.contains(projectID)
         else { return }
-        let root = project.rootPath
         let markers = TodoScanner.markers(from: project.todoMarkers)
 
         projectsScanningTodos.insert(projectID)
@@ -2553,6 +2870,8 @@ final class AppModel {
             }.value
             guard let self else { return }
             self.projectsScanningTodos.remove(projectID)
+            // Another worktree was opened while this one was being read.
+            guard self.workingRoot(of: projectID) == root else { return }
             guard self.todoScans[projectID] != scan else { return }
             self.todoScans[projectID] = scan
             // A note that has been dealt with cannot stay picked: it is gone
@@ -2658,7 +2977,7 @@ final class AppModel {
         onFailure: (@MainActor () -> Void)? = nil,
         onSuccess: (@MainActor () -> Void)? = nil
     ) {
-        guard let root = project(projectID)?.rootPath else { return }
+        guard let root = workingRoot(of: projectID) else { return }
         Task { [weak self] in
             let failure = await Task.detached(priority: .userInitiated) {
                 action(root)
@@ -2684,7 +3003,7 @@ final class AppModel {
     /// for a dozen reasons that leave nothing to resolve, and the repository
     /// itself is the only thing that knows which happened.
     private func presentConflictsIfAny(in projectID: ProjectID) {
-        guard let root = project(projectID)?.rootPath else { return }
+        guard let root = workingRoot(of: projectID) else { return }
         Task { [weak self] in
             let state = await Task.detached(priority: .userInitiated) {
                 GitMergeStateReader.read(at: root)
@@ -2934,7 +3253,7 @@ final class AppModel {
     /// Jumps to the nth session of the current project, if it exists.
     func selectSession(atIndex index: Int) {
         guard let projectID = selectedProjectID else { return }
-        let list = interactiveSessions(in: projectID)
+        let list = listedSessions(in: projectID)
         guard list.indices.contains(index) else { return }
         selectSession(list[index].id)
     }
@@ -2985,7 +3304,7 @@ final class AppModel {
 
     /// Runs a past session again with the same command.
     func rerun(_ entry: SessionHistoryEntry) {
-        guard let project = project(entry.projectID) else { return }
+        guard let root = workingRoot(of: entry.projectID) else { return }
         launch(SessionSpec(
             projectID: entry.projectID,
             kind: entry.kind,
@@ -2993,7 +3312,7 @@ final class AppModel {
                 base: entry.name,
                 existing: sessions(in: entry.projectID).map(\.name)
             ),
-            workingDirectory: project.rootPath,
+            workingDirectory: root,
             command: entry.command
         ))
     }
@@ -3559,7 +3878,10 @@ final class AppModel {
             return "\(projectName) · \(owner)"
         }
         if let directory = port.workingDirectory,
-           let match = projects.first(where: { DirectoryContainment.contains(directory, in: $0.rootPath) }) {
+           let match = projects.first(where: { project in
+               ([project.rootPath] + (worktrees[project.id] ?? []).map(\.path))
+                   .contains { DirectoryContainment.contains(directory, in: $0) }
+           }) {
             return match.name
         }
         return port.directoryName ?? port.processName

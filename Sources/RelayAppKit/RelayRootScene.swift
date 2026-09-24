@@ -215,6 +215,12 @@ struct RelayCommands: Commands {
             }
             .relayShortcut(model.binding(for: .switchBranch))
 
+            Button(RelayCommand.newWorktree.localizedTitle + "…") {
+                if let projectID = model.selectedProjectID { model.beginNewWorktree(in: projectID) }
+            }
+            .relayShortcut(model.binding(for: .newWorktree))
+            .disabled(!(model.selectedProjectID.map(model.gitRepositories.contains) ?? false))
+
             Button(RelayCommand.projectSettings.localizedTitle) { model.openProjectSettings() }
                 .relayShortcut(model.binding(for: .projectSettings))
 

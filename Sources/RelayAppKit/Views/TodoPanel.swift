@@ -60,7 +60,7 @@ struct TodoPane: View {
         // Agents write these as they work, and cross them off the same way.
         // Longer than the git panel's interval, because a sweep is a search of
         // every file the project owns rather than a question about the index.
-        .refreshingWhileVisible(id: project.id, every: .seconds(30)) {
+        .refreshingWhileVisible(id: model.workingRoot(of: project.id), every: .seconds(30)) {
             model.refreshTodos(for: project.id)
         }
         // Another project's markers are not this one's.

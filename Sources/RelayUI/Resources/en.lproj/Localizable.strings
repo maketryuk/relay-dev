@@ -6,6 +6,7 @@
 "%@ finished" = "%@ finished";
 "%@ goes to the Trash, where you can get it back." = "%@ goes to the Trash, where you can get it back.";
 "%@ has no branch called %@ yet; pushing creates it." = "%@ has no branch called %@ yet; pushing creates it.";
+"%@ is already open in %@." = "%@ is already open in %@.";
 "%@ is available" = "%@ is available";
 "%@ is declared in more than one block; this edits the first." = "%@ is declared in more than one block; this edits the first.";
 "%@ is not running." = "%@ is not running.";
@@ -21,6 +22,7 @@
 "%d picked" = "%d picked";
 "%d unmodified lines" = "%d unmodified lines";
 "%d unread" = "%d unread";
+"A branch of its own, checked out in a folder of its own." = "A branch of its own, checked out in a folder of its own.";
 "A development build stands beside the released one; it does not replace itself with it." = "A development build stands beside the released one; it does not replace itself with it.";
 "A host needs a name to be connected by." = "A host needs a name to be connected by.";
 "A port is a number between 1 and 65535." = "A port is a number between 1 and 65535.";
@@ -67,6 +69,7 @@
 "Back" = "Back";
 "Being rebased: %@" = "Being rebased: %@";
 "Binary file" = "Binary file";
+"Branch" = "Branch";
 "Branches" = "Branches";
 "Built-in" = "Built-in";
 "Bypass the pre-merge and commit message hooks" = "Bypass the pre-merge and commit message hooks";
@@ -77,10 +80,12 @@
 "Cannot be played here" = "Cannot be played here";
 "Cannot be shown" = "Cannot be shown";
 "Case sensitive; letters only." = "Case sensitive; letters only.";
+"Changes that were never committed will be lost: %d files." = "Changes that were never committed will be lost: %d files.";
 "Chat" = "Chat";
 "Check automatically" = "Check automatically";
 "Check for updates" = "Check for updates";
 "Check now" = "Check now";
+"Checked out in %@" = "Checked out in %@";
 "Checks out a local branch that follows it" = "Checks out a local branch that follows it";
 "Cherry-pick in progress" = "Cherry-pick in progress";
 "Choose Folder…" = "Choose Folder…";
@@ -136,6 +141,7 @@
 "Could not discard" = "Could not discard";
 "Could not open file" = "Could not open file";
 "Could not reach the session daemon" = "Could not reach the session daemon";
+"Could not remove %@" = "Could not remove %@";
 "Could not rename" = "Could not rename";
 "Could not resolve %@" = "Could not resolve %@";
 "Could not stage" = "Could not stage";
@@ -143,9 +149,11 @@
 "Could not stop the process" = "Could not stop the process";
 "Could not switch to %@" = "Could not switch to %@";
 "Could not write the SSH config" = "Could not write the SSH config";
+"Create" = "Create";
 "Create a merge commit even if it can be fast-forwarded" = "Create a merge commit even if it can be fast-forwarded";
 "Create a single commit for all pulled changes" = "Create a single commit for all pulled changes";
 "Create branch “%@”" = "Create branch “%@”";
+"Creating…" = "Creating…";
 "Current branch" = "Current branch";
 "Custom command" = "Custom command";
 "Custom command…" = "Custom command…";
@@ -212,6 +220,7 @@
 "Find in Files" = "Find in Files";
 "Finished" = "Finished";
 "First %d matches" = "First %d matches";
+"First prompt" = "First prompt";
 "Focus %@" = "Focus %@";
 "Focus Next Pane" = "Focus Next Pane";
 "Focus Terminal" = "Focus Terminal";
@@ -231,6 +240,7 @@
 "GitHub is rate-limiting the update check. It will try again later." = "GitHub is rate-limiting the update check. It will try again later.";
 "Go to Definition" = "Go to Definition";
 "Go to the next problem" = "Go to the next problem";
+"Handed to the agent once it is ready for it. Optional." = "Handed to the agent once it is ready for it. Optional.";
 "History" = "History";
 "Host name" = "Host name";
 "Icon" = "Icon";
@@ -243,9 +253,12 @@
 "Increase Font Size" = "Increase Font Size";
 "Install %@" = "Install %@";
 "Installing…" = "Installing…";
+"It has commits that are not merged anywhere yet." = "It has commits that are not merged anywhere yet.";
 "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing." = "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing.";
 "It is in the agent and the keychain; ssh will not ask again." = "It is in the agent and the keychain; ssh will not ask again.";
+"Its branch is deleted only if Relay created it and everything on it is merged." = "Its branch is deleted only if Relay created it and everything on it is merged.";
 "Jump by number" = "Jump by number";
+"Kept branch %@" = "Kept branch %@";
 "Key unlocked" = "Key unlocked";
 "Key" = "Key";
 "Language" = "Language";
@@ -253,6 +266,7 @@
 "Leave unset" = "Leave unset";
 "Listening on this Mac" = "Listening on this Mac";
 "Local" = "Local";
+"Locked: git will not remove it until it is unlocked" = "Locked: git will not remove it until it is unlocked";
 "Logs" = "Logs";
 "Look again" = "Look again";
 "Looking for containers…" = "Looking for containers…";
@@ -286,8 +300,12 @@
 "New Preset" = "New Preset";
 "New Service" = "New Service";
 "New Shell" = "New Shell";
+"New Worktree" = "New Worktree";
 "New agent" = "New agent";
+"New branch %@ from %@, in %@" = "New branch %@ from %@, in %@";
 "New session" = "New session";
+"New session in this worktree" = "New session in this worktree";
+"New worktree…" = "New worktree…";
 "Newly cached" = "Newly cached";
 "Next Project" = "Next Project";
 "Next Session" = "Next Session";
@@ -325,6 +343,7 @@
 "Nothing selected" = "Nothing selected";
 "Nothing to push — the remote branch is already here." = "Nothing to push — the remote branch is already here.";
 "Nothing to show" = "Nothing to show";
+"Nothing yet" = "Nothing yet";
 "Nothing yet. Agents waiting on you, failures and finished work land here." = "Nothing yet. Agents waiting on you, failures and finished work land here.";
 "Notifications" = "Notifications";
 "Notify me about agents and services" = "Notify me about agents and services";
@@ -347,6 +366,7 @@
 "Open port %d" = "Open port %d";
 "Open" = "Open";
 "OpenCode" = "OpenCode";
+"Opens the existing branch %@ in %@" = "Opens the existing branch %@ in %@";
 "Options" = "Options";
 "Other declarations: %d" = "Other declarations: %d";
 "Other directives" = "Other directives";
@@ -412,9 +432,12 @@
 "Reload config" = "Reload config";
 "Remote" = "Remote";
 "Remove Project" = "Remove Project";
+"Remove Worktree…" = "Remove Worktree…";
+"Remove and discard changes" = "Remove and discard changes";
 "Remove from Workspace" = "Remove from Workspace";
 "Remove preset" = "Remove preset";
 "Remove" = "Remove";
+"Remove this worktree?" = "Remove this worktree?";
 "Rename" = "Rename";
 "Rename Session" = "Rename Session";
 "Rename…" = "Rename…";
@@ -480,6 +503,7 @@
 "Session presets" = "Session presets";
 "Session unavailable" = "Session unavailable";
 "Sessions from the previous version kept running" = "Sessions from the previous version kept running";
+"Sessions in it will be closed: %d." = "Sessions in it will be closed: %d.";
 "Sessions it was supervising have ended." = "Sessions it was supervising have ended.";
 "Sessions live in a background daemon and survive quitting the app" = "Sessions live in a background daemon and survive quitting the app";
 "Sessions sidebar" = "Sessions sidebar";
@@ -542,11 +566,13 @@
 "The downloaded archive could not be opened." = "The downloaded archive could not be opened.";
 "The downloaded copy was rejected: %@" = "The downloaded copy was rejected: %@";
 "The first %d are shown. There are more." = "The first %d are shown. There are more.";
+"The folder %@ will be deleted." = "The folder %@ will be deleted.";
 "The host to connect through first." = "The host to connect through first.";
 "The only notification that plays a sound" = "The only notification that plays a sound";
 "The update check failed: HTTP %d" = "The update check failed: HTTP %d";
 "The working copy has changes" = "The working copy has changes";
 "The working copy matches the last commit." = "The working copy matches the last commit.";
+"Then start" = "Then start";
 "There is no git repository in this project." = "There is no git repository in this project.";
 "This block also names: %@" = "This block also names: %@";
 "This build updates by being rebuilt" = "This build updates by being rebuilt";
@@ -584,6 +610,7 @@
 "What is in the context window" = "What is in the context window";
 "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly" = "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly";
 "What should be done about these?" = "What should be done about these?";
+"What should it do?" = "What should it do?";
 "When to interrupt" = "When to interrupt";
 "Which words to look for" = "Which words to look for";
 "Whole words" = "Whole words";

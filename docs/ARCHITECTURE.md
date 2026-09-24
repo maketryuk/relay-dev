@@ -154,7 +154,8 @@ would otherwise show four tabs that are permanently empty.
 - The classification timer only runs while at least one session is alive.
 - Git state is polled every 12 s for the visible project only, one `git status
   --porcelain=v2 --branch` call that yields branch, dirtiness and ahead/behind
-  together.
+  together, and one `git worktree list`. The other worktrees' statuses are read
+  on the same tick, and only once there is more than one.
 - Terminal output is only streamed to clients that explicitly attached, so a
   background session costs a hidden window nothing.
 - Project status is computed from session snapshots already in memory — never
@@ -445,3 +446,57 @@ at all. A relative `docs/shot.png` then resolves beside the document the way it
 does on disk, and Relay answers the request — synchronously, and only for a
 file small enough for that to stay true, because answering a request the web
 view has since cancelled is an exception rather than an error.
+
+# Worktrees are git's, and a session is in one by where it started
+
+Two agents in one checkout edit the same files, commit each other's changes and
+leave a diff nobody can review as one piece of work; switching branches moves
+the files under every session at once. A worktree gives each piece of work a
+folder and a branch of its own, sharing the repository's history, and costs a
+few seconds rather than a clone.
+
+**Nothing about a worktree is stored.** The list is `git worktree list`, read on
+the same 12-second tick as the branch. A record of Relay's own would disagree
+with git the moment anyone typed `git worktree add` — and agents do: Claude Code
+and Codex both have a `--worktree` flag. The one fact git could not otherwise
+answer, whether Relay made a branch and may therefore delete it, is kept in the
+repository as `branch.<name>.relayCreated`, which git forgets along with the
+branch.
+
+**Sessions were not given a worktree identifier.** The plan was a workspace id
+beside the project id in the daemon, which is a protocol change and a retired
+daemon for everyone updating. It turned out not to be needed: every session
+already carries the directory it was started in, and the deepest worktree
+containing that directory is the one it belongs to. Deepest, because Claude
+Code keeps its worktrees inside the checkout they came from. The cost is that a
+session is placed by where it started, not where it is now: `claude --worktree`
+launched from the project's folder moves into a worktree of its own and stays
+grouped under the folder it left.
+
+**Git spells a worktree's path with its symlinks followed**, `/private/var` and
+not `/var`, and a project added through a link starts its sessions at the
+linked spelling. A directory that matches no worktree as it is written is
+resolved with `realpath` and tried again — not `URL.resolvingSymlinksInPath`,
+which strips `/private` back off. Only the unmatched ones pay for the look at the
+disk, and a session that matches nothing is listed with the project's own
+checkout rather than dropped: a hidden row would be a running process with no
+way back to it.
+
+**Everything the right-hand panel reads is keyed by project and means "the
+worktree being looked at".** That worktree follows the selected session, and
+changing it throws away what was read from the previous one — the changes, the
+diffs, the TODO list, the branches — before reading again, so the panel never
+shows one checkout's files under another's name. Each asynchronous read checks
+on arrival that it is still about the worktree that is open. Keying every cache
+by worktree instead would have touched every one of them to buy the ability to
+show two worktrees' panels at once, which nothing on screen does.
+
+**They live in `~/.relay/worktrees/<repository>/<branch>`.** Outside the
+repository, because the file tree, search, the TODO scanner and the symbol index
+all walk the project's folder and would otherwise find a second copy of it;
+under Relay's own directory rather than beside the repository, so a folder of
+projects does not fill up with siblings. The development build uses
+`~/.relay-dev`, like everything else of its own.
+
+What is not done yet — getting a fresh worktree ready to run, services and ports
+per worktree, finishing a piece of work — is in `ROADMAP.md`.

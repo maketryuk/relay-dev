@@ -37,7 +37,7 @@ struct GitConflictPane: View {
         } footer: {
             footer
         }
-        .refreshingWhileVisible(id: project.id, every: .seconds(3)) {
+        .refreshingWhileVisible(id: model.workingRoot(of: project.id), every: .seconds(3)) {
             model.refreshChanges(for: project.id)
         }
     }

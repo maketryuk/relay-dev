@@ -43,18 +43,45 @@ built at all.
 ## Next: v0.2 — Workspaces
 
 The spec's next structural change: `Project → Workspace → Sessions`, where a
-workspace is usually a git worktree.
+workspace is a git worktree.
 
-1. **Worktree model.** Create, list and remove worktrees from the app; a
-   workspace owns a directory, a branch, its sessions and its services.
-2. **Workspace-scoped runtime.** Sessions and services belong to a workspace,
-   not directly to the project. The daemon needs a workspace id alongside the
-   project id — a protocol change, so it goes in one version bump with anything
-   else pending.
+### Built
+
+- **Worktrees, read from git.** Created in `~/.relay/worktrees`, listed from
+  `git worktree list` — so ones made in a terminal or by an agent appear too —
+  and removed with a question first when there is uncommitted work. A branch
+  goes with its worktree only when Relay made it and it is merged.
+- **Sessions belong to a worktree by where they were started.** No protocol
+  change was needed: the daemon already reports each session's directory, and
+  the deepest worktree containing it is the one it is in.
+- **The sidebar groups sessions under their worktree** once there is more than
+  one, with the branch and its diff on the heading. A switcher above the list
+  was the earlier plan; it would have hidden the agents in every other worktree,
+  and "which of them needs me" is the question the list is for.
+- **The right-hand panel follows the selected session's worktree**: Git, files,
+  search, TODO, definitions and history read that checkout.
+
+### Still to do
+
+1. **Getting a new worktree ready to run.** Git copies nothing it does not
+   track, so a fresh worktree has no `.env` and no `node_modules`. A list of
+   files to copy (a `.worktreeinclude`, say) and a setup command per
+   project, run as a visible session after creation.
+2. **Services per worktree.** A service still starts in the project's own
+   folder, whichever worktree is being looked at, and one definition is one
+   session per project. Running Dev in two worktrees at once needs the service
+   to be keyed by worktree as well.
 3. **Automatic ports.** Two worktrees of the same project must not fight over
    port 3000. Find a free port, start the service on it, remember the binding
-   and show it next to the workspace.
-4. **Sidebar restructuring.** A workspace switcher above the sessions list.
+   and show it next to the worktree. Attributing a listening port to its
+   worktree comes first and is nearly free: the daemon already maps ports to
+   sessions.
+4. **Finishing a piece of work.** A pull request through `gh`, its state on the
+   heading, and tidying away worktrees whose branch has been merged.
+5. **A session that moves.** `claude --worktree` started from the project's
+   folder moves into a worktree of its own, but the session is grouped by where
+   it started. Reading the process's current directory would place it where it
+   is.
 
 ## Then
 

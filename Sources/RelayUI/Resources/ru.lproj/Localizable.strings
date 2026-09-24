@@ -6,6 +6,7 @@
 "%@ finished" = "Завершено: %@";
 "%@ goes to the Trash, where you can get it back." = "%@ отправится в Корзину — оттуда его можно вернуть.";
 "%@ has no branch called %@ yet; pushing creates it." = "На %@ ещё нет ветки %@ — отправка её создаст.";
+"%@ is already open in %@." = "%@ уже открыта в %@.";
 "%@ is available" = "Доступна версия %@";
 "%@ is declared in more than one block; this edits the first." = "%@ описан более чем в одном блоке; правится первый.";
 "%@ is not running." = "%@ не запущен.";
@@ -21,6 +22,7 @@
 "%d picked" = "выбрано: %d";
 "%d unmodified lines" = "Неизменённых строк: %d";
 "%d unread" = "непрочитанных: %d";
+"A branch of its own, checked out in a folder of its own." = "Своя ветка в своей папке.";
 "A development build stands beside the released one; it does not replace itself with it." = "Сборка для разработки стоит рядом с выпущенной и не заменяет себя ею.";
 "A host needs a name to be connected by." = "Хосту нужно имя, по которому к нему подключаются.";
 "A port is a number between 1 and 65535." = "Порт — число от 1 до 65535.";
@@ -67,6 +69,7 @@
 "Back" = "Назад";
 "Being rebased: %@" = "Перекладывается: %@";
 "Binary file" = "Двоичный файл";
+"Branch" = "Ветка";
 "Branches" = "Ветки";
 "Built-in" = "Встроенный";
 "Bypass the pre-merge and commit message hooks" = "Пропустить хуки pre-merge и commit-msg";
@@ -77,10 +80,12 @@
 "Cannot be played here" = "Здесь не воспроизводится";
 "Cannot be shown" = "Не удаётся показать";
 "Case sensitive; letters only." = "Регистр важен, только буквы.";
+"Changes that were never committed will be lost: %d files." = "Незакоммиченные изменения пропадут, файлов: %d.";
 "Chat" = "Чат";
 "Check automatically" = "Проверять автоматически";
 "Check for updates" = "Проверка обновлений";
 "Check now" = "Проверить";
+"Checked out in %@" = "Открыта в %@";
 "Checks out a local branch that follows it" = "Создаст локальную ветку, следящую за ней";
 "Cherry-pick in progress" = "Идёт cherry-pick";
 "Choose Folder…" = "Выбрать папку…";
@@ -136,6 +141,7 @@
 "Could not discard" = "Не удалось отменить изменения";
 "Could not open file" = "Не удалось открыть файл";
 "Could not reach the session daemon" = "Не удалось связаться с демоном сессий";
+"Could not remove %@" = "Не удалось удалить %@";
 "Could not rename" = "Не удалось переименовать";
 "Could not resolve %@" = "Не удалось разрешить %@";
 "Could not stage" = "Не удалось добавить в индекс";
@@ -143,9 +149,11 @@
 "Could not stop the process" = "Не удалось остановить процесс";
 "Could not switch to %@" = "Не удалось переключиться на %@";
 "Could not write the SSH config" = "Не удалось записать конфигурацию SSH";
+"Create" = "Создать";
 "Create a merge commit even if it can be fast-forwarded" = "Создать коммит слияния, даже если возможен fast-forward";
 "Create a single commit for all pulled changes" = "Создать один коммит на все пришедшие изменения";
 "Create branch “%@”" = "Создать ветку «%@»";
+"Creating…" = "Создаю…";
 "Current branch" = "Текущая ветка";
 "Custom command" = "Своя команда";
 "Custom command…" = "Своя команда…";
@@ -212,6 +220,7 @@
 "Find in Files" = "Поиск по файлам";
 "Finished" = "Завершено";
 "First %d matches" = "Первые %d совпадений";
+"First prompt" = "Первый промпт";
 "Focus %@" = "Перейти к %@";
 "Focus Next Pane" = "Следующая панель";
 "Focus Terminal" = "Фокус в терминал";
@@ -231,6 +240,7 @@
 "GitHub is rate-limiting the update check. It will try again later." = "GitHub ограничивает частоту проверки обновлений. Попробуем позже.";
 "Go to Definition" = "Перейти к определению";
 "Go to the next problem" = "К следующей проблеме";
+"Handed to the agent once it is ready for it. Optional." = "Передаётся агенту, как только он будет готов. Необязательно.";
 "History" = "История";
 "Host name" = "Имя хоста";
 "Icon" = "Иконка";
@@ -243,9 +253,12 @@
 "Increase Font Size" = "Увеличить шрифт";
 "Install %@" = "Установить %@";
 "Installing…" = "Устанавливаем…";
+"It has commits that are not merged anywhere yet." = "В ней есть коммиты, которые ещё никуда не влиты.";
 "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing." = "Она передаётся ssh-add и хранится в Связке ключей macOS, откуда ssh дальше читает её сам. Relay не хранит ничего.";
 "It is in the agent and the keychain; ssh will not ask again." = "Он в агенте и в Связке ключей — ssh больше не спросит.";
+"Its branch is deleted only if Relay created it and everything on it is merged." = "Ветка удаляется, только если её создал Relay и всё в ней уже влито.";
 "Jump by number" = "Переход по номеру";
+"Kept branch %@" = "Ветка %@ оставлена";
 "Key unlocked" = "Ключ разблокирован";
 "Key" = "Ключ";
 "Language" = "Язык";
@@ -253,6 +266,7 @@
 "Leave unset" = "Не указывать";
 "Listening on this Mac" = "Слушает на этом Mac";
 "Local" = "Локальные";
+"Locked: git will not remove it until it is unlocked" = "Заблокирован: git не удалит его, пока блокировку не снимут";
 "Logs" = "Логи";
 "Look again" = "Обновить";
 "Looking for containers…" = "Ищем контейнеры…";
@@ -286,8 +300,12 @@
 "New Preset" = "Новый пресет";
 "New Service" = "Новый сервис";
 "New Shell" = "Новый терминал";
+"New Worktree" = "Новый worktree";
 "New agent" = "Новый агент";
+"New branch %@ from %@, in %@" = "Новая ветка %@ от %@, в %@";
 "New session" = "Новая сессия";
+"New session in this worktree" = "Новая сессия в этом worktree";
+"New worktree…" = "Новый worktree…";
 "Newly cached" = "Записано в кэш";
 "Next Project" = "Следующий проект";
 "Next Session" = "Следующая сессия";
@@ -325,6 +343,7 @@
 "Nothing selected" = "Ничего не выбрано";
 "Nothing to push — the remote branch is already here." = "Отправлять нечего — удалённая ветка уже здесь.";
 "Nothing to show" = "Показывать нечего";
+"Nothing yet" = "Пока ничего";
 "Nothing yet. Agents waiting on you, failures and finished work land here." = "Пока пусто. Сюда попадают агенты, ждущие вас, сбои и завершённая работа.";
 "Notifications" = "Уведомления";
 "Notify me about agents and services" = "Уведомлять об агентах и сервисах";
@@ -347,6 +366,7 @@
 "Open port %d" = "Открыть порт %d";
 "Open" = "Открыть";
 "OpenCode" = "OpenCode";
+"Opens the existing branch %@ in %@" = "Откроет существующую ветку %@ в %@";
 "Options" = "Параметры";
 "Other declarations: %d" = "Другие объявления: %d";
 "Other directives" = "Прочие директивы";
@@ -412,9 +432,12 @@
 "Reload config" = "Перечитать конфиг";
 "Remote" = "Удалённые";
 "Remove Project" = "Удалить проект";
+"Remove Worktree…" = "Удалить worktree…";
+"Remove and discard changes" = "Удалить вместе с изменениями";
 "Remove from Workspace" = "Убрать из рабочего пространства";
 "Remove preset" = "Удалить пресет";
 "Remove" = "Удалить";
+"Remove this worktree?" = "Удалить этот worktree?";
 "Rename" = "Переименовать";
 "Rename Session" = "Переименовать сессию";
 "Rename…" = "Переименовать…";
@@ -480,6 +503,7 @@
 "Session presets" = "Пресеты сессий";
 "Session unavailable" = "Сессия недоступна";
 "Sessions from the previous version kept running" = "Сессии предыдущей версии продолжают работать";
+"Sessions in it will be closed: %d." = "Сессии в нём будут закрыты: %d.";
 "Sessions it was supervising have ended." = "Сессии, которыми он управлял, завершены.";
 "Sessions live in a background daemon and survive quitting the app" = "Сессии живут в фоновом демоне и переживают выход из приложения";
 "Sessions sidebar" = "Панель сессий";
@@ -542,11 +566,13 @@
 "The downloaded archive could not be opened." = "Не удалось открыть загруженный архив.";
 "The downloaded copy was rejected: %@" = "Загруженная копия отклонена: %@";
 "The first %d are shown. There are more." = "Показаны первые %d. Есть ещё.";
+"The folder %@ will be deleted." = "Папка %@ будет удалена.";
 "The host to connect through first." = "Хост, через который идёт подключение.";
 "The only notification that plays a sound" = "Единственное уведомление со звуком";
 "The update check failed: HTTP %d" = "Проверка обновлений не удалась: HTTP %d";
 "The working copy has changes" = "В рабочей копии есть изменения";
 "The working copy matches the last commit." = "Рабочая копия совпадает с последним коммитом.";
+"Then start" = "Затем запустить";
 "There is no git repository in this project." = "В этом проекте нет git-репозитория.";
 "This block also names: %@" = "Этот блок также описывает: %@";
 "This build updates by being rebuilt" = "Эта сборка обновляется пересборкой";
@@ -584,6 +610,7 @@
 "What is in the context window" = "Что лежит в контекстном окне";
 "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly" = "Именно это делает прокрутку плавной. Выключите, если терминал рисуется неправильно";
 "What should be done about these?" = "Что с ними нужно сделать?";
+"What should it do?" = "Что ему сделать?";
 "When to interrupt" = "Когда прерывать";
 "Which words to look for" = "Какие слова искать";
 "Whole words" = "Слово целиком";

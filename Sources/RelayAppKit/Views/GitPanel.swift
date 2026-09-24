@@ -42,7 +42,7 @@ struct GitPane: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         // What an agent is doing to the working copy, while it does it.
-        .refreshingWhileVisible(id: project.id, every: .seconds(4)) {
+        .refreshingWhileVisible(id: model.workingRoot(of: project.id), every: .seconds(4)) {
             model.refreshChanges(for: project.id)
         }
         .confirmationDialog(
@@ -601,7 +601,8 @@ private struct FileCard: View {
     /// of looking at a diff is usually to change one line of it, and a round
     /// trip through another editor is a long way to go for that.
     private func edit() {
-        let url = URL(fileURLWithPath: project.rootPath).appendingPathComponent(change.path)
+        let url = URL(fileURLWithPath: model.workingRoot(of: project.id) ?? project.rootPath)
+            .appendingPathComponent(change.path)
         model.openFile(at: url.path, in: project.id)
     }
 }

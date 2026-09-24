@@ -44,7 +44,7 @@ struct DefinitionsPane: View {
     /// dropped because every candidate shares it and what tells two of them
     /// apart is the rest.
     private func place(of definition: SymbolDefinition) -> String {
-        let root = project.rootPath
+        let root = model.workingRoot(of: project.id) ?? project.rootPath
         let path = definition.path.hasPrefix(root)
             ? String(definition.path.dropFirst(root.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
             : HomeRelativePath.abbreviating(definition.path)

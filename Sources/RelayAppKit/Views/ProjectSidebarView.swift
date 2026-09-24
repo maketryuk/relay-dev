@@ -110,7 +110,9 @@ struct ProjectSidebarView: View {
         let list = model.interactiveSessions(in: project.id)
 
         return Group {
-            if list.isEmpty {
+            if model.showsWorktrees(in: project.id) {
+                worktrees
+            } else if list.isEmpty {
                 VStack(spacing: Theme.Spacing.small) {
                     Text(relayLocalized("No sessions yet"))
                         .font(Theme.Typography.row)
@@ -142,6 +144,84 @@ struct ProjectSidebarView: View {
                 }
             }
         }
+        .confirmationDialog(
+            relayLocalized("Remove this worktree?"),
+            isPresented: Binding(
+                get: { model.worktreePendingRemoval != nil },
+                set: { if !$0 { model.worktreePendingRemoval = nil } }
+            ),
+            presenting: model.worktreePendingRemoval
+        ) { worktree in
+            // Asked for by name, because the answer to "remove it" is not the
+            // same question when there is work in it that exists nowhere else.
+            let isDirty = model.worktreeStatuses[worktree.path]?.isDirty ?? false
+            Button(
+                relayLocalized(isDirty ? "Remove and discard changes" : "Remove"),
+                role: .destructive
+            ) {
+                model.removeWorktree(worktree, discardingChanges: isDirty, in: project.id)
+            }
+            Button(relayLocalized("Cancel"), role: .cancel) { model.worktreePendingRemoval = nil }
+        } message: { worktree in
+            Text(verbatim: removalMessage(for: worktree))
+        }
+    }
+
+    /// Sessions grouped under the checkout each one is working in, the
+    /// project's own first.
+    ///
+    /// One list per worktree, so a session is dragged among its neighbours
+    /// and never into another checkout by accident: moving a row cannot move
+    /// the directory its process is running in.
+    private var worktrees: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.small) {
+                ForEach(model.worktreeGroups(in: project.id)) { group in
+                    VStack(alignment: .leading, spacing: 2) {
+                        WorktreeHeader(project: project, group: group)
+                        if !model.isSectionCollapsed("worktree:\(group.id)"), !group.sessions.isEmpty {
+                            ReorderableColumn(
+                                ids: group.sessions.map(\.id),
+                                spacing: 2,
+                                space: "relay.sessions.\(group.id)",
+                                onMove: { moved, target, side in
+                                    model.moveSession(moved, beside: target, side: side)
+                                }
+                            ) { sessionID in
+                                if let session = model.sessions[sessionID] {
+                                    row(session)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, Theme.Spacing.small)
+            .padding(.vertical, Theme.Spacing.small)
+        }
+    }
+
+    private func removalMessage(for worktree: GitWorktree) -> String {
+        var lines = [String(
+            format: relayLocalized("The folder %@ will be deleted."),
+            HomeRelativePath.abbreviating(worktree.path)
+        )]
+        let running = model.sessions(in: worktree, of: project.id).count
+        if running > 0 {
+            lines.append(String(format: relayLocalized("Sessions in it will be closed: %d."), running))
+        }
+        if let status = model.worktreeStatuses[worktree.path], status.isDirty {
+            lines.append(String(
+                format: relayLocalized("Changes that were never committed will be lost: %d files."),
+                status.changedFiles
+            ))
+        }
+        if worktree.branch != nil {
+            lines.append(relayLocalized(
+                "Its branch is deleted only if Relay created it and everything on it is merged."
+            ))
+        }
+        return lines.joined(separator: "\n")
     }
 
     private func commitProjectRename() {

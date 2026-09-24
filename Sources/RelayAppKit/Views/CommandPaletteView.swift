@@ -100,7 +100,7 @@ struct CommandPaletteView: View {
         // The walk that makes files findable, started when the palette opens
         // rather than at launch: it is the first moment anybody could want it.
         .task {
-            guard let root = model.selectedProject?.rootPath else { return }
+            guard let root = model.selectedProjectID.flatMap(model.workingRoot) else { return }
             await model.files.prepare(root: root)
         }
     }
@@ -231,8 +231,7 @@ struct CommandPaletteView: View {
 
     /// The project's files that answer to the query, best first.
     private func matchingFiles() -> [(score: Int, command: PaletteCommand)] {
-        guard let project = model.selectedProject else { return [] }
-        let root = project.rootPath
+        guard let project = model.selectedProject, let root = model.workingRoot(of: project.id) else { return [] }
 
         return FileMatching
             .matches(query, in: model.files.files(in: root), under: root, limit: Self.fileLimit)
@@ -291,6 +290,14 @@ struct CommandPaletteView: View {
                 subtitle: model.gitStatuses[project.id]?.branch ?? relayLocalized("Git"),
                 systemImage: "arrow.triangle.branch"
             ) { model.pickBranch(in: project.id) })
+            if model.gitRepositories.contains(project.id) {
+                commands.append(PaletteCommand(
+                    id: "new-worktree",
+                    titleKey: "New Worktree",
+                    subtitle: project.name,
+                    systemImage: "square.stack.3d.up"
+                ) { model.beginNewWorktree(in: project.id) })
+            }
             commands.append(PaletteCommand(
                 id: "review-changes",
                 titleKey: "Review Changes",

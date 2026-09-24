@@ -7,6 +7,24 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Added
+
+- **Worktrees: a piece of work in a checkout of its own.** New worktree… — in
+  the `+` menu, the Projects menu and the palette — asks for a branch, where to
+  start it from, and what to run there first, with a prompt to hand an agent
+  once it is ready. The branch is checked out in `~/.relay/worktrees`, so two
+  agents working at once no longer edit the same files, a diff in the Git panel
+  is one task's rather than everyone's, and switching branches no longer pulls
+  the files out from under every session in the project. Once a project has a
+  second worktree the sidebar groups its sessions under each one, with the
+  branch and its diff on the heading; choosing a session turns the Git panel,
+  the file tree, search and TODO to the checkout it is working in. Worktrees
+  made in a terminal — by hand, `claude --worktree` or `codex --worktree` —
+  appear on their own. Removing one asks first when it has uncommitted work,
+  closes what was running in it, and deletes its branch only if Relay made it
+  and nothing on it is unmerged. The branch switcher sends a branch that is
+  already open elsewhere to where it is, instead of failing on it.
+
 ### Changed
 
 - **A session's status is told by its shape, not only its colour** — a ring

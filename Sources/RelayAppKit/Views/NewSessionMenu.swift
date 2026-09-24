@@ -71,6 +71,32 @@ struct NewSessionMenu: View {
             }
             .buttonStyle(.plain)
             .clickable()
+
+            // Beside the sessions rather than in a menu of its own: starting a
+            // piece of work on a branch of its own is starting a session, one
+            // step earlier.
+            if model.gitRepositories.contains(projectID) {
+                Button {
+                    onDismiss()
+                    model.beginNewWorktree(in: projectID)
+                } label: {
+                    HStack(spacing: Theme.Spacing.small) {
+                        Image(systemName: "square.stack.3d.up")
+                            .font(.system(size: 12))
+                            .frame(width: 18)
+                            .foregroundStyle(Theme.Palette.textTertiary)
+                        Text(relayLocalized("New worktree…"))
+                            .font(Theme.Typography.row)
+                            .foregroundStyle(Theme.Palette.textSecondary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, Theme.Spacing.medium)
+                    .padding(.vertical, Theme.Spacing.small)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .clickable()
+            }
         }
     }
 
