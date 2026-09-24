@@ -304,10 +304,17 @@ struct WorktreeNotesModelTests {
         // With the repository gone from where the project says it is, git has
         // no list to give; that is not a list with nothing in it.
         try FileManager.default.moveItem(atPath: fixture.root, toPath: fixture.root + "-moved")
-        model.refreshGit(for: fixture.project)
         // The status is dropped in the same turn a list would have been
         // adopted, so once it has gone the list has been given its chance.
-        try await waitUntil { model.gitStatuses[fixture.project] == nil }
+        // Asked again while waiting, as the sidebar's timer would: adding a
+        // project refreshes it twice, and the second can land after the move
+        // with a status it read before it.
+        var polls = 0
+        try await waitUntil {
+            if polls % 25 == 0 { model.refreshGit(for: fixture.project) }
+            polls += 1
+            return model.gitStatuses[fixture.project] == nil
+        }
 
         #expect(model.worktreeNote(at: fixture.linked)?.status == .inProgress)
     }
