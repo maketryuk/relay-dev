@@ -17,6 +17,9 @@ enum RelayModal: Identifiable, Hashable {
     case branches(ProjectID)
     /// A new checkout of the project on a branch of its own.
     case newWorktree(ProjectID)
+    /// The project's worktrees, what stands in the way of removing each, and
+    /// removing the chosen ones.
+    case worktreeCleanup(ProjectID)
     /// Where a pull or a push is going, before it goes there.
     case gitTransfer(projectID: ProjectID, direction: GitTransfer.Direction)
     /// The two versions of everything a merge could not settle.
@@ -47,6 +50,7 @@ enum RelayModal: Identifiable, Hashable {
         case .sshHosts: "ssh"
         case let .branches(projectID): "branches:\(projectID.rawValue)"
         case let .newWorktree(projectID): "new-worktree:\(projectID.rawValue)"
+        case let .worktreeCleanup(projectID): "worktree-cleanup:\(projectID.rawValue)"
         case let .gitTransfer(projectID, direction): "git-\(direction.rawValue):\(projectID.rawValue)"
         case let .conflicts(projectID): "conflicts:\(projectID.rawValue)"
         case let .merge(projectID, path): "merge:\(projectID.rawValue):\(path)"
@@ -69,6 +73,7 @@ enum RelayModal: Identifiable, Hashable {
         case .sshHosts: relayLocalized("SSH Hosts")
         case .branches: relayLocalized("Branches")
         case .newWorktree: relayLocalized("New Worktree")
+        case .worktreeCleanup: relayLocalized("Clean Up Worktrees")
         case let .gitTransfer(_, direction):
             relayLocalized(direction == .pull ? "Pull" : "Push")
         case .conflicts: relayLocalized("Resolve conflicts")
@@ -94,6 +99,7 @@ enum RelayModal: Identifiable, Hashable {
         case .sshHosts: CGSize(width: 560, height: 540)
         case .branches: CGSize(width: 520, height: 520)
         case .newWorktree: CGSize(width: 520, height: 560)
+        case .worktreeCleanup: CGSize(width: 660, height: 620)
         case let .gitTransfer(_, direction):
             CGSize(width: 580, height: direction == .pull ? 430 : 580)
         case .conflicts: CGSize(width: 820, height: 480)
@@ -169,6 +175,10 @@ struct ModalHost: View {
             if let project = model.project(projectID) {
                 NewWorktreeView(project: project)
             }
+        case let .worktreeCleanup(projectID):
+            if let project = model.project(projectID) {
+                WorktreeCleanupView(project: project)
+            }
         case let .gitTransfer(projectID, direction):
             if let project = model.project(projectID) {
                 GitTransferPane(project: project, direction: direction)
@@ -223,7 +233,7 @@ struct ModalHost: View {
         switch modal {
         case .ports, .sshHosts, .settings, .branches, .definitions, .search: false
         case .addProject, .projectSettings, .serviceEditor, .presetEditor, .sshHostEditor, .sshKeyUnlock,
-             .gitTransfer, .conflicts, .merge, .newWorktree:
+             .gitTransfer, .conflicts, .merge, .newWorktree, .worktreeCleanup:
             true
         }
     }

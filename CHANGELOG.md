@@ -15,6 +15,18 @@ breaking change to stored data.
   the toast after it names the commit the branch was at, which is all it
   takes to bring it back.
 
+- **Clean Up Worktrees…** — in a worktree heading's menu, the Project menu and
+  the palette — lists every worktree the project could lose, with what stands
+  in the way of each on its row: a lock, an agent working or waiting for you,
+  uncommitted files, commits only a detached `HEAD` holds, a checkout git cannot
+  read. Filters narrow it to the merged, the clean and the ones idle for more
+  than a chosen number of days; the finished ones — merged, clean, nothing
+  running, untouched for a day — are ticked to begin with. Uncommitted files
+  can be let go on their own row. Remove takes what is ticked one at a time,
+  closing the sessions in each, and says once at the end how many went, which
+  branches were kept and what git refused. Nothing is ever removed without
+  being ticked.
+
 ### Fixed
 
 - **A branch squashed or rebased in by a pull request goes with its worktree.**

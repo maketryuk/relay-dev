@@ -298,6 +298,14 @@ struct CommandPaletteView: View {
                     systemImage: "square.stack.3d.up"
                 ) { model.beginNewWorktree(in: project.id) })
             }
+            if model.offersWorktreeCleanup(in: project.id) {
+                commands.append(PaletteCommand(
+                    id: "clean-up-worktrees",
+                    titleKey: "Clean Up Worktrees",
+                    subtitle: project.name,
+                    systemImage: "square.stack.3d.up.slash"
+                ) { model.beginWorktreeCleanup(in: project.id) })
+            }
             commands.append(PaletteCommand(
                 id: "review-changes",
                 titleKey: "Review Changes",

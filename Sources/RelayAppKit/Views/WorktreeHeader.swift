@@ -104,5 +104,11 @@ struct WorktreeHeader: View {
             Divider()
             Button(relayLocalized("Remove Worktree…")) { model.worktreePendingRemoval = worktree }
         }
+        if model.offersWorktreeCleanup(in: project.id) {
+            if !model.canRemoveWorktree(worktree, in: project.id) { Divider() }
+            Button(RelayCommand.cleanUpWorktrees.localizedTitle + "…") {
+                model.beginWorktreeCleanup(in: project.id)
+            }
+        }
     }
 }

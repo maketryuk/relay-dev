@@ -615,8 +615,46 @@ with the commit it was judged at, and the toast's Delete Branch is held to that
 commit the same way: what the person agrees to lose is what they were told
 about, and a commit that landed after the toast appeared keeps the branch.
 
+**Cleaning up is a list with reasons on it, never a sweep.** Clean Up
+Worktrees… lists every worktree `canRemoveWorktree` allows, reads each one off
+the main thread — uncommitted files, commits no remote has, whether its branch
+is in the default base, when it was last touched — and removes only what was
+ticked and on screen when Remove was pressed. The decisions are one pure type,
+`WorktreeCleanup`, tested on made-up facts; the reading is
+`WorktreeFactsReader`, tested against real repositories. A row cannot be ticked
+while it is being read, git cannot read it, it is locked, an agent in it is
+working or waiting, a detached `HEAD` in it has commits nothing else reaches, or
+it has uncommitted files the person has not agreed to lose. That agreement is
+for a number of files and lapses when the number changes. Commits that are only
+on the worktree's branch warn and do not block: removing a worktree deletes its
+folder, and the branch stays unless Relay made it and git proves its work is
+already in the base, so the work is still there afterwards. What is ticked before anyone ticks anything
+is merged, clean, has nothing running and has been left alone for a day — the
+day because a branch started a minute ago from the base is also, trivially,
+merged. Pinned and archived worktrees, a row dismissed until it changes,
+remote hosts, and a pull request or ticket per worktree would each be a reason
+to keep or to tick a row; Relay has none of them yet, so neither does the
+window.
+
+**Last activity is the newest thing that only moves when somebody does
+something**: when `HEAD` last moved in the worktree (its reflog, which also
+dates its creation), its commit's date, the newest uncommitted file, and the
+newest output from a session in it. The index is left out because `git status`
+rewrites it, and Relay runs that on every worktree every few seconds; the
+folder's own date, because Finder and Spotlight change it. The reader's own
+`git status` passes `--no-optional-locks` for the same reason.
+
+**Removal is one worktree at a time, each read again just before it goes**,
+through the same `performWorktreeRemoval` the sidebar uses, which says what
+happened and shows nothing. Each settles its branch in the repository they
+share, and something may have started in a worktree since its row was drawn. A
+refusal is written on its row in git's words and the rest carry on; one toast
+at the end says how many went, which branches were kept and what failed. The
+window's state lives on the model, so a removal outlives the window being
+closed, and opening it again shows how far it has got.
+
 What is not done yet — getting a fresh worktree ready to run, services and ports
-per worktree, finishing a piece of work — is in `ROADMAP.md`.
+per worktree, the rest of finishing a piece of work — is in `ROADMAP.md`.
 
 ---
 

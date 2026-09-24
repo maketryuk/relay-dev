@@ -61,6 +61,11 @@ workspace is a git worktree.
   and "which of them needs me" is the question the list is for.
 - **The right-hand panel follows the selected session's worktree**: Git, files,
   search, TODO, definitions and history read that checkout.
+- **Clean Up Worktrees…** lists every worktree that could go, with what stands
+  in the way of each — a lock, an agent at work, uncommitted files, commits a
+  detached `HEAD` alone holds — filters it to the merged, the clean and the
+  idle, ticks the finished ones, and removes what is ticked one at a time.
+  Nothing goes on its own.
 
 ### Still to do
 
@@ -77,8 +82,9 @@ workspace is a git worktree.
    and show it next to the worktree. Attributing a listening port to its
    worktree comes first and is nearly free: the daemon already maps ports to
    sessions.
-4. **Finishing a piece of work.** A pull request through `gh`, its state on the
-   heading, and tidying away worktrees whose branch has been merged. Telling
+4. **Finishing a piece of work.** A pull request through `gh` and its state on
+   the heading — and then in the cleanup window, as a filter and a reason to
+   tick a row, once there is a pull request to know about. Telling
    a finished branch from an unfinished one is done, squash and rebase merges
    included, and removing a worktree goes by it. What it does not recognise
    is a pull request the forge had more of than the local branch — a

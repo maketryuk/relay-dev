@@ -250,6 +250,12 @@ struct RelayCommands: Commands {
             .relayShortcut(model.binding(for: .newWorktree))
             .disabled(!(model.selectedProjectID.map(model.gitRepositories.contains) ?? false))
 
+            Button(RelayCommand.cleanUpWorktrees.localizedTitle + "…") {
+                if let projectID = model.selectedProjectID { model.beginWorktreeCleanup(in: projectID) }
+            }
+            .relayShortcut(model.binding(for: .cleanUpWorktrees))
+            .disabled(!(model.selectedProjectID.map(model.offersWorktreeCleanup) ?? false))
+
             Button(RelayCommand.projectSettings.localizedTitle) { model.openProjectSettings() }
                 .relayShortcut(model.binding(for: .projectSettings))
 

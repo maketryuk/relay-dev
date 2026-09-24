@@ -53,6 +53,8 @@ final class AppModel {
     private(set) var isCreatingWorktree = false
     /// What git said when it last refused to create one, for the panel.
     private(set) var worktreeCreationFailure: String?
+    /// What each project's Clean Up Worktrees window has read and been told.
+    var worktreeCleanups: [ProjectID: WorktreeCleanupState] = [:]
     /// What has changed in each project's working copy.
     ///
     /// Read only while something is looking: the list costs a process, and it

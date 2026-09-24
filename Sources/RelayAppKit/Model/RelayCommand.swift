@@ -54,6 +54,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     case reviewChanges
     case switchBranch
     case newWorktree
+    case cleanUpWorktrees
 
     case goToDefinition
     case goBack
@@ -102,6 +103,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .reviewChanges: "Review Changes"
         case .switchBranch: "Switch Branch"
         case .newWorktree: "New Worktree"
+        case .cleanUpWorktrees: "Clean Up Worktrees"
         case .nextProject: "Next Project"
         case .previousProject: "Previous Project"
         case .addProject: "Add Project"
@@ -129,7 +131,8 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
              .splitRight, .splitDown, .focusNextPane: .sessions
         case .startDefaultService, .restartDefaultService: .services
         case .nextProject, .previousProject, .addProject, .revealProject,
-             .projectSettings, .reviewChanges, .switchBranch, .newWorktree: .projects
+             .projectSettings, .reviewChanges, .switchBranch, .newWorktree,
+             .cleanUpWorktrees: .projects
         case .goToDefinition, .goBack, .findInFile, .searchProject, .toggleMarkdownPreview: .editor
         case .newBrowserTab, .toggleDesignMode, .reloadBrowser, .openBrowserDevTools: .browser
         }
@@ -184,6 +187,8 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         // Unbound for the same reason: a piece of work is started a few times
         // a day, not a few times an hour.
         case .newWorktree: nil
+        // And finished as often.
+        case .cleanUpWorktrees: nil
         case .nextProject: KeyBinding("down", [.command, .option])
         case .previousProject: KeyBinding("up", [.command, .option])
         case .addProject: KeyBinding("n", [.command, .shift])
