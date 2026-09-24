@@ -162,4 +162,11 @@ struct PaneLayoutTests {
         let decoded = try JSONDecoder().decode(PaneNode.self, from: data)
         #expect(decoded == layout)
     }
+
+    @Test("A session does not take the place of the file being worked in")
+    func sessionDoesNotReplaceFocusedFile() {
+        let layout = PaneLayout.split(.file("/p/a.swift"), target: .file("/p/a.swift"), with: .session(a), axis: .horizontal)
+        let shown = PaneLayout.showing(.session(b), in: layout, focused: .file("/p/a.swift"))
+        #expect(PaneLayout.items(in: shown) == [.file("/p/a.swift"), .session(b)])
+    }
 }

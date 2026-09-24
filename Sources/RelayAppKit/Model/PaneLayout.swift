@@ -333,11 +333,16 @@ enum PaneLayout {
     /// away a file that was open beside it: closing a terminal picked the next
     /// session, found no session pane to put it in, and swept the editor away
     /// with it.
+    ///
+    /// The pane being worked in is taken over only by its own kind. A session
+    /// chosen from the sidebar is selected before the pane being worked in is
+    /// read, and that reading then falls back to the first pane on screen —
+    /// a file, when the file is on the left, and the file lost its place.
     static func showing(_ item: PaneItem, in node: PaneNode?, focused: PaneItem?) -> PaneNode {
         guard let node else { return PaneNode(item) }
         guard !contains(item, in: node) else { return node }
 
-        if let focused, contains(focused, in: node) {
+        if let focused, focused.isSameKind(as: item), contains(focused, in: node) {
             return replacing(focused, with: item, in: node)
         }
         // The pane being worked in has gone — the usual reason being that it
