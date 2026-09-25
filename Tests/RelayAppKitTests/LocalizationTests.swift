@@ -147,6 +147,23 @@ struct LocalizationTests {
         #expect(stale.isEmpty, "nothing asks for: \(stale.sorted())")
     }
 
+    @Test("Both tables leave the same blanks for the same things")
+    func blanksAgree() throws {
+        // `String(format:)` fills blanks by position and type. A translation
+        // with one blank fewer drops a name; one with `%@` where the key has
+        // `%d` takes a number for an object, and crashes.
+        var mismatched: [String] = []
+        for language in ["en", "ru"] {
+            for (key, wordings) in try Self.wordings(language) {
+                let expected = Self.blanks(in: key)
+                for wording in wordings where Self.blanks(in: wording) != expected {
+                    mismatched.append("\(language): \"\(key)\" = \"\(wording)\"")
+                }
+            }
+        }
+        #expect(mismatched.isEmpty, "blanks differ: \(mismatched)")
+    }
+
     @Test("Every name a type hands to the table has an entry")
     func everyNameHasAnEntry() throws {
         // These are looked up through a variable — `relayLocalized(title)` —
@@ -268,6 +285,29 @@ struct LocalizationTests {
 
     static func allKeys(_ language: String) throws -> Set<String> {
         try Set(table(language).keys).union(pluralTable(language).keys)
+    }
+
+    /// Every wording a key can end up as, plural forms included.
+    private static func wordings(_ language: String) throws -> [String: [String]] {
+        var wordings = try table(language).mapValues { [$0] }
+        for (key, forms) in try pluralTable(language) {
+            wordings[key, default: []] += forms.values
+        }
+        return wordings
+    }
+
+    /// The blanks a format string leaves, in the order they are filled.
+    static func blanks(in format: String) -> [String] {
+        let pattern = #"%(?:(\d+)\$)?[-+ 0#']*\d*(?:\.\d+)?(?:hh|h|ll|l|q|z|t|j)?([@dDiuUxXoOfeEgGcCsSpaAF%])"#
+        let expression = try? NSRegularExpression(pattern: pattern)
+        let whole = NSRange(format.startIndex..., in: format)
+        var ordered: [(position: Int, type: String)] = []
+        for (index, match) in (expression?.matches(in: format, range: whole) ?? []).enumerated() {
+            guard let typeRange = Range(match.range(at: 2), in: format), format[typeRange] != "%" else { continue }
+            let position = Range(match.range(at: 1), in: format).flatMap { Int(format[$0]) } ?? index + 1
+            ordered.append((position, String(format[typeRange])))
+        }
+        return ordered.sorted { $0.position < $1.position }.map(\.type)
     }
 
     // MARK: - Reading the source
