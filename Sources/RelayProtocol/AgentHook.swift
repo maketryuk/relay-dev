@@ -34,6 +34,56 @@ public struct AgentHookEvent: Codable, Sendable, Equatable {
     /// The processes above the hook, nearest first.
     public var ancestry: [ProcessAncestor]
 
+    // Everything below arrived after the first release of the helper, so each
+    // is optional: a daemon older than the helper never reads them, and one
+    // newer than it reads their absence as "not said".
+
+    /// `cwd`: where the agent is working — on a subagent's event, where the
+    /// subagent is. Claude Code moves it with the agent, into a worktree once
+    /// one is entered, and a subagent started with `isolation: "worktree"`
+    /// works in one of its own.
+    public var workingDirectory: String?
+    /// `agent_type` on a subagent's event: `Explore`, `general-purpose`, or a
+    /// name the person defined.
+    public var agentType: String?
+    /// The work a call to Claude's `Agent` tool hands to a subagent, read off
+    /// the call: on its `PreToolUse`, and with the subagent's id added on its
+    /// `PostToolUse`.
+    public var delegation: Delegation?
+    /// What the subagent this event came from was handed, as Claude Code noted
+    /// it beside the transcript. The event itself never says, so the helper
+    /// reads the note; see `Delegation.noteURL`.
+    public var assignment: Delegation?
+    /// The subagents Claude Code lists as still running in the background, on
+    /// `Stop` and `SubagentStop`. Nil when it did not say.
+    public var backgroundAgents: [Delegation]?
+
+    /// Work handed from one agent to another, as far as anything has said.
+    public struct Delegation: Codable, Sendable, Equatable {
+        /// The few words the calling agent gave the task.
+        public var description: String?
+        public var agentType: String?
+        /// The subagent's `agent_id`, once something has named it.
+        public var agentID: String?
+        /// The `Agent` call that started it.
+        public var toolUseID: String?
+        public var runsInBackground: Bool?
+
+        public init(
+            description: String? = nil,
+            agentType: String? = nil,
+            agentID: String? = nil,
+            toolUseID: String? = nil,
+            runsInBackground: Bool? = nil
+        ) {
+            self.description = description
+            self.agentType = agentType
+            self.agentID = agentID
+            self.toolUseID = toolUseID
+            self.runsInBackground = runsInBackground
+        }
+    }
+
     public init(
         version: Int = 1,
         sessionID: String,
@@ -43,7 +93,12 @@ public struct AgentHookEvent: Codable, Sendable, Equatable {
         toolUseID: String? = nil,
         subagentID: String? = nil,
         source: String? = nil,
-        ancestry: [ProcessAncestor] = []
+        ancestry: [ProcessAncestor] = [],
+        workingDirectory: String? = nil,
+        agentType: String? = nil,
+        delegation: Delegation? = nil,
+        assignment: Delegation? = nil,
+        backgroundAgents: [Delegation]? = nil
     ) {
         self.version = version
         self.sessionID = sessionID
@@ -54,25 +109,19 @@ public struct AgentHookEvent: Codable, Sendable, Equatable {
         self.subagentID = subagentID
         self.source = source
         self.ancestry = ancestry
+        self.workingDirectory = workingDirectory
+        self.agentType = agentType
+        self.delegation = delegation
+        self.assignment = assignment
+        self.backgroundAgents = backgroundAgents
     }
 
     /// Reads a hook's stdin. Nil when it is not a JSON object naming an event.
     public init?(payload: Data, agent: Agent, sessionID: String, ancestry: [ProcessAncestor]) {
-        guard let object = try? JSONSerialization.jsonObject(with: payload) as? [String: Any] else { return nil }
-        func string(_ keys: String...) -> String? {
-            keys.lazy.compactMap { object[$0] as? String }.first { !$0.isEmpty }
+        guard let read = AgentHookPayload(payload, agent: agent, sessionID: sessionID, ancestry: ancestry) else {
+            return nil
         }
-        guard let name = string("hook_event_name", "hookEventName") else { return nil }
-        self.init(
-            sessionID: sessionID,
-            agent: agent,
-            name: name,
-            toolName: string("tool_name", "name"),
-            toolUseID: string("tool_use_id"),
-            subagentID: string("agent_id"),
-            source: string("source"),
-            ancestry: ancestry
-        )
+        self = read.event
     }
 
     /// Whether this came from the agent the session is running, rather than
@@ -91,6 +140,158 @@ public struct AgentHookEvent: Codable, Sendable, Equatable {
     }
 
     static let agentExecutables: Set<String> = ["claude", "codex"]
+}
+
+/// A hook's stdin, read once for everything the helper wants from it.
+public struct AgentHookPayload {
+    public var event: AgentHookEvent
+    /// Where Claude Code writes the conversation. Not sent on: the helper
+    /// needs it only to find the note about a subagent, and the daemon not at
+    /// all.
+    public var transcriptPath: String?
+
+    /// Every string a hook hands on is bounded, because the agent writes them
+    /// and the sidebar draws them.
+    static let longestDescription = 200
+    static let longestName = 80
+    static let mostBackgroundAgents = 32
+
+    public init?(_ payload: Data, agent: AgentHookEvent.Agent, sessionID: String, ancestry: [ProcessAncestor]) {
+        guard let object = try? JSONSerialization.jsonObject(with: payload) as? [String: Any] else { return nil }
+        func string(_ keys: String...) -> String? {
+            keys.lazy.compactMap { object[$0] as? String }.first { !$0.isEmpty }
+        }
+        guard let name = string("hook_event_name", "hookEventName") else { return nil }
+        let toolName = string("tool_name", "name")
+        let toolUseID = string("tool_use_id")
+        event = AgentHookEvent(
+            sessionID: sessionID,
+            agent: agent,
+            name: name,
+            toolName: toolName,
+            toolUseID: toolUseID,
+            subagentID: string("agent_id"),
+            source: string("source"),
+            ancestry: ancestry,
+            workingDirectory: string("cwd"),
+            agentType: string("agent_type").map { Self.bounded($0, to: Self.longestName) },
+            delegation: Self.delegation(
+                tool: toolName,
+                callID: toolUseID,
+                input: object["tool_input"] as? [String: Any],
+                response: object["tool_response"] as? [String: Any]
+            ),
+            backgroundAgents: (object["background_tasks"] as? [Any]).map(Self.backgroundAgents)
+        )
+        transcriptPath = string("transcript_path")
+    }
+
+    /// Claude's tool for starting a subagent is `Agent`, and was `Task`.
+    static func startsSubagent(_ toolName: String?) -> Bool {
+        toolName == "Agent" || toolName == "Task"
+    }
+
+    /// The call's input names the task; its answer, once there is one, names
+    /// the agent — `agentId`, which is what every event from that agent then
+    /// carries as `agent_id`. Claude answers a background call as soon as it
+    /// has started the agent, and a foreground one only once it has finished.
+    private static func delegation(
+        tool: String?,
+        callID: String?,
+        input: [String: Any]?,
+        response: [String: Any]?
+    ) -> AgentHookEvent.Delegation? {
+        guard startsSubagent(tool), let input else { return nil }
+        let launchedAsync = (response?["isAsync"] as? Bool) ?? (response?["status"] as? String).map { $0 == "async_launched" }
+        return AgentHookEvent.Delegation(
+            description: text(input["description"], limit: longestDescription),
+            agentType: text(input["subagent_type"], limit: longestName),
+            agentID: (response?["agentId"] as? String).flatMap(identifier),
+            toolUseID: callID,
+            runsInBackground: launchedAsync ?? (input["run_in_background"] as? Bool)
+        )
+    }
+
+    /// `background_tasks`, cut down to the subagents still going. A task
+    /// leaves the list when it is done, so an entry is running unless it says
+    /// otherwise.
+    private static func backgroundAgents(_ tasks: [Any]) -> [AgentHookEvent.Delegation] {
+        let ended: Set<String> = ["completed", "failed", "killed", "stopped", "cancelled", "error"]
+        return tasks.lazy
+            .compactMap { $0 as? [String: Any] }
+            .filter { ($0["type"] as? String) == "subagent" && !ended.contains(($0["status"] as? String) ?? "") }
+            .compactMap { task -> AgentHookEvent.Delegation? in
+                guard let id = (task["id"] as? String).flatMap(identifier) else { return nil }
+                return AgentHookEvent.Delegation(
+                    description: text(task["description"], limit: longestDescription),
+                    agentType: text(task["agent_type"], limit: longestName),
+                    agentID: id,
+                    runsInBackground: true
+                )
+            }
+            .prefix(mostBackgroundAgents)
+            .map { $0 }
+    }
+
+    private static func text(_ value: Any?, limit: Int) -> String? {
+        guard let string = value as? String else { return nil }
+        let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : bounded(trimmed, to: limit)
+    }
+
+    private static func bounded(_ string: String, to limit: Int) -> String {
+        string.count <= limit ? string : String(string.prefix(limit - 1)) + "…"
+    }
+
+    /// An agent id as Claude spells them — letters, digits, `-` and `_` — or
+    /// nothing, since one goes into the path of the note read for it.
+    static func identifier(_ raw: String) -> String? {
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
+        guard !raw.isEmpty, raw.count <= 128, raw.unicodeScalars.allSatisfy({ allowed.contains($0) && $0.isASCII }) else {
+            return nil
+        }
+        return raw
+    }
+}
+
+public extension AgentHookEvent.Delegation {
+    /// Where Claude Code keeps its note on a subagent: beside the transcript,
+    /// in a folder named after it, as `subagents/agent-<id>.meta.json`.
+    ///
+    /// It is the only place a subagent's own events are tied to the call that
+    /// started it: the note holds that call's id and the task's description,
+    /// and every event of the subagent's names the subagent. The events do not
+    /// say which call they belong to, and a foreground call names its agent
+    /// only when it returns — so without the note, two agents of one type
+    /// started together could only be told apart by guessing. The note is not
+    /// documented; anything unexpected in it is read as no note at all.
+    static func noteURL(transcriptPath: String, agentID: String) -> URL? {
+        guard transcriptPath.hasSuffix(".jsonl"), let id = AgentHookPayload.identifier(agentID) else { return nil }
+        return URL(fileURLWithPath: String(transcriptPath.dropLast(".jsonl".count)), isDirectory: true)
+            .appendingPathComponent("subagents", isDirectory: true)
+            .appendingPathComponent("agent-\(id).meta.json", isDirectory: false)
+    }
+
+    /// Reads the note. Nil unless it is a JSON object that names at least the
+    /// call or the task.
+    init?(note: Data, agentID: String) {
+        guard let object = try? JSONSerialization.jsonObject(with: note) as? [String: Any] else { return nil }
+        func text(_ key: String, limit: Int) -> String? {
+            guard let value = (object[key] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !value.isEmpty else { return nil }
+            return value.count <= limit ? value : String(value.prefix(limit - 1)) + "…"
+        }
+        let description = text("description", limit: AgentHookPayload.longestDescription)
+        let call = text("toolUseId", limit: 128)
+        guard description != nil || call != nil else { return nil }
+        self.init(
+            description: description,
+            agentType: text("agentType", limit: AgentHookPayload.longestName),
+            agentID: agentID,
+            toolUseID: call,
+            runsInBackground: (object["requestShape"] as? String).map { $0 == "background" }
+        )
+    }
 }
 
 public struct ProcessAncestor: Codable, Sendable, Equatable {

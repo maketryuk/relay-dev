@@ -20,16 +20,33 @@ if agent == .claude {
 // reads can block on it.
 let payload = FileHandle.standardInput.readDataToEndOfFile()
 
+/// What a subagent was asked to do, from the note Claude Code keeps on it:
+/// its own events never say. The note is written a moment after the subagent
+/// starts, so its first event may find none, and a later one will.
+func assignment(of event: AgentHookEvent, transcriptPath: String?) -> AgentHookEvent.Delegation? {
+    guard let agentID = event.subagentID,
+          let transcriptPath,
+          let url = AgentHookEvent.Delegation.noteURL(transcriptPath: transcriptPath, agentID: agentID),
+          let file = FileHandle(forReadingAtPath: url.path)
+    else { return nil }
+    defer { try? file.close() }
+    // A note is a couple of hundred bytes; anything much longer is not one.
+    guard let note = try? file.read(upToCount: 16 * 1024) else { return nil }
+    return AgentHookEvent.Delegation(note: note, agentID: agentID)
+}
+
 let environment = ProcessInfo.processInfo.environment
 if let agent,
    let sessionID = environment[AgentHookEnvironment.sessionKey],
    let socket = environment[AgentHookEnvironment.socketKey],
-   let event = AgentHookEvent(
-       payload: payload,
+   let read = AgentHookPayload(
+       payload,
        agent: agent,
        sessionID: sessionID,
        ancestry: ProcessAncestor.ofCurrentProcess()
    ) {
+    var event = read.event
+    event.assignment = assignment(of: event, transcriptPath: read.transcriptPath)
     AgentHookDelivery.send(event, to: socket)
 }
 exit(0)

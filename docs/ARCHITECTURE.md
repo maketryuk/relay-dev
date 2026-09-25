@@ -73,9 +73,10 @@ this order:
    stdin.
    - The command is `relay-hook`, installed into `~/.claude/settings.json` and
      `~/.codex/hooks.json` (see below).
-   - It sends the event's name, its tool and its tool-call id to the daemon, as
-     one JSON line over `/tmp/relay-<uid>-hooks.sock`, which sits beside the
-     daemon's own socket.
+   - It sends the event's name, its tool and its tool-call id to the daemon —
+     and, for the subagents an agent starts, where each works and what it was
+     asked to do — as one JSON line over `/tmp/relay-<uid>-hooks.sock`, which
+     sits beside the daemon's own socket.
    - Mapping:
      - `UserPromptSubmit`, `PreToolUse` and `PostToolUse` → `working`;
      - `PermissionRequest`, or a question tool (`AskUserQuestion`,

@@ -62,6 +62,85 @@ struct AgentHookEventTests {
         let decoded = try JSONDecoder().decode(AgentHookEvent.self, from: JSONEncoder().encode(original))
         #expect(decoded == original)
     }
+
+    @Test("A subagent's event and the call that started it survive the trip too")
+    func subagentCodable() throws {
+        var original = try #require(event("""
+        {"hook_event_name":"PostToolUse","cwd":"/code/shop","agent_id":"a1","agent_type":"Explore","tool_name":"Agent",
+         "tool_use_id":"toolu_1","tool_input":{"description":"Find it","subagent_type":"Explore"},
+         "tool_response":{"agentId":"a2","isAsync":true}}
+        """))
+        original.assignment = .init(description: "Look around", agentID: "a1", toolUseID: "toolu_0")
+        original.backgroundAgents = [.init(description: "Find it", agentID: "a2", runsInBackground: true)]
+        let decoded = try JSONDecoder().decode(AgentHookEvent.self, from: JSONEncoder().encode(original))
+        #expect(decoded == original)
+    }
+
+    /// The helper is whichever build is installed, and the daemon can be the
+    /// previous one's: each has to read what the other writes.
+    @Test("An event from a helper older than the subagent fields reads as saying nothing about them")
+    func olderHelper() throws {
+        let line = #"{"version":1,"sessionID":"s","agent":"claude","name":"Stop","ancestry":[]}"#
+        let decoded = try JSONDecoder().decode(AgentHookEvent.self, from: Data(line.utf8))
+        #expect(decoded.name == "Stop")
+        #expect(decoded.workingDirectory == nil && decoded.delegation == nil && decoded.backgroundAgents == nil)
+    }
+
+    @Test("An event from a newer helper is read for what this build knows")
+    func newerHelper() throws {
+        let line = #"{"version":1,"sessionID":"s","agent":"claude","name":"Stop","ancestry":[],"futureField":{"x":1}}"#
+        #expect(try JSONDecoder().decode(AgentHookEvent.self, from: Data(line.utf8)).name == "Stop")
+    }
+
+    @Test("Only the tool that starts agents is read as starting one", arguments: ["Agent", "Task"])
+    func delegatingTools(tool: String) throws {
+        let parsed = try #require(event("""
+        {"hook_event_name":"PreToolUse","tool_name":"\(tool)","tool_use_id":"t","tool_input":{"description":"Map the code","subagent_type":"Explore"}}
+        """))
+        #expect(parsed.delegation?.description == "Map the code")
+        #expect(parsed.delegation?.toolUseID == "t")
+        let bash = try #require(event(#"{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"description":"List files"}}"#))
+        #expect(bash.delegation == nil)
+    }
+
+    @Test("What an agent writes is bounded before the sidebar draws it")
+    func bounded() throws {
+        let long = String(repeating: "word ", count: 200)
+        let parsed = try #require(event("""
+        {"hook_event_name":"PreToolUse","tool_name":"Agent","tool_input":{"description":"\(long)"}}
+        """))
+        let description = try #require(parsed.delegation?.description)
+        #expect(description.count == AgentHookPayload.longestDescription)
+        #expect(description.hasSuffix("…"))
+    }
+
+    @Test("Only subagents still going are listed as running in the background")
+    func backgroundTasks() throws {
+        let parsed = try #require(event("""
+        {"hook_event_name":"Stop","background_tasks":[
+          {"id":"a1","type":"subagent","status":"running","description":"One","agent_type":"Explore"},
+          {"id":"a2","type":"subagent","status":"completed","description":"Two"},
+          {"id":"b1","type":"shell","status":"running","description":"npm run dev"},
+          {"id":"../x","type":"subagent","status":"running"}
+        ]}
+        """))
+        #expect(parsed.backgroundAgents == [.init(description: "One", agentType: "Explore", agentID: "a1", runsInBackground: true)])
+        #expect(try #require(event(#"{"hook_event_name":"Stop"}"#)).backgroundAgents == nil)
+    }
+
+    @Test("The note on a subagent is looked for only under an id that is one")
+    func noteLocation() {
+        let transcript = "/Users/me/.claude/projects/-Users-me-code-shop/abc.jsonl"
+        #expect(AgentHookEvent.Delegation.noteURL(transcriptPath: transcript, agentID: "a1b2")?.path
+            == "/Users/me/.claude/projects/-Users-me-code-shop/abc/subagents/agent-a1b2.meta.json")
+        #expect(AgentHookEvent.Delegation.noteURL(transcriptPath: transcript, agentID: "../../etc") == nil)
+        #expect(AgentHookEvent.Delegation.noteURL(transcriptPath: "/tmp/abc.txt", agentID: "a1b2") == nil)
+    }
+
+    @Test("A note that is not one is no note", arguments: ["", "[]", #"{"spawnDepth":1}"#])
+    func unreadableNote(note: String) {
+        #expect(AgentHookEvent.Delegation(note: Data(note.utf8), agentID: "a1") == nil)
+    }
 }
 
 @Suite("Whose hook it is")
