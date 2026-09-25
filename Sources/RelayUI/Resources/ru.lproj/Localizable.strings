@@ -45,7 +45,6 @@
 "Add project" = "Добавить проект";
 "Add service" = "Добавить сервис";
 "Add to Host *" = "Добавить в Host *";
-"Add to agent and Keychain" = "Добавить в агент и Связку ключей";
 "Add" = "Добавить";
 "Added" = "Добавлен";
 "Address or search" = "Адрес или поиск";
@@ -87,7 +86,6 @@
 "Branches kept, with commits not merged anywhere yet: %@." = "Оставлены ветки с коммитами, которые ещё никуда не влиты: %@.";
 "Branches that stay, with work that is not merged: %@." = "Останутся ветки с невлитой работой: %@.";
 "Browser" = "Браузер";
-"Built-in" = "Встроенный";
 "Bypass the pre-merge and commit message hooks" = "Пропустить хуки pre-merge и commit-msg";
 "Bypass the pre-push hook" = "Пропустить хук pre-push";
 "Checking whether its branch is merged…" = "Проверяю, влита ли его ветка…";
@@ -119,18 +117,14 @@
 "Chromium could not open the page." = "Chromium не смог открыть страницу.";
 "Chromium has stopped." = "Chromium остановлен.";
 "Chromium is not available" = "Chromium недоступен";
-"Claude Code records the model without saying which window it runs with" = "Claude Code записывает модель, но не говорит, с каким окном она работает";
-"Claude context window" = "Окно контекста Claude";
 "Claude · ask first" = "Claude · спрашивать";
 "Claude" = "Claude";
 "Clear Comment" = "Удалить комментарий";
 "Clear all" = "Очистить всё";
-"Clear history" = "Очистить историю";
 "Clear" = "Очистить";
 "Click an element to hand it to an agent. Esc stops." = "Нажмите на элемент, чтобы передать его агенту. Esc — выйти.";
 "Close File" = "Закрыть файл";
 "Close Pane" = "Закрыть панель";
-"Close Session" = "Закрыть сессию";
 "Close Tab" = "Закрыть вкладку";
 "Close session" = "Закрыть сессию";
 "Close this view — the service keeps running" = "Закрыть окно — сервис продолжит работать";
@@ -147,7 +141,6 @@
 "Commit message" = "Описание коммита";
 "Commit" = "Коммит";
 "Commits" = "Коммиты";
-"Commits, branch switching and diffs will live here." = "Здесь появятся коммиты, переключение веток и diff.";
 "Compact" = "Компактно";
 "Completed" = "Готово";
 "Conflicts in the working copy" = "Конфликты в рабочей копии";
@@ -155,7 +148,6 @@
 "Connect SSH: %@" = "Подключиться по SSH: %@";
 "Connect" = "Подключиться";
 "Connected — sessions keep running when Relay is closed" = "Подключено — сессии работают и при закрытом Relay";
-"Context" = "Контекст";
 "Continue" = "Продолжить";
 "Conversations" = "Разговоры";
 "Copy Container Name" = "Скопировать имя контейнера";
@@ -220,7 +212,6 @@
 "Docker — nothing found. Click to check again." = "Docker — ничего не найдено. Нажмите, чтобы проверить снова.";
 "Docker" = "Docker";
 "Done" = "Готово";
-"Double-click the session in the sidebar to rename it" = "Двойной клик по сессии в сайдбаре переименовывает её";
 "Down" = "Остановить";
 "Download and restart into the new version" = "Загрузить и перезапуститься в новой версии";
 "Downloading…" = "Загружаем…";
@@ -255,7 +246,6 @@
 "File unavailable" = "Файл недоступен";
 "File" = "Файл";
 "Files" = "Файлы";
-"Filled in once the agent has answered" = "Появится после первого ответа агента";
 "Filter by alias or host" = "Фильтр по алиасу или хосту";
 "Filter by port, process or session" = "Фильтр по порту, процессу или сессии";
 "Find" = "Найти";
@@ -270,9 +260,7 @@
 "Folder already gone" = "Папки уже нет";
 "Folder name" = "Имя папки";
 "For the questions that belong to no project. Agents start here knowing nothing about your code." = "Для вопросов, у которых нет проекта. Агент здесь ничего не знает о вашем коде.";
-"Force push (with lease)" = "Force push (с проверкой)";
 "Force push" = "Force push";
-"Force push?" = "Force push?";
 "Force quit" = "Завершить принудительно";
 "Forward" = "Вперёд";
 "Forward agent" = "Проброс агента";
@@ -300,7 +288,6 @@
 "In Progress" = "В работе";
 "In Review" = "На проверке";
 "In the agent — no passphrase will be asked for." = "В агенте — passphrase не спросят.";
-"In the window" = "В окне";
 "Increase Font Size (⌘=)" = "Увеличить шрифт (⌘=)";
 "Increase Font Size" = "Увеличить шрифт";
 "Install %@" = "Установить %@";
@@ -321,7 +308,6 @@
 "Last activity" = "Последняя активность";
 "Leave empty to detect the port automatically." = "Оставьте пустым, чтобы порт определился автоматически.";
 "Leave unset" = "Не указывать";
-"Listening on this Mac" = "Слушает на этом Mac";
 "Loading…" = "Загрузка…";
 "Local" = "Локальные";
 "Locked: git will not remove it until it is unlocked" = "Заблокирован: git не удалит его, пока блокировку не снимут";
@@ -331,9 +317,7 @@
 "Looking for containers…" = "Ищем контейнеры…";
 "Looking…" = "Проверяем…";
 "Make this branch follow the one it is pushed to" = "Ветка начнёт следить за той, куда её отправили";
-"Makes this branch follow the one it is pushed to" = "Ветка начнёт следить за той, куда её отправили";
 "Mark all read" = "Отметить всё прочитанным";
-"Mark resolved" = "Отметить разрешённым";
 "Match case" = "Учитывать регистр";
 "Merge in progress" = "Идёт merge";
 "Merge only if it can be fast-forwarded" = "Слить только если получится fast-forward";
@@ -344,7 +328,6 @@
 "Merged, clean, nothing running in it, and left alone for a day" = "Влитые, без изменений, ничего не запущено и никто не трогал их хотя бы сутки";
 "Merge…" = "Слить…";
 "Merging in: %@" = "Вливается: %@";
-"Model" = "Модель";
 "Modified" = "Изменён";
 "Move to Trash" = "В Корзину";
 "Move to Trash?" = "Переместить в Корзину?";
@@ -378,7 +361,6 @@
 "Newly cached" = "Записано в кэш";
 "Next Project" = "Следующий проект";
 "Next Session" = "Следующая сессия";
-"Next" = "Дальше";
 "No %@ comments in this project." = "В проекте нет комментариев %@.";
 "No branch matches “%@”." = "Ни одна ветка не подходит под «%@».";
 "No branch" = "Нет ветки";
@@ -386,7 +368,6 @@
 "No definition found" = "Определение не найдено";
 "No host matches “%@”." = "Нет хостов по запросу «%@».";
 "No hosts configured" = "Хосты не настроены";
-"No markers left in this file — mark it resolved." = "В файле не осталось маркеров — отметьте его разрешённым.";
 "No match" = "Ничего не найдено";
 "No matches" = "Ничего не найдено";
 "No matching commands" = "Команды не найдены";
@@ -410,7 +391,6 @@
 "Nothing is listening" = "Никто не слушает";
 "Nothing left in dispute" = "Спорного не осталось";
 "Nothing left to do" = "Ничего не осталось";
-"Nothing selected" = "Ничего не выбрано";
 "Nothing to push — the remote branch is already here." = "Отправлять нечего — удалённая ветка уже здесь.";
 "Nothing to show" = "Показывать нечего";
 "Nothing yet" = "Пока ничего";
@@ -446,7 +426,6 @@
 "Other hosts" = "Другие хосты";
 "Output" = "Ответ";
 "Overwrite the remote branch, refusing if it moved since you last fetched" = "Перезаписать ветку на удалённом; откажется, если она сдвинулась после вашего fetch";
-"Overwrites the remote branch, but refuses if it moved since you last fetched" = "Перезапишет ветку на удалённом, но откажется, если она сдвинулась после вашего fetch";
 "Pages: %@" = "Страниц: %@";
 "Passphrase" = "Парольная фраза";
 "Past conversations with Claude and Codex in this project appear here, wherever they were started." = "Здесь появляются прошлые разговоры с Claude и Codex в этом проекте — где бы они ни были начаты.";
@@ -455,7 +434,6 @@
 "Pick suggested" = "Выбрать предложенные";
 "Picked: %d" = "Выбрано: %d";
 "Pin to Project" = "Закрепить за проектом";
-"Pin to current project" = "Закрепить за текущим проектом";
 "Pinned to %@" = "Закреплено в проекте %@";
 "Pinned to this project" = "Закреплены за этим проектом";
 "Point at an element and hand it to an agent" = "Укажите на элемент и передайте его агенту";
@@ -479,7 +457,6 @@
 "Protocol" = "Протокол";
 "Proxy jump" = "Промежуточный хост";
 "pt" = "пт";
-"Pull (rebase)" = "Pull (rebase)";
 "Pull failed" = "Не удалось забрать изменения";
 "Pull into %@" = "Забрать в %@";
 "Pull" = "Забрать";
@@ -505,7 +482,6 @@
 "Reconnect" = "Переподключиться";
 "Refresh containers" = "Обновить контейнеры";
 "Refresh usage" = "Обновить лимиты";
-"Refuses rather than making a merge commit" = "Откажется, вместо коммита слияния";
 "Regular expression" = "Регулярное выражение";
 "Relay cannot replace itself at %@." = "Relay не может заменить себя по пути %@.";
 "Relay cannot see the releases. A private repository needs to be public for updates to work." = "Relay не видит релизы. Для обновлений репозиторий должен быть публичным.";
@@ -535,7 +511,6 @@
 "Rename Session" = "Переименовать сессию";
 "Rename…" = "Переименовать…";
 "Reopen Closed Session" = "Открыть закрытую сессию";
-"Replays your commits on top of theirs instead of merging" = "Переложит ваши коммиты поверх их, вместо слияния";
 "Rescan now" = "Пересканировать";
 "Reset All" = "Сбросить всё";
 "Reset Font Size" = "Сбросить размер шрифта";
@@ -560,9 +535,7 @@
 "Reverting: %@" = "Откатывается: %@";
 "Review Changes" = "Посмотреть изменения";
 "Root path" = "Путь к папке";
-"Run Again" = "Запустить снова";
 "Run a command…" = "Выполнить команду…";
-"Run again" = "Запустить снова";
 "Run my own command" = "Своя команда";
 "Run" = "Запустить";
 "Running sessions are unaffected. Reconnecting restores them." = "Запущенные сессии не затронуты — переподключение их вернёт.";
@@ -597,7 +570,6 @@
 "Send to a new %@" = "Отправить в новый %@";
 "Send to an agent" = "Отправить агенту";
 "Send to" = "Отправить";
-"Sends tags along with the commits" = "Отправит теги вместе с коммитами";
 "Services" = "Сервисы";
 "Session daemon disconnected" = "Демон сессий отключился";
 "Session daemon is shutting down" = "Демон сессий останавливается";
@@ -610,10 +582,8 @@
 "Sessions it was supervising have ended." = "Сессии, которыми он управлял, завершены.";
 "Sessions live in a background daemon and survive quitting the app" = "Сессии живут в фоновом демоне и переживают выход из приложения";
 "Sessions sidebar" = "Панель сессий";
-"Sessions you finish appear here, with what ran and how it ended." = "Завершённые сессии появятся здесь — что запускалось и чем закончилось.";
 "Sessions" = "Сессии";
 "Set uncommitted changes aside for the pull and put them back after" = "Отложить незакоммиченные изменения на время и вернуть их после";
-"Sets uncommitted changes aside for the pull and puts them back after" = "Отложит незакоммиченные изменения на время и вернёт их после";
 "Settings" = "Настройки";
 "Shell" = "Терминал";
 "Shortcuts" = "Горячие клавиши";
@@ -641,7 +611,6 @@
 "Status bar" = "Нижняя панель";
 "Status" = "Состояние";
 "Status: %@" = "Состояние: %@";
-"Still starting" = "Ещё запускается";
 "Stop %@" = "Остановить %@";
 "Stop container" = "Остановить контейнер";
 "Stop process" = "Остановить процесс";
@@ -695,7 +664,6 @@
 "This file could not be read from disk." = "Этот файл не удалось прочитать с диска.";
 "This is the newest release" = "Это самый свежий релиз";
 "This project" = "Этот проект";
-"This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand." = "Это перезапишет ветку на удалённом сервере. Всем, кто её уже забрал, придётся восстанавливаться вручную.";
 "This session is no longer known to the daemon." = "Демон больше не знает об этой сессии.";
 "This tab has been closed." = "Эта вкладка закрыта.";
 "To Do" = "К выполнению";
@@ -712,13 +680,11 @@
 "Unpushed commits: %d, kept on its branch" = "Неотправленных коммитов: %d, они останутся в ветке";
 "URL override" = "Переопределить URL";
 "Uncommitted changes are set aside and put back" = "Незакоммиченные изменения отложатся и вернутся";
-"Undo" = "Отменить";
 "Unlock Key" = "Разблокировать ключ";
 "Unlock once" = "Разблокировать один раз";
 "Unlock" = "Разблокировать";
 "Unlocking…" = "Разблокировка…";
 "Unpin from Project" = "Открепить от проекта";
-"Unpin from project" = "Открепить от проекта";
 "Unstage all" = "Убрать всё из индекса";
 "Unstage" = "Убрать из индекса";
 "Up" = "Запустить";
@@ -729,7 +695,6 @@
 "Version" = "Версия";
 "Waiting for you" = "Ждёт вас";
 "Weekly" = "Еженедельно";
-"What is in the context window" = "Что лежит в контекстном окне";
 "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly" = "Именно это делает прокрутку плавной. Выключите, если терминал рисуется неправильно";
 "What should be done about these?" = "Что с ними нужно сделать?";
 "What should it do?" = "Что ему сделать?";
@@ -737,8 +702,6 @@
 "When to interrupt" = "Когда прерывать";
 "Which words to look for" = "Какие слова искать";
 "Whole words" = "Слово целиком";
-"Window (inferred)" = "Окно (вычислено)";
-"Window" = "Окно";
 "Words the TODO panel looks for in comments. Case sensitive; letters only." = "Слова, которые панель TODO ищет в комментариях. Регистр важен, только буквы.";
 "Work finished" = "Работа завершена";
 "Working" = "Работает";
@@ -751,24 +714,16 @@
 "as of %@" = "по состоянию на %@";
 "coming soon" = "скоро";
 "development build" = "сборка для разработки";
-"exited %@" = "код выхода %@";
 "exited with code %@" = "завершился с кодом %@";
-"finished" = "завершено";
-"folder" = "folder";
 "in ~/.ssh/config" = "в ~/.ssh/config";
 "it was signed by someone else" = "она подписана кем-то другим";
 "its signature is not valid" = "её подпись недействительна";
 "listening" = "слушает";
-"logs" = "logs";
 "macOS has no player for this format. Open it in the app it belongs to." = "В macOS нет проигрывателя для этого формата. Откройте файл в приложении, для которого он предназначен.";
 "new" = "новый";
 "not a git repository. Click to look again." = "не git-репозиторий. Нажмите, чтобы проверить снова.";
 "ours" = "наше";
 "reported an error" = "сообщил об ошибке";
 "resets in %@" = "сбрасывается через %@";
-"restart" = "restart";
-"shippingbox" = "shippingbox";
-"start" = "start";
-"stop" = "stop";
 "theirs" = "их";
 "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 выбирает сессию, ⌥⌘1…⌥⌘9 — проект";

@@ -130,6 +130,23 @@ struct LocalizationTests {
         #expect(offenders.isEmpty, "shown without being looked up: \(offenders)")
     }
 
+    @Test("Every entry in the tables is still asked for")
+    func everyEntryIsAskedFor() throws {
+        // An entry nothing asks for is how a reworded phrase loses its
+        // translation without anyone noticing: the code says something new, the
+        // table keeps translating the old words, and both tests above stay
+        // green. A key that is not a literal anywhere in the tree cannot be
+        // asked for — least of all one the code builds by interpolation.
+        var written = Set<String>()
+        for file in try SwiftSourceFile.all(under: Self.repositoryRoot.appendingPathComponent("Sources")) {
+            for literal in file.literals where !literal.isInterpolated {
+                written.insert(literal.text)
+            }
+        }
+        let stale = try Self.allKeys("en").subtracting(written)
+        #expect(stale.isEmpty, "nothing asks for: \(stale.sorted())")
+    }
+
     @Test("Every name a type hands to the table has an entry")
     func everyNameHasAnEntry() throws {
         // These are looked up through a variable — `relayLocalized(title)` —

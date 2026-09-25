@@ -45,7 +45,6 @@
 "Add project" = "Add project";
 "Add service" = "Add service";
 "Add to Host *" = "Add to Host *";
-"Add to agent and Keychain" = "Add to agent and Keychain";
 "Add" = "Add";
 "Added" = "Added";
 "Address or search" = "Address or search";
@@ -87,7 +86,6 @@
 "Branches kept, with commits not merged anywhere yet: %@." = "Branches kept, with commits not merged anywhere yet: %@.";
 "Branches that stay, with work that is not merged: %@." = "Branches that stay, with work that is not merged: %@.";
 "Browser" = "Browser";
-"Built-in" = "Built-in";
 "Bypass the pre-merge and commit message hooks" = "Bypass the pre-merge and commit message hooks";
 "Bypass the pre-push hook" = "Bypass the pre-push hook";
 "Checking whether its branch is merged…" = "Checking whether its branch is merged…";
@@ -119,18 +117,14 @@
 "Chromium could not open the page." = "Chromium could not open the page.";
 "Chromium has stopped." = "Chromium has stopped.";
 "Chromium is not available" = "Chromium is not available";
-"Claude Code records the model without saying which window it runs with" = "Claude Code records the model without saying which window it runs with";
-"Claude context window" = "Claude context window";
 "Claude · ask first" = "Claude · ask first";
 "Claude" = "Claude";
 "Clear Comment" = "Clear Comment";
 "Clear all" = "Clear all";
-"Clear history" = "Clear history";
 "Clear" = "Clear";
 "Click an element to hand it to an agent. Esc stops." = "Click an element to hand it to an agent. Esc stops.";
 "Close File" = "Close File";
 "Close Pane" = "Close Pane";
-"Close Session" = "Close Session";
 "Close Tab" = "Close Tab";
 "Close session" = "Close session";
 "Close this view — the service keeps running" = "Close this view — the service keeps running";
@@ -147,7 +141,6 @@
 "Commit message" = "Commit message";
 "Commit" = "Commit";
 "Commits" = "Commits";
-"Commits, branch switching and diffs will live here." = "Commits, branch switching and diffs will live here.";
 "Compact" = "Compact";
 "Completed" = "Completed";
 "Conflicts in the working copy" = "Conflicts in the working copy";
@@ -155,7 +148,6 @@
 "Connect SSH: %@" = "Connect SSH: %@";
 "Connect" = "Connect";
 "Connected — sessions keep running when Relay is closed" = "Connected — sessions keep running when Relay is closed";
-"Context" = "Context";
 "Continue" = "Continue";
 "Conversations" = "Conversations";
 "Copy Container Name" = "Copy Container Name";
@@ -220,7 +212,6 @@
 "Docker — nothing found. Click to check again." = "Docker — nothing found. Click to check again.";
 "Docker" = "Docker";
 "Done" = "Done";
-"Double-click the session in the sidebar to rename it" = "Double-click the session in the sidebar to rename it";
 "Down" = "Down";
 "Download and restart into the new version" = "Download and restart into the new version";
 "Downloading…" = "Downloading…";
@@ -255,7 +246,6 @@
 "File unavailable" = "File unavailable";
 "File" = "File";
 "Files" = "Files";
-"Filled in once the agent has answered" = "Filled in once the agent has answered";
 "Filter by alias or host" = "Filter by alias or host";
 "Filter by port, process or session" = "Filter by port, process or session";
 "Find" = "Find";
@@ -270,9 +260,7 @@
 "Folder already gone" = "Folder already gone";
 "Folder name" = "Folder name";
 "For the questions that belong to no project. Agents start here knowing nothing about your code." = "For the questions that belong to no project. Agents start here knowing nothing about your code.";
-"Force push (with lease)" = "Force push (with lease)";
 "Force push" = "Force push";
-"Force push?" = "Force push?";
 "Force quit" = "Force quit";
 "Forward" = "Forward";
 "Forward agent" = "Forward agent";
@@ -300,7 +288,6 @@
 "In Progress" = "In Progress";
 "In Review" = "In Review";
 "In the agent — no passphrase will be asked for." = "In the agent — no passphrase will be asked for.";
-"In the window" = "In the window";
 "Increase Font Size (⌘=)" = "Increase Font Size (⌘=)";
 "Increase Font Size" = "Increase Font Size";
 "Install %@" = "Install %@";
@@ -321,7 +308,6 @@
 "Last activity" = "Last activity";
 "Leave empty to detect the port automatically." = "Leave empty to detect the port automatically.";
 "Leave unset" = "Leave unset";
-"Listening on this Mac" = "Listening on this Mac";
 "Loading…" = "Loading…";
 "Local" = "Local";
 "Locked: git will not remove it until it is unlocked" = "Locked: git will not remove it until it is unlocked";
@@ -331,9 +317,7 @@
 "Looking for containers…" = "Looking for containers…";
 "Looking…" = "Looking…";
 "Make this branch follow the one it is pushed to" = "Make this branch follow the one it is pushed to";
-"Makes this branch follow the one it is pushed to" = "Makes this branch follow the one it is pushed to";
 "Mark all read" = "Mark all read";
-"Mark resolved" = "Mark resolved";
 "Match case" = "Match case";
 "Merge in progress" = "Merge in progress";
 "Merge only if it can be fast-forwarded" = "Merge only if it can be fast-forwarded";
@@ -344,7 +328,6 @@
 "Merged, clean, nothing running in it, and left alone for a day" = "Merged, clean, nothing running in it, and left alone for a day";
 "Merge…" = "Merge…";
 "Merging in: %@" = "Merging in: %@";
-"Model" = "Model";
 "Modified" = "Modified";
 "Move to Trash" = "Move to Trash";
 "Move to Trash?" = "Move to Trash?";
@@ -378,7 +361,6 @@
 "Newly cached" = "Newly cached";
 "Next Project" = "Next Project";
 "Next Session" = "Next Session";
-"Next" = "Next";
 "No %@ comments in this project." = "No %@ comments in this project.";
 "No branch matches “%@”." = "No branch matches “%@”.";
 "No branch" = "No branch";
@@ -386,7 +368,6 @@
 "No definition found" = "No definition found";
 "No host matches “%@”." = "No host matches “%@”.";
 "No hosts configured" = "No hosts configured";
-"No markers left in this file — mark it resolved." = "No markers left in this file — mark it resolved.";
 "No match" = "No match";
 "No matches" = "No matches";
 "No matching commands" = "No matching commands";
@@ -410,7 +391,6 @@
 "Nothing is listening" = "Nothing is listening";
 "Nothing left in dispute" = "Nothing left in dispute";
 "Nothing left to do" = "Nothing left to do";
-"Nothing selected" = "Nothing selected";
 "Nothing to push — the remote branch is already here." = "Nothing to push — the remote branch is already here.";
 "Nothing to show" = "Nothing to show";
 "Nothing yet" = "Nothing yet";
@@ -446,7 +426,6 @@
 "Other hosts" = "Other hosts";
 "Output" = "Output";
 "Overwrite the remote branch, refusing if it moved since you last fetched" = "Overwrite the remote branch, refusing if it moved since you last fetched";
-"Overwrites the remote branch, but refuses if it moved since you last fetched" = "Overwrites the remote branch, but refuses if it moved since you last fetched";
 "Pages: %@" = "Pages: %@";
 "Passphrase" = "Passphrase";
 "Past conversations with Claude and Codex in this project appear here, wherever they were started." = "Past conversations with Claude and Codex in this project appear here, wherever they were started.";
@@ -455,7 +434,6 @@
 "Pick suggested" = "Pick suggested";
 "Picked: %d" = "Picked: %d";
 "Pin to Project" = "Pin to Project";
-"Pin to current project" = "Pin to current project";
 "Pinned to %@" = "Pinned to %@";
 "Pinned to this project" = "Pinned to this project";
 "Point at an element and hand it to an agent" = "Point at an element and hand it to an agent";
@@ -479,7 +457,6 @@
 "Protocol" = "Protocol";
 "Proxy jump" = "Proxy jump";
 "pt" = "pt";
-"Pull (rebase)" = "Pull (rebase)";
 "Pull failed" = "Pull failed";
 "Pull into %@" = "Pull into %@";
 "Pull" = "Pull";
@@ -505,7 +482,6 @@
 "Reconnect" = "Reconnect";
 "Refresh containers" = "Refresh containers";
 "Refresh usage" = "Refresh usage";
-"Refuses rather than making a merge commit" = "Refuses rather than making a merge commit";
 "Regular expression" = "Regular expression";
 "Relay cannot replace itself at %@." = "Relay cannot replace itself at %@.";
 "Relay cannot see the releases. A private repository needs to be public for updates to work." = "Relay cannot see the releases. A private repository needs to be public for updates to work.";
@@ -535,7 +511,6 @@
 "Rename Session" = "Rename Session";
 "Rename…" = "Rename…";
 "Reopen Closed Session" = "Reopen Closed Session";
-"Replays your commits on top of theirs instead of merging" = "Replays your commits on top of theirs instead of merging";
 "Rescan now" = "Rescan now";
 "Reset All" = "Reset All";
 "Reset Font Size" = "Reset Font Size";
@@ -560,9 +535,7 @@
 "Reverting: %@" = "Reverting: %@";
 "Review Changes" = "Review Changes";
 "Root path" = "Root path";
-"Run Again" = "Run Again";
 "Run a command…" = "Run a command…";
-"Run again" = "Run again";
 "Run my own command" = "Run my own command";
 "Run" = "Run";
 "Running sessions are unaffected. Reconnecting restores them." = "Running sessions are unaffected. Reconnecting restores them.";
@@ -597,7 +570,6 @@
 "Send to a new %@" = "Send to a new %@";
 "Send to an agent" = "Send to an agent";
 "Send to" = "Send to";
-"Sends tags along with the commits" = "Sends tags along with the commits";
 "Services" = "Services";
 "Session daemon disconnected" = "Session daemon disconnected";
 "Session daemon is shutting down" = "Session daemon is shutting down";
@@ -610,10 +582,8 @@
 "Sessions it was supervising have ended." = "Sessions it was supervising have ended.";
 "Sessions live in a background daemon and survive quitting the app" = "Sessions live in a background daemon and survive quitting the app";
 "Sessions sidebar" = "Sessions sidebar";
-"Sessions you finish appear here, with what ran and how it ended." = "Sessions you finish appear here, with what ran and how it ended.";
 "Sessions" = "Sessions";
 "Set uncommitted changes aside for the pull and put them back after" = "Set uncommitted changes aside for the pull and put them back after";
-"Sets uncommitted changes aside for the pull and puts them back after" = "Sets uncommitted changes aside for the pull and puts them back after";
 "Settings" = "Settings";
 "Shell" = "Shell";
 "Shortcuts" = "Shortcuts";
@@ -641,7 +611,6 @@
 "Status bar" = "Status bar";
 "Status" = "Status";
 "Status: %@" = "Status: %@";
-"Still starting" = "Still starting";
 "Stop %@" = "Stop %@";
 "Stop container" = "Stop container";
 "Stop process" = "Stop process";
@@ -695,7 +664,6 @@
 "This file could not be read from disk." = "This file could not be read from disk.";
 "This is the newest release" = "This is the newest release";
 "This project" = "This project";
-"This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand." = "This rewrites the branch on the remote. Anyone who has pulled it will have to recover by hand.";
 "This session is no longer known to the daemon." = "This session is no longer known to the daemon.";
 "This tab has been closed." = "This tab has been closed.";
 "To Do" = "To Do";
@@ -712,13 +680,11 @@
 "Unpushed commits: %d, kept on its branch" = "Unpushed commits: %d, kept on its branch";
 "URL override" = "URL override";
 "Uncommitted changes are set aside and put back" = "Uncommitted changes are set aside and put back";
-"Undo" = "Undo";
 "Unlock Key" = "Unlock Key";
 "Unlock once" = "Unlock once";
 "Unlock" = "Unlock";
 "Unlocking…" = "Unlocking…";
 "Unpin from Project" = "Unpin from Project";
-"Unpin from project" = "Unpin from project";
 "Unstage all" = "Unstage all";
 "Unstage" = "Unstage";
 "Up" = "Up";
@@ -729,7 +695,6 @@
 "Version" = "Version";
 "Waiting for you" = "Waiting for you";
 "Weekly" = "Weekly";
-"What is in the context window" = "What is in the context window";
 "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly" = "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly";
 "What should be done about these?" = "What should be done about these?";
 "What should it do?" = "What should it do?";
@@ -737,8 +702,6 @@
 "When to interrupt" = "When to interrupt";
 "Which words to look for" = "Which words to look for";
 "Whole words" = "Whole words";
-"Window (inferred)" = "Window (inferred)";
-"Window" = "Window";
 "Words the TODO panel looks for in comments. Case sensitive; letters only." = "Words the TODO panel looks for in comments. Case sensitive; letters only.";
 "Work finished" = "Work finished";
 "Working" = "Working";
@@ -751,24 +714,16 @@
 "as of %@" = "as of %@";
 "coming soon" = "coming soon";
 "development build" = "development build";
-"exited %@" = "exited %@";
 "exited with code %@" = "exited with code %@";
-"finished" = "finished";
-"folder" = "folder";
 "in ~/.ssh/config" = "in ~/.ssh/config";
 "it was signed by someone else" = "it was signed by someone else";
 "its signature is not valid" = "its signature is not valid";
 "listening" = "listening";
-"logs" = "logs";
 "macOS has no player for this format. Open it in the app it belongs to." = "macOS has no player for this format. Open it in the app it belongs to.";
 "new" = "new";
 "not a git repository. Click to look again." = "not a git repository. Click to look again.";
 "ours" = "ours";
 "reported an error" = "reported an error";
 "resets in %@" = "resets in %@";
-"restart" = "restart";
-"shippingbox" = "shippingbox";
-"start" = "start";
-"stop" = "stop";
 "theirs" = "theirs";
 "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project";
