@@ -118,10 +118,11 @@ enum UsageDetail: String, Codable, CaseIterable, Identifiable, Sendable {
 /// Turns a duration into the shape both CLIs use: the two largest units that
 /// still say something.
 ///
-/// `2h 12m`, `1d 6h`, `59m`. Never `0m`, because a window that has just rolled
+/// `2h 12m`, `1d 6h`, `59m` — and `2 ч 12 мин` in Russian, whose window used to
+/// show the English letters. Never `0m`, because a window that has just rolled
 /// over reads better as "now" than as nothing at all.
 enum UsageFormatting {
-    static func countdown(to date: Date, from now: Date = Date()) -> String? {
+    static func countdown(to date: Date, from now: Date = Date(), locale: Locale) -> String? {
         let seconds = Int(date.timeIntervalSince(now))
         guard seconds > 0 else { return nil }
 
@@ -129,8 +130,25 @@ enum UsageFormatting {
         let hours = (seconds % 86_400) / 3_600
         let minutes = (seconds % 3_600) / 60
 
-        if days > 0 { return hours > 0 ? "\(days)d \(hours)h" : "\(days)d" }
-        if hours > 0 { return minutes > 0 ? "\(hours)h \(minutes)m" : "\(hours)h" }
-        return "\(max(minutes, 1))m"
+        // Cut to two units here, so the formatter decides only how they are
+        // spelled and never which of them are shown.
+        var shown = DateComponents()
+        if days > 0 {
+            shown.day = days
+            shown.hour = hours > 0 ? hours : nil
+        } else if hours > 0 {
+            shown.hour = hours
+            shown.minute = minutes > 0 ? minutes : nil
+        } else {
+            shown.minute = max(minutes, 1)
+        }
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = locale
+        let formatter = DateComponentsFormatter()
+        formatter.calendar = calendar
+        formatter.unitsStyle = .abbreviated
+        formatter.allowedUnits = [.day, .hour, .minute]
+        return formatter.string(from: shown)
     }
 }

@@ -75,7 +75,7 @@ struct InboxPopover: View {
                     .foregroundStyle(Theme.Palette.textTertiary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(Self.formatter.localizedString(for: item.occurredAt, relativeTo: Date()))
+                Text(verbatim: relayRelativeTime(item.occurredAt, relativeTo: Date()))
                     .font(Theme.Typography.caption)
                     .foregroundStyle(Theme.Palette.textTertiary)
             }
@@ -101,10 +101,4 @@ struct InboxPopover: View {
         case .finished: Theme.Palette.statusFinished
         }
     }
-
-    private static let formatter: RelativeDateTimeFormatter = {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter
-    }()
 }

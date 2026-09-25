@@ -78,7 +78,7 @@ private struct AgentUsageRow: View {
                         .foregroundStyle(Theme.Palette.textPrimary)
 
                     if let reset = usage.nextReset,
-                       let countdown = UsageFormatting.countdown(to: reset, from: context.date) {
+                       let countdown = UsageFormatting.countdown(to: reset, from: context.date, locale: Localization.shared.locale) {
                         Text(String(format: relayLocalized("Resets in %@"), countdown))
                             .font(Theme.Typography.caption)
                             .foregroundStyle(Theme.Palette.textTertiary)

@@ -80,7 +80,7 @@ private struct AgentUsageChip: View {
                 }
 
                 if let reset = usage.nextReset,
-                   let countdown = UsageFormatting.countdown(to: reset, from: context.date) {
+                   let countdown = UsageFormatting.countdown(to: reset, from: context.date, locale: Localization.shared.locale) {
                     Text(countdown)
                         .font(Theme.Typography.caption)
                         .foregroundStyle(Theme.Palette.textTertiary)
@@ -109,17 +109,14 @@ private struct AgentUsageChip: View {
     private func tooltip(now: Date) -> String {
         var lines = usage.windows.map { window -> String in
             let reset = window.resetsAt
-                .flatMap { UsageFormatting.countdown(to: $0, from: now) }
+                .flatMap { UsageFormatting.countdown(to: $0, from: now, locale: Localization.shared.locale) }
                 .map { " · " + String(format: relayLocalized("resets in %@"), $0) } ?? ""
             // Spelled out here, where there is room: `wk` is fine in the bar and
             // means nothing on its own.
             return "\(window.name) \(window.percent)%\(reset)"
         }
         if let fetched = usage.fetchedAt {
-            let formatter = DateFormatter()
-            formatter.timeStyle = .short
-            formatter.dateStyle = .none
-            lines.append(String(format: relayLocalized("as of %@"), formatter.string(from: fetched)))
+            lines.append(String(format: relayLocalized("as of %@"), relayTime(fetched)))
         }
         return lines.joined(separator: "\n")
     }

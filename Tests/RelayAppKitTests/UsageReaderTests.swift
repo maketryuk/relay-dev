@@ -8,8 +8,8 @@ import Testing
 struct UsageFormattingTests {
     private let now = Date(timeIntervalSince1970: 1_000_000)
 
-    private func countdown(_ seconds: TimeInterval) -> String? {
-        UsageFormatting.countdown(to: now.addingTimeInterval(seconds), from: now)
+    private func countdown(_ seconds: TimeInterval, in locale: String = "en_US") -> String? {
+        UsageFormatting.countdown(to: now.addingTimeInterval(seconds), from: now, locale: Locale(identifier: locale))
     }
 
     @Test("The two largest units that still say something")
@@ -30,6 +30,15 @@ struct UsageFormattingTests {
         // "0m" looks like a bug; a few seconds left is a minute as far as a
         // status bar is concerned.
         #expect(countdown(20) == "1m")
+    }
+
+    @Test("The units are the interface's, not English letters in a Russian window")
+    func speaksTheLocale() throws {
+        // Matched by its words rather than character for character: which
+        // space goes between a number and its unit is the system's to decide.
+        let russian = try #require(countdown(2 * 3600 + 12 * 60, in: "ru"))
+        #expect(russian.contains("ч") && russian.contains("мин"))
+        #expect(!russian.contains("h") && !russian.contains("m"))
     }
 
     @Test("A window that has already rolled over has no countdown")

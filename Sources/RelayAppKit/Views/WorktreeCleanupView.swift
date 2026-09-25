@@ -389,7 +389,7 @@ private struct WorktreeCleanupRow: View {
             if isBeingRemoved {
                 ProgressView().controlSize(.mini)
             } else if let last = candidate.lastActivity {
-                Text(verbatim: Self.formatter.localizedString(for: last, relativeTo: now))
+                Text(verbatim: relayRelativeTime(last, relativeTo: now))
                     .font(Theme.Typography.caption)
                     .foregroundStyle(Theme.Palette.textTertiary)
                     .relayTooltip(relayLocalized("Last activity"))
@@ -511,12 +511,6 @@ private struct WorktreeCleanupRow: View {
         .buttonStyle(.plain)
         .clickable()
     }
-
-    private static let formatter: RelativeDateTimeFormatter = {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter
-    }()
 }
 
 /// Laid out the way words are: along the line, and onto the next once it is

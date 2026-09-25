@@ -436,7 +436,7 @@ struct HistoryPane: View {
     }
 
     private func subtitle(_ conversation: Conversation) -> String {
-        var parts = [Self.formatter.localizedString(for: conversation.updatedAt, relativeTo: Date())]
+        var parts = [relayRelativeTime(conversation.updatedAt, relativeTo: Date())]
         if let branch = conversation.branch { parts.append(branch) }
         if let prompt = conversation.lastPrompt, prompt != conversation.title { parts.append(prompt) }
         return parts.joined(separator: " · ")
@@ -450,10 +450,4 @@ struct HistoryPane: View {
             .padding(.vertical, Theme.Spacing.xsmall)
             .fixedSize(horizontal: false, vertical: true)
     }
-
-    private static let formatter: RelativeDateTimeFormatter = {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter
-    }()
 }

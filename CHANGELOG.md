@@ -45,6 +45,11 @@ breaking change to stored data.
   container that would not start and a process that was stopped. A test now
   fails on a label SwiftUI would look up in the app's own bundle, where no
   translation lives, and on a translated phrase shown without being looked up.
+- **Dates, times and sizes followed the system, not Relay's language.** With
+  Relay in Russian on an English Mac, times said "2h ago" and sizes "MB" among
+  Russian words, and the other way round; the usage countdown was "2h 12m" in
+  both. They now follow the language Relay is set to, and a Russian relative
+  time says "2 ч назад" rather than "-2 ч".
 
 ## 0.7.1 — 2026-09-25
 

@@ -174,6 +174,20 @@ struct LocalizationTests {
         return names
     }
 
+    @Test("Sizes and times are written in the interface's language, not the system's")
+    func formatsFollowTheInterface() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let earlier = now.addingTimeInterval(-2 * 3600)
+        withLanguage(.russian) {
+            #expect(relayByteCount(2_500_000).contains("МБ"))
+            #expect(relayRelativeTime(earlier, relativeTo: now).contains("назад"))
+        }
+        withLanguage(.english) {
+            #expect(relayByteCount(2_500_000).contains("MB"))
+            #expect(relayRelativeTime(earlier, relativeTo: now).contains("ago"))
+        }
+    }
+
     // MARK: - Reading the tables
 
     /// The checkout, found from this file rather than from the working

@@ -49,6 +49,21 @@ public final class Localization {
 
     public var language: AppLanguage = .system
 
+    /// The locale numbers, dates and sizes are written in: the language of the
+    /// words around them, which need not be the system's.
+    ///
+    /// `Locale.current` follows the Mac, so with Relay set to Russian on an
+    /// English Mac a relative time said "2h ago" in the middle of Russian, and
+    /// the other way round. The region is kept, so a clock still reads the way
+    /// the Mac is set to.
+    public var locale: Locale {
+        let current = Locale.current
+        let wanted = language.code ?? RelayUIResources.bundle.preferredLocalizations.first ?? "en"
+        if current.language.languageCode?.identifier == wanted { return current }
+        guard let region = current.region?.identifier else { return Locale(identifier: wanted) }
+        return Locale(identifier: "\(wanted)_\(region)")
+    }
+
     private init() {}
 }
 
@@ -135,3 +150,41 @@ private func Self_bundle(for language: AppLanguage) -> Bundle {
 
 @MainActor
 private var resolvedBundles: [String: Bundle] = [:]
+
+// MARK: - Dates and sizes
+
+/// A moment against now — "2h ago", "2 ч назад" — in the interface's language.
+///
+/// Russian gets the short style rather than the abbreviated one, which in
+/// Russian comes out as "-2 ч": a negative number where "ago" should be. The
+/// short style says "назад" and is nearly as brief as the English.
+@MainActor
+public func relayRelativeTime(_ date: Date, relativeTo now: Date) -> String {
+    let locale = Localization.shared.locale
+    if let formatter = relativeFormatters[locale.identifier] {
+        return formatter.localizedString(for: date, relativeTo: now)
+    }
+    let formatter = RelativeDateTimeFormatter()
+    formatter.locale = locale
+    formatter.unitsStyle = locale.language.languageCode == .russian ? .short : .abbreviated
+    relativeFormatters[locale.identifier] = formatter
+    return formatter.localizedString(for: date, relativeTo: now)
+}
+
+/// A time of day, written the way the interface's language writes one.
+@MainActor
+public func relayTime(_ date: Date) -> String {
+    date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Localization.shared.locale))
+}
+
+/// A size on disk. Not `ByteCountFormatter`, which takes its units from the
+/// app bundle — English only — and so wrote "MB" into a Russian window.
+@MainActor
+public func relayByteCount(_ bytes: Int64) -> String {
+    bytes.formatted(.byteCount(style: .file).locale(Localization.shared.locale))
+}
+
+/// Built once per locale: a formatter is costly to make, and these are asked
+/// for by every row of a list on every redraw.
+@MainActor
+private var relativeFormatters: [String: RelativeDateTimeFormatter] = [:]

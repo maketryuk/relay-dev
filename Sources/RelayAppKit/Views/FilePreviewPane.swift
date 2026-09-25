@@ -106,7 +106,7 @@ struct FilePreviewPane: View {
 
     /// What there is to know about the file at a glance, beside its name.
     private var facts: String {
-        let size = PreviewFacts.size(preview.byteCount)
+        let size = relayByteCount(preview.byteCount)
         switch content {
         case let .image(_, width, height):
             return PreviewFacts.joined([PreviewFacts.dimensions(width: width, height: height), size])

@@ -182,10 +182,6 @@ enum PreviewFacts {
             : String(format: "%d:%02d", minutes, remainder)
     }
 
-    static func size(_ bytes: Int64) -> String {
-        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
-    }
-
     static func joined(_ facts: [String?]) -> String {
         facts.compactMap { $0 }.joined(separator: " · ")
     }
