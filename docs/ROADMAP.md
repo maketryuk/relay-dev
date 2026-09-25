@@ -193,6 +193,24 @@ workspace is a git worktree.
   derived from the path. A project that already carries a favicon or an app icon
   could supply its own, with a way to set one by hand when it does not.
 - **Per-project environment variables.** Set once, applied to every session.
+- **Panels that stop asking while nobody can see them.** The Git panel, the
+  Docker tab and the History tab refresh on a timer for as long as they are in
+  the window, which includes a window that is minimised, hidden or covered —
+  `git status` every four seconds, `docker` every five. Pausing while the app
+  is inactive would be wrong, since the window is often watched from beside
+  another app; the signal wanted is the window's occlusion.
+- **Chromium's idle turns.** Once a tab has been shown, CEF is given a turn
+  thirty times a second for as long as any page exists, on screen or not. A
+  slower pace while no page is on screen needs checking against a real page,
+  which the tests cannot open.
+- **The context figure read once per change.** Every visible agent session
+  re-reads the end of its transcript, and for Claude `~/.claude.json`, every
+  ten seconds — about ten milliseconds each time. `TranscriptReadings` would
+  make an idle one free, once the window the setting declares is kept out of
+  what is remembered.
+- **Warm ESLint processes, bounded.** One is kept per checkout a file was
+  checked in, until the checkout goes. A worktree-heavy day can gather several
+  `node` processes; keeping the few most recent would bound it.
 
 ---
 
