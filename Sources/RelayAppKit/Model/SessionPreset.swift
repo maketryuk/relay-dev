@@ -114,6 +114,11 @@ enum SessionPresets {
         ]
     }
 
+    /// The names Relay gives presets, as opposed to the ones people type.
+    static var suppliedNames: [String] {
+        (defaultSet + templates).map(\.name)
+    }
+
     /// What a keyboard shortcut for a kind should launch.
     static func preferred(for kind: SessionKind, in presets: [SessionPreset]) -> SessionPreset {
         presets.first { $0.kind == kind } ?? SessionPreset(name: kind.displayName, kind: kind)

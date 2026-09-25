@@ -365,7 +365,7 @@ private struct DesignPickCard: View {
             }
         } else if let preset = agentPresets.first {
             HStack(spacing: 2) {
-                RelayButton(String(format: relayLocalized("Send to a new %@"), preset.name), systemImage: "paperplane", kind: .primary) {
+                RelayButton(String(format: relayLocalized("Send to a new %@"), preset.localizedName), systemImage: "paperplane", kind: .primary) {
                     model.send(selection, from: page, toNewSessionFrom: preset)
                 }
                 otherTargets
@@ -387,7 +387,7 @@ private struct DesignPickCard: View {
             }
             Section(relayLocalized("New agent")) {
                 ForEach(agentPresets) { preset in
-                    Button(preset.name) { model.send(selection, from: page, toNewSessionFrom: preset) }
+                    Button(preset.localizedName) { model.send(selection, from: page, toNewSessionFrom: preset) }
                 }
             }
         } label: {

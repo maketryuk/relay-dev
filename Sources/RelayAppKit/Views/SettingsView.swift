@@ -213,7 +213,7 @@ struct GeneralSettingsPane: View {
 
             SettingsGroup(relayLocalized("Session presets")) {
                 ForEach(model.presets) { preset in
-                    SettingsRow(title: preset.name, detail: preset.subtitle) {
+                    SettingsRow(title: preset.localizedName, detail: preset.subtitle) {
                         HStack(spacing: Theme.Spacing.xsmall) {
                             RelayButton(relayLocalized("Edit…")) { model.presentModal(.presetEditor(presetID: preset.id)) }
                             if !preset.isProtected {

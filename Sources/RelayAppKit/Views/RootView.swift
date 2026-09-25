@@ -241,7 +241,7 @@ struct ProjectOverviewPane: View {
                     HStack(spacing: Theme.Spacing.small) {
                         ForEach(row) { preset in
                             let isPrimary = isLeading(preset)
-                            RelayButton(preset.name, kind: isPrimary ? .primary : .secondary) {
+                            RelayButton(preset.localizedName, kind: isPrimary ? .primary : .secondary) {
                                 SessionGlyph(
                                     kind: preset.kind,
                                     size: 12,

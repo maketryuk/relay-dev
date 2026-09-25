@@ -7,6 +7,13 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Changed
+
+- **New sessions, and the presets Relay supplies, are named in the interface's
+  language.** A new terminal in a Russian window is "Терминал", and the preset
+  editor's templates offer "Claude · спрашивать". A preset or a session someone
+  named keeps the name they gave it.
+
 ### Fixed
 
 - **A long paste no longer freezes every terminal.** More than a couple of

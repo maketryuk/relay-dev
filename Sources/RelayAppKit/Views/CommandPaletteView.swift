@@ -259,7 +259,7 @@ struct CommandPaletteView: View {
                 commands.append(PaletteCommand(
                     id: "new-\(preset.id)",
                     titleKey: "New %@ Session",
-                    titleArguments: [preset.name],
+                    titleArguments: [preset.localizedName],
                     subtitle: preset.subtitle,
                     systemImage: preset.kind.symbolName
                 ) {

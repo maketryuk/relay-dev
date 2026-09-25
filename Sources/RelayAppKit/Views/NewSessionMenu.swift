@@ -215,7 +215,7 @@ private struct PresetRow: View {
             .frame(width: 18)
 
             VStack(alignment: .leading, spacing: 1) {
-                Text(preset.name)
+                Text(preset.localizedName)
                     .font(Theme.Typography.row)
                     .foregroundStyle(Theme.Palette.textPrimary)
                     .lineLimit(1)

@@ -358,7 +358,7 @@ private struct SendTodosMenu: View {
             }
             Section(relayLocalized("New agent")) {
                 ForEach(model.sessionPresets.filter(\.kind.isAgent)) { preset in
-                    Button(preset.name) {
+                    Button(preset.localizedName) {
                         model.send(
                             todos,
                             instruction: instruction,

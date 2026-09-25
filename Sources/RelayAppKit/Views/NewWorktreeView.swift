@@ -189,7 +189,7 @@ struct NewWorktreeView: View {
             if let preset = presets.first(where: { $0.id == id }) {
                 HStack(spacing: Theme.Spacing.xsmall) {
                     SessionGlyph(kind: preset.kind, size: 11, tint: Color(hex: preset.kind.accentHex))
-                    Text(verbatim: preset.name)
+                    Text(verbatim: preset.localizedName)
                         .font(Theme.Typography.row)
                         .lineLimit(1)
                 }

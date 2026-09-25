@@ -53,7 +53,7 @@ struct PresetEditorView: View {
             ) {
                 ForEach(SessionPresets.templates) { template in
                     Chip { apply(template) } content: {
-                        agentLabel(template.kind, title: template.name)
+                        agentLabel(template.kind, title: template.localizedName)
                     }
                 }
             }
@@ -140,7 +140,7 @@ struct PresetEditorView: View {
             apply(SessionPresets.templates[0])
             return
         }
-        name = preset.name
+        name = preset.localizedName
         kind = preset.kind
         argumentText = preset.argumentText
         customCommand = preset.customCommand ?? ""
@@ -148,7 +148,7 @@ struct PresetEditorView: View {
     }
 
     private func apply(_ template: SessionPreset) {
-        name = template.name
+        name = template.localizedName
         kind = template.kind
         argumentText = template.argumentText
         customCommand = template.customCommand ?? ""
@@ -160,7 +160,9 @@ struct PresetEditorView: View {
         guard !trimmedName.isEmpty else { return }
 
         var updated = preset ?? SessionPreset(name: trimmedName, kind: kind)
-        updated.name = trimmedName
+        // A name left as it was shown stays Relay's, and so keeps following the
+        // interface's language rather than freezing in the one it was edited in.
+        if trimmedName != preset?.localizedName { updated.name = trimmedName }
         updated.kind = kind
         if usesCustomCommand {
             let command = customCommand.trimmingCharacters(in: .whitespaces)

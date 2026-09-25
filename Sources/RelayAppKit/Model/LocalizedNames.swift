@@ -51,3 +51,12 @@ extension ComposeAction {
 extension ContainerAction {
     var localizedTitle: String { relayLocalized(title) }
 }
+
+@MainActor
+extension SessionPreset {
+    /// Relay's own names for presets in the interface's language, and a name
+    /// somebody typed exactly as they typed it.
+    var localizedName: String {
+        SessionPresets.suppliedNames.contains(name) ? relayLocalized(name) : name
+    }
+}

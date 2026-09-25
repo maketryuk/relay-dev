@@ -807,7 +807,7 @@ final class AppModel {
     ) {
         guard let root = workingRoot(of: projectID) else { return }
         let name = SessionNaming.nextName(
-            base: preset.name,
+            base: preset.localizedName,
             existing: sessions(in: projectID).map(\.name)
         )
         launch(SessionSpec(
@@ -822,7 +822,7 @@ final class AppModel {
     func createSession(kind: SessionKind, in projectID: ProjectID, command: [String] = []) {
         guard let root = workingRoot(of: projectID) else { return }
         let name = SessionNaming.nextName(
-            for: kind,
+            base: relayLocalized(kind.displayName),
             existing: sessions(in: projectID).map(\.name)
         )
 
@@ -1076,7 +1076,7 @@ final class AppModel {
     func splitPane(showing sessionID: SessionID?, axis: PaneAxis) {
         guard let projectID = selectedProjectID, let root = workingRoot(of: projectID) else { return }
         let preset = SessionPresets.preferred(for: .shell, in: presets)
-        let name = SessionNaming.nextName(base: preset.name, existing: sessions(in: projectID).map(\.name))
+        let name = SessionNaming.nextName(base: preset.localizedName, existing: sessions(in: projectID).map(\.name))
 
         let spec = SessionSpec(
             projectID: projectID,
