@@ -15,13 +15,10 @@
 "%@ will be deleted. This cannot be undone." = "%@ будет удалён. Это необратимо.";
 "%@ will go back to the last committed version." = "%@ вернётся к последней закоммиченной версии.";
 "%d behind" = "Позади на %d";
-"%d branches" = "Веток: %d";
 "%d changed" = "изменено: %d";
-"%d commits to push" = "%d коммитов к отправке";
 "%d conflicted" = "с конфликтами: %d";
 "%d picked" = "выбрано: %d";
 "%d pt" = "%d пт";
-"%d unmodified lines" = "Неизменённых строк: %d";
 "%d unread" = "непрочитанных: %d";
 "A branch of its own, checked out in a folder of its own." = "Своя ветка в своей папке.";
 "A branch Relay made goes with its worktree only when it is merged. Any other branch stays." = "Ветка, созданная Relay, уходит вместе с worktree, только если она влита. Любая другая остаётся.";
@@ -102,7 +99,6 @@
 "Cannot be played here" = "Здесь не воспроизводится";
 "Cannot be shown" = "Не удаётся показать";
 "Case sensitive; letters only." = "Регистр важен, только буквы.";
-"Changes that were never committed will be lost: %d files." = "Незакоммиченные изменения пропадут, файлов: %d.";
 "Chat" = "Чат";
 "Check automatically" = "Проверять автоматически";
 "Check for updates" = "Проверка обновлений";
@@ -232,9 +228,6 @@
 "Elsewhere on this Mac" = "Остальное на этом Mac";
 "Enabled" = "Включено";
 "Error" = "Ошибка";
-"Every %d days" = "Каждые %d дней";
-"Every %d hours" = "Каждые %d часов";
-"Every %d minutes" = "Каждые %d минут";
 "Every conflict has to be answered first" = "Сначала нужно ответить на каждый конфликт";
 "Everything has been resolved and staged." = "Всё разрешено и добавлено в индекс.";
 "Everything listening on this Mac" = "Всё, что слушает на этом Mac";
@@ -718,7 +711,6 @@
 "in ~/.ssh/config" = "в ~/.ssh/config";
 "it was signed by someone else" = "она подписана кем-то другим";
 "its signature is not valid" = "её подпись недействительна";
-"listening" = "слушает";
 "macOS has no player for this format. Open it in the app it belongs to." = "В macOS нет проигрывателя для этого формата. Откройте файл в приложении, для которого он предназначен.";
 "new" = "новый";
 "not a git repository. Click to look again." = "не git-репозиторий. Нажмите, чтобы проверить снова.";

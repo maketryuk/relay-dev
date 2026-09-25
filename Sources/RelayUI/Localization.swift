@@ -113,6 +113,17 @@ public func relayLocalized(_ key: String) -> String {
     return bundle.localizedString(forKey: key, value: key, table: nil)
 }
 
+/// A phrase with a count in it, in the form the count takes.
+///
+/// The forms live in `Localizable.stringsdict`, and the locale is passed on
+/// purpose: without one Foundation chooses among them by English rules — one
+/// and other — whichever table they came from, and Russian has three: 1 ветка,
+/// 2 ветки, 5 веток.
+@MainActor
+public func relayLocalized(_ key: String, count: Int) -> String {
+    String(format: relayLocalized(key), locale: Localization.shared.locale, count)
+}
+
 /// Every shipped wording of a key, the one on screen first.
 ///
 /// What a search has to be matched against, because the interface speaks one

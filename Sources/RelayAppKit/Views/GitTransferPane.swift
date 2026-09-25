@@ -279,7 +279,7 @@ struct GitTransferPane: View {
 
     private func outgoingTitle(commits: [GitCommitSummary]?, isNew: Bool) -> String {
         guard !isNew, let commits, !commits.isEmpty else { return relayLocalized("Commits") }
-        return String(format: relayLocalized("%d commits to push"), commits.count)
+        return relayLocalized("%d commits to push", count: commits.count)
     }
 
     // MARK: - Footer

@@ -108,7 +108,7 @@ struct PortsPane: View {
     private var header: some View {
         VStack(spacing: Theme.Spacing.small) {
             HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.small) {
-                Text(verbatim: "\(model.ports.count) \(relayLocalized("listening"))")
+                Text(verbatim: relayLocalized("%d listening", count: model.ports.count))
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
                 Spacer(minLength: Theme.Spacing.small)

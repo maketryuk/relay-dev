@@ -15,13 +15,10 @@
 "%@ will be deleted. This cannot be undone." = "%@ will be deleted. This cannot be undone.";
 "%@ will go back to the last committed version." = "%@ will go back to the last committed version.";
 "%d behind" = "%d behind";
-"%d branches" = "%d branches";
 "%d changed" = "%d changed";
-"%d commits to push" = "%d commits to push";
 "%d conflicted" = "%d conflicted";
 "%d picked" = "%d picked";
 "%d pt" = "%d pt";
-"%d unmodified lines" = "%d unmodified lines";
 "%d unread" = "%d unread";
 "A branch of its own, checked out in a folder of its own." = "A branch of its own, checked out in a folder of its own.";
 "A branch Relay made goes with its worktree only when it is merged. Any other branch stays." = "A branch Relay made goes with its worktree only when it is merged. Any other branch stays.";
@@ -102,7 +99,6 @@
 "Cannot be played here" = "Cannot be played here";
 "Cannot be shown" = "Cannot be shown";
 "Case sensitive; letters only." = "Case sensitive; letters only.";
-"Changes that were never committed will be lost: %d files." = "Changes that were never committed will be lost: %d files.";
 "Chat" = "Chat";
 "Check automatically" = "Check automatically";
 "Check for updates" = "Check for updates";
@@ -232,9 +228,6 @@
 "Elsewhere on this Mac" = "Elsewhere on this Mac";
 "Enabled" = "Enabled";
 "Error" = "Error";
-"Every %d days" = "Every %d days";
-"Every %d hours" = "Every %d hours";
-"Every %d minutes" = "Every %d minutes";
 "Every conflict has to be answered first" = "Every conflict has to be answered first";
 "Everything has been resolved and staged." = "Everything has been resolved and staged.";
 "Everything listening on this Mac" = "Everything listening on this Mac";
@@ -718,7 +711,6 @@
 "in ~/.ssh/config" = "in ~/.ssh/config";
 "it was signed by someone else" = "it was signed by someone else";
 "its signature is not valid" = "its signature is not valid";
-"listening" = "listening";
 "macOS has no player for this format. Open it in the app it belongs to." = "macOS has no player for this format. Open it in the app it belongs to.";
 "new" = "new";
 "not a git repository. Click to look again." = "not a git repository. Click to look again.";

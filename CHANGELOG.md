@@ -45,6 +45,9 @@ breaking change to stored data.
   container that would not start and a process that was stopped. A test now
   fails on a label SwiftUI would look up in the app's own bundle, where no
   translation lives, and on a translated phrase shown without being looked up.
+- **Counts read wrong.** "1 commits to push" and "1 branches" in English,
+  "Каждые 2 дней" and "5 слушает" in Russian. A phrase with a number in it now
+  has the forms its language needs — 1 ветка, 2 ветки, 5 веток.
 - **Dates, times and sizes followed the system, not Relay's language.** With
   Relay in Russian on an English Mac, times said "2h ago" and sizes "MB" among
   Russian words, and the other way round; the usage countdown was "2h 12m" in

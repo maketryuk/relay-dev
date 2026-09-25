@@ -255,9 +255,9 @@ struct ProjectSidebarView: View {
             lines.append(String(format: relayLocalized("Sessions in it will be closed: %d."), running))
         }
         if let status = model.worktreeStatuses[worktree.path], status.isDirty {
-            lines.append(String(
-                format: relayLocalized("Changes that were never committed will be lost: %d files."),
-                status.changedFiles
+            lines.append(relayLocalized(
+                "Changes that were never committed will be lost: %d files.",
+                count: status.changedFiles
             ))
         }
         lines += branchLines(for: request.forecast)

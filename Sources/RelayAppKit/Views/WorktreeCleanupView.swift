@@ -272,9 +272,9 @@ struct WorktreeCleanupView: View {
             .compactMap(\.facts?.uncommittedFiles)
             .reduce(0, +)
         if discarded > 0 {
-            lines.append(String(
-                format: relayLocalized("Changes that were never committed will be lost: %d files."),
-                discarded
+            lines.append(relayLocalized(
+                "Changes that were never committed will be lost: %d files.",
+                count: discarded
             ))
         }
         let staying = removable

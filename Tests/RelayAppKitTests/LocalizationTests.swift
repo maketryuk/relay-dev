@@ -174,6 +174,42 @@ struct LocalizationTests {
         return names
     }
 
+    @Test("A count takes the form its language gives it")
+    func countsTakeTheirForm() {
+        // Russian has three forms where English has two, and chooses by the
+        // last digits: 21 takes the form of 1, 11 the form of 5.
+        withLanguage(.russian) {
+            #expect(relayLocalized("%d branches", count: 1) == "1 ветка")
+            #expect(relayLocalized("%d branches", count: 3) == "3 ветки")
+            #expect(relayLocalized("%d branches", count: 5) == "5 веток")
+            #expect(relayLocalized("%d branches", count: 11) == "11 веток")
+            #expect(relayLocalized("%d branches", count: 21) == "21 ветка")
+        }
+        withLanguage(.english) {
+            #expect(relayLocalized("%d branches", count: 1) == "1 branch")
+            #expect(relayLocalized("%d branches", count: 2) == "2 branches")
+        }
+    }
+
+    @Test("Every phrase with a count has each form its language needs")
+    func pluralsAreComplete() throws {
+        // A missing form falls back to "other", which Russian keeps for
+        // fractions: "5 ветки" rather than "5 веток".
+        let needed: [String: Set<String>] = ["en": ["one", "other"], "ru": ["one", "few", "many", "other"]]
+        let english = try Self.pluralTable("en")
+        let russian = try Self.pluralTable("ru")
+        #expect(!english.isEmpty)
+        #expect(Set(english.keys) == Set(russian.keys))
+        for (language, table) in [("en", english), ("ru", russian)] {
+            for (key, forms) in table {
+                #expect(Set(forms.keys) == needed[language], "\(language): \(key)")
+            }
+        }
+        // A phrase in both files has a plain entry nothing will read.
+        let plain = try Set(Self.table("en").keys)
+        #expect(plain.isDisjoint(with: english.keys), "in both: \(plain.intersection(english.keys))")
+    }
+
     @Test("Sizes and times are written in the interface's language, not the system's")
     func formatsFollowTheInterface() {
         let now = Date(timeIntervalSince1970: 1_000_000)
@@ -212,8 +248,26 @@ struct LocalizationTests {
         return try #require(plist as? [String: String])
     }
 
+    /// The forms of every phrase with a count in it, by plural category:
+    /// `"one": "%d ветка"`, `"few": "%d ветки"` and so on.
+    static func pluralTable(_ language: String) throws -> [String: [String: String]] {
+        guard let url = try lproj(language).url(forResource: "Localizable", withExtension: "stringsdict") else { return [:] }
+        let plist = try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil)
+        let entries = try #require(plist as? [String: [String: Any]])
+        return try entries.mapValues { entry in
+            let format = try #require(entry["NSStringLocalizedFormatKey"] as? String)
+            let variable = try #require(entry.first { $0.key != "NSStringLocalizedFormatKey" })
+            let rules = try #require(variable.value as? [String: String])
+            var forms: [String: String] = [:]
+            for (category, form) in rules where !category.hasPrefix("NSString") {
+                forms[category] = format.replacingOccurrences(of: "%#@\(variable.key)@", with: form)
+            }
+            return forms
+        }
+    }
+
     static func allKeys(_ language: String) throws -> Set<String> {
-        try Set(table(language).keys)
+        try Set(table(language).keys).union(pluralTable(language).keys)
     }
 
     // MARK: - Reading the source

@@ -686,7 +686,7 @@ private struct UnmodifiedGap: View {
                     .font(.system(size: 9))
                     .foregroundStyle(Theme.Palette.textTertiary)
                     .frame(width: 44, alignment: .trailing)
-                Text(String(format: relayLocalized("%d unmodified lines"), count))
+                Text(relayLocalized("%d unmodified lines", count: count))
                     .font(Theme.Typography.caption)
                     .foregroundStyle(Theme.Palette.textTertiary)
                 Spacer(minLength: 0)

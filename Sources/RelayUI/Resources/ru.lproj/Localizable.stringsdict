@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Phrases with a count in them, by plural category. Looked up with
+     relayLocalized(_:count:), which passes the interface's locale: the
+     category is chosen by that locale's rules, not by the table's. -->
+<plist version="1.0">
+<dict>
+    <key>%d branches</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%d ветка</string>
+            <key>few</key>
+            <string>%d ветки</string>
+            <key>many</key>
+            <string>%d веток</string>
+            <key>other</key>
+            <string>%d ветки</string>
+        </dict>
+    </dict>
+    <key>%d commits to push</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%d коммит к отправке</string>
+            <key>few</key>
+            <string>%d коммита к отправке</string>
+            <key>many</key>
+            <string>%d коммитов к отправке</string>
+            <key>other</key>
+            <string>%d коммита к отправке</string>
+        </dict>
+    </dict>
+    <key>%d listening</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%d слушает</string>
+            <key>few</key>
+            <string>%d слушают</string>
+            <key>many</key>
+            <string>%d слушают</string>
+            <key>other</key>
+            <string>%d слушают</string>
+        </dict>
+    </dict>
+    <key>%d unmodified lines</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%d неизменённая строка</string>
+            <key>few</key>
+            <string>%d неизменённые строки</string>
+            <key>many</key>
+            <string>%d неизменённых строк</string>
+            <key>other</key>
+            <string>%d неизменённые строки</string>
+        </dict>
+    </dict>
+    <key>Changes that were never committed will be lost: %d files.</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>Незакоммиченные изменения пропадут: %d файл.</string>
+            <key>few</key>
+            <string>Незакоммиченные изменения пропадут: %d файла.</string>
+            <key>many</key>
+            <string>Незакоммиченные изменения пропадут: %d файлов.</string>
+            <key>other</key>
+            <string>Незакоммиченные изменения пропадут: %d файла.</string>
+        </dict>
+    </dict>
+    <key>Every %d days</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>Каждый %d день</string>
+            <key>few</key>
+            <string>Каждые %d дня</string>
+            <key>many</key>
+            <string>Каждые %d дней</string>
+            <key>other</key>
+            <string>Каждые %d дня</string>
+        </dict>
+    </dict>
+    <key>Every %d hours</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>Каждый %d час</string>
+            <key>few</key>
+            <string>Каждые %d часа</string>
+            <key>many</key>
+            <string>Каждые %d часов</string>
+            <key>other</key>
+            <string>Каждые %d часа</string>
+        </dict>
+    </dict>
+    <key>Every %d minutes</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>Каждую %d минуту</string>
+            <key>few</key>
+            <string>Каждые %d минуты</string>
+            <key>many</key>
+            <string>Каждые %d минут</string>
+            <key>other</key>
+            <string>Каждые %d минуты</string>
+        </dict>
+    </dict>
+</dict>
+</plist>

@@ -55,7 +55,7 @@ struct BranchesPane: View {
                 Text(verbatim: model.gitStatuses[project.id]?.branch ?? project.name)
                     .font(Theme.Typography.title)
                     .foregroundStyle(Theme.Palette.textPrimary)
-                Text(String(format: relayLocalized("%d branches"), all.count))
+                Text(relayLocalized("%d branches", count: all.count))
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
                     .monospacedDigit()

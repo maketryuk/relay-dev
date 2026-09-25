@@ -54,12 +54,12 @@ struct UsageWindow: Equatable, Identifiable, Sendable {
         switch span {
         case let .rolling(minutes):
             if minutes >= 1_440, minutes % 1_440 == 0 {
-                return String(format: relayLocalized("Every %d days"), minutes / 1_440)
+                return relayLocalized("Every %d days", count: minutes / 1_440)
             }
             if minutes >= 60 {
-                return String(format: relayLocalized("Every %d hours"), minutes / 60)
+                return relayLocalized("Every %d hours", count: minutes / 60)
             }
-            return String(format: relayLocalized("Every %d minutes"), minutes)
+            return relayLocalized("Every %d minutes", count: minutes)
         case .weekly: return relayLocalized("Weekly")
         case let .model(name): return name
         }
