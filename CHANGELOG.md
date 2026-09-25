@@ -26,6 +26,9 @@ breaking change to stored data.
 - **The History tab no longer re-reads every conversation while it is open.**
   Thirty transcripts were parsed every ten seconds, a fifth of a second of
   work each time, whether or not any of them had changed.
+- **Removing a worktree stops the ESLint Relay kept running in it**, and lets
+  go of the list of its files and the names found in them, which stayed for as
+  long as the app ran.
 
 ## 0.7.1 — 2026-09-25
 

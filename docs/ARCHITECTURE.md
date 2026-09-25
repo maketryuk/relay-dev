@@ -632,7 +632,9 @@ diffs, the TODO list, the branches — before reading again, so the panel never
 shows one checkout's files under another's name. Each asynchronous read checks
 on arrival that it is still about the worktree that is open. Keying every cache
 by worktree instead would have touched every one of them to buy the ability to
-show two worktrees' panels at once, which nothing on screen does.
+show two worktrees' panels at once, which nothing on screen does. What is kept
+by folder — the file list, the symbol index, a warm ESLint — goes when git
+stops listing the worktree.
 
 **They live in `~/.relay/worktrees/<repository>/<branch>`.** Outside the
 repository, because the file tree, search, the TODO scanner and the symbol index

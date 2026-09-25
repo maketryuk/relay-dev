@@ -2408,7 +2408,15 @@ final class AppModel {
     /// known about the ones that are gone.
     func adopt(_ found: [GitWorktree], in projectID: ProjectID) {
         let gone = Set((worktrees[projectID] ?? []).map(\.path)).subtracting(found.map(\.path))
-        for path in gone { worktreeStatuses.removeValue(forKey: path) }
+        for path in gone {
+            worktreeStatuses.removeValue(forKey: path)
+            // Kept per folder and let go of nowhere else: a warm ESLint is a
+            // `node` process of its own, and the file list and the symbol
+            // index grow with the checkout they were read from.
+            lint.stop(root: path)
+            files.invalidate(root: path)
+            symbols.invalidate(root: path)
+        }
         worktrees[projectID] = found
         keepWorktreeNotes(listedIn: found, in: projectID)
 
