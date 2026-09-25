@@ -246,6 +246,17 @@ would otherwise show four tabs that are permanently empty.
 - Project status is computed from session snapshots already in memory — never
   from a process scan.
 
+## Input waits for the terminal
+
+A terminal takes a couple of kilobytes of input for a program that is not
+reading and refuses the rest until it does. The rest used to be retried in a
+loop on the daemon's queue, so a paste into a busy terminal froze every other
+one for as long as the program did not read — and for good when it echoes what
+it reads, like `cat` or a REPL, because its echo waited for that same queue to
+read it, and so did the reap of a program that had exited. What the terminal
+refuses now waits in `PTYProcess` and goes out from a write source when there
+is room, on the queue the output is read on, so keystrokes keep their order.
+
 ## Buffers trimmed at the front let go
 
 `Data.removeFirst` does not free what it removes: it moves where the bytes

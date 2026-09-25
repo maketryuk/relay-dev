@@ -134,6 +134,24 @@ final class DaemonServerTests {
         #expect(String(decoding: messages.output(for: session.id), as: UTF8.self).contains("INPUT_ROUNDTRIP"))
     }
 
+    @Test("A paste the process was not ready for arrives, in order, once it reads")
+    func deferredInputArrives() throws {
+        // More than the terminal holds while nothing reads it: the rest has
+        // to wait for the process rather than be dropped.
+        let session = try createSession(makeSpec(kind: .custom, command: ["/bin/sh", "-c", "sleep 1; cat"]))
+        try client.send(.attach(session.id, replayScrollback: false))
+        let lines = (1 ... 2_000).map { String(format: "line-%04d", $0) }
+        try client.send(.input(session.id, Data((lines.joined(separator: "\n") + "\n").utf8)))
+
+        let messages = try client.wait(timeout: 30) {
+            String(decoding: $0.output(for: session.id), as: UTF8.self).contains("line-2000")
+        }
+        let printed = String(decoding: messages.output(for: session.id), as: UTF8.self)
+        let positions = ["line-0001", "line-1000", "line-2000"].compactMap { printed.range(of: $0)?.lowerBound }
+        #expect(positions.count == 3)
+        #expect(positions == positions.sorted())
+    }
+
     @Test("Renaming updates the snapshot and notifies clients")
     func renameSession() throws {
         let session = try createSession(makeSpec())

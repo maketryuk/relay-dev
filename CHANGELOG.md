@@ -9,6 +9,12 @@ breaking change to stored data.
 
 ### Fixed
 
+- **A long paste no longer freezes every terminal.** More than a couple of
+  kilobytes pasted into a program that was not reading — a command still
+  running, `cat`, a REPL — held up every session until the program read it:
+  no output anywhere, nothing answering, a core kept busy. When the program
+  echoed what it read, it did not end at all until the session daemon was
+  killed.
 - **The session daemon no longer keeps everything its terminals print.** Its
   memory grew by several times what each open session had ever printed,
   although the history it replays is half a megabyte.

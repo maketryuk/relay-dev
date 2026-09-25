@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import RelayProtocol
 
 /// A child process attached to a pseudo-terminal.
 ///
@@ -30,11 +31,28 @@ public final class PTYProcess: @unchecked Sendable {
 
     private var readSource: DispatchSourceRead?
     private var exitSource: DispatchSourceProcess?
+    /// Made the first time the terminal refuses input, and running only while
+    /// some is waiting for it.
+    private var writeSource: DispatchSourceWrite?
+    private var isWriteSourceActive = false
+    /// Input the terminal has not taken yet.
+    private var pendingInput = Data()
+    /// Where output is delivered and waiting input is written: one queue for
+    /// both is what keeps keystrokes in the order they were typed.
+    private var queue = DaemonQueue.shared
     private var isClosed = false
 
     private init(masterFD: Int32, pid: pid_t) {
         self.masterFD = masterFD
         self.pid = pid
+    }
+
+    deinit {
+        // Releasing a suspended dispatch source traps in libdispatch.
+        if let writeSource {
+            if !isWriteSourceActive { writeSource.resume() }
+            writeSource.cancel()
+        }
     }
 
     // MARK: - Launching
@@ -129,6 +147,7 @@ public final class PTYProcess: @unchecked Sendable {
         onOutput: @escaping @Sendable (Data) -> Void,
         onExit: @escaping @Sendable (Int32) -> Void
     ) {
+        self.queue = queue
         let read = DispatchSource.makeReadSource(fileDescriptor: masterFD, queue: queue)
         read.setEventHandler { [weak self] in
             guard let self else { return }
@@ -181,21 +200,56 @@ public final class PTYProcess: @unchecked Sendable {
 
     // MARK: - Control
 
+    /// Called on the queue output is delivered on.
+    ///
+    /// What the terminal will not take yet waits until it will. A terminal
+    /// holds a couple of kilobytes of input for a program that is not reading,
+    /// and the rest used to be retried in a loop on the queue every session
+    /// shares: no output drawn and no request answered anywhere, a core kept
+    /// busy, for as long as the program did not read — and for good if it
+    /// echoes what it reads, like `cat`, since the echo was waiting for that
+    /// same queue to take it off the terminal.
     public func write(_ data: Data) {
         guard !isClosed, !data.isEmpty else { return }
-        data.withUnsafeBytes { raw in
-            var offset = 0
-            while offset < raw.count {
-                let written = Darwin.write(masterFD, raw.baseAddress!.advanced(by: offset), raw.count - offset)
-                if written > 0 {
-                    offset += written
-                } else if errno == EAGAIN || errno == EINTR {
-                    continue
-                } else {
-                    break
-                }
+        pendingInput.append(data)
+        writePendingInput()
+    }
+
+    private func writePendingInput() {
+        while !isClosed, !pendingInput.isEmpty {
+            let written = pendingInput.withUnsafeBytes { raw in
+                Darwin.write(masterFD, raw.baseAddress, raw.count)
+            }
+            if written > 0 {
+                pendingInput.discardFirst(written)
+            } else if written < 0, errno == EINTR {
+                continue
+            } else if written < 0, errno == EAGAIN {
+                waitUntilWritable()
+                return
+            } else {
+                // The terminal has gone, and what was meant for it with it.
+                pendingInput.removeAll()
             }
         }
+        stopWaitingUntilWritable()
+    }
+
+    private func waitUntilWritable() {
+        if writeSource == nil {
+            let source = DispatchSource.makeWriteSource(fileDescriptor: masterFD, queue: queue)
+            source.setEventHandler { [weak self] in self?.writePendingInput() }
+            writeSource = source
+        }
+        guard !isWriteSourceActive else { return }
+        isWriteSourceActive = true
+        writeSource?.resume()
+    }
+
+    private func stopWaitingUntilWritable() {
+        guard isWriteSourceActive else { return }
+        isWriteSourceActive = false
+        writeSource?.suspend()
     }
 
     public func resize(columns: Int, rows: Int) {
@@ -272,6 +326,14 @@ public final class PTYProcess: @unchecked Sendable {
         readSource = nil
         exitSource?.cancel()
         exitSource = nil
+        pendingInput.removeAll()
+        if let writeSource {
+            // A suspended source cannot be cancelled, so it is woken first.
+            if !isWriteSourceActive { writeSource.resume() }
+            isWriteSourceActive = true
+            writeSource.cancel()
+        }
+        writeSource = nil
         Darwin.close(masterFD)
     }
 
