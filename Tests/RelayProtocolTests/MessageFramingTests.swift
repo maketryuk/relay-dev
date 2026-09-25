@@ -31,6 +31,24 @@ struct MessageFramingTests {
         #expect(String(decoding: second[0], as: UTF8.self) == "{\"b\":2}")
     }
 
+    @Test("A frame read in many pieces is whole once its end arrives")
+    func frameInManyPieces() {
+        // The search picks up where the last one stopped, so what it has
+        // already passed over must still end up in the frame.
+        var accumulator = FrameAccumulator()
+        for piece in ["{\"a\"", ":", "\"long"] {
+            accumulator.append(Data(piece.utf8))
+            #expect(accumulator.drainFrames().isEmpty)
+        }
+        accumulator.append(Data(" value\"}\n{\"b\":".utf8))
+        #expect(accumulator.drainFrames().map { String(decoding: $0, as: UTF8.self) } == ["{\"a\":\"long value\"}"])
+
+        accumulator.append(Data("2}".utf8))
+        #expect(accumulator.drainFrames().isEmpty)
+        accumulator.append(Data("\n\n{\"c\":3}\n".utf8))
+        #expect(accumulator.drainFrames().map { String(decoding: $0, as: UTF8.self) } == ["{\"b\":2}", "{\"c\":3}"])
+    }
+
     @Test("A single read containing many frames yields all of them in order")
     func multipleFramesInOneChunk() {
         var accumulator = FrameAccumulator()
