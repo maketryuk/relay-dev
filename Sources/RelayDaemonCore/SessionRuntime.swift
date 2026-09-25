@@ -100,7 +100,8 @@ public final class SessionRuntime: @unchecked Sendable {
             role: spec.role,
             title: reportedTitle,
             isNameUserDefined: isNameUserDefined,
-            hostsAgent: hostsAgent
+            hostsAgent: hostsAgent,
+            subagents: agentStatus.subagents.snapshots
         )
     }
 
@@ -193,14 +194,16 @@ public final class SessionRuntime: @unchecked Sendable {
     public private(set) var hasHeardFromHooks = false
 
     /// Applies what an agent's hook reported. Returns `true` when the status
-    /// changed and observers should be notified.
+    /// or the subagents changed and observers should be notified.
     public func apply(hook event: AgentHookEvent, now: Date = Date()) -> Bool {
         DaemonQueue.assertIsolated()
         guard isAlive, let pid, event.comesFromSessionAgent(sessionPID: pid) else { return false }
         hasHeardFromHooks = true
+        let subagentsBefore = agentStatus.subagents.snapshots
         agentStatus.apply(event, at: now)
         lastActivityAt = now
-        return reclassify(now: now)
+        let statusChanged = reclassify(now: now)
+        return statusChanged || agentStatus.subagents.snapshots != subagentsBefore
     }
 
     public func resize(columns newColumns: Int, rows newRows: Int) {
@@ -295,6 +298,8 @@ public final class SessionRuntime: @unchecked Sendable {
     private func handleExit(code: Int32) {
         exitCode = code
         status = (code == 0 || isTerminatingByRequest) ? .finished : .error
+        // Its subagents were processes of its own.
+        agentStatus.forgetSubagents()
         lastActivityAt = Date()
         needsReclassification = false
         process?.close()
@@ -309,16 +314,23 @@ public final class SessionRuntime: @unchecked Sendable {
     }
 
     /// Called periodically while the session is alive. Returns `true` when the
-    /// status changed and observers should be notified.
+    /// status or the subagents changed and observers should be notified.
     public func reclassify(now: Date) -> Bool {
         DaemonQueue.assertIsolated()
         guard isAlive else { return false }
 
         // An agent started from a shell leaves its last words behind when it
         // quits; the shell taking the terminal back is what says it has gone.
+        var subagentsChanged = false
         if agentStatus.hasEvidence, !spec.kind.isAgent, isShellInForeground {
+            subagentsChanged = !agentStatus.subagents.agents.isEmpty
             agentStatus.forgetAgent()
         }
+        subagentsChanged = agentStatus.advance(to: now) || subagentsChanged
+        return reclassifyStatus(now: now) || subagentsChanged
+    }
+
+    private func reclassifyStatus(now: Date) -> Bool {
         if let reported = agentStatus.status(now: now) {
             guard reported != status else { return false }
             status = reported

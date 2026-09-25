@@ -535,6 +535,7 @@
 "Running" = "Работает";
 "Running…" = "Выполняется…";
 "Runs in %@ through your shell." = "Запускается в %@ через вашу оболочку.";
+"Runs in the background" = "Работает в фоне";
 "Runs through your shell in the project root." = "Запускается через вашу оболочку в корне проекта.";
 "Runtime" = "Среда выполнения";
 "Service" = "Сервис";
@@ -599,6 +600,7 @@
 "Start from a template or write your own command" = "Начните с шаблона или напишите свою команду";
 "Start from" = "Начать с";
 "Start" = "Запустить";
+"Started by %@" = "Запущен из %@";
 "Starting" = "Запускается";
 "Starts from where you are now" = "Начнётся с текущего состояния";
 "Status bar" = "Строка состояния";
@@ -612,6 +614,7 @@
 "Stopped" = "Остановлен";
 "Stopped %@ (%@)" = "Остановлено: %@ (%@)";
 "Stopping" = "Останавливается";
+"Subagent" = "Субагент";
 "Switch Branch" = "Переключить ветку";
 "Switch branch" = "Переключить ветку";
 "Switch to %@" = "Перейти в проект %@";

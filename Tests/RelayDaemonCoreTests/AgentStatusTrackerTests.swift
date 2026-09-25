@@ -142,6 +142,22 @@ struct AgentStatusTrackerTests {
         #expect(tracker.status(now: at(3)) == .working)
     }
 
+    @Test("A cancelled turn takes its foreground subagents with it")
+    func cancelEndsForegroundSubagents() {
+        var tracker = AgentStatusTracker()
+        tracker.noteTitle("✳ Claude Code", at: at(0))
+        tracker.apply(hook("UserPromptSubmit"), at: at(1))
+        tracker.noteTitle("⠂ Exploring", at: at(1.1))
+        tracker.apply(hook("SubagentStart", subagent: "x"), at: at(2))
+        tracker.noteTitle("✳ Claude Code", at: at(5))
+        let beforeTheHold = tracker.advance(to: at(5.5))
+        #expect(!beforeTheHold)
+        #expect(tracker.subagents.snapshots.map(\.status) == [.working])
+        let afterIt = tracker.advance(to: at(5 + AgentStatusTracker.idleTitleHold))
+        #expect(afterIt)
+        #expect(tracker.subagents.snapshots.map(\.status) == [.finished])
+    }
+
     @Test("A cancelled turn is idle once the agent's own idle mark has stayed up")
     func interruptedByTitle() {
         var tracker = AgentStatusTracker()
@@ -214,10 +230,12 @@ struct AgentStatusTrackerTests {
     @Test("When the agent has gone, nothing it said is left behind")
     func forgetting() {
         var tracker = AgentStatusTracker()
+        tracker.apply(hook("SubagentStart", subagent: "x"), at: at(0))
         tracker.apply(hook("Stop"), at: at(0))
         tracker.noteTitle("✳ Claude Code", at: at(0))
         tracker.forgetAgent()
         #expect(tracker.status(now: at(1)) == nil)
         #expect(!tracker.hasEvidence)
+        #expect(tracker.subagents.agents.isEmpty)
     }
 }

@@ -144,7 +144,7 @@ struct ProjectSidebarView: View {
                             }
                         ) { sessionID in
                             if let session = model.sessions[sessionID] {
-                                row(session)
+                                row(session, subagents: session.subagents)
                             }
                         }
 
@@ -201,17 +201,26 @@ struct ProjectSidebarView: View {
                 ForEach(model.worktreeGroups(in: project.id)) { group in
                     VStack(alignment: .leading, spacing: 2) {
                         WorktreeHeader(project: project, group: group)
-                        if !model.isSectionCollapsed("worktree:\(group.id)"), !group.sessions.isEmpty {
-                            ReorderableColumn(
-                                ids: group.sessions.map(\.id),
-                                spacing: 2,
-                                space: "relay.sessions.\(group.id)",
-                                onMove: { moved, target, side in
-                                    model.moveSession(moved, beside: target, side: side)
+                        if !model.isSectionCollapsed("worktree:\(group.id)") {
+                            if !group.sessions.isEmpty {
+                                ReorderableColumn(
+                                    ids: group.sessions.map(\.id),
+                                    spacing: 2,
+                                    space: "relay.sessions.\(group.id)",
+                                    onMove: { moved, target, side in
+                                        model.moveSession(moved, beside: target, side: side)
+                                    }
+                                ) { sessionID in
+                                    if let session = model.sessions[sessionID] {
+                                        row(session, subagents: group.nestedSubagents(of: session))
+                                    }
                                 }
-                            ) { sessionID in
-                                if let session = model.sessions[sessionID] {
-                                    row(session)
+                            }
+                            // After the sessions and out of their order: they
+                            // are not this worktree's to rearrange.
+                            ForEach(group.visitors) { visit in
+                                if let session = model.sessions[visit.session] {
+                                    SubagentRow(subagent: visit.subagent, session: session, isVisiting: true)
                                 }
                             }
                         }
@@ -308,8 +317,19 @@ struct ProjectSidebarView: View {
         return String(format: relayLocalized("Press %@ for a terminal, or + to choose"), shortcut)
     }
 
+    /// A session, and under it the subagents working where it works. One
+    /// block, so dragging the session takes them along.
+    private func row(_ session: SessionSnapshot, subagents: [SubagentSnapshot]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sessionRow(session)
+            ForEach(subagents) { subagent in
+                SubagentRow(subagent: subagent, session: session, isVisiting: false)
+            }
+        }
+    }
+
     @ViewBuilder
-    private func row(_ session: SessionSnapshot) -> some View {
+    private func sessionRow(_ session: SessionSnapshot) -> some View {
         if model.renamingSessionID == session.id {
             InlineRenameField(
                 relayLocalized("Session name"),

@@ -535,6 +535,7 @@
 "Running" = "Running";
 "Running…" = "Running…";
 "Runs in %@ through your shell." = "Runs in %@ through your shell.";
+"Runs in the background" = "Runs in the background";
 "Runs through your shell in the project root." = "Runs through your shell in the project root.";
 "Runtime" = "Runtime";
 "Service" = "Service";
@@ -599,6 +600,7 @@
 "Start from a template or write your own command" = "Start from a template or write your own command";
 "Start from" = "Start from";
 "Start" = "Start";
+"Started by %@" = "Started by %@";
 "Starting" = "Starting";
 "Starts from where you are now" = "Starts from where you are now";
 "Status bar" = "Status bar";
@@ -612,6 +614,7 @@
 "Stopped" = "Stopped";
 "Stopped %@ (%@)" = "Stopped %@ (%@)";
 "Stopping" = "Stopping";
+"Subagent" = "Subagent";
 "Switch Branch" = "Switch Branch";
 "Switch branch" = "Switch branch";
 "Switch to %@" = "Switch to %@";

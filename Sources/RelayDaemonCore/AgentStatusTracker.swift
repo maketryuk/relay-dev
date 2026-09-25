@@ -79,6 +79,8 @@ struct AgentStatusTracker {
 
     private(set) var hookState: HookState?
     private var hookAt: Date?
+    /// The subagents it has started.
+    private(set) var subagents = SubagentRoster()
     /// Claude asks for permission without saying which call it is about, and
     /// names it only in the `PreToolUse` before and the `PostToolUse` after.
     private var lastToolCall: (name: String, id: String)?
@@ -100,6 +102,7 @@ struct AgentStatusTracker {
     // MARK: - Hooks
 
     mutating func apply(_ event: AgentHookEvent, at now: Date) {
+        subagents.apply(event, at: now)
         if event.subagentID != nil {
             // A subagent works inside the main agent's turn, which says so
             // itself. What it can change is a wait: starting one when it needs
@@ -165,7 +168,7 @@ struct AgentStatusTracker {
         record(.working, at: now)
     }
 
-    private static func ends(_ wait: Wait, _ event: AgentHookEvent) -> Bool {
+    static func ends(_ wait: Wait, _ event: AgentHookEvent) -> Bool {
         switch wait.kind {
         case .question:
             return event.name != "PreToolUse" && event.toolName == wait.toolName
@@ -175,7 +178,7 @@ struct AgentStatusTracker {
         }
     }
 
-    private static func wait(for event: AgentHookEvent) -> Wait? {
+    static func wait(for event: AgentHookEvent) -> Wait? {
         let asks = isQuestion(event.toolName)
         switch event.name {
         case "PermissionRequest":
@@ -237,10 +240,27 @@ struct AgentStatusTracker {
     )
     private static let cancels: Set<Data> = Set(["\u{1B}", "\u{03}"].map { Data($0.utf8) })
 
+    /// Time passing, for the subagents: a finished row goes after a while, a
+    /// silent one goes, and a turn that ended without a hook — a cancel —
+    /// takes its foreground subagents with it. Returns whether any row
+    /// changed.
+    mutating func advance(to now: Date) -> Bool {
+        var changed = subagents.expire(now: now)
+        if subagents.hasForegroundWork, status(now: now) == .idle {
+            changed = subagents.endForegroundWork(at: now) || changed
+        }
+        return changed
+    }
+
+    mutating func forgetSubagents() {
+        subagents.clear()
+    }
+
     /// The agent is gone and the shell has the terminal back.
     mutating func forgetAgent() {
         hookState = nil
         hookAt = nil
+        subagents.clear()
         releasedAt = nil
         lastToolCall = nil
         title = nil

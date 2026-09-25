@@ -7,6 +7,19 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Added
+
+- **The agents a Claude Code session starts are in the sidebar.** Each
+  subagent is a line under the session that started it — what it was asked to
+  do, what kind of agent it is, and the same mark a session wears for working,
+  waiting for you or finished — or, when Claude Code gave it a worktree of its
+  own, under that worktree's heading with the session's name beside it, so a
+  worktree an agent is busy in no longer looks empty. A click goes to the
+  session. Finished lines go after two minutes, and Clean Up Worktrees… counts
+  an agent working in a worktree as one. Two agents of one kind started
+  together are never given each other's task: until Claude Code has said which
+  is which, they read as their kind.
+
 ### Changed
 
 - **New sessions, and the presets Relay supplies, are named in the interface's

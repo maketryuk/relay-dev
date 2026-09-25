@@ -72,6 +72,10 @@ workspace is a git worktree.
   workspace file, and let go of when git stops listing the worktree.
 - **The `relay` command**, in every Relay terminal: list, show, create, remove
   and annotate worktrees, carried out by the app with the window's own code.
+- **Subagents under the worktree they work in.** A line for each subagent a
+  Claude Code session starts — its task, its kind, working, waiting or
+  finished — under its session, or under the worktree Claude Code isolated it
+  in, which then does not look empty.
 
 ### Still to do
 
@@ -111,7 +115,21 @@ workspace is a git worktree.
    read a terminal, type into it, wait until an agent is ready — then projects
    and browser tabs. Each is a group in `Sources/relay-cli` and a handful of
    cases in `ControlCommand`.
-8. **Things the command does not do yet.** `create` brings the project and the
+8. **Claude Code's isolated worktrees in Relay's folder.** A subagent started
+   with `isolation: "worktree"` gets a worktree under `.claude/worktrees/`
+   inside the checkout, where the file tree, search and the TODO scanner walk
+   into it; Relay's own go under `~/.relay/worktrees`. Claude Code's
+   `WorktreeCreate` hook would let Relay choose the folder, and is not used,
+   because it does not add to git's behaviour but replaces it: the hook makes
+   the worktree and prints its path, for every Claude Code session on the
+   machine, and one that does nothing leaves Claude Code with no worktree
+   rather than its usual one. The entry would be global, as Relay's other
+   hooks are, so outside a Relay terminal it would have to make the worktree
+   exactly as Claude Code does — and anything short of that breaks
+   `--worktree` and isolated subagents everywhere. Worth doing only with a
+   helper that reproduces the default faithfully and is tested against Claude
+   Code's own, or once Claude Code offers a way to say "carry on as usual".
+9. **Things the command does not do yet.** `create` brings the project and the
    new agent to the front, as the window does, because the prompt waits for a
    terminal to exist; making the worktree in the background needs a terminal
    drawn off screen. `rm` run in the worktree it removes closes its own

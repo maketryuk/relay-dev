@@ -34,6 +34,8 @@ enum AgentHookInstaller {
     }
 
     /// The events a status is made of, and the tools each one is asked about.
+    /// The last three are the subagents': when one starts and stops, and the
+    /// end of the session, which takes its subagents with it.
     static let claudeEvents: [(name: String, matcher: String?)] = [
         ("SessionStart", nil),
         ("UserPromptSubmit", nil),
@@ -43,6 +45,9 @@ enum AgentHookInstaller {
         ("PermissionRequest", "*"),
         ("Stop", nil),
         ("StopFailure", nil),
+        ("SubagentStart", nil),
+        ("SubagentStop", nil),
+        ("SessionEnd", nil),
     ]
 
     /// Codex's names, and the labels its trust records use for them.

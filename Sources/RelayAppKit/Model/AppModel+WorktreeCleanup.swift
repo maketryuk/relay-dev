@@ -30,11 +30,15 @@ extension AppModel {
         let readings = worktreeCleanups[projectID]?.readings ?? [:]
         return (worktrees[projectID] ?? []).filter { canRemoveWorktree($0, in: projectID) }.map { worktree in
             let inside = sessions(in: worktree, of: projectID)
+            // A subagent at work in it is an agent at work in it, whichever
+            // session started it.
+            let agents = inside.filter(\.reportsStatus).map(\.status)
+                + visitingSubagents(in: worktree, of: projectID).map(\.status)
             return WorktreeCleanupCandidate(
                 worktree: worktree,
                 reading: readings[worktree.path] ?? .reading,
                 sessions: inside.count,
-                agent: WorktreeAgentActivity(inside.filter(\.reportsStatus).map(\.status)),
+                agent: WorktreeAgentActivity(agents),
                 sessionActivity: inside.map(\.lastActivityAt).max()
             )
         }

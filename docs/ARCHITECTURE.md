@@ -736,6 +736,96 @@ closed, and opening it again shows how far it has got.
 What is not done yet — getting a fresh worktree ready to run, services and ports
 per worktree, the rest of finishing a piece of work — is in `ROADMAP.md`.
 
+# Subagents are listed where they work
+
+An agent that starts subagents is doing several things at once, and the
+sidebar showed one of them. A worktree Claude Code had made for one of its
+subagents sat under its heading with nothing in it while an agent was busy
+there. Each subagent is now a line: under the session that started it, or under
+the worktree it works in when that is another one — what it was asked to do,
+what kind of agent it is, and the mark a session would wear for its state. It
+is not a terminal. Nothing can be typed to it, and a click on it goes to the
+session that started it.
+
+**Everything comes from Claude Code's hooks.** `SubagentStart` and
+`SubagentStop` bracket each one, every event fired inside one carries its
+`agent_id`, its `agent_type` and its `cwd`, and the installer now asks for
+those two events and for `SessionEnd`. The daemon keeps the list, in
+`SubagentRoster`, beside the tracker that already read those events for their
+waits; the app only draws it.
+
+**What a subagent was asked to do is in none of its own events.** It is in the
+parent's call to the `Agent` tool — `tool_input.description` — and that call
+does not say which agent it made until it returns. Captured from Claude Code
+2.1.280 rather than taken from the documentation, which names no link at all
+(`Tests/RelayDaemonCoreTests/ClaudeSubagentCaptures.swift` holds the runs): a
+background call returns the moment its agent starts, with the agent's id in
+`tool_response.agentId`; a foreground one returns only after its agent has
+stopped. So a line's task comes from whichever of these says so first:
+
+- the call's answer, which is exact and, for a background agent, arrives with
+  the agent's own first event and sometimes ahead of it;
+- the note Claude Code writes beside the transcript on each subagent,
+  `subagents/agent-<id>.meta.json`, which names the call and the task. It is
+  written a few milliseconds after `SubagentStart`, so the helper looks for it
+  on every event of a subagent's and finds it from the first tool call on. It
+  is undocumented; a note that goes missing or changes shape costs the task's
+  words, never the line;
+- `background_tasks` on `Stop` and `SubagentStop`, which lists each background
+  agent with its task;
+- elimination, at the moment the agent starts: if exactly one call of its type
+  is still waiting for an agent, it is that one's. A call's `PreToolUse` hook
+  has finished before its agent starts, so its own call is always among those
+  waiting — and so is every other call of that type made in the same message,
+  which is why two of a type started together are never guessed between. They
+  read as their type until one of the above names them, and anything that does
+  replaces a guess, so a guess thrown by two hooks arriving out of order is
+  taken back rather than kept. Ordering alone was the other candidate, and is
+  what this refuses to rely on: the daemon reads each hook on a connection of
+  its own, concurrently, and a parallel call's hooks can interleave with its
+  neighbour's.
+
+**A subagent is placed by the rule a session is**, on its own `cwd`: the deepest
+worktree holding it, retried through `realpath`. Claude Code keeps `cwd` where
+the agent is. A subagent started with `isolation: "worktree"` works in
+`.claude/worktrees/agent-<id>`, which git lists, so it gets that worktree's
+heading; one started without it has its parent's `cwd` even after `cd` in a
+command, because Claude Code puts the shell back. The same worktree as its
+session puts the line under the session, dragged with it; another puts it after
+that worktree's sessions, with its session's name, and counts it as an agent at
+work there — the folded heading's mark and Clean Up Worktrees… both see it. A
+subagent that has not said where it is, or is where no worktree is, stays with
+its session, for the reason a stray session stays with the project's checkout.
+
+**How long a line lasts.** It appears on `SubagentStart`, or on the first event
+that names the agent when that was missed. It works, waits for a permission or
+a question as a session does, and is finished on `SubagentStop`. A finished line
+stays two minutes — seen on a glance back, gone before the sidebar is a
+history. A foreground subagent cannot outlive its parent's turn, so the turn's
+`Stop`, or the parent going idle, which is how a cancel shows, ends whatever of
+it is still marked working; a background agent that nothing had said was one
+is ended with them, and its next event brings it back. A line that has heard
+nothing for thirty minutes goes: the tracker's own measure of a hook worth
+believing, since a background agent can sit through a long build without a word
+and a short timeout would take working agents off the list. One that is
+waiting does not go, because a question is answered or it is not. The whole
+list goes with `SessionEnd`, a `SessionStart` that starts over, the agent
+quitting and the session closing. Twelve lines are kept per session, the oldest
+finished one making room first, and sixteen calls waiting for their agents.
+
+**The list rides on the session's snapshot**, decoded leniently like
+`hostsAgent`: an app meeting an older daemon shows no lines, and an older app
+ignores them. The message set is unchanged, so the protocol version is too, on
+purpose. A version the daemon does not speak retires it whatever it holds, and
+the daemon deliberately outlives an update: bumping it would have ended every
+running agent on every Mac that updated, to add a list of lines. The hook's own
+event gains optional fields for the same reason — the helper is whichever build
+is installed, and the daemon can be the previous one.
+
+The cost is that the lines are Claude Code's alone, and read an undocumented
+note and an undocumented list. The hooks Relay installs for Codex carry nothing
+that names an agent it started.
+
 ---
 
 # The `relay` command talks to the app, not the daemon

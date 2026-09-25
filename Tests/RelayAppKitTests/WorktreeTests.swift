@@ -179,6 +179,76 @@ struct WorktreeMembershipTests {
         #expect(groups.first?.sessions == [started])
     }
 
+    private func session(in directory: String, subagents: [SubagentSnapshot]) -> SessionSnapshot {
+        var started = session(in: directory)
+        started.subagents = subagents
+        return started
+    }
+
+    private func subagent(_ id: String, in directory: String?) -> SubagentSnapshot {
+        SubagentSnapshot(id: id, agentType: "general-purpose", workingDirectory: directory, status: .working, startedAt: Date())
+    }
+
+    @Test("A subagent in a worktree of its own is listed under that worktree, not under its session")
+    func subagentElsewhere() throws {
+        let isolated = subagent("iso", in: "/Users/me/code/shop/.claude/worktrees/spike")
+        let beside = subagent("here", in: "/Users/me/code/shop/Sources")
+        let parent = session(in: "/Users/me/code/shop", subagents: [isolated, beside])
+        let groups = WorktreeMembership.groups(of: [parent], among: worktrees, home: "/Users/me/code/shop")
+
+        let home = try #require(groups.first)
+        let spike = try #require(groups.first { $0.worktree.name == "spike" })
+        #expect(home.nestedSubagents(of: parent).map(\.id) == ["here"])
+        #expect(spike.visitors.map(\.subagent.id) == ["iso"])
+        #expect(spike.visitors.map(\.session) == [parent.id])
+        // The worktree has no session of its own, and does not look empty.
+        #expect(spike.sessions.isEmpty)
+        #expect(groups.filter { $0.worktree.name != "spike" }.allSatisfy { $0.visitors.isEmpty })
+    }
+
+    @Test("A subagent that has not said where it is, or is where no worktree is, stays with its session")
+    func subagentUnplaced() {
+        let unsaid = subagent("unsaid", in: nil)
+        let outside = subagent("outside", in: "/Users/me/Downloads")
+        let gone = subagent("gone", in: "/Users/me/.relay/worktrees/shop/gone")
+        let parent = session(in: "/Users/me/.relay/worktrees/shop/fix-login", subagents: [unsaid, outside, gone])
+        let groups = WorktreeMembership.groups(of: [parent], among: worktrees, home: "/Users/me/code/shop")
+
+        let fix = groups.first { $0.worktree.name == "fix/login" }
+        #expect(fix?.nestedSubagents(of: parent).map(\.id) == ["unsaid", "outside", "gone"])
+        #expect(groups.allSatisfy { $0.visitors.isEmpty })
+    }
+
+    @Test("A subagent's folder spelled through a link is placed where it really is")
+    func subagentThroughSymlink() throws {
+        let directory = try TemporaryDirectory()
+        let real = directory.url.appendingPathComponent("real/shop")
+        let isolated = real.appendingPathComponent(".claude/worktrees/agent-a1")
+        try FileManager.default.createDirectory(at: isolated, withIntermediateDirectories: true)
+        let link = directory.url.appendingPathComponent("link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: directory.url.appendingPathComponent("real"))
+        func reported(_ url: URL, main: Bool) -> GitWorktree {
+            GitWorktree(
+                path: WorktreeMembership.canonical(url.path),
+                branch: main ? "main" : nil,
+                head: nil,
+                isMain: main,
+                isLocked: false,
+                isPrunable: false
+            )
+        }
+        let listed = [reported(real, main: true), reported(isolated, main: false)]
+        let linked = link.appendingPathComponent("shop").path
+
+        let parent = session(in: linked, subagents: [
+            subagent("beside", in: linked),
+            subagent("iso", in: linked + "/.claude/worktrees/agent-a1"),
+        ])
+        let groups = WorktreeMembership.groups(of: [parent], among: listed, home: linked)
+        #expect(groups.first?.nestedSubagents(of: parent).map(\.id) == ["beside"])
+        #expect(groups.last?.visitors.map(\.subagent.id) == ["iso"])
+    }
+
     @Test("A project added from a linked worktree lists that one first")
     func linkedWorktreeAsHome() {
         let groups = WorktreeMembership.groups(

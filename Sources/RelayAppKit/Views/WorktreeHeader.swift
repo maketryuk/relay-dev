@@ -93,10 +93,11 @@ struct WorktreeHeader: View {
                 }
             }
 
-            // Folded, the rows are not there to say who needs attention.
-            let reporting = group.sessions.filter(\.reportsStatus)
+            // Folded, the rows are not there to say who needs attention —
+            // the subagents working here among them.
+            let reporting = group.sessions.filter(\.reportsStatus).map(\.status) + group.visitors.map(\.subagent.status)
             if isCollapsed, !reporting.isEmpty {
-                StatusDot(status: RuntimeStatus.aggregate(reporting.map(\.status)), size: 7)
+                StatusDot(status: RuntimeStatus.aggregate(reporting), size: 7)
             }
 
             if model.worktreeRemovalsBeingChecked.contains(worktree.path) {

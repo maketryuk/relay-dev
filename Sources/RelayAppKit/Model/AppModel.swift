@@ -2383,6 +2383,12 @@ final class AppModel {
         sessions(in: projectID).filter { self.worktree(of: $0) == worktree }
     }
 
+    /// Subagents a session elsewhere started that are working in this
+    /// worktree — Claude Code's isolated ones, most often.
+    func visitingSubagents(in worktree: GitWorktree, of projectID: ProjectID) -> [SubagentSnapshot] {
+        worktreeGroups(in: projectID).first { $0.worktree == worktree }?.visitors.map(\.subagent) ?? []
+    }
+
     /// Makes a worktree the one the panel describes and new sessions start in.
     func activateWorktree(_ path: String, in projectID: ProjectID) {
         let previous = workingRoot(of: projectID)

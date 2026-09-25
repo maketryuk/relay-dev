@@ -75,6 +75,10 @@ public struct SessionSnapshot: Codable, Sendable, Hashable, Identifiable {
     /// running in this terminal — the way a shell session learns that
     /// somebody typed `claude` into it.
     public var hostsAgent: Bool
+    /// The subagents the session's agent has started, in the order it started
+    /// them, for as long as the daemon keeps them: while they work, and a
+    /// little after they finish.
+    public var subagents: [SubagentSnapshot]
 
     public init(
         id: SessionID,
@@ -93,7 +97,8 @@ public struct SessionSnapshot: Codable, Sendable, Hashable, Identifiable {
         role: SessionRole = .interactive,
         title: String? = nil,
         isNameUserDefined: Bool = false,
-        hostsAgent: Bool = false
+        hostsAgent: Bool = false,
+        subagents: [SubagentSnapshot] = []
     ) {
         self.id = id
         self.projectID = projectID
@@ -112,6 +117,7 @@ public struct SessionSnapshot: Codable, Sendable, Hashable, Identifiable {
         self.title = title
         self.isNameUserDefined = isNameUserDefined
         self.hostsAgent = hostsAgent
+        self.subagents = subagents
     }
 
     /// Whether this session has a status worth marking: it is an agent, or has
@@ -150,5 +156,63 @@ public struct SessionSnapshot: Codable, Sendable, Hashable, Identifiable {
         title = try container.decodeIfPresent(String.self, forKey: .title)
         isNameUserDefined = try container.decodeIfPresent(Bool.self, forKey: .isNameUserDefined) ?? false
         hostsAgent = try container.decodeIfPresent(Bool.self, forKey: .hostsAgent) ?? false
+        // A daemon older than the field has none to send, and a list this
+        // build cannot read costs the rows, never the session.
+        subagents = (try? container.decodeIfPresent([SubagentSnapshot].self, forKey: .subagents)) ?? []
+    }
+}
+
+/// A subagent a session's agent started, as the daemon last heard of it.
+///
+/// Not a session: it has no terminal of its own, and nothing can be typed to
+/// it. It is here so the sidebar can say that it exists, what it was asked to
+/// do and whether it is still at it — under the worktree it is working in.
+public struct SubagentSnapshot: Codable, Sendable, Hashable, Identifiable {
+    /// Claude Code's `agent_id`.
+    public var id: String
+    public var agentType: String?
+    /// The few words the agent that started it gave the task. Nil until
+    /// something has said which task is this one's.
+    public var description: String?
+    /// Where it works, from its own events; nil until one has arrived.
+    public var workingDirectory: String?
+    /// `working`, `waiting` or `finished`.
+    public var status: RuntimeStatus
+    public var runsInBackground: Bool
+    public var startedAt: Date
+    public var finishedAt: Date?
+
+    public init(
+        id: String,
+        agentType: String? = nil,
+        description: String? = nil,
+        workingDirectory: String? = nil,
+        status: RuntimeStatus,
+        runsInBackground: Bool = false,
+        startedAt: Date,
+        finishedAt: Date? = nil
+    ) {
+        self.id = id
+        self.agentType = agentType
+        self.description = description
+        self.workingDirectory = workingDirectory
+        self.status = status
+        self.runsInBackground = runsInBackground
+        self.startedAt = startedAt
+        self.finishedAt = finishedAt
+    }
+
+    /// Tolerant for the same reason the snapshot around it is, and a status
+    /// this build does not know reads as work rather than failing the list.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        agentType = try container.decodeIfPresent(String.self, forKey: .agentType)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        workingDirectory = try container.decodeIfPresent(String.self, forKey: .workingDirectory)
+        status = (try? container.decode(RuntimeStatus.self, forKey: .status)) ?? .working
+        runsInBackground = try container.decodeIfPresent(Bool.self, forKey: .runsInBackground) ?? false
+        startedAt = try container.decodeIfPresent(Date.self, forKey: .startedAt) ?? .distantPast
+        finishedAt = try container.decodeIfPresent(Date.self, forKey: .finishedAt)
     }
 }

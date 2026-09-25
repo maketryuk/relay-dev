@@ -51,6 +51,75 @@ struct WireCompatibilityTests {
         #expect(text.contains("\"protocol_mismatch\""))
     }
 
+    /// The subagents ride on the session snapshot rather than in a message of
+    /// their own, so the message set — and the protocol version, which would
+    /// retire every running daemon on update — is unchanged. What has to hold
+    /// is that each side reads the other's snapshots.
+    @Test("A snapshot from a daemon that predates subagents reads as having none")
+    func snapshotWithoutSubagents() throws {
+        var snapshot = try JSONSerialization.jsonObject(with: encoder.encode(Self.session)) as? [String: Any]
+        snapshot?.removeValue(forKey: "subagents")
+        let data = try JSONSerialization.data(withJSONObject: try #require(snapshot))
+        let decoded = try decoder.decode(SessionSnapshot.self, from: data)
+        #expect(decoded.id == Self.session.id)
+        #expect(decoded.subagents.isEmpty)
+    }
+
+    @Test("Subagents are encoded under names that stay put")
+    func subagentEncoding() throws {
+        let text = try json(Self.session)
+        #expect(text.contains(#""subagents":[{"#))
+        for key in ["id", "agentType", "description", "workingDirectory", "status", "runsInBackground", "startedAt", "finishedAt"] {
+            #expect(text.contains("\"\(key)\":"), "missing \(key)")
+        }
+        #expect(text.contains(#""status":"working""#))
+    }
+
+    @Test("A subagent this build cannot fully read costs the row, never the session")
+    func tolerantSubagents() throws {
+        var snapshot = try JSONSerialization.jsonObject(with: encoder.encode(Self.session)) as? [String: Any]
+        snapshot?["subagents"] = [["id": "a1", "status": "someFutureState"]]
+        let unknownStatus = try decoder.decode(
+            SessionSnapshot.self,
+            from: JSONSerialization.data(withJSONObject: try #require(snapshot))
+        )
+        #expect(unknownStatus.subagents.map(\.status) == [.working])
+
+        snapshot?["subagents"] = [["status": "working"]]
+        let malformed = try decoder.decode(
+            SessionSnapshot.self,
+            from: JSONSerialization.data(withJSONObject: try #require(snapshot))
+        )
+        #expect(malformed.id == Self.session.id)
+        #expect(malformed.subagents.isEmpty)
+    }
+
+    private static let session = SessionSnapshot(
+        id: SessionID(rawValue: "s1"),
+        projectID: ProjectID(rawValue: "p"),
+        kind: .claude,
+        name: "Claude",
+        workingDirectory: "/code/shop",
+        command: ["claude"],
+        status: .working,
+        pid: 42,
+        exitCode: nil,
+        startedAt: Date(timeIntervalSince1970: 1_700_000_000),
+        lastActivityAt: Date(timeIntervalSince1970: 1_700_000_100),
+        columns: 80,
+        rows: 24,
+        subagents: [SubagentSnapshot(
+            id: "a91551d74c9284977",
+            agentType: "general-purpose",
+            description: "Alpha directory check",
+            workingDirectory: "/code/shop/.claude/worktrees/agent-a91551d74c9284977",
+            status: .working,
+            runsInBackground: true,
+            startedAt: Date(timeIntervalSince1970: 1_700_000_050),
+            finishedAt: Date(timeIntervalSince1970: 1_700_000_090)
+        )]
+    )
+
     @Test("The declared protocol version is ahead of the original release")
     func versionMovedForward() {
         // Milestone 1 shipped version 1; roles and the new queries are version 2.

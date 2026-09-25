@@ -125,6 +125,38 @@ final class AgentStatusDaemonTests {
         #expect(messages.snapshots(for: session.id).contains { $0.reportsStatus })
     }
 
+    @Test("The subagents a session's agent starts are in its snapshot until the session ends")
+    func subagentsInSnapshot() throws {
+        let session = try createSession(kind: .claude, command: Self.quietAgent)
+        try client.wait(timeout: 30) { $0.snapshots(for: session.id).contains { $0.status == .idle } }
+        let ancestry = [ProcessAncestor(pid: try #require(session.pid), name: "sh")]
+        let socket = RelayPaths.hookSocketURL(beside: harness.socketURL).path
+
+        // One at a time: the daemon reads each hook on a connection of its
+        // own, and a call's hook has always finished before its agent starts.
+        #expect(AgentHookDelivery.send(AgentHookEvent(
+            sessionID: session.id.rawValue, agent: .claude, name: "PreToolUse", toolName: "Agent", toolUseID: "c1",
+            ancestry: ancestry,
+            delegation: .init(description: "Map the code", agentType: "Explore", toolUseID: "c1")
+        ), to: socket))
+        try client.wait(timeout: 10) { $0.snapshots(for: session.id).last?.status == .working }
+
+        #expect(AgentHookDelivery.send(AgentHookEvent(
+            sessionID: session.id.rawValue, agent: .claude, name: "SubagentStart", subagentID: "a1",
+            ancestry: ancestry, workingDirectory: "/tmp/elsewhere", agentType: "Explore"
+        ), to: socket))
+        let started = try client.wait(timeout: 10) { !($0.snapshots(for: session.id).last?.subagents.isEmpty ?? true) }
+        let row = try #require(started.snapshots(for: session.id).last?.subagents.first)
+        #expect(row.id == "a1")
+        #expect(row.description == "Map the code")
+        #expect(row.workingDirectory == "/tmp/elsewhere")
+        #expect(row.status == .working)
+
+        try send("SessionEnd", to: session)
+        let ended = try client.wait(timeout: 10) { $0.snapshots(for: session.id).last?.subagents.isEmpty == true }
+        #expect(ended.snapshots(for: session.id).last?.subagents.isEmpty == true)
+    }
+
     @Test("A hook from a terminal the session does not own changes nothing")
     func foreignHookIsIgnored() throws {
         let session = try createSession(kind: .claude, command: Self.quietAgent)

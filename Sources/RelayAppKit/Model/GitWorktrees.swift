@@ -137,16 +137,55 @@ enum WorktreeMembership {
             let owner = worktree(containing: session.workingDirectory, among: listed) ?? homeWorktree
             guard let index = groups.firstIndex(where: { $0.worktree == owner }) else { continue }
             groups[index].sessions.append(session)
+            for subagent in session.subagents {
+                let place = worktree(of: subagent, startedFrom: owner, among: listed)
+                guard place != owner, let visited = groups.firstIndex(where: { $0.worktree == place }) else { continue }
+                groups[visited].visitors.append(SubagentVisit(session: session.id, subagent: subagent))
+                groups[index].away.insert(subagent.id)
+            }
         }
         return groups
+    }
+
+    /// Where a subagent is working, by the rule a session is placed by: the
+    /// deepest worktree holding its directory. One that has not said where it
+    /// is, or is somewhere no worktree holds, is with the session that
+    /// started it — a row is never dropped for not knowing where it goes.
+    static func worktree(
+        of subagent: SubagentSnapshot,
+        startedFrom sessionWorktree: GitWorktree?,
+        among worktrees: [GitWorktree]
+    ) -> GitWorktree? {
+        guard let directory = subagent.workingDirectory else { return sessionWorktree }
+        return worktree(containing: directory, among: worktrees) ?? sessionWorktree
     }
 }
 
 struct WorktreeGroup: Identifiable, Equatable {
     var worktree: GitWorktree
     var sessions: [SessionSnapshot]
+    /// Subagents working here that a session in another worktree started.
+    /// They are what keeps a worktree an agent is busy in from looking empty.
+    var visitors: [SubagentVisit] = []
+    /// Subagents of this group's sessions that are working in another
+    /// worktree, and are listed there instead.
+    var away: Set<String> = []
 
     var id: String { worktree.path }
+
+    /// The subagents drawn under a session of this group: those working where
+    /// it works.
+    func nestedSubagents(of session: SessionSnapshot) -> [SubagentSnapshot] {
+        session.subagents.filter { !away.contains($0.id) }
+    }
+}
+
+/// A subagent listed under another worktree than its session's.
+struct SubagentVisit: Identifiable, Equatable {
+    var session: SessionID
+    var subagent: SubagentSnapshot
+
+    var id: String { subagent.id }
 }
 
 /// What a worktree Relay creates is called, and where it goes.
