@@ -22,13 +22,13 @@ struct ProjectSettingsView: View {
         ModalSurface(relayLocalized("Project Settings"), onDismiss: { model.dismissModal() }) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.Spacing.large) {
-                field("Icon") { iconField }
+                field(relayLocalized("Icon")) { iconField }
 
-                field("Display name") {
+                field(relayLocalized("Display name")) {
                     RelayTextField(relayLocalized("Project name"), text: $name)
                 }
 
-                field("Root path") {
+                field(relayLocalized("Root path")) {
                     Text(project.rootPath)
                         .font(Theme.Typography.mono)
                         .foregroundStyle(Theme.Palette.textTertiary)
@@ -36,7 +36,7 @@ struct ProjectSettingsView: View {
                         .lineLimit(2)
                 }
 
-                field("Default agent") {
+                field(relayLocalized("Default agent")) {
                     Picker("", selection: $defaultAgent) {
                         ForEach(SessionKind.allCases.filter { $0 != .ssh && $0 != .shell }, id: \.self) { kind in
                             Text(relayLocalized(kind.displayName)).tag(kind)
@@ -47,15 +47,15 @@ struct ProjectSettingsView: View {
                     .clickable()
                 }
 
-                field("Dev command") {
+                field(relayLocalized("Dev command")) {
                     RelayTextField("npm run dev", text: $devCommand)
                 }
 
-                field("Preferred editor command") {
+                field(relayLocalized("Preferred editor command")) {
                     RelayTextField("code, cursor, zed…", text: $editor)
                 }
 
-                field("TODO markers") {
+                field(relayLocalized("TODO markers")) {
                     VStack(alignment: .leading, spacing: Theme.Spacing.xsmall) {
                         RelayTextField("TODO, FIXME, HACK", text: $todoMarkers)
                         Text(relayLocalized("Words the TODO panel looks for in comments. Case sensitive; letters only."))
@@ -65,7 +65,7 @@ struct ProjectSettingsView: View {
                     }
                 }
 
-                field("Notifications") {
+                field(relayLocalized("Notifications")) {
                     VStack(alignment: .leading, spacing: Theme.Spacing.small) {
                         Toggle(isOn: $notificationsEnabled) {
                             Text(relayLocalized("Notify me about agents and services"))
@@ -201,12 +201,12 @@ struct ProjectSettingsView: View {
         iconPath = url.path
     }
 
-    /// Localises here rather than at every call site: a field label is always
-    /// a phrase shown to the user, and spelling that out fifteen times invites
-    /// the one that gets forgotten.
+    /// Takes a phrase already looked up rather than looking one up itself: a
+    /// label handed over as a bare key is invisible to the test that checks
+    /// every phrase has a translation.
     private func field(_ label: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
-            Text(relayLocalized(label).uppercased())
+            Text(label.uppercased())
                 .font(Theme.Typography.sectionHeader)
                 .tracking(0.7)
                 .foregroundStyle(Theme.Palette.textTertiary)

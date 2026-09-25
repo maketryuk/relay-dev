@@ -115,7 +115,7 @@ struct ServicesPane: View {
             })
 
             if project.services.isEmpty {
-                hint("No services yet. Add one, or let Relay detect a dev command.")
+                hint(relayLocalized("No services yet. Add one, or let Relay detect a dev command."))
             } else {
                 ForEach(project.services) { service in
                     row(service)

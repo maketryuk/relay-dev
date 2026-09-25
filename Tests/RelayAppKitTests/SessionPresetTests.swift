@@ -19,6 +19,7 @@ struct SessionPresetTests {
     }
 
     @Test("The subtitle shows exactly what will run")
+    @MainActor
     func subtitleShowsCommand() {
         #expect(SessionPreset(name: "Claude", kind: .claude).subtitle == "claude")
         #expect(

@@ -26,6 +26,14 @@ public enum AppLanguage: String, CaseIterable, Codable, Sendable, Identifiable {
         case .russian: "ru"
         }
     }
+
+    /// What the picker calls it. A language is named in itself, so that it can
+    /// be found by someone who cannot read the one on screen; "System" is not a
+    /// language, and is named in the one the window speaks.
+    @MainActor
+    public var localizedName: String {
+        self == .system ? relayLocalized("System") : displayName
+    }
 }
 
 /// Holds the chosen language.

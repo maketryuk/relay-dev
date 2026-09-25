@@ -83,7 +83,7 @@ struct PresetEditorView: View {
                     items: SessionKind.allCases.filter { $0 != .ssh },
                     selection: $kind
                 ) { kind, _ in
-                    agentLabel(kind, title: kind.displayName)
+                    agentLabel(kind, title: relayLocalized(kind.displayName))
                 }
             }
 
@@ -182,12 +182,12 @@ struct PresetEditorView: View {
         model.dismissModal()
     }
 
-    /// Localises here rather than at every call site: a field label is always
-    /// a phrase shown to the user, and spelling that out fifteen times invites
-    /// the one that gets forgotten.
+    /// Takes a phrase already looked up rather than looking one up itself: a
+    /// label handed over as a bare key is invisible to the test that checks
+    /// every phrase has a translation.
     private func field(_ label: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
-            Text(relayLocalized(label).uppercased())
+            Text(label.uppercased())
                 .font(Theme.Typography.sectionHeader)
                 .tracking(0.7)
                 .foregroundStyle(Theme.Palette.textTertiary)

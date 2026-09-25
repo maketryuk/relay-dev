@@ -131,10 +131,10 @@ struct SSHPane: View {
             VStack(spacing: Theme.Spacing.medium) {
                 EmptyStateView(
                     systemImage: "network",
-                    title: model.sshHosts.isEmpty ? "No hosts configured" : "No match",
+                    title: model.sshHosts.isEmpty ? relayLocalized("No hosts configured") : relayLocalized("No match"),
                     message: model.sshHosts.isEmpty
-                        ? "Relay reads ~/.ssh/config, including Include directives. Nothing there yet."
-                        : "No host matches “\(query)”."
+                        ? relayLocalized("Relay reads ~/.ssh/config, including Include directives. Nothing there yet.")
+                        : String(format: relayLocalized("No host matches “%@”."), query)
                 )
                 .fixedSize(horizontal: false, vertical: true)
                 if model.sshHosts.isEmpty {
@@ -161,7 +161,8 @@ struct SSHPane: View {
                                 row(host, isPinned: true, at: index)
                             }
                         } header: {
-                            sectionHeader("Pinned to \(model.selectedProject?.name ?? "this project")")
+                            sectionHeader(model.selectedProject.map { String(format: relayLocalized("Pinned to %@"), $0.name) }
+                                ?? relayLocalized("Pinned to this project"))
                         }
                     }
                     if !others.isEmpty {
@@ -170,7 +171,7 @@ struct SSHPane: View {
                                 row(host, isPinned: false, at: pinned.count + index)
                             }
                         } header: {
-                            sectionHeader(pinned.isEmpty ? "All hosts" : "Other hosts")
+                            sectionHeader(pinned.isEmpty ? relayLocalized("All hosts") : relayLocalized("Other hosts"))
                         }
                     }
                 }
@@ -216,7 +217,7 @@ struct SSHPane: View {
         .contextMenu {
             Button(relayLocalized("Connect")) { connect(host) }
             if model.selectedProjectID != nil {
-                Button(isPinned ? "Unpin from Project" : "Pin to Project") {
+                Button(isPinned ? relayLocalized("Unpin from Project") : relayLocalized("Pin to Project")) {
                     guard let projectID = model.selectedProjectID else { return }
                     model.togglePin(host, in: projectID)
                 }

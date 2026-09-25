@@ -20,6 +20,7 @@
 "%d commits to push" = "%d commits to push";
 "%d conflicted" = "%d conflicted";
 "%d picked" = "%d picked";
+"%d pt" = "%d pt";
 "%d unmodified lines" = "%d unmodified lines";
 "%d unread" = "%d unread";
 "A branch of its own, checked out in a folder of its own." = "A branch of its own, checked out in a folder of its own.";
@@ -95,6 +96,8 @@
 "Commits on no branch, lost with it: %d" = "Commits on no branch, lost with it: %d";
 "Commits that are not merged: %d." = "Commits that are not merged: %d.";
 "Could not compare it with %@" = "Could not compare it with %@";
+"Could not start %@" = "Could not start %@";
+"Custom" = "Custom";
 "CUSTOM COMMAND" = "CUSTOM COMMAND";
 "Cached" = "Cached";
 "Cancel" = "Cancel";
@@ -179,7 +182,6 @@
 "Could not rename" = "Could not rename";
 "Could not resolve %@" = "Could not resolve %@";
 "Could not stage" = "Could not stage";
-"Could not start" = "Could not start";
 "Could not stop the process" = "Could not stop the process";
 "Could not switch to %@" = "Could not switch to %@";
 "Could not write the SSH config" = "Could not write the SSH config";
@@ -323,6 +325,7 @@
 "Loading…" = "Loading…";
 "Local" = "Local";
 "Locked: git will not remove it until it is unlocked" = "Locked: git will not remove it until it is unlocked";
+"login shell" = "login shell";
 "Logs" = "Logs";
 "Look again" = "Look again";
 "Looking for containers…" = "Looking for containers…";
@@ -348,6 +351,7 @@
 "Mute this project" = "Mute this project";
 "Muted projects" = "Muted projects";
 "NEW SESSION" = "NEW SESSION";
+"No services yet. Add one, or let Relay detect a dev command." = "No services yet. Add one, or let Relay detect a dev command.";
 "No worktree fits every filter that is on." = "No worktree fits every filter that is on.";
 "No worktrees to clean up" = "No worktrees to clean up";
 "Not merged into %@" = "Not merged into %@";
@@ -453,6 +457,7 @@
 "Pin to Project" = "Pin to Project";
 "Pin to current project" = "Pin to current project";
 "Pinned to %@" = "Pinned to %@";
+"Pinned to this project" = "Pinned to this project";
 "Point at an element and hand it to an agent" = "Point at an element and hand it to an agent";
 "Port" = "Port";
 "Ports" = "Ports";
@@ -463,6 +468,7 @@
 "Preview" = "Preview";
 "Previous Project" = "Previous Project";
 "Previous Session" = "Previous Session";
+"Project" = "Project";
 "Project Settings" = "Project Settings";
 "Project Settings…" = "Project Settings…";
 "Project name" = "Project name";
@@ -472,12 +478,15 @@
 "Projects: %d" = "Projects: %d";
 "Protocol" = "Protocol";
 "Proxy jump" = "Proxy jump";
+"pt" = "pt";
 "Pull (rebase)" = "Pull (rebase)";
+"Pull failed" = "Pull failed";
 "Pull into %@" = "Pull into %@";
 "Pull" = "Pull";
 "Pull…" = "Pull…";
 "Push %@" = "Push %@";
 "Push" = "Push";
+"Push failed" = "Push failed";
 "Push…" = "Push…";
 "Quick switching" = "Quick switching";
 "Re-read branches" = "Re-read branches";
@@ -562,10 +571,13 @@
 "Runs in %@ through your shell." = "Runs in %@ through your shell.";
 "Runs through your shell in the project root." = "Runs through your shell in the project root.";
 "Runtime" = "Runtime";
+"Service" = "Service";
+"Session" = "Session";
 "Sessions in them will be closed: %d." = "Sessions in them will be closed: %d.";
 "Sessions to close: %d" = "Sessions to close: %d";
 "Shown: %d of %d" = "Shown: %d of %d";
 "Squash-merged into %@" = "Squash-merged into %@";
+"SSH" = "SSH";
 "SSH Hosts" = "SSH Hosts";
 "SSH hosts" = "SSH hosts";
 "Save" = "Save";
@@ -636,10 +648,12 @@
 "Stop this process?" = "Stop this process?";
 "Stop" = "Stop";
 "Stopped" = "Stopped";
+"Stopped %@ (%@)" = "Stopped %@ (%@)";
 "Stopping" = "Stopping";
 "Switch Branch" = "Switch Branch";
 "Switch branch" = "Switch branch";
 "Switch to %@" = "Switch to %@";
+"System" = "System";
 "The project's own folder and the main worktree are never removed here." = "The project's own folder and the main worktree are never removed here.";
 "Their branches are deleted only if Relay created them and their work is already merged, squashed or rebased in." = "Their branches are deleted only if Relay created them and their work is already merged, squashed or rebased in.";
 "Their folders will be deleted." = "Their folders will be deleted.";
@@ -757,5 +771,4 @@
 "start" = "start";
 "stop" = "stop";
 "theirs" = "theirs";
-"this project" = "this project";
 "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project";

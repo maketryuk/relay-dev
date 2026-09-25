@@ -117,7 +117,7 @@ struct CommandPaletteView: View {
                 .focused($isFieldFocused)
                 .onSubmit(runHighlighted)
                 .onChange(of: query) { _, _ in highlightedIndex = 0 }
-            Text("esc")
+            Text(verbatim: "esc")
                 .font(Theme.Typography.caption)
                 .foregroundStyle(Theme.Palette.textTertiary)
                 .padding(.horizontal, 5)

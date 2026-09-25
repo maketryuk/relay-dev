@@ -20,10 +20,10 @@ struct ServiceEditorView: View {
             onDismiss: { model.dismissModal() }
         ) {
             VStack(alignment: .leading, spacing: Theme.Spacing.large) {
-                field("Name") {
+                field(relayLocalized("Name")) {
                     RelayTextField("Dev", text: $name)
                 }
-                field("Command") {
+                field(relayLocalized("Command")) {
                     VStack(alignment: .leading, spacing: 4) {
                         RelayTextField("pnpm run dev", text: $command)
                         Text(verbatim: String(format: relayLocalized("Runs in %@ through your shell."), project.displayPath))
@@ -31,7 +31,7 @@ struct ServiceEditorView: View {
                             .foregroundStyle(Theme.Palette.textTertiary)
                     }
                 }
-                field("URL override") {
+                field(relayLocalized("URL override")) {
                     VStack(alignment: .leading, spacing: 4) {
                         RelayTextField("http://localhost:3000", text: $urlOverride)
                         Text(relayLocalized("Leave empty to detect the port automatically."))
@@ -91,12 +91,12 @@ struct ServiceEditorView: View {
         model.dismissModal()
     }
 
-    /// Localises here rather than at every call site: a field label is always
-    /// a phrase shown to the user, and spelling that out fifteen times invites
-    /// the one that gets forgotten.
+    /// Takes a phrase already looked up rather than looking one up itself: a
+    /// label handed over as a bare key is invisible to the test that checks
+    /// every phrase has a translation.
     private func field(_ label: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
-            Text(relayLocalized(label).uppercased())
+            Text(label.uppercased())
                 .font(Theme.Typography.sectionHeader)
                 .tracking(0.7)
                 .foregroundStyle(Theme.Palette.textTertiary)

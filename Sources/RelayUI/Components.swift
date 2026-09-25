@@ -38,7 +38,7 @@ public struct StatusDot: View {
         // shift sideways when its session starts asking something.
         .frame(width: boxSize, height: boxSize)
         .accessibilityElement()
-        .accessibilityLabel(status.displayName)
+        .accessibilityLabel(relayLocalized(status.displayName))
     }
 
     @ViewBuilder

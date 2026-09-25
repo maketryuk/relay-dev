@@ -1,5 +1,6 @@
 import Foundation
 import RelayProtocol
+import RelayUI
 
 /// A one-click way to start a session: a name, an agent, and the arguments it
 /// should run with.
@@ -59,10 +60,11 @@ struct SessionPreset: Codable, Hashable, Identifiable, Sendable {
     }
 
     /// Shown under the name, so it is never a mystery what a preset will run.
+    @MainActor
     var subtitle: String {
         if let customCommand, !customCommand.isEmpty { return customCommand }
         let text = command.joined(separator: " ")
-        return text.isEmpty ? "login shell" : text
+        return text.isEmpty ? relayLocalized("login shell") : text
     }
 
     /// Arguments as the user would type them, for the editor.

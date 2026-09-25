@@ -20,6 +20,7 @@
 "%d commits to push" = "%d коммитов к отправке";
 "%d conflicted" = "с конфликтами: %d";
 "%d picked" = "выбрано: %d";
+"%d pt" = "%d пт";
 "%d unmodified lines" = "Неизменённых строк: %d";
 "%d unread" = "непрочитанных: %d";
 "A branch of its own, checked out in a folder of its own." = "Своя ветка в своей папке.";
@@ -95,6 +96,8 @@
 "Commits on no branch, lost with it: %d" = "Коммиты вне веток пропадут вместе с ним: %d";
 "Commits that are not merged: %d." = "Невлитых коммитов: %d.";
 "Could not compare it with %@" = "Не удалось сравнить с %@";
+"Could not start %@" = "Не удалось запустить %@";
+"Custom" = "Своя команда";
 "CUSTOM COMMAND" = "СВОЯ КОМАНДА";
 "Cached" = "Из кэша";
 "Cancel" = "Отмена";
@@ -179,7 +182,6 @@
 "Could not rename" = "Не удалось переименовать";
 "Could not resolve %@" = "Не удалось разрешить %@";
 "Could not stage" = "Не удалось добавить в индекс";
-"Could not start" = "Не удалось запустить";
 "Could not stop the process" = "Не удалось остановить процесс";
 "Could not switch to %@" = "Не удалось переключиться на %@";
 "Could not write the SSH config" = "Не удалось записать конфигурацию SSH";
@@ -323,6 +325,7 @@
 "Loading…" = "Загрузка…";
 "Local" = "Локальные";
 "Locked: git will not remove it until it is unlocked" = "Заблокирован: git не удалит его, пока блокировку не снимут";
+"login shell" = "оболочка входа";
 "Logs" = "Логи";
 "Look again" = "Обновить";
 "Looking for containers…" = "Ищем контейнеры…";
@@ -348,6 +351,7 @@
 "Mute this project" = "Отключить для этого проекта";
 "Muted projects" = "Отключённые проекты";
 "NEW SESSION" = "НОВАЯ СЕССИЯ";
+"No services yet. Add one, or let Relay detect a dev command." = "Сервисов пока нет. Добавьте свой или дайте Relay найти dev-команду.";
 "No worktree fits every filter that is on." = "Ни один worktree не подходит под все включённые фильтры.";
 "No worktrees to clean up" = "Убирать нечего";
 "Not merged into %@" = "Не влито в %@";
@@ -453,6 +457,7 @@
 "Pin to Project" = "Закрепить за проектом";
 "Pin to current project" = "Закрепить за текущим проектом";
 "Pinned to %@" = "Закреплено в проекте %@";
+"Pinned to this project" = "Закреплены за этим проектом";
 "Point at an element and hand it to an agent" = "Укажите на элемент и передайте его агенту";
 "Port" = "Порт";
 "Ports" = "Порты";
@@ -463,6 +468,7 @@
 "Preview" = "Превью";
 "Previous Project" = "Предыдущий проект";
 "Previous Session" = "Предыдущая сессия";
+"Project" = "Проект";
 "Project Settings" = "Настройки проекта";
 "Project Settings…" = "Настройки проекта…";
 "Project name" = "Название проекта";
@@ -472,12 +478,15 @@
 "Projects: %d" = "Проектов: %d";
 "Protocol" = "Протокол";
 "Proxy jump" = "Промежуточный хост";
+"pt" = "пт";
 "Pull (rebase)" = "Pull (rebase)";
+"Pull failed" = "Не удалось забрать изменения";
 "Pull into %@" = "Забрать в %@";
 "Pull" = "Забрать";
 "Pull…" = "Забрать…";
 "Push %@" = "Отправить %@";
 "Push" = "Push";
+"Push failed" = "Не удалось отправить изменения";
 "Push…" = "Отправить…";
 "Quick switching" = "Быстрое переключение";
 "Re-read branches" = "Перечитать ветки";
@@ -562,10 +571,13 @@
 "Runs in %@ through your shell." = "Запускается в %@ через вашу оболочку.";
 "Runs through your shell in the project root." = "Запускается через ваш шелл в корне проекта.";
 "Runtime" = "Среда выполнения";
+"Service" = "Сервис";
+"Session" = "Сессия";
 "Sessions in them will be closed: %d." = "Сессии в них будут закрыты: %d.";
 "Sessions to close: %d" = "Будут закрыты сессии: %d";
 "Shown: %d of %d" = "Показано: %d из %d";
 "Squash-merged into %@" = "Влито в %@ через squash";
+"SSH" = "SSH";
 "SSH Hosts" = "SSH-хосты";
 "SSH hosts" = "SSH-хосты";
 "Save" = "Сохранить";
@@ -636,10 +648,12 @@
 "Stop this process?" = "Остановить процесс?";
 "Stop" = "Остановить";
 "Stopped" = "Остановлен";
+"Stopped %@ (%@)" = "Остановлено: %@ (%@)";
 "Stopping" = "Останавливается";
 "Switch Branch" = "Переключить ветку";
 "Switch branch" = "Переключить ветку";
 "Switch to %@" = "Перейти в %@";
+"System" = "Как в системе";
 "The project's own folder and the main worktree are never removed here." = "Папка самого проекта и основной worktree здесь никогда не удаляются.";
 "Their branches are deleted only if Relay created them and their work is already merged, squashed or rebased in." = "Их ветки удаляются, только если их создал Relay и их работа уже влита — слиянием, squash или rebase.";
 "Their folders will be deleted." = "Их папки будут удалены.";
@@ -757,5 +771,4 @@
 "start" = "start";
 "stop" = "stop";
 "theirs" = "их";
-"this project" = "этот проект";
 "⌘1…⌘9 selects a session, ⌥⌘1…⌥⌘9 selects a project" = "⌘1…⌘9 выбирает сессию, ⌥⌘1…⌥⌘9 — проект";

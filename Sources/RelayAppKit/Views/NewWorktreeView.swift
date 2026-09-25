@@ -48,7 +48,7 @@ struct NewWorktreeView: View {
         ModalSurface(relayLocalized("New Worktree"), onDismiss: { model.dismissModal() }) {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: Theme.Spacing.large) {
-                    field("Branch") {
+                    field(relayLocalized("Branch")) {
                         VStack(alignment: .leading, spacing: 4) {
                             RelayTextField("fix-login-redirect", text: $name, autofocus: true, onSubmit: create)
                             Text(verbatim: summary)
@@ -61,10 +61,10 @@ struct NewWorktreeView: View {
                     }
 
                     if !opensExistingBranch {
-                        field("Start from") { basePicker }
+                        field(relayLocalized("Start from")) { basePicker }
                     }
 
-                    field("Then start") {
+                    field(relayLocalized("Then start")) {
                         ChipPicker(
                             items: [Start.nothing] + presets.map { Start.preset($0.id) },
                             selection: $start
@@ -74,7 +74,7 @@ struct NewWorktreeView: View {
                     }
 
                     if chosenPreset?.kind.isAgent == true {
-                        field("First prompt") {
+                        field(relayLocalized("First prompt")) {
                             VStack(alignment: .leading, spacing: 4) {
                                 RelayTextEditor(relayLocalized("What should it do?"), text: $prompt, minHeight: 88)
                                 Text(relayLocalized("Handed to the agent once it is ready for it. Optional."))
@@ -208,9 +208,12 @@ struct NewWorktreeView: View {
         )
     }
 
+    /// Takes a phrase already looked up rather than looking one up itself: a
+    /// label handed over as a bare key is invisible to the test that checks
+    /// every phrase has a translation.
     private func field(_ label: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
-            Text(relayLocalized(label).uppercased())
+            Text(label.uppercased())
                 .font(Theme.Typography.sectionHeader)
                 .tracking(0.7)
                 .foregroundStyle(Theme.Palette.textTertiary)

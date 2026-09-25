@@ -139,7 +139,7 @@ struct GeneralSettingsPane: View {
                         set: { model.setLanguage($0) }
                     )) {
                         ForEach(AppLanguage.allCases) { language in
-                            Text(language.displayName).tag(language)
+                            Text(language.localizedName).tag(language)
                         }
                     }
                     .labelsHidden()
@@ -156,7 +156,7 @@ struct GeneralSettingsPane: View {
                     HStack(spacing: Theme.Spacing.xsmall) {
                         RelayValueField(sizeText, text: $sizeDraft, onCommit: commitSize)
                             .frame(width: 54)
-                        Text(verbatim: "pt")
+                        Text(relayLocalized("pt"))
                             .font(Theme.Typography.rowSecondary)
                             .foregroundStyle(Theme.Palette.textSecondary)
                         RelayButton("−") { model.stepTerminalFontSize(by: -1) }
@@ -202,7 +202,7 @@ struct GeneralSettingsPane: View {
                 }
                 SettingsRow(
                     title: relayLocalized("Sidebar width"),
-                    detail: "\(Int(model.sidebarWidth)) pt"
+                    detail: String(format: relayLocalized("%d pt"), Int(model.sidebarWidth))
                 ) {
                     RelayButton(relayLocalized("Reset")) {
                         model.sidebarWidth = Theme.Metrics.sidebarWidth

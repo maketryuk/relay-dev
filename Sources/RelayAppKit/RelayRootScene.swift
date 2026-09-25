@@ -118,7 +118,7 @@ struct RelayCommands: Commands {
                 .keyboardShortcut("s", modifiers: .command)
         }
 
-        CommandMenu("Editor") {
+        CommandMenu(relayLocalized("Editor")) {
             Button(RelayCommand.findInFile.localizedTitle) { model.findInFocusedFile() }
                 .relayShortcut(model.binding(for: .findInFile))
 
@@ -141,7 +141,7 @@ struct RelayCommands: Commands {
                 .disabled(!model.canGoBackToOrigin)
         }
 
-        CommandMenu("Session") {
+        CommandMenu(relayLocalized("Session")) {
             Button(RelayCommand.closeSession.localizedTitle) { model.closeFocusedPane() }
                 .relayShortcut(model.binding(for: .closeSession))
 
@@ -178,14 +178,14 @@ struct RelayCommands: Commands {
             // not. Settings names the shortcut instead.
             if model.shortcutSettings.indexShortcutsEnabled {
                 ForEach(1 ... 9, id: \.self) { number in
-                    Button("Session \(number)") { model.selectSession(atIndex: number - 1) }
+                    Button { model.selectSession(atIndex: number - 1) } label: { Text(verbatim: "Session \(number)") }
                         .keyboardShortcut(KeyEquivalent(Character("\(number)")), modifiers: .command)
                         .hidden()
                 }
             }
         }
 
-        CommandMenu("Browser") {
+        CommandMenu(relayLocalized("Browser")) {
             Button(RelayCommand.newBrowserTab.localizedTitle) {
                 if let projectID = model.selectedProjectID { model.newBrowserTab(in: projectID) }
             }
@@ -207,7 +207,7 @@ struct RelayCommands: Commands {
                 .disabled(model.activeBrowserPage == nil)
         }
 
-        CommandMenu("Service") {
+        CommandMenu(relayLocalized("Service")) {
             Button(RelayCommand.startDefaultService.localizedTitle) {
                 if let projectID = model.selectedProjectID { model.startDefaultService(in: projectID) }
             }
@@ -221,7 +221,7 @@ struct RelayCommands: Commands {
             .relayShortcut(model.binding(for: .restartDefaultService))
         }
 
-        CommandMenu("Project") {
+        CommandMenu(relayLocalized("Project")) {
             Button(RelayCommand.nextProject.localizedTitle) { model.selectNextProject(offset: 1) }
                 .relayShortcut(model.binding(for: .nextProject))
             Button(RelayCommand.previousProject.localizedTitle) { model.selectNextProject(offset: -1) }
@@ -261,7 +261,7 @@ struct RelayCommands: Commands {
 
             if model.shortcutSettings.indexShortcutsEnabled {
                 ForEach(1 ... 9, id: \.self) { number in
-                    Button("Project \(number)") { model.selectProject(atIndex: number - 1) }
+                    Button { model.selectProject(atIndex: number - 1) } label: { Text(verbatim: "Project \(number)") }
                         .keyboardShortcut(
                             KeyEquivalent(Character("\(number)")),
                             modifiers: [.command, .option]

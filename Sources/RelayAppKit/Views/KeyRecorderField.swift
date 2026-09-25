@@ -52,7 +52,9 @@ struct KeyRecorderField: View {
         .clickable()
         .onHover { isHovering = $0 }
         .onTapGesture { isRecording.toggle() }
-        .help(conflictsWith.isEmpty ? "" : "Also used by \(conflictsWith.map(\.title).joined(separator: ", "))")
+        .help(conflictsWith.isEmpty
+            ? ""
+            : String(format: relayLocalized("Also used by %@"), conflictsWith.map(\.localizedTitle).joined(separator: ", ")))
     }
 
     private var labelText: String {

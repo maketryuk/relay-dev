@@ -19,8 +19,9 @@ enum UpdateInstaller {
         case downloadFailed(String)
         case archiveUnreadable
         case noApplicationInArchive
-        /// Why the downloaded copy was refused, as a phrase the message fills in.
-        case signatureRejected(String)
+        case signatureInvalid
+        /// Signed, but by a team other than the one this copy is signed by.
+        case signedBySomeoneElse
         case notWritable(String)
 
         @MainActor
@@ -32,8 +33,10 @@ enum UpdateInstaller {
                 relayLocalized("The downloaded archive could not be opened.")
             case .noApplicationInArchive:
                 relayLocalized("The download did not contain Relay.")
-            case let .signatureRejected(reason):
-                String(format: relayLocalized("The downloaded copy was rejected: %@"), relayLocalized(reason))
+            case .signatureInvalid:
+                String(format: relayLocalized("The downloaded copy was rejected: %@"), relayLocalized("its signature is not valid"))
+            case .signedBySomeoneElse:
+                String(format: relayLocalized("The downloaded copy was rejected: %@"), relayLocalized("it was signed by someone else"))
             case let .notWritable(path):
                 String(format: relayLocalized("Relay cannot replace itself at %@."), path)
             }
@@ -151,12 +154,12 @@ enum UpdateInstaller {
     /// and "an application someone else built".
     private static func verify(_ bundle: URL) throws {
         guard run("/usr/bin/codesign", ["--verify", "--deep", "--strict", bundle.path]) == 0 else {
-            throw Failure.signatureRejected("its signature is not valid")
+            throw Failure.signatureInvalid
         }
         let incoming = teamIdentifier(of: bundle)
         let current = teamIdentifier(of: Bundle.main.bundleURL)
         guard incoming == current else {
-            throw Failure.signatureRejected("it was signed by someone else")
+            throw Failure.signedBySomeoneElse
         }
     }
 

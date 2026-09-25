@@ -867,7 +867,7 @@ final class AppModel {
             } catch {
                 self.present(ToastContent(
                     kind: .error,
-                    title: "Could not start \(spec.name)",
+                    title: String(format: relayLocalized("Could not start %@"), spec.name),
                     message: error.localizedDescription
                 ))
             }
@@ -1116,7 +1116,7 @@ final class AppModel {
             } catch {
                 self.present(ToastContent(
                     kind: .error,
-                    title: relayLocalized("Could not start") + " \(name)",
+                    title: String(format: relayLocalized("Could not start %@"), name),
                     message: error.localizedDescription
                 ))
             }
@@ -2893,10 +2893,7 @@ final class AppModel {
         let arguments = transfer.arguments
         perform(
             in: projectID,
-            title: String(
-                format: relayLocalized("%@ failed"),
-                relayLocalized(transfer.direction == .pull ? "Pull" : "Push")
-            ),
+            title: relayLocalized(transfer.direction == .pull ? "Pull failed" : "Push failed"),
             action: { root in
                 GitActions.run(arguments, at: root)
             },
@@ -3726,16 +3723,16 @@ final class AppModel {
     }
 
     func tabTooltip(_ tab: RightSidebarTab, for project: Project) -> String {
-        guard !isTabAvailable(tab, for: project) else { return tab.title }
+        guard !isTabAvailable(tab, for: project) else { return tab.localizedTitle }
         switch tab {
         case .git:
-            return "\(tab.title) — " + relayLocalized("not a git repository. Click to look again.")
+            return "\(tab.localizedTitle) — " + relayLocalized("not a git repository. Click to look again.")
         case .docker:
             return projectsCheckingDocker.contains(project.id)
                 ? relayLocalized("Docker — checking…")
                 : relayLocalized("Docker — nothing found. Click to check again.")
         default:
-            return "\(tab.title) — " + relayLocalized("coming soon")
+            return "\(tab.localizedTitle) — " + relayLocalized("coming soon")
         }
     }
 
@@ -4169,7 +4166,7 @@ final class AppModel {
             if case let .commandOutput(status, output)? = reply, status != 0, !output.isEmpty {
                 self.present(ToastContent(
                     kind: .error,
-                    title: "docker \(action.rawValue) failed",
+                    title: String(format: relayLocalized("%@ failed"), "docker \(action.rawValue)"),
                     message: output,
                     duration: .seconds(8)
                 ))
@@ -4288,7 +4285,7 @@ final class AppModel {
             } else {
                 self.present(ToastContent(
                     kind: .success,
-                    title: relayLocalized("Stopped") + " \(port.processName) (\(port.port))",
+                    title: String(format: relayLocalized("Stopped %@ (%@)"), port.processName, String(port.port)),
                     duration: .seconds(4)
                 ))
             }

@@ -36,7 +36,7 @@ struct ServiceDefinition: Codable, Hashable, Identifiable, Sendable {
 }
 
 /// Lifecycle of a service, as the spec names them.
-enum ServiceState: String, Sendable {
+enum ServiceState: String, CaseIterable, Sendable {
     case stopped
     case starting
     case running

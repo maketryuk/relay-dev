@@ -36,6 +36,15 @@ breaking change to stored data.
 - **Removing a worktree stops the ESLint Relay kept running in it**, and lets
   go of the list of its files and the names found in them, which stayed for as
   long as the app ran.
+- **Parts of a Russian window were still in English.** The Editor, Session,
+  Browser, Service and Project menus; the SSH hosts window's empty state, its
+  section headings and Pin in its row menu; the empty Services panel; the tab
+  strip's tooltips; the "System" choice of language; the note under a preset
+  that runs the login shell; the agent names in the preset editor; "pt" after a
+  size; the tooltip naming a clashing shortcut; and the toasts for a session or
+  container that would not start and a process that was stopped. A test now
+  fails on a label SwiftUI would look up in the app's own bundle, where no
+  translation lives, and on a translated phrase shown without being looked up.
 
 ## 0.7.1 — 2026-09-25
 
