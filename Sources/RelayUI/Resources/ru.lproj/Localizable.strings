@@ -600,7 +600,7 @@
 "Start from a template or write your own command" = "Начните с шаблона или напишите свою команду";
 "Start from" = "Начать с";
 "Start" = "Запустить";
-"Started by %@" = "Запущен из %@";
+"Started by %@" = "Запущен из сессии: %@";
 "Starting" = "Запускается";
 "Starts from where you are now" = "Начнётся с текущего состояния";
 "Status bar" = "Строка состояния";
