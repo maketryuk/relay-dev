@@ -240,7 +240,9 @@ would otherwise show four tabs that are permanently empty.
 - Git state is polled every 12 s for the visible project only, one `git status
   --porcelain=v2 --branch` call that yields branch, dirtiness and ahead/behind
   together, and one `git worktree list`. The other worktrees' statuses are read
-  on the same tick, and only once there is more than one.
+  on the same tick, and only once there is more than one. How many lines
+  changed is a `git diff --shortstat` of its own, asked only of a worktree
+  that has changes.
 - Terminal output is only streamed to clients that explicitly attached, so a
   background session costs a hidden window nothing.
 - Output is not news in itself. A chunk that changes a session's title, or

@@ -35,6 +35,9 @@ enum GitProbe {
             timeout: 4
         ) else { return nil }
         var status = parse(porcelainV2: output)
+        // Nothing changed has nothing to measure, and this runs for every
+        // worktree of the project on screen every twelve seconds.
+        guard status.isDirty else { return status }
 
         // A second call, because porcelain v2 reports which files changed but
         // not by how much.
