@@ -10,8 +10,9 @@ import RelayProtocol
 public final class DaemonServer: @unchecked Sendable {
     public static let version = RelayVersion.current
 
-    /// How often live sessions are re-classified. Cheap enough to be invisible
-    /// and only scheduled while at least one session is running.
+    /// How often live sessions are re-classified, and clients told about
+    /// output they have not heard of. Cheap enough to be invisible and only
+    /// scheduled while at least one session is running.
     private static let tickInterval: TimeInterval = 0.35
     /// Exiting after the last client disconnects would defeat the entire point
     /// of the daemon, so it only exits when it has nothing left to supervise.
@@ -245,6 +246,7 @@ public final class DaemonServer: @unchecked Sendable {
         DaemonQueue.assertIsolated()
         guard let session = sessions[sessionID] else { return }
         broadcast(.sessionUpdated(session.snapshot()))
+        session.noteReported()
     }
 
     // MARK: - Request routing
@@ -600,8 +602,8 @@ public final class DaemonServer: @unchecked Sendable {
         let now = Date()
         for identifier in sessionOrder {
             guard let session = sessions[identifier] else { continue }
-            if session.reclassify(now: now) {
-                broadcast(.sessionUpdated(session.snapshot()))
+            if session.reclassify(now: now) || session.owesActivityReport(now: now) {
+                broadcastSnapshot(identifier)
             }
         }
         updateTicker()

@@ -16,6 +16,12 @@ public final class SessionRuntime: @unchecked Sendable {
     private static let echoWindow: TimeInterval = 0.25
     /// How much raw output the classifier looks at.
     private static let recentBytesCapacity = 8 * 1024
+    /// How stale a client's idea of when the session was last active may get.
+    ///
+    /// Nothing on screen reads that time more finely than a day, and a
+    /// snapshot sent for every chunk of output — a kilobyte, on macOS — redrew
+    /// the window's session lists once per chunk.
+    static let activityReportInterval: TimeInterval = 2
 
     public let id: SessionID
     public private(set) var spec: SessionSpec
@@ -45,6 +51,10 @@ public final class SessionRuntime: @unchecked Sendable {
     private var isTerminatingByRequest = false
     private var columns: Int
     private var rows: Int
+    /// What clients were last told, and when: the time they last heard the
+    /// session was active, and the moment they were told it.
+    private var reportedActivityAt: Date
+    private var reportedAt: Date
 
     public init(id: SessionID, spec: SessionSpec, scrollbackCapacity: Int = 512 * 1024) {
         self.id = id
@@ -55,6 +65,8 @@ public final class SessionRuntime: @unchecked Sendable {
         startedAt = Date()
         activity = ActivityWindow(startedAt: startedAt)
         lastActivityAt = startedAt
+        reportedActivityAt = startedAt
+        reportedAt = startedAt
         columns = spec.columns
         rows = spec.rows
     }
@@ -82,8 +94,25 @@ public final class SessionRuntime: @unchecked Sendable {
             role: spec.role,
             title: reportedTitle,
             isNameUserDefined: isNameUserDefined,
-            hostsAgent: spec.kind.isAgent || agentStatus.hasEvidence
+            hostsAgent: hostsAgent
         )
+    }
+
+    private var hostsAgent: Bool {
+        spec.kind.isAgent || agentStatus.hasEvidence
+    }
+
+    /// Records that clients have just been sent this session's snapshot.
+    public func noteReported(at now: Date = Date()) {
+        reportedActivityAt = lastActivityAt
+        reportedAt = now
+    }
+
+    /// Whether clients are owed a snapshot for activity alone: they have not
+    /// heard about the latest of it, and it has been a while since they last
+    /// heard anything.
+    public func owesActivityReport(now: Date) -> Bool {
+        lastActivityAt > reportedActivityAt && now.timeIntervalSince(reportedAt) >= Self.activityReportInterval
     }
 
     // MARK: - Lifecycle
@@ -108,9 +137,11 @@ public final class SessionRuntime: @unchecked Sendable {
         child.startStreaming(
             onOutput: { [weak self] data in
                 guard let self else { return }
-                self.ingest(output: data)
+                let changed = self.ingest(output: data)
                 onOutput(identifier, data)
-                onChange(identifier)
+                // The time it moved is reported with the tick, not with each
+                // chunk; see `owesActivityReport`.
+                if changed { onChange(identifier) }
             },
             onExit: { [weak self] code in
                 guard let self else { return }
@@ -212,8 +243,11 @@ public final class SessionRuntime: @unchecked Sendable {
 
     // MARK: - Status derivation
 
-    private func ingest(output data: Data) {
+    /// Returns whether the output changed something a client shows besides
+    /// the time of the last activity.
+    private func ingest(output data: Data) -> Bool {
         let now = Date()
+        let hadAgent = hostsAgent
         scrollback.append(data)
         if now.timeIntervalSince(lastEditAt) > Self.echoWindow {
             bytesSinceUserInput += data.count
@@ -230,14 +264,17 @@ public final class SessionRuntime: @unchecked Sendable {
         for title in titles {
             agentStatus.noteTitle(title, at: now)
         }
+        var changed = hostsAgent != hadAgent
         if let title = titles.compactMap(TerminalTitleParser.sanitise).last, title != reportedTitle {
             reportedTitle = title
+            changed = true
         }
 
         recentBytes.append(data)
         if recentBytes.count > Self.recentBytesCapacity {
             recentBytes.discardFirst(recentBytes.count - Self.recentBytesCapacity)
         }
+        return changed
     }
 
     /// Whether nothing but the session's own shell is running in it: the

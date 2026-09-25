@@ -48,6 +48,13 @@ final class DaemonOutputCostTests {
         }
     }
 
+    /// Whether the only thing that moved between two snapshots is the time.
+    private static func onlyActivityMoved(from earlier: SessionSnapshot, to later: SessionSnapshot) -> Bool {
+        var aligned = earlier
+        aligned.lastActivityAt = later.lastActivityAt
+        return aligned == later && earlier.lastActivityAt != later.lastActivityAt
+    }
+
     @Test("What a session prints is not kept once it has been passed on")
     func printedOutputIsNotRetained() throws {
         // Four megabytes through a half-megabyte scrollback, to a client that
@@ -63,5 +70,46 @@ final class DaemonOutputCostTests {
 
         client.forgetReceived()
         #expect(allocatedBytes() - before < 3 * 1024 * 1024)
+    }
+
+    @Test("Output that changes nothing but the time is not a snapshot per chunk")
+    func outputIsNotReportedChunkByChunk() throws {
+        // Every chunk used to carry a snapshot to every client, and every
+        // snapshot redrew the window's session lists: a terminal printing a
+        // log redrew the sidebar once per kilobyte.
+        let started = Date()
+        let session = try createSession(command: [
+            "/bin/sh", "-c",
+            "i=0; while [ $i -lt 50 ]; do echo line$i; sleep 0.02; i=$((i+1)); done; exec sleep 30",
+        ])
+        try client.send(.attach(session.id, replayScrollback: false))
+        let messages = try client.wait(timeout: 30) {
+            String(decoding: $0.output(for: session.id), as: UTF8.self).contains("line49")
+        }
+        let elapsed = Date().timeIntervalSince(started)
+
+        let snapshots = messages.snapshots(for: session.id)
+        let activityOnly = zip(snapshots, snapshots.dropFirst()).filter {
+            Self.onlyActivityMoved(from: $0.0, to: $0.1)
+        }
+        #expect(activityOnly.count <= Int(elapsed / SessionRuntime.activityReportInterval) + 1)
+    }
+
+    @Test("A session that keeps printing still tells clients when it was last active")
+    func steadyOutputStillReportsActivity() throws {
+        let session = try createSession(command: ["/bin/sh", "-c", "while true; do echo tick; sleep 0.1; done"])
+        let working = try client.wait(timeout: 30) {
+            $0.snapshots(for: session.id).contains { $0.status == .working }
+        }
+        let reported = try #require(working.snapshots(for: session.id).last { $0.status == .working })
+
+        // Nothing else about it changes while it prints, so only the report of
+        // its activity can bring the newer time.
+        let later = try client.wait(timeout: 10) {
+            $0.snapshots(for: session.id).contains {
+                $0.status == .working && $0.lastActivityAt.timeIntervalSince(reported.lastActivityAt) > 0.5
+            }
+        }
+        #expect(later.snapshots(for: session.id).last?.status == .working)
     }
 }

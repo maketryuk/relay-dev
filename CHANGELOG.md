@@ -18,6 +18,9 @@ breaking change to stored data.
 - **The session daemon no longer keeps everything its terminals print.** Its
   memory grew by several times what each open session had ever printed,
   although the history it replays is half a megabyte.
+- **A terminal printing steadily no longer redraws the window's session lists
+  for every kilobyte of it.** The sidebar, the project rail and the palette
+  were drawn again for each chunk of output from any session.
 
 ## 0.7.1 — 2026-09-25
 

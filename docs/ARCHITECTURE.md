@@ -243,6 +243,11 @@ would otherwise show four tabs that are permanently empty.
   on the same tick, and only once there is more than one.
 - Terminal output is only streamed to clients that explicitly attached, so a
   background session costs a hidden window nothing.
+- Output is not news in itself. A chunk that changes a session's title, or
+  shows an agent in it, sends its snapshot at once; one that only moves its
+  last-activity time waits for the tick, and is sent at most every two
+  seconds. A snapshot went to every client with every chunk — a kilobyte, on
+  macOS — and each one redrew the window's session lists.
 - Project status is computed from session snapshots already in memory — never
   from a process scan.
 
