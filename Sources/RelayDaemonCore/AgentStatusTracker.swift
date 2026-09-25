@@ -79,7 +79,10 @@ struct AgentStatusTracker {
 
     private(set) var hookState: HookState?
     private var hookAt: Date?
-    /// The subagents it has started.
+    /// When the agent last said its turn was over.
+    private var turnEndedAt: Date?
+    /// The subagents it has started, which a turn can be waiting on after it
+    /// has ended.
     private(set) var subagents = SubagentRoster()
     /// Claude asks for permission without saying which call it is about, and
     /// names it only in the `PreToolUse` before and the `PostToolUse` after.
@@ -111,6 +114,10 @@ struct AgentStatusTracker {
                 record(.waiting(wait), at: now)
             } else if case let .waiting(wait) = hookState, Self.ends(wait, event) {
                 record(.working, at: now)
+            } else if hookState == .finished {
+                // A turn held open by work in the background stays believed
+                // for as long as that work keeps reporting.
+                hookAt = now
             }
             return
         }
@@ -126,6 +133,7 @@ struct AgentStatusTracker {
         case "SessionEnd":
             hookState = nil
             hookAt = nil
+            turnEndedAt = nil
             releasedAt = nil
 
         case "UserPromptSubmit":
@@ -151,6 +159,7 @@ struct AgentStatusTracker {
 
         case "Stop", "StopFailure":
             record(.finished, at: now)
+            turnEndedAt = now
 
         default:
             break
@@ -260,6 +269,7 @@ struct AgentStatusTracker {
     mutating func forgetAgent() {
         hookState = nil
         hookAt = nil
+        turnEndedAt = nil
         subagents.clear()
         releasedAt = nil
         lastToolCall = nil
@@ -290,6 +300,12 @@ struct AgentStatusTracker {
             }
             return .working
         case .finished:
+            // A turn that ended with agents still at work in the background
+            // is not finished: nothing is waiting to be read, and the agent
+            // will take the turn up again when they report back. Saying
+            // "finished" here announced a result twice, the first time before
+            // there was one.
+            if let turnEndedAt, subagents.holdsTurnOpen(endedAt: turnEndedAt, now: now) { return .working }
             return .finished
         case .idle:
             return .idle

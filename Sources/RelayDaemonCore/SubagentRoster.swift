@@ -31,6 +31,11 @@ struct SubagentRoster {
     /// can sit through a long build without a word, so anything short would
     /// take working agents away.
     static let silenceLimit: TimeInterval = AgentStatusTracker.hookFreshness
+    /// How long a background agent finishing keeps its parent's turn open.
+    /// Claude Code hands the result back as a new prompt within a fraction of
+    /// a second, and without this the session would flicker to finished and
+    /// back in between.
+    static let handoffGrace: TimeInterval = 3
 
     struct Subagent: Equatable {
         enum State: Equatable {
@@ -66,6 +71,7 @@ struct SubagentRoster {
 
     private(set) var agents: [Subagent] = []
     private var pending: [PendingCall] = []
+    private var lastBackgroundFinish: Date?
 
     var snapshots: [SubagentSnapshot] {
         agents.map { agent in
@@ -80,6 +86,15 @@ struct SubagentRoster {
                 finishedAt: agent.finishedAt
             )
         }
+    }
+
+    /// Whether the parent's turn is still going on without it: a subagent of
+    /// its is at work in the background, or one has just finished and its
+    /// result is on the way back to the parent.
+    func holdsTurnOpen(endedAt turnEnd: Date, now: Date) -> Bool {
+        if agents.contains(where: { $0.isActive && $0.runsInBackground == true }) { return true }
+        guard let finish = lastBackgroundFinish, finish >= turnEnd else { return false }
+        return now.timeIntervalSince(finish) < Self.handoffGrace
     }
 
     var hasForegroundWork: Bool {
@@ -150,6 +165,7 @@ struct SubagentRoster {
     mutating func clear() {
         agents.removeAll()
         pending.removeAll()
+        lastBackgroundFinish = nil
     }
 
     // MARK: - Calls that start agents
@@ -276,6 +292,7 @@ struct SubagentRoster {
         guard agents[index].isActive else { return }
         agents[index].state = .finished
         agents[index].finishedAt = now
+        if agents[index].runsInBackground == true { lastBackgroundFinish = now }
     }
 
     /// The one call of the agent's type still waiting for an agent, when there

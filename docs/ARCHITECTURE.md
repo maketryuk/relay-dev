@@ -81,7 +81,8 @@ this order:
      - `UserPromptSubmit`, `PreToolUse` and `PostToolUse` → `working`;
      - `PermissionRequest`, or a question tool (`AskUserQuestion`,
        `request_user_input`) → `waiting`;
-     - `Stop` → `finished`;
+     - `Stop` → `finished`, unless a subagent it started is still running in
+       the background (see "Subagents are listed where they work");
      - `SessionStart` from a start, a resume or a `/clear` → `idle`.
    - A permission wait holds until the call it is about runs — the id comes from
      the `PreToolUse` before it, because Claude leaves it off the request — since
@@ -825,6 +826,24 @@ is installed, and the daemon can be the previous one.
 The cost is that the lines are Claude Code's alone, and read an undocumented
 note and an undocumented list. The hooks Relay installs for Codex carry nothing
 that names an agent it started.
+
+**A turn is not finished while its agents work in the background.** The
+parent's `Stop` comes as soon as it has started them — "both agents are
+running, I will report when they are done" — and Claude Code hands each result
+back later as a new prompt. Taking that `Stop` at its word put a check on the
+session and the project with nothing to read, sent the "finished" notification
+before there was a result and again when there was one, and let Clean Up
+Worktrees… treat the worktree as one where nothing was going on. The rows alone
+were considered as the signal and rejected for that reason: the session's
+status is what the tile, the folded heading, the notifications and the cleanup
+all read, and each of them was wrong. So a `Stop` while a background subagent
+is still going reads as `working`, and so do the three seconds after the last
+of them finishes: the result came back as a prompt within a tenth of a second
+in the captured runs, and without the margin the session would flicker to
+finished and back in between. The parent's `Stop` is believed for as long as
+its subagents keep reporting, however long that is.
+The price: a question asked and answered while agents run in the background
+never shows "finished" on its own, since the turn it belongs to has not.
 
 ---
 

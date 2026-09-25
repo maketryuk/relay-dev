@@ -142,6 +142,58 @@ struct AgentStatusTrackerTests {
         #expect(tracker.status(now: at(3)) == .working)
     }
 
+    @Test("A turn that ends with its agents still at work in the background is not finished until they are")
+    func backgroundAgentsHoldTheTurn() throws {
+        // Claude Code's own run: two background agents started, the turn
+        // ended while both ran, and each one's result came back as a prompt.
+        let events = CapturedEvents.events(ClaudeSubagentCaptures.background)
+        var tracker = AgentStatusTracker()
+        var verdicts: [(String, RuntimeStatus?)] = []
+        for (time, event) in events {
+            tracker.apply(event, at: time)
+            if ["Stop", "SubagentStop", "UserPromptSubmit"].contains(event.name) {
+                verdicts.append((event.name, tracker.status(now: time)))
+            }
+        }
+        #expect(verdicts.map(\.0) == [
+            "UserPromptSubmit", "Stop", "SubagentStop", "SubagentStop",
+            "UserPromptSubmit", "Stop", "UserPromptSubmit", "Stop",
+        ])
+        // The first `Stop` came while both were running.
+        #expect(verdicts.map(\.1) == [
+            .working, .working, .working, .working,
+            .working, .finished, .working, .finished,
+        ])
+    }
+
+    @Test("The last background agent finishing ends a turn nobody takes up again")
+    func backgroundHandoff() {
+        var tracker = AgentStatusTracker()
+        let agent = AgentHookEvent.Delegation(description: "Watch the build", agentType: "Explore", agentID: "x", runsInBackground: true)
+        tracker.apply(hook("UserPromptSubmit"), at: at(0))
+        tracker.apply(AgentHookEvent(sessionID: "session", agent: .claude, name: "Stop", backgroundAgents: [agent]), at: at(1))
+        #expect(tracker.status(now: at(60)) == .working)
+
+        tracker.apply(AgentHookEvent(sessionID: "session", agent: .claude, name: "SubagentStop", subagentID: "x",
+                                     backgroundAgents: [agent]), at: at(90))
+        // Claude hands the result back as a prompt a moment later, and the
+        // session must not flicker to finished in between.
+        #expect(tracker.status(now: at(90.5)) == .working)
+        #expect(tracker.status(now: at(90 + SubagentRoster.handoffGrace)) == .finished)
+    }
+
+    @Test("A turn held open by background work stays believed while that work keeps reporting")
+    func heldTurnStaysFresh() {
+        var tracker = AgentStatusTracker()
+        let agent = AgentHookEvent.Delegation(agentType: "Explore", agentID: "x", runsInBackground: true)
+        tracker.apply(hook("UserPromptSubmit"), at: at(0))
+        tracker.apply(AgentHookEvent(sessionID: "session", agent: .claude, name: "Stop", backgroundAgents: [agent]), at: at(1))
+        for minute in stride(from: 10.0, through: 40, by: 10) {
+            tracker.apply(hook("PostToolUse", tool: "Bash", id: "b\(minute)", subagent: "x"), at: at(minute * 60))
+        }
+        #expect(tracker.status(now: at(41 * 60)) == .working)
+    }
+
     @Test("A cancelled turn takes its foreground subagents with it")
     func cancelEndsForegroundSubagents() {
         var tracker = AgentStatusTracker()

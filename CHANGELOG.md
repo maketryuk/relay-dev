@@ -71,6 +71,12 @@ breaking change to stored data.
   the impersonal form macOS uses, "Чтение…" and "Поиск…", rather than "Читаю"
   and "Проверяем" by turns; macOS's own words for Copy, Move to Trash, Icon and
   the status bar; and menu items that toggle a panel no longer say only "Show".
+- **A session read as finished while the agents it had started in the
+  background were still working.** The agent ends its turn as soon as it has
+  started them, and that end was taken at its word: a check on the session and
+  the project, a "finished" notification with nothing to read, and a second
+  one when the results came back. It now reads as working until the last of
+  them has reported back.
 
 ## 0.7.1 — 2026-09-25
 
