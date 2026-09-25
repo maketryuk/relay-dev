@@ -211,6 +211,15 @@ workspace is a git worktree.
 - **Warm ESLint processes, bounded.** One is kept per checkout a file was
   checked in, until the checkout goes. A worktree-heavy day can gather several
   `node` processes; keeping the few most recent would bound it.
+- **The menus macOS supplies, in Russian.** Relay's own menus follow its
+  language setting; the application menu, Edit, Window and Help come from
+  AppKit, which takes its language from the main bundle — and that bundle
+  declares English alone, so they stay English in a Russian window. Listing
+  `en` and `ru` under `CFBundleLocalizations` in `Scripts/build-app.sh` would
+  bring them along while Relay follows the system. Following Relay's own
+  setting too means writing `AppleLanguages` into the app's defaults, which
+  AppKit reads only at launch, so for those menus the setting would stop
+  applying immediately.
 
 ---
 
