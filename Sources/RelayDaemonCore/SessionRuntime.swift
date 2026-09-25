@@ -42,6 +42,12 @@ public final class SessionRuntime: @unchecked Sendable {
     /// carriage-return collapsing depend on how the PTY happened to split the
     /// stream, and the same output could then classify differently run to run.
     private var recentBytes = Data()
+    /// `recentBytes` as the classifier reads it, until more output arrives.
+    ///
+    /// Asked for on every tick of every session, and stripping eight
+    /// kilobytes of escapes takes a third of a millisecond: ten terminals that
+    /// had printed nothing since kept about a percent of a core busy.
+    private var classifiedTail: String?
     private var titleParser = TerminalTitleParser()
     private var agentStatus = AgentStatusTracker()
     private var lastEditAt = Date.distantPast
@@ -274,6 +280,7 @@ public final class SessionRuntime: @unchecked Sendable {
         if recentBytes.count > Self.recentBytesCapacity {
             recentBytes.discardFirst(recentBytes.count - Self.recentBytesCapacity)
         }
+        classifiedTail = nil
         return changed
     }
 
@@ -294,6 +301,13 @@ public final class SessionRuntime: @unchecked Sendable {
         process = nil
     }
 
+    private func recentTail() -> String {
+        if let classifiedTail { return classifiedTail }
+        let tail = TerminalText.tail(of: TerminalText.plainText(from: recentBytes))
+        classifiedTail = tail
+        return tail
+    }
+
     /// Called periodically while the session is alive. Returns `true` when the
     /// status changed and observers should be notified.
     public func reclassify(now: Date) -> Bool {
@@ -311,7 +325,7 @@ public final class SessionRuntime: @unchecked Sendable {
             return true
         }
 
-        let tail = TerminalText.tail(of: TerminalText.plainText(from: recentBytes))
+        let tail = recentTail()
 
         // What the agent says about itself beats anything inferred from the
         // timing of bytes: every one of them offers a way to interrupt while it

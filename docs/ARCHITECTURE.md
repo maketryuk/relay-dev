@@ -248,6 +248,8 @@ would otherwise show four tabs that are permanently empty.
   last-activity time waits for the tick, and is sent at most every two
   seconds. A snapshot went to every client with every chunk — a kilobyte, on
   macOS — and each one redrew the window's session lists.
+- The classifier strips escapes from a session's recent output only when
+  output has arrived since it last did.
 - Project status is computed from session snapshots already in memory — never
   from a process scan.
 

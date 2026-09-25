@@ -21,6 +21,8 @@ breaking change to stored data.
 - **A terminal printing steadily no longer redraws the window's session lists
   for every kilobyte of it.** The sidebar, the project rail and the palette
   were drawn again for each chunk of output from any session.
+- **Terminals that are printing nothing no longer keep the daemon busy.** Every
+  open session had its recent output read again three times a second.
 
 ## 0.7.1 — 2026-09-25
 
