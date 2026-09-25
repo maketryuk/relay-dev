@@ -10,9 +10,16 @@ enum CodexConversationReader {
     /// conversations are not spread across hundreds of them.
     static let limit = 60
 
+    /// Which directory each recent log was started in, and the conversations
+    /// of the ones listed last time, as they were read.
+    static let rememberedDirectories = TranscriptReadings<String>()
+    static let remembered = TranscriptReadings<Conversation>()
+
     static func list(
         forDirectory path: String,
-        sessions: URL = CodexContextReader.sessionsDirectory
+        sessions: URL = CodexContextReader.sessionsDirectory,
+        directories: TranscriptReadings<String> = rememberedDirectories,
+        readings: TranscriptReadings<Conversation> = remembered
     ) -> [Conversation] {
         guard let walker = FileManager.default.enumerator(
             at: sessions,
@@ -20,15 +27,19 @@ enum CodexConversationReader {
             options: [.skipsHiddenFiles]
         ) else { return [] }
 
-        let logs = (walker.allObjects as? [URL] ?? [])
+        let logs = Array((walker.allObjects as? [URL] ?? [])
             .filter { $0.pathExtension == "jsonl" }
             .sorted { (TranscriptTail.modificationDate(of: $0) ?? .distantPast)
                 > (TranscriptTail.modificationDate(of: $1) ?? .distantPast) }
-            .prefix(limit)
+            .prefix(limit))
 
-        return logs.compactMap { log in
-            guard let meta = CodexContextReader.sessionMeta(of: log), meta.directory == path else { return nil }
-            return conversation(from: log, updatedAt: TranscriptTail.modificationDate(of: log) ?? Date())
+        directories.keep(only: logs)
+        let own = logs.filter { log in
+            directories.value(of: log) { CodexContextReader.sessionMeta(of: $0)?.directory } == path
+        }
+        readings.keep(only: own)
+        return own.compactMap { log in
+            readings.value(of: log) { conversation(from: $0, updatedAt: TranscriptTail.modificationDate(of: $0) ?? Date()) }
         }
     }
 

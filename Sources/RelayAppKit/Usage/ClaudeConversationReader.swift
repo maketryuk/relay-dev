@@ -7,16 +7,20 @@ enum ClaudeConversationReader {
     /// conversations nobody is looking for.
     static let limit = 30
 
+    /// The transcripts listed last time, as they were read.
+    static let remembered = TranscriptReadings<Conversation>()
+
     static func list(
         forDirectory path: String,
-        projects: URL = ClaudeContextReader.projectsDirectory
+        projects: URL = ClaudeContextReader.projectsDirectory,
+        readings: TranscriptReadings<Conversation> = remembered
     ) -> [Conversation] {
         let manager = FileManager.default
         let folders = ClaudeContextReader.directoryNames(for: path)
             .map(projects.appendingPathComponent)
             .filter { manager.fileExists(atPath: $0.path) }
 
-        let transcripts = folders
+        let transcripts = Array(folders
             .flatMap { (try? manager.contentsOfDirectory(
                 at: $0,
                 includingPropertiesForKeys: [.contentModificationDateKey]
@@ -24,9 +28,10 @@ enum ClaudeConversationReader {
             .filter { $0.pathExtension == "jsonl" }
             .sorted { (TranscriptTail.modificationDate(of: $0) ?? .distantPast)
                 > (TranscriptTail.modificationDate(of: $1) ?? .distantPast) }
-            .prefix(limit)
+            .prefix(limit))
 
-        return transcripts.compactMap(conversation(from:))
+        readings.keep(only: transcripts)
+        return transcripts.compactMap { readings.value(of: $0, reading: conversation(from:)) }
     }
 
     static func conversation(from transcript: URL) -> Conversation? {

@@ -23,6 +23,9 @@ breaking change to stored data.
   were drawn again for each chunk of output from any session.
 - **Terminals that are printing nothing no longer keep the daemon busy.** Every
   open session had its recent output read again three times a second.
+- **The History tab no longer re-reads every conversation while it is open.**
+  Thirty transcripts were parsed every ten seconds, a fifth of a second of
+  work each time, whether or not any of them had changed.
 
 ## 0.7.1 — 2026-09-25
 

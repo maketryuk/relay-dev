@@ -252,6 +252,10 @@ would otherwise show four tabs that are permanently empty.
   output has arrived since it last did.
 - Project status is computed from session snapshots already in memory — never
   from a process scan.
+- The History tab's transcripts are parsed again only once they have been
+  written to: `TranscriptReadings` keeps what each one said, by its size and
+  modification date. Thirty of them parsed every ten seconds were a fifth of a
+  second of CPU each time.
 
 ## Input waits for the terminal
 
