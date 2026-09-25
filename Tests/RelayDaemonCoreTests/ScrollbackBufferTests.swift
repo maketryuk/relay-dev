@@ -23,6 +23,24 @@ struct ScrollbackBufferTests {
         #expect(buffer.bytes.count <= 1000)
     }
 
+    @Test("Trimmed bytes are let go of, not only hidden")
+    func trimmedBytesAreReleased() {
+        // A count within the capacity is not memory within it: trimmed with
+        // `Data.removeFirst`, which moves where the data starts and keeps the
+        // storage behind it, the buffer held everything a session had ever
+        // printed while reporting half a megabyte.
+        let before = allocatedBytes()
+        var buffer = ScrollbackBuffer(capacity: 64 * 1024)
+        let chunk = Data(repeating: 0x41, count: 4096)
+        for _ in 0 ..< 8192 {
+            buffer.append(chunk)
+        }
+        withExtendedLifetime(buffer) {
+            #expect(buffer.bytes.count <= 64 * 1024)
+            #expect(allocatedBytes() - before < 4 * 1024 * 1024)
+        }
+    }
+
     @Test("Trimming drops the oldest bytes and keeps the newest")
     func trimsFromTheFront() {
         var buffer = ScrollbackBuffer(capacity: 16)

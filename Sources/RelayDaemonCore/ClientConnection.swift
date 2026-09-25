@@ -85,7 +85,7 @@ final class ClientConnection: @unchecked Sendable {
                 Darwin.write(descriptor, raw.baseAddress, raw.count)
             }
             if written > 0 {
-                pendingWrites.removeFirst(written)
+                pendingWrites.discardFirst(written)
                 continue
             }
             if errno == EINTR { continue }

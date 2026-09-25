@@ -1,4 +1,5 @@
 import Foundation
+import RelayProtocol
 
 /// Bounded byte ring for terminal history.
 ///
@@ -18,10 +19,10 @@ public struct ScrollbackBuffer: Sendable {
     public mutating func append(_ chunk: Data) {
         bytes.append(chunk)
         guard bytes.count > capacity else { return }
-        // Trim in chunks so a busy stream does not memmove on every write.
+        // Trim in chunks so a busy stream does not copy on every write.
         let overflow = bytes.count - capacity
         let trim = max(overflow, capacity / 8)
-        bytes.removeFirst(min(trim, bytes.count))
+        bytes.discardFirst(min(trim, bytes.count))
     }
 
     public mutating func removeAll() {

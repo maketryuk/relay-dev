@@ -246,6 +246,16 @@ would otherwise show four tabs that are permanently empty.
 - Project status is computed from session snapshots already in memory — never
   from a process scan.
 
+## Buffers trimmed at the front let go
+
+`Data.removeFirst` does not free what it removes: it moves where the bytes
+start, and the storage behind them keeps everything before. The scrollback,
+the tail the classifier reads and the queue of writes to each client were all
+trimmed that way, so the daemon held every byte a session had printed — four
+megabytes printed was twenty held — while each buffer's count said it was
+within its cap. `discardFirst` drops the front the same way and copies what is
+left into storage of its own once the dropped part outweighs it.
+
 ---
 
 # Milestone 2

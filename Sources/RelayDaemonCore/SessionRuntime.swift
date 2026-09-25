@@ -236,7 +236,7 @@ public final class SessionRuntime: @unchecked Sendable {
 
         recentBytes.append(data)
         if recentBytes.count > Self.recentBytesCapacity {
-            recentBytes.removeFirst(recentBytes.count - Self.recentBytesCapacity)
+            recentBytes.discardFirst(recentBytes.count - Self.recentBytesCapacity)
         }
     }
 

@@ -99,6 +99,12 @@ final class TestClient: @unchecked Sendable {
         lock.withLock { received }
     }
 
+    /// Drops everything received so far, for a test that measures what the
+    /// daemon holds and must not count what the client itself is holding.
+    func forgetReceived() {
+        lock.withLock { received.removeAll() }
+    }
+
     func close() {
         Darwin.close(descriptor)
     }
@@ -143,6 +149,16 @@ extension [ServerMessage] {
             }
         }
     }
+}
+
+/// What this process has allocated and not yet freed.
+///
+/// For asserting that something lets go of memory: the process is the test's
+/// own, so the answer is about the code under test rather than the machine.
+func allocatedBytes() -> Int {
+    var statistics = malloc_statistics_t()
+    malloc_zone_statistics(nil, &statistics)
+    return Int(statistics.size_in_use)
 }
 
 /// Spins up a real daemon on a throwaway socket for the duration of a test.
