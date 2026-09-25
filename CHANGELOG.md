@@ -53,6 +53,11 @@ breaking change to stored data.
   Russian words, and the other way round; the usage countdown was "2h 12m" in
   both. They now follow the language Relay is set to, and a Russian relative
   time says "2 ч назад" rather than "-2 ч".
+- **Russian wording.** One word for each thing — оболочка for shell, парольная
+  фраза for passphrase, псевдоним for alias, отправить for push; progress in
+  the impersonal form macOS uses, "Чтение…" and "Поиск…", rather than "Читаю"
+  and "Проверяем" by turns; macOS's own words for Copy, Move to Trash, Icon and
+  the status bar; and menu items that toggle a panel no longer say only "Show".
 
 ## 0.7.1 — 2026-09-25
 
