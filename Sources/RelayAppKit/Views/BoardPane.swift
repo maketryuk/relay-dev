@@ -63,6 +63,9 @@ struct BoardPane: View {
                 if let board = snapshot?.board ?? boardID.flatMap(tracker.board), board.usesSprints {
                     sprintMenu(board)
                 }
+                if let boardID, let snapshot, !snapshot.columns.isEmpty {
+                    columnsButton(snapshot, on: boardID)
+                }
             }
 
             Spacer(minLength: Theme.Spacing.small)
@@ -170,7 +173,31 @@ struct BoardPane: View {
         .clickable()
     }
 
+    /// Opens the list the columns are arranged in. Says how many are hidden,
+    /// since a hidden column is otherwise nowhere on screen.
+    private func columnsButton(_ snapshot: BoardSnapshot, on boardID: String) -> some View {
+        let layout = tracker.layout(of: boardID)
+        let hiddenCount = layout.lanes(of: snapshot.columns).filter { !layout.shows($0) }.count
+        return Button {
+            model.arrangeColumns(of: boardID)
+        } label: {
+            plate(
+                hiddenCount == 0
+                    ? relayLocalized("Columns")
+                    : String(format: relayLocalized("Columns, %d hidden"), hiddenCount),
+                systemImage: "slider.horizontal.3"
+            )
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
+        .clickable()
+    }
+
     private func menuLabel(_ title: String, systemImage: String) -> some View {
+        plate(title, systemImage: systemImage, opensMenu: true)
+    }
+
+    private func plate(_ title: String, systemImage: String, opensMenu: Bool = false) -> some View {
         HStack(spacing: Theme.Spacing.xsmall) {
             Image(systemName: systemImage)
                 .font(.system(size: 11))
@@ -179,9 +206,11 @@ struct BoardPane: View {
                 .font(Theme.Typography.row)
                 .foregroundStyle(Theme.Palette.textPrimary)
                 .lineLimit(1)
-            Image(systemName: "chevron.down")
-                .font(.system(size: 8, weight: .semibold))
-                .foregroundStyle(Theme.Palette.textTertiary)
+            if opensMenu {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(Theme.Palette.textTertiary)
+            }
         }
         .padding(.horizontal, Theme.Spacing.small)
         .frame(height: 26)
@@ -304,7 +333,7 @@ private struct BoardChooser: View {
     }
 }
 
-/// The columns of a board, left to right.
+/// The columns of a board, left to right, as they are laid out here.
 private struct BoardColumns: View {
     @Environment(AppModel.self) private var model
     let project: Project
@@ -316,22 +345,38 @@ private struct BoardColumns: View {
     private static let columnWidth: CGFloat = 288
 
     var body: some View {
+        let layout = model.tracker.layout(of: boardID)
+        let lanes = layout.lanes(of: snapshot.columns).filter(layout.shows)
         if snapshot.columns.isEmpty {
             EmptyStateView(
                 systemImage: "rectangle.split.3x1",
                 title: relayLocalized("The board has no columns"),
                 message: relayLocalized("Columns are set up on the board in the tracker.")
             )
+        } else if lanes.isEmpty {
+            VStack(spacing: Theme.Spacing.medium) {
+                EmptyStateView(
+                    systemImage: "eye.slash",
+                    title: relayLocalized("Every column is hidden"),
+                    message: relayLocalized("Hidden columns are hidden here only; the board in the tracker still has them.")
+                )
+                .frame(height: 160)
+                RelayButton(relayLocalized("Show All Columns"), kind: .primary) {
+                    model.tracker.changeLayout(of: boardID) { $0.hidden = [] }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ScrollView(.horizontal) {
                 HStack(alignment: .top, spacing: Theme.Spacing.medium) {
-                    ForEach(snapshot.columns) { column in
+                    ForEach(lanes) { lane in
                         BoardColumnView(
                             project: project,
                             boardID: boardID,
-                            column: column,
-                            cards: visibleCards(in: column),
-                            total: snapshot.cards(in: column).count,
+                            lane: lane,
+                            others: lanes.filter { $0.id != lane.id },
+                            cards: visibleCards(in: lane),
+                            total: lane.cards(in: snapshot).count,
                             snapshot: snapshot
                         )
                         .frame(width: Self.columnWidth)
@@ -343,10 +388,10 @@ private struct BoardColumns: View {
         }
     }
 
-    private func visibleCards(in column: BoardColumn) -> [TrackerCard] {
+    private func visibleCards(in lane: BoardLane) -> [TrackerCard] {
         let search = RelaySearchQuery(filter)
         let me = model.tracker.user?.login
-        return snapshot.cards(in: column).filter { card in
+        return lane.cards(in: snapshot).filter { card in
             (!onlyMine || card.assignee?.login == me)
                 && search.matches([card.key, card.summary] + card.tags.map(\.name))
         }
@@ -357,15 +402,19 @@ private struct BoardColumnView: View {
     @Environment(AppModel.self) private var model
     let project: Project
     let boardID: String
-    let column: BoardColumn
+    let lane: BoardLane
+    /// The other columns on show, which this one can be merged into.
+    let others: [BoardLane]
     let cards: [TrackerCard]
     let total: Int
     let snapshot: BoardSnapshot
 
     @State private var isTargeted = false
 
+    private var tracker: TrackerController { model.tracker }
+
     private var isOverLimit: Bool {
-        column.limit.map { total > $0 } ?? false
+        lane.limit.map { total > $0 } ?? false
     }
 
     var body: some View {
@@ -392,7 +441,11 @@ private struct BoardColumnView: View {
         // the key — which is what a person dragging it there would want.
         .dropDestination(for: String.self) { keys, _ in
             guard let key = keys.first, let card = snapshot.cards.first(where: { $0.key == key }) else { return false }
-            model.tracker.move(card, to: column, on: boardID)
+            // Moved within a merged column is not moved: which of its columns
+            // a card is in is what the merge was asked to stop showing.
+            if !lane.holds(snapshot.column(of: card)) {
+                tracker.move(card, to: lane.destination, on: boardID)
+            }
             return true
         } isTargeted: { isTargeted = $0 }
         .animation(.easeOut(duration: 0.12), value: isTargeted)
@@ -400,7 +453,7 @@ private struct BoardColumnView: View {
 
     private var header: some View {
         HStack(spacing: Theme.Spacing.xsmall) {
-            Text(verbatim: column.title)
+            Text(verbatim: lane.title)
                 .font(Theme.Typography.title)
                 .foregroundStyle(Theme.Palette.textPrimary)
                 .lineLimit(1)
@@ -410,18 +463,55 @@ private struct BoardColumnView: View {
                 .foregroundStyle(isOverLimit ? Theme.Palette.statusError : Theme.Palette.textTertiary)
             Spacer(minLength: 0)
             IconButton(systemImage: "plus", size: Theme.Metrics.action) {
-                model.beginNewIssue(on: boardID, in: column.id, projectID: project.id)
+                model.beginNewIssue(on: boardID, in: lane.destination.id, projectID: project.id)
             }
-            .relayTooltip(String(format: relayLocalized("New issue in %@"), column.title))
+            .relayTooltip(String(format: relayLocalized("New issue in %@"), lane.destination.title))
+            Menu {
+                menu
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Theme.Palette.textSecondary)
+                    .frame(width: Theme.Metrics.action, height: Theme.Metrics.action)
+                    .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .clickable()
         }
         .padding(.horizontal, Theme.Spacing.xsmall)
         .padding(.top, 2)
+        .contentShape(Rectangle())
+        .contextMenu { menu }
+    }
+
+    @ViewBuilder
+    private var menu: some View {
+        Button(relayLocalized("Hide Column")) {
+            tracker.changeLayout(of: boardID) { $0.hide(lane) }
+        }
+        Menu(relayLocalized("Merge With")) {
+            ForEach(others) { other in
+                Button(other.title) {
+                    tracker.changeLayout(of: boardID) { $0.merge(lane, into: other, in: snapshot.columns) }
+                }
+            }
+        }
+        .disabled(others.isEmpty)
+        if lane.isMerged {
+            Button(relayLocalized("Split Column")) {
+                tracker.changeLayout(of: boardID) { $0.split(lane) }
+            }
+        }
+        Divider()
+        Button(relayLocalized("Set Up Columns…")) { model.arrangeColumns(of: boardID) }
     }
 
     /// `4`, or `4 / 3` against a limit, which is when it is worth reading.
     private var countText: String {
         let shown = cards.count == total ? "\(total)" : "\(cards.count) · \(total)"
-        guard let limit = column.limit else { return shown }
+        guard let limit = lane.limit else { return shown }
         return "\(shown) / \(limit)"
     }
 }

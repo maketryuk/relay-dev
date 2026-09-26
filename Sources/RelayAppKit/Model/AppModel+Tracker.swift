@@ -46,6 +46,10 @@ extension AppModel {
         presentModal(.newIssue(projectID: projectID, boardID: boardID, columnID: columnID))
     }
 
+    func arrangeColumns(of boardID: String) {
+        presentModal(.boardColumns(boardID: boardID))
+    }
+
     func beginLoggingWork(on key: String) {
         presentModal(.logWork(key: key, fromTimer: false))
     }

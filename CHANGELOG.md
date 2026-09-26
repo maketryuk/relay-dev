@@ -7,6 +7,17 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Added
+
+- **A board's columns arranged your way, as in YouTrack's board settings.**
+  Columns, above the board, lists them: dragged into order, merged into one
+  another and taken apart again, hidden, and added back with how many cards
+  each holds; a column's own menu hides and merges it too. A merged column
+  shows the cards of every column in it, and a card dropped there goes to the
+  column the others were merged into. The layout is kept per board and is
+  yours alone: the board in the tracker, and everyone else's view of it, stays
+  as it was.
+
 ### Changed
 
 - **Time is added the way YouTrack's Russian says it**: «Добавить затраченное

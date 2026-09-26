@@ -21,6 +21,9 @@ struct TrackerSettings: Codable, Equatable {
     /// hold several codebases' issues — a site's and an app's — and the one an
     /// issue belongs in is the one it went to last time.
     var destinations: [String: String]
+    /// How each board is laid out here — columns merged and hidden — by board
+    /// identifier. Absent is as the tracker lays it out.
+    var layouts: [String: BoardLayout]
     /// The one timer, kept across a relaunch because the work it is timing
     /// does not stop when the app does.
     var timer: TrackerTimer?
@@ -31,6 +34,7 @@ struct TrackerSettings: Codable, Equatable {
         user: TrackerUser? = nil,
         boards: [String: String] = [:],
         destinations: [String: String] = [:],
+        layouts: [String: BoardLayout] = [:],
         timer: TrackerTimer? = nil
     ) {
         self.kind = kind
@@ -38,6 +42,7 @@ struct TrackerSettings: Codable, Equatable {
         self.user = user
         self.boards = boards
         self.destinations = destinations
+        self.layouts = layouts
         self.timer = timer
     }
 
@@ -50,6 +55,7 @@ struct TrackerSettings: Codable, Equatable {
         user = try? container.decodeIfPresent(TrackerUser.self, forKey: .user)
         boards = try container.decodeIfPresent([String: String].self, forKey: .boards) ?? [:]
         destinations = (try? container.decodeIfPresent([String: String].self, forKey: .destinations)) ?? [:]
+        layouts = (try? container.decodeIfPresent([String: BoardLayout].self, forKey: .layouts)) ?? [:]
         timer = try? container.decodeIfPresent(TrackerTimer.self, forKey: .timer)
     }
 }

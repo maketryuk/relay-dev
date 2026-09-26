@@ -1196,11 +1196,11 @@ stays open; an issue when it is opened.
 
 **The token is in the keychain,** under the build's own identifier, so the
 development build signs in on its own. The workspace file keeps the address,
-the name, the board each project shows and the timer. The address is refused
-unless it is https — plain http only to this machine — and a redirect is
-answered with the redirect rather than followed, because following it would
-carry the token wherever the server pointed; a redirected API is almost always
-an address typed wrong, which is better said.
+the name, the board each project shows, how each board is laid out and the
+timer. The address is refused unless it is https — plain http only to this
+machine — and a redirect is answered with the redirect rather than followed,
+because following it would carry the token wherever the server pointed; a
+redirected API is almost always an address typed wrong, which is better said.
 
 **Reading YouTrack.** Every request names its fields, since YouTrack answers
 with those alone, and every list asks for more than YouTrack's default of
@@ -1241,6 +1241,28 @@ moved, edited, just made — keeps the card as it is on screen however late the
 read lands, because the move's one request routinely answers before the
 read's two. The key is what is dragged, so a card dropped into a terminal
 types it.
+
+**Columns are arranged in Relay, not on the board.** YouTrack orders, merges
+and hides columns in the board's settings, which are the team's: a column
+merged there is merged for everyone, and the order is that of a set of values
+other projects share. Here it is a `BoardLayout` per board in the workspace
+file — an order of column identifiers, groups of them shown as one, and a set
+not shown — laid over whatever columns the board was last read with, so it
+works the same for any tracker and asks the tracker nothing. The panel it is
+edited in is opened over the board, so each change is seen there as it is made
+and there is nothing to save. A column merged into another joins it where it
+stands and after its columns, so a card dropped on the merged column goes where
+it went before — to its first column, as a column merged in YouTrack takes its
+first value; a card moved within it is not moved at all, since which of its
+columns it is in is what the merge was asked to stop showing. Its limit is the
+sum of its columns' limits, and none when one of them has none. A column the
+order does not name — one the board gained since — goes after the column the
+board puts it before, a hidden one put back goes at the end, as a column added
+to a board does, and an identifier the board has lost is passed over. A layout
+dragged back into the tracker's arrangement is forgotten rather than kept as a
+copy of it that would go stale. A card's own menu still lists every column the
+board has, hidden and merged ones included, which is how a card goes to a
+column that is not on show.
 
 **Pictures come from the tracker with the token.** An avatar and an attachment
 are links YouTrack writes from its own root — `/hub/api/rest/avatar/…`,

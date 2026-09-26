@@ -42,6 +42,7 @@
 "Accept ours" = "Принять наше";
 "Accept right" = "Принять правое";
 "Accept theirs" = "Принять их";
+"Add Column" = "Добавить колонку";
 "Add Comment…" = "Добавить комментарий…";
 "Add Project" = "Добавить проект";
 "Add Project…" = "Добавить проект…";
@@ -80,11 +81,13 @@
 "As %@ (%@), at %@" = "Под именем %@ (%@) на %@";
 "Asks GitHub for the newest release; nothing about you is sent" = "Спрашивает у GitHub о новом релизе; ничего о вас не отправляется";
 "At least one marker is needed" = "Нужен хотя бы один маркер";
+"At most %d" = "Не больше %d";
 "Attachments: %d" = "Вложения: %d";
 "Automatic" = "Автоматически";
 "Back" = "Назад";
 "Being rebased: %@" = "Перекладывается: %@";
 "Binary file" = "Двоичный файл";
+"Board Columns" = "Колонки доски";
 "Boards, cards and time tracking in Relay, and issues handed to agents" = "Доски, карточки и учёт времени в Relay, а задачи — сразу агентам";
 "Branch" = "Ветка";
 "Blank page" = "Пустая страница";
@@ -99,6 +102,8 @@
 "Browser" = "Браузер";
 "Bypass the pre-merge and commit message hooks" = "Пропустить хуки pre-merge и commit-msg";
 "Bypass the pre-push hook" = "Пропустить хук pre-push";
+"Cards dropped on this column go to %@" = "Карточки, брошенные в эту колонку, попадают в «%@»";
+"Cards in the column" = "Карточек в колонке";
 "Cards, columns and time from the tracker" = "Карточки, колонки и время из трекера";
 "Checking whether its branch is merged…" = "Проверка, влита ли его ветка…";
 "Checking…" = "Проверка…";
@@ -112,7 +117,10 @@
 "Close Exited (%d)" = "Закрыть завершённые (%d)";
 "Close finished sessions?" = "Закрыть завершённые сессии?";
 "Column" = "Колонка";
+"Columns" = "Колонки";
 "Columns are set up on the board in the tracker." = "Колонки настраиваются на самой доске в трекере.";
+"Columns as in the Tracker" = "Колонки как в трекере";
+"Columns, %d hidden" = "Колонки, скрыто: %d";
 "Comment" = "Комментировать";
 "Comments" = "Комментарии";
 "Comments: %d" = "Комментарии: %d";
@@ -267,6 +275,7 @@
 "Download and restart into the new version" = "Загрузить и перезапуститься в новой версии";
 "Downloading…" = "Загрузка…";
 "Drag a folder here" = "Перетащите папку сюда";
+"Drag to change the order" = "Перетащите, чтобы изменить порядок";
 "Draw on the GPU" = "Рисовать на GPU";
 "Drawing on the GPU" = "Рисуется на GPU";
 "Drop an image here, or choose one" = "Перетащите изображение или выберите файл";
@@ -286,6 +295,8 @@
 "Elsewhere on this Mac" = "Остальное на этом Mac";
 "Enabled" = "Включено";
 "Error" = "Ошибка";
+"Every column is hidden" = "Все колонки скрыты";
+"Every column of the board is shown." = "Все колонки доски показаны.";
 "Every conflict has to be answered first" = "Сначала нужно ответить на каждый конфликт";
 "Everyone" = "Все";
 "Everything has been resolved and staged." = "Всё разрешено и добавлено в индекс.";
@@ -304,7 +315,10 @@
 "Find" = "Найти";
 "Find in Files" = "Поиск по файлам";
 "Finished" = "Завершено";
+"Give it a column of its own" = "Вынести в отдельную колонку";
 "Give it the address and a token, and Relay checks them before keeping either" = "Укажите адрес и токен — Relay проверит их, прежде чем сохранить";
+"Hidden columns are hidden here only; the board in the tracker still has them." = "Колонки скрыты только здесь — на доске в трекере они остались.";
+"Hide Column" = "Скрыть колонку";
 "Hours and minutes: 1h 30m, 90m, 1:30" = "Часы и минуты: 1ч 30м, 90м, 1:30";
 "How long" = "Сколько";
 "Issue Board" = "Доска задач";
@@ -314,12 +328,14 @@
 "It is marked deleted, and can be restored in the tracker." = "Он будет помечен удалённым, и его можно будет восстановить в трекере.";
 "Kept in the keychain — type a new one to replace it" = "Хранится в связке ключей — введите новый, чтобы заменить";
 "Kind of work" = "Тип работы";
+"Laid out for you alone: the board in the tracker, and how everyone else sees it, stay as they are." = "Это видите только вы: доска в трекере и то, как её видят другие, остаются как были.";
 "Log" = "Добавить";
 "Log Time" = "Добавить затраченное время";
 "Log Time…" = "Добавить затраченное время…";
 "Logging…" = "Добавление…";
 "Markdown" = "Markdown";
 "Markdown. Optional." = "Markdown. Необязательно.";
+"Merge With" = "Объединить с";
 "Mine" = "Мои";
 "Move To" = "Переместить в";
 "Needs a new token" = "Нужен новый токен";
@@ -345,8 +361,12 @@
 "Saving…" = "Сохранение…";
 "Send to Agent" = "Отправить агенту";
 "Sending…" = "Отправка…";
+"Set on the board in the tracker" = "Задаётся на доске в трекере";
+"Set Up Columns…" = "Настроить колонки…";
+"Show All Columns" = "Показать все колонки";
 "Sign Out" = "Выйти";
 "Someone" = "Кто-то";
+"Split Column" = "Разъединить колонку";
 "Start Timer" = "Запустить таймер";
 "Start Work in a New Worktree…" = "Начать работу в новом worktree…";
 "Stop Timer…" = "Остановить таймер…";
@@ -355,6 +375,7 @@
 "The address sends requests on somewhere else. Use the address the tracker is at." = "Адрес перенаправляет запросы в другое место. Укажите адрес, по которому находится трекер.";
 "The address sends requests on to %@. Use that address instead." = "Адрес перенаправляет запросы на %@. Укажите этот адрес.";
 "The board has no columns" = "На доске нет колонок";
+"The board's columns are the values of %@" = "Колонки доски — значения поля «%@»";
 "The tracker asked for fewer requests. Try again in a moment." = "Трекер просит обращаться к нему реже. Попробуйте чуть позже.";
 "The tracker did not answer. Check the address and the connection." = "Трекер не ответил. Проверьте адрес и подключение.";
 "The tracker failed (%d). Try again." = "Сбой трекера (%d). Попробуйте ещё раз.";
