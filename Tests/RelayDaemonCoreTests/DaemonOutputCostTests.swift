@@ -69,7 +69,15 @@ final class DaemonOutputCostTests {
         _ = try client.wait(timeout: 60) { Self.outputBytes(in: $0, for: session.id) >= printed }
 
         client.forgetReceived()
-        #expect(allocatedBytes() - before < 3 * 1024 * 1024)
+        // Let go of as the daemon and the client get round to it, which on a
+        // busy machine is not the moment the last byte arrived. Held on to, it
+        // never comes down at all: four megabytes kept is over the line however
+        // long it is waited for.
+        let limit = 3 * 1024 * 1024
+        for _ in 0 ..< 100 where allocatedBytes() - before >= limit {
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        #expect(allocatedBytes() - before < limit)
     }
 
     @Test("Output that changes nothing but the time is not a snapshot per chunk")
