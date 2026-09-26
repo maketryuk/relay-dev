@@ -96,6 +96,7 @@ struct IssuePane: View {
                 .background(Theme.Palette.surfaceRaised)
                 .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                 .textSelection(.enabled)
+            IssueCopyButton(key: key, summary: summary)
 
             if let draft = editingSummary {
                 RelayTextField(relayLocalized("Summary"), text: Binding(

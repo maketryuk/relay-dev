@@ -130,7 +130,9 @@
 "Connected" = "Connected";
 "Connecting…" = "Connecting…";
 "Copy ID" = "Copy ID";
+"Copy ID and Summary" = "Copy ID and Summary";
 "Copy Link" = "Copy Link";
+"Copy the ID and summary" = "Copy the ID and summary";
 "Could not change %@" = "Could not change %@";
 "Could not change the comment on %@" = "Could not change the comment on %@";
 "Could not change the time on %@" = "Could not change the time on %@";

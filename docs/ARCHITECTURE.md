@@ -1309,6 +1309,14 @@ remembered for its tracker project, offered first the next time, and the
 window turns to it, since an agent started in a project nobody is looking at
 is an agent nobody sees start.
 
+**An issue is copied the way the tracker copies it.** Its key and summary go on
+one line, the key a link to the issue, in three forms at once: plain text, HTML
+and RTF. Whatever it is pasted into takes the richest it reads — a chat or a
+mail gets the link, which is how YouTrack's own button makes the key a link in
+Telegram, and a terminal gets the words. The summary is escaped in the HTML,
+since an issue called `<b>` is an issue and not markup. Without a tracker to
+make the link, only the text goes.
+
 **The timer pauses rather than stops.** Time on it is owed to the issue until it
 is logged or thrown away, so stopping it asks where the time goes, closing that
 question leaves it paused, and starting a timer on another issue puts the

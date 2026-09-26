@@ -73,6 +73,31 @@ struct TrackerChip: View {
     }
 }
 
+/// Copies an issue's key and summary, the key a link, as the tracker's own
+/// button beside the key does. Turns into a tick for a moment, since a copy
+/// shows nothing anywhere else.
+struct IssueCopyButton: View {
+    @Environment(AppModel.self) private var model
+    let key: String
+    let summary: String
+    var size: CGFloat = Theme.Metrics.action
+
+    @State private var copied = false
+
+    var body: some View {
+        IconButton(systemImage: copied ? "checkmark" : "doc.on.doc", size: size) {
+            model.copyIssueReference(key, summary: summary)
+            copied = true
+        }
+        .relayTooltip(relayLocalized("Copy the ID and summary"))
+        .task(id: copied) {
+            guard copied else { return }
+            try? await Task.sleep(for: .seconds(1.5))
+            copied = false
+        }
+    }
+}
+
 /// A picture from the tracker — an attachment, drawn where the text put it.
 struct TrackerPicture: View {
     @Environment(AppModel.self) private var model

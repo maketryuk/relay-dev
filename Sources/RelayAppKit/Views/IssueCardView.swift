@@ -57,6 +57,12 @@ struct IssueCardView: View {
                     .font(Theme.Typography.mono)
                     .foregroundStyle(Theme.Palette.textTertiary)
                     .strikethrough(card.isResolved, color: Theme.Palette.textTertiary)
+                HoverReveal(isVisible: isHovering) {
+                    IssueCopyButton(key: card.key, summary: card.summary, size: 18)
+                }
+                // As tall as the key: the button is taller, and a row that grew
+                // with it would make every card taller than its text.
+                .frame(height: 14)
                 Spacer(minLength: 0)
                 if isTimed {
                     Image(systemName: tracker.timer?.isRunning == true ? "timer" : "pause.circle")
@@ -165,6 +171,7 @@ struct IssueMenuItems: View {
         }
         Button(relayLocalized("Log Time…")) { model.beginLoggingWork(on: key) }
         Divider()
+        Button(relayLocalized("Copy ID and Summary")) { model.copyIssueReference(key, summary: summary) }
         Button(relayLocalized("Copy ID")) { model.copyToClipboard(key) }
         if let url = tracker.webURL(for: key) {
             Button(relayLocalized("Copy Link")) { model.copyToClipboard(url.absoluteString) }

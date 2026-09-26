@@ -46,6 +46,11 @@ extension AppModel {
         presentModal(.newIssue(projectID: projectID, boardID: boardID, columnID: columnID))
     }
 
+    /// The key and the summary, the key a link to the issue.
+    func copyIssueReference(_ key: String, summary: String) {
+        IssueReference.copy(key: key, summary: summary, link: tracker.webURL(for: key))
+    }
+
     func arrangeColumns(of boardID: String) {
         presentModal(.boardColumns(boardID: boardID))
     }

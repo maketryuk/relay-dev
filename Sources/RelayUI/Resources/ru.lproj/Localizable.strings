@@ -130,7 +130,9 @@
 "Connected" = "Подключено";
 "Connecting…" = "Подключение…";
 "Copy ID" = "Скопировать ID";
+"Copy ID and Summary" = "Скопировать номер и название";
 "Copy Link" = "Скопировать ссылку";
+"Copy the ID and summary" = "Скопировать номер и название";
 "Could not change %@" = "Не удалось изменить %@";
 "Could not change the comment on %@" = "Не удалось изменить комментарий в %@";
 "Could not change the time on %@" = "Не удалось изменить время в %@";
