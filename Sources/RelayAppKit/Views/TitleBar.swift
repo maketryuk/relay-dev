@@ -133,7 +133,6 @@ struct TitleBar: View {
     }
 
     private var notificationsButton: some View {
-        @Bindable var model = model
         let unread = model.unreadNotificationCount
 
         return IconButton(
@@ -159,7 +158,7 @@ struct TitleBar: View {
         .relayTooltip(unread > 0
             ? String(format: relayLocalized("%d unread"), unread)
             : relayLocalized("Notifications"))
-        .popover(isPresented: $model.isInboxOpen, arrowEdge: .bottom) {
+        .popover(isPresented: Bindable(model).isInboxOpen, arrowEdge: .bottom) {
             InboxPopover()
         }
     }

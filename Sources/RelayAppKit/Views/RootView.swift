@@ -9,8 +9,6 @@ struct RootView: View {
     @State private var tooltips = TooltipPresenter()
 
     var body: some View {
-        @Bindable var model = model
-
         VStack(spacing: 0) {
             TitleBar()
 
@@ -95,8 +93,6 @@ struct RootView: View {
     /// invisible layer beneath it is for.
     @ViewBuilder
     private var usageOverlay: some View {
-        @Bindable var model = model
-
         if model.isUsagePopoverOpen {
             ZStack(alignment: .bottomLeading) {
                 Color.clear
