@@ -184,11 +184,11 @@ private struct AgentUsageChip: View {
     let usage: AgentUsage
     let detail: UsageDetail
 
-    /// Compact keeps only the window nearest to running out. The tooltip still
+    /// Compact keeps one window — see `headlineWindow`. The tooltip still
     /// lists every one, so the short form loses nothing but width.
     private var shown: [UsageWindow] {
         guard detail == .compact else { return usage.windows }
-        return usage.mostUsedWindow.map { [$0] } ?? usage.windows
+        return usage.headlineWindow.map { [$0] } ?? usage.windows
     }
 
     var body: some View {
@@ -202,7 +202,7 @@ private struct AgentUsageChip: View {
                     meter(window)
                 }
 
-                if let reset = usage.nextReset,
+                if let reset = usage.countdownTarget(for: detail),
                    let countdown = UsageFormatting.countdown(to: reset, from: context.date, locale: Localization.shared.locale) {
                     Text(countdown)
                         .font(Theme.Typography.caption)

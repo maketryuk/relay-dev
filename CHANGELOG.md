@@ -5,6 +5,16 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Fixed
+
+- **The compact usage bar shows the five-hour limit**, and gives its place to
+  the weekly one only when the week is nearly spent. It showed whichever window
+  was fullest, which is the week for most of the week, and beside it counted
+  down to the five-hour reset — `wk 35% 2h 10m` read as a week that ends in two
+  hours. The countdown is now the shown window's own.
+
 ## 0.8.0 — 2026-09-26
 
 ### Added
