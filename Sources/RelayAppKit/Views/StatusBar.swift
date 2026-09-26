@@ -17,12 +17,16 @@ struct StatusBar: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if hasUsage || hasResources {
+        if hasUsage || hasResources || hasTimer {
             HStack(spacing: 0) {
                 if hasUsage { usage }
 
                 Spacer(minLength: 0)
 
+                if hasTimer {
+                    TimerChip()
+                        .padding(.trailing, Theme.Spacing.medium)
+                }
                 if hasResources { ResourceChip() }
             }
             .padding(.horizontal, Theme.Spacing.small)
@@ -33,6 +37,8 @@ struct StatusBar: View {
     }
 
     private var hasUsage: Bool { !model.usage.agents.isEmpty }
+
+    private var hasTimer: Bool { model.tracker.timer != nil }
 
     /// From the first reading on, with sessions or without: with none open the
     /// figure is Relay's own, which is worth being able to see too.
@@ -66,6 +72,52 @@ struct StatusBar: View {
             Task { await model.usage.refresh(force: true) }
         }
         .relayTooltip(relayLocalized("Refresh usage"), edge: .top)
+    }
+}
+
+/// The issue being timed, and the clock: always in sight, since a timer that
+/// can only be seen from the issue it is timing is one that runs all night.
+private struct TimerChip: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        if let timer = model.tracker.timer {
+            HStack(spacing: Theme.Spacing.xsmall) {
+                Button {
+                    guard let projectID = model.selectedProjectID else { return }
+                    model.openIssue(timer.key, in: projectID)
+                } label: {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        HStack(spacing: Theme.Spacing.xsmall) {
+                            Image(systemName: timer.isRunning ? "timer" : "pause.circle")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(timer.isRunning ? Theme.Palette.statusWorking : Theme.Palette.statusWaiting)
+                            Text(verbatim: timer.key)
+                                .font(Theme.Typography.caption)
+                                .foregroundStyle(Theme.Palette.textSecondary)
+                            Text(verbatim: TrackerText.clock(timer.elapsed(at: context.date)))
+                                .font(Theme.Typography.caption)
+                                .monospacedDigit()
+                                .foregroundStyle(Theme.Palette.textPrimary)
+                        }
+                    }
+                    .padding(.horizontal, Theme.Spacing.small)
+                    .padding(.vertical, 2)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .clickable()
+                .relayTooltip(timer.summary, edge: .top)
+
+                IconButton(systemImage: timer.isRunning ? "pause.fill" : "play.fill", size: 20) {
+                    if timer.isRunning { model.tracker.pauseTimer() } else { model.tracker.resumeTimer() }
+                }
+                .relayTooltip(relayLocalized(timer.isRunning ? "Pause" : "Resume"), edge: .top)
+
+                IconButton(systemImage: "checkmark", size: 20) { model.stopTimer() }
+                    .relayTooltip(relayLocalized("Stop and log"), edge: .top)
+            }
+        }
     }
 }
 

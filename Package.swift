@@ -43,6 +43,11 @@ let package = Package(
         // not the daemon, and links nothing but the protocol for the same
         // reason the hook does: it is run often, by something waiting for it.
         .executableTarget(name: "relay-cli", dependencies: ["RelayProtocol"]),
+        // Issue trackers: what a board, a card and a comment are, and YouTrack's
+        // REST API behind them. Foundation and nothing else, so the next
+        // tracker is a second conformance to one protocol rather than a change
+        // that runs through the app.
+        .target(name: "RelayTracker"),
         .target(
             name: "RelayUI",
             dependencies: ["RelayProtocol"],
@@ -71,6 +76,7 @@ let package = Package(
             dependencies: [
                 "CChromium",
                 "RelayProtocol",
+                "RelayTracker",
                 "RelayUI",
                 .product(name: "SwiftTerm", package: "SwiftTerm"),
                 .product(name: "CodeEditLanguages", package: "CodeEditLanguages"),
@@ -84,6 +90,7 @@ let package = Package(
         .testTarget(name: "RelayProtocolTests", dependencies: ["RelayProtocol"]),
         .testTarget(name: "RelayDaemonCoreTests", dependencies: ["RelayDaemonCore"]),
         .testTarget(name: "RelayCLITests", dependencies: ["relay-cli", "RelayProtocol"]),
-.testTarget(name: "RelayAppKitTests", dependencies: ["RelayAppKit", "RelayUI"]),
+        .testTarget(name: "RelayTrackerTests", dependencies: ["RelayTracker"]),
+.testTarget(name: "RelayAppKitTests", dependencies: ["RelayAppKit", "RelayTracker", "RelayUI"]),
     ]
 )

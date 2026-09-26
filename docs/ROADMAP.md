@@ -136,6 +136,67 @@ workspace is a git worktree.
    terminal, and the answer can be lost with it — the sidebar still shows what
    happened.
 
+## Issue trackers
+
+### Built
+
+- **YouTrack, inside Relay.** A tracker is chosen and connected in Settings →
+  Issues, with an address and a permanent token checked before either is kept;
+  the token goes in the keychain. Off by default, and absent while off.
+- **The board of each project**, chosen once and remembered: its columns, its
+  cards, a sprint to look at when it has sprints, a filter and "only mine".
+  Cards are dragged between columns, or moved from their menu.
+- **An issue in full**: its description, its comments and a reply, its fields
+  set from a menu, its summary and description edited in place, and your own
+  comments and time corrected or taken off.
+- **Handing an issue to an agent**: typed into a running agent's prompt, or a
+  new agent's, or the first prompt of a new worktree named after it — in any
+  project, the one the tracker project's issues went to last time offered
+  first.
+- **Time**: a timer per issue, shown in the status bar and kept across a
+  relaunch, and time logged — from the timer or typed — with a kind of work
+  when the project has them. The record is listed by day, with what everyone
+  and what you logged.
+- **New cards**, in the column they were made in.
+- **Pictures**: people's avatars, the screenshots a description or a comment
+  shows, the issue's files, and a card coloured by the field the board is set
+  up to colour by.
+- **Mentions**: `@` in a reply offers the people the issue knows of.
+
+### Still to do
+
+1. **An issue and its worktree, linked.** A worktree started from an issue does
+   not remember it. Kept in the worktree's note, the heading could show the key,
+   the issue pane could list the worktree, and the worktree's status could move
+   the card — in progress when an agent starts, in review when a pull request
+   opens (see item 4 of v0.2) — once there is a rule for which column is which.
+2. **The `relay` command for issues.** `relay issue show WEB-342` in a
+   terminal, so an agent can read an issue it was given only the key of — any
+   agent, not only one with a tracker's MCP server.
+3. **GitHub and GitLab.** GitHub's projects put issues in the columns of a
+   status field, through GraphQL; GitLab's boards put them in columns by label.
+   Each is a conformance to `IssueTracker`, a choice in the picker and a
+   keychain entry; the request builders and the answers they read should be
+   tested against captured answers, as YouTrack's are.
+4. **The rest of a board.** Swimlanes, the order of cards within a column, a
+   card's subtasks, and the backlog. The order in particular is the tracker's
+   own and not in its public API, so it may have to stay the tracker's. And a
+   card made while another sprint is being looked at, on a board filled by a
+   query: YouTrack puts it in the board's default sprint, so it leaves the
+   sprint on screen at the next read.
+5. **The rest of an issue.** Fields that hold several values are shown and not
+   edited. A description draws its pictures and inline Markdown, but headings,
+   lists and tables stay as written; a file cannot be attached from Relay; and
+   a mention is offered from the people the issue knows of — its people
+   fields, its reporter, its commenters — rather than from every account on
+   the tracker.
+6. **Answers captured from a real instance.** The fixtures YouTrack's tests read
+   were written from its documentation and from the answers the YouTrack agent
+   plugin reads; one captured from a live board would pin what an instance
+   really sends — a merged column, a board filled by hand, and above all a
+   state a state machine governs, which is moved by command on the strength of
+   the documentation alone.
+
 ## Then
 
 - **The rest of the editor.** A file opens from the Git panel, the file tree,

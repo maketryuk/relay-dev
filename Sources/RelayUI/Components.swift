@@ -1032,3 +1032,198 @@ public struct RelayTextEditor: View {
         .relayPointer(.text)
     }
 }
+
+// MARK: - RelayDateField
+
+/// A day, dressed as every other field, with a calendar under it.
+///
+/// AppKit's own date field draws a stepper and a plate of its own that match
+/// nothing else in the window, and the day it shows sits in it off-centre. A
+/// day is picked far more often than typed, so this is a field that shows it
+/// and a calendar that sets it, with the two days most time is logged on one
+/// click away.
+public struct RelayDateField: View {
+    @Binding private var date: Date
+    private let latest: Date?
+
+    @State private var isPicking = false
+
+    /// `latest`: the last day that can be chosen — today, for time already
+    /// spent.
+    public init(date: Binding<Date>, latest: Date? = nil) {
+        _date = date
+        self.latest = latest
+    }
+
+    public var body: some View {
+        Button { isPicking.toggle() } label: {
+            HStack(spacing: Theme.Spacing.small) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(Theme.Palette.textTertiary)
+                Text(verbatim: shown)
+                    .font(Theme.Typography.row)
+                    .foregroundStyle(Theme.Palette.textPrimary)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .relayChoicePlate(isOpen: isPicking)
+        }
+        .buttonStyle(.plain)
+        .clickable()
+        .popover(isPresented: $isPicking, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.small) {
+                calendar
+                    .datePickerStyle(.graphical)
+                    .labelsHidden()
+                    .environment(\.locale, Localization.shared.locale)
+                HStack(spacing: Theme.Spacing.xsmall) {
+                    RelayButton(relayLocalized("Today")) { choose(daysAgo: 0) }
+                    RelayButton(relayLocalized("Yesterday")) { choose(daysAgo: 1) }
+                }
+            }
+            .padding(Theme.Spacing.medium)
+        }
+    }
+
+    @ViewBuilder
+    private var calendar: some View {
+        if let latest {
+            DatePicker("", selection: $date, in: ...latest, displayedComponents: .date)
+        } else {
+            DatePicker("", selection: $date, displayedComponents: .date)
+        }
+    }
+
+    /// The day in the interface's language — `26 сент. 2026 г.` in a Russian
+    /// window, whatever the Mac is set to.
+    private var shown: String {
+        date.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, locale: Localization.shared.locale))
+    }
+
+    private func choose(daysAgo: Int) {
+        let calendar = Calendar.current
+        date = calendar.date(byAdding: .day, value: -daysAgo, to: calendar.startOfDay(for: Date())) ?? Date()
+        isPicking = false
+    }
+}
+
+// MARK: - RelayPickerField
+
+/// One of a few values, dressed as every other field, with the list under it.
+///
+/// The sibling of `RelayDateField`: the same plate, and the choices in the
+/// same kind of panel, rather than AppKit's pop-up button, which brings its
+/// own plate and its own idea of what a selected row looks like.
+public struct RelayPickerField<Value: Hashable>: View {
+    public struct Option: Identifiable {
+        public let value: Value
+        public let title: String
+
+        public init(_ value: Value, title: String) {
+            self.value = value
+            self.title = title
+        }
+
+        public var id: Value { value }
+    }
+
+    private let options: [Option]
+    @Binding private var selection: Value
+    private let systemImage: String?
+
+    @State private var isPicking = false
+
+    public init(_ options: [Option], selection: Binding<Value>, systemImage: String? = nil) {
+        self.options = options
+        _selection = selection
+        self.systemImage = systemImage
+    }
+
+    public var body: some View {
+        Button { isPicking.toggle() } label: {
+            HStack(spacing: Theme.Spacing.small) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(Theme.Palette.textTertiary)
+                }
+                Text(verbatim: options.first { $0.value == selection }?.title ?? "")
+                    .font(Theme.Typography.row)
+                    .foregroundStyle(Theme.Palette.textPrimary)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(Theme.Palette.textTertiary)
+            }
+            .relayChoicePlate(isOpen: isPicking)
+        }
+        .buttonStyle(.plain)
+        .clickable()
+        .popover(isPresented: $isPicking, arrowEdge: .bottom) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 1) {
+                    ForEach(options) { option in
+                        PickerFieldRow(title: option.title, isSelected: option.value == selection) {
+                            selection = option.value
+                            isPicking = false
+                        }
+                    }
+                }
+                .padding(Theme.Spacing.xsmall)
+            }
+            .frame(minWidth: 200)
+            .frame(maxHeight: 320)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+private struct PickerFieldRow: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: Theme.Spacing.small) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Theme.Palette.accent)
+                    .opacity(isSelected ? 1 : 0)
+                Text(verbatim: title)
+                    .font(Theme.Typography.row)
+                    .foregroundStyle(Theme.Palette.textPrimary)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, Theme.Spacing.small)
+            .padding(.vertical, 6)
+            .background(isHovering ? Theme.Palette.surfaceHover : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .clickable()
+        .onHover { isHovering = $0 }
+    }
+}
+
+private extension View {
+    /// The field plate, less its caret pointer: a choice is clicked, not typed
+    /// into.
+    func relayChoicePlate(isOpen: Bool) -> some View {
+        padding(.horizontal, Theme.Spacing.small + 2)
+            .padding(.vertical, 7)
+            .background(Theme.Palette.surface)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
+                    .strokeBorder(isOpen ? Theme.Palette.accent.opacity(0.7) : Theme.Palette.border, lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+    }
+}

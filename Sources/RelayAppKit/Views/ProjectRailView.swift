@@ -46,6 +46,9 @@ struct ProjectRailView: View {
             RelayDivider()
                 .frame(width: 24)
                 .padding(.vertical, 2)
+            if model.tracker.isEnabled {
+                boardButton
+            }
             portsButton
             sshButton
         }
@@ -178,6 +181,22 @@ struct ProjectRailView: View {
         .buttonStyle(.plain)
         .clickable()
         .relayTooltip(relayLocalized("Add project"), shortcut: model.binding(for: .addProject), edge: .trailing)
+    }
+
+    private var boardButton: some View {
+        IconButton(
+            systemImage: "rectangle.split.3x1",
+            help: "",
+            size: 28,
+            prominence: .selectable,
+            isSelected: {
+                if case .board = model.activeModal { return true }
+                return false
+            }()
+        ) {
+            model.openBoard()
+        }
+        .relayTooltip(relayLocalized("Issue board"), shortcut: model.binding(for: .openBoard), edge: .trailing)
     }
 
     private var portsButton: some View {

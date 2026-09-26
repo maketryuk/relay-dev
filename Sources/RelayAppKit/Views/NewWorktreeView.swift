@@ -113,6 +113,16 @@ struct NewWorktreeView: View {
             let preferred = SessionPresets.preferred(for: project.defaultAgent, in: presets)
             start = presets.contains(preferred) ? .preset(preferred.id) : .nothing
             base = base ?? currentBranch
+            // An issue started from the board arrives with its name and brief,
+            // and a brief needs an agent to be handed to, whatever the
+            // project's usual one is.
+            if let draft = model.takeWorktreeDraft() {
+                name = draft.name
+                prompt = draft.prompt
+                if chosenPreset?.kind.isAgent != true, let agent = presets.first(where: \.kind.isAgent) {
+                    start = .preset(agent.id)
+                }
+            }
         }
         .onChange(of: branches) {
             base = base ?? currentBranch
