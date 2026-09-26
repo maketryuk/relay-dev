@@ -1,4 +1,5 @@
 /* Relay — Russian */
+"%.1f GB" = "%.1f ГБ";
 "%@ already exists." = "%@ уже существует.";
 "%@ available" = "Доступна %@";
 "%@ completed its work." = "%@ завершил работу.";
@@ -17,6 +18,7 @@
 "%d behind" = "Позади на %d";
 "%d changed" = "изменено: %d";
 "%d conflicted" = "с конфликтами: %d";
+"%d MB" = "%d МБ";
 "%d picked" = "выбрано: %d";
 "%d pt" = "%d пт";
 "%d unread" = "непрочитанных: %d";
@@ -88,10 +90,17 @@
 "Checking whether its branch is merged…" = "Проверка, влита ли его ветка…";
 "Clean" = "Без изменений";
 "Clean Up Worktrees" = "Убрать лишние worktrees";
+"Close %@?" = "Закрыть «%@»?";
+"Close All" = "Закрыть все";
+"Close every session in %@?" = "Закрыть все сессии в «%@»?";
+"Close every session in this project" = "Закрыть все сессии проекта";
+"Close Exited (%d)" = "Закрыть завершённые (%d)";
+"Close finished sessions?" = "Закрыть завершённые сессии?";
 "Commits on no branch, lost with it: %d" = "Коммиты вне веток пропадут вместе с ним: %d";
 "Commits that are not merged: %d." = "Невлитых коммитов: %d.";
 "Could not compare it with %@" = "Не удалось сравнить с %@";
 "Could not start %@" = "Не удалось запустить %@";
+"CPU" = "ЦП";
 "Custom" = "Своя команда";
 "CUSTOM COMMAND" = "СВОЯ КОМАНДА";
 "Cached" = "Из кэша";
@@ -201,6 +210,7 @@
 "Disconnected" = "Отключено";
 "Dismiss" = "Закрыть";
 "Display name" = "Отображаемое имя";
+"Docker containers are not counted: they run in Docker's own virtual machine." = "Контейнеры Docker не учитываются: они работают в собственной виртуальной машине Docker.";
 "Docker is not installed on this Mac." = "Docker не установлен на этом Mac.";
 "Docker is not installed. Relay shows the containers an engine is running — Docker Desktop and Colima are both engines it can read." = "Docker не установлен. Relay показывает контейнеры, которые запустил движок, — и Docker Desktop, и Colima ему подходят.";
 "Docker is unavailable." = "Docker недоступен.";
@@ -244,6 +254,7 @@
 "Find" = "Найти";
 "Find in Files" = "Поиск по файлам";
 "Finished" = "Завершено";
+"finished" = "завершился";
 "First %d matches" = "Первые %d совпадений";
 "First prompt" = "Первый промпт";
 "Fix implemented; running tests" = "Исправление готово, идут тесты";
@@ -290,6 +301,7 @@
 "It is checked out in %@." = "Она открыта в %@.";
 "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing." = "Она передаётся ssh-add и хранится в Связке ключей macOS, откуда ssh дальше читает её сам. Relay не хранит ничего.";
 "It is in the agent and the keychain; ssh will not ask again." = "Он в агенте и в Связке ключей — ssh больше не спросит.";
+"It stays in Services, ready to start again." = "Он останется в разделе «Сервисы», и его можно будет запустить снова.";
 "It was at %@." = "Она указывала на %@.";
 "Its renderer quit. Reloading starts a new one." = "Процесс отрисовки завершился. Перезагрузка запустит новый.";
 "Jump by number" = "Переход по номеру";
@@ -312,6 +324,7 @@
 "Make this branch follow the one it is pushed to" = "Ветка начнёт следить за той, куда её отправили";
 "Mark all read" = "Отметить всё прочитанным";
 "Match case" = "Учитывать регистр";
+"MEMORY" = "ПАМЯТЬ";
 "Merge in progress" = "Идёт merge";
 "Merge only if it can be fast-forwarded" = "Слить, только если возможен fast-forward";
 "Merge" = "Слияние";
@@ -328,6 +341,7 @@
 "Muted projects" = "Отключённые проекты";
 "NEW SESSION" = "НОВАЯ СЕССИЯ";
 "No services yet. Add one, or let Relay detect a dev command." = "Сервисов пока нет. Добавьте свой или дайте Relay найти dev-команду.";
+"No sessions" = "Сессий нет";
 "No worktree fits every filter that is on." = "Ни один worktree не подходит под все включённые фильтры.";
 "No worktrees to clean up" = "Убирать нечего";
 "Not merged into %@" = "Не влито в %@";
@@ -480,6 +494,7 @@
 "Relay cannot see the releases. A private repository needs to be public for updates to work." = "Relay не видит релизы. Для обновлений репозиторий должен быть публичным.";
 "Relay did not start this process" = "Relay не запускал этот процесс";
 "Relay has not looked yet" = "Relay ещё не проверял";
+"Relay itself: %@ CPU, %@" = "Сам Relay: ЦП %@, %@";
 "Relay reads the git branch, package manager and dev command it finds." = "Relay определит git-ветку, пакетный менеджер и dev-команду.";
 "Relay reads ~/.ssh/config, including Include directives. Nothing there yet." = "Relay читает ~/.ssh/config вместе с директивами Include. Пока там пусто.";
 "Relay takes over supervising them once they are closed." = "Relay возьмёт их под управление, когда они будут закрыты.";
@@ -512,6 +527,7 @@
 "Resets in %@" = "Сброс через %@";
 "Resolve conflicts" = "Разрешить конфликты";
 "Resolve conflicts…" = "Разрешить конфликты…";
+"Resources" = "Ресурсы";
 "Restart %@" = "Перезапустить %@";
 "Restart Dev Service" = "Перезапустить dev-сервис";
 "Restart container" = "Перезапустить контейнер";
@@ -539,9 +555,11 @@
 "Runs through your shell in the project root." = "Запускается через вашу оболочку в корне проекта.";
 "Runtime" = "Среда выполнения";
 "Service" = "Сервис";
+"Services to stop: %d" = "Будут остановлены сервисы: %d";
 "Session" = "Сессия";
 "Sessions in them will be closed: %d." = "Сессии в них будут закрыты: %d.";
 "Sessions to close: %d" = "Будут закрыты сессии: %d";
+"Sessions: %@ CPU, %@" = "Сессии: ЦП %@, %@";
 "Shown: %d of %d" = "Показано: %d из %d";
 "Squash-merged into %@" = "Влито в %@ через squash";
 "SSH" = "SSH";
@@ -607,6 +625,7 @@
 "Status" = "Состояние";
 "Status: %@" = "Состояние: %@";
 "Stop %@" = "Остановить %@";
+"Stop %@?" = "Остановить «%@»?";
 "Stop container" = "Остановить контейнер";
 "Stop process" = "Остановить процесс";
 "Stop this process?" = "Остановить процесс?";
@@ -620,6 +639,7 @@
 "Switch to %@" = "Перейти в проект %@";
 "System" = "Как в системе";
 "The project's own folder and the main worktree are never removed here." = "Папка самого проекта и основной worktree здесь никогда не удаляются.";
+"The window, browser tabs, the session daemon and linters" = "Окно, вкладки браузера, демон сессий и линтеры";
 "Their branches are deleted only if Relay created them and their work is already merged, squashed or rebased in." = "Их ветки удаляются, только если их создал Relay и их работа уже влита — слиянием, squash или rebase.";
 "Their folders will be deleted." = "Их папки будут удалены.";
 "TODO markers" = "Маркеры TODO";
@@ -691,6 +711,8 @@
 "Version" = "Версия";
 "Waiting for you" = "Ждёт вас";
 "Weekly" = "Еженедельно";
+"What is running in it will be stopped." = "То, что в ней запущено, будет остановлено.";
+"What is running in them will be stopped." = "То, что в них запущено, будет остановлено.";
 "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly" = "Именно это делает прокрутку плавной. Выключите, если терминал рисуется неправильно";
 "What should be done about these?" = "Что с ними нужно сделать?";
 "What should it do?" = "Что ему сделать?";

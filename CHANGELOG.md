@@ -5,6 +5,25 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Added
+
+- **What Relay and its sessions cost the Mac, at the right-hand end of the
+  status bar**: CPU and memory of the app and every session together — the app
+  alone when no session is open — with the two told apart on hover. Each
+  session is counted with everything it started: the node two levels under
+  `npm run dev` included, and the compilers a build ran and finished between
+  two readings. A click lists every
+  project with its sessions under it, heaviest first by CPU or by memory, with
+  Relay's own share beneath them. A project folds away on a click and closes
+  every one of its sessions from its cross; a session goes to its terminal on a
+  click and closes, or stops if it is a service, from its own. Close Exited
+  clears every finished terminal at once. Nothing is closed from there without
+  being asked first, and the question says how many sessions and services it
+  would end. Docker containers are not counted, since they run in Docker's own
+  virtual machine, and the list says so.
+
 ## 0.7.2 — 2026-09-25
 
 ### Added

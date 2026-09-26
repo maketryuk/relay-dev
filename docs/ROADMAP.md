@@ -238,6 +238,12 @@ workspace is a git worktree.
   setting too means writing `AppleLanguages` into the app's defaults, which
   AppKit reads only at launch, so for those menus the setting would stop
   applying immediately.
+- **What is heavy inside a session.** The resources popover says which session
+  is costing the Mac; a row that opens into its heaviest processes would say
+  which of them — the `tsc --watch`, not the shell it was started from.
+- **A session busy while nobody is looking.** A process holding a core for
+  minutes in a session that has printed nothing is the runaway worth an entry
+  in the Inbox, and the monitor already has the figures to notice it.
 
 ---
 

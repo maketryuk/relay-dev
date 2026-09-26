@@ -178,6 +178,11 @@ final class AppModel {
     /// where it can be had but should not.
     private(set) var terminalUsesGPURendering = true
     var isUsagePopoverOpen = false
+    var isResourcesPopoverOpen = false
+    /// Projects folded away in the resources popover. Kept for as long as the
+    /// app runs, so a project folded to get it out of the way stays folded
+    /// the next time the popover opens.
+    var collapsedResourceProjects: Set<ProjectID> = []
     private(set) var paneLayouts: [ProjectID: PaneNode] = [:]
     /// Every open browser tab.
     private(set) var browserPages: [BrowserID: BrowserPage] = [:]
@@ -245,6 +250,8 @@ final class AppModel {
     /// What the agents have left of their rate limits, read from their own
     /// caches on disk.
     let usage = UsageMonitor()
+    /// What each session, and Relay itself, costs the Mac in CPU and memory.
+    let resources = ResourceMonitor()
     /// How full each visible agent session's context window is.
     /// Past conversations for the selected project, from the agents' own
     /// transcripts rather than from what Relay happens to have run.
@@ -359,7 +366,11 @@ final class AppModel {
         refreshAllProjectFacts()
         loadSSHHosts()
         scheduleUpdateChecks()
-        if showsStatusBar { usage.start() }
+        resources.roots = { [weak self] in self?.resourceRoots() ?? ResourceRoots() }
+        if showsStatusBar {
+            usage.start()
+            resources.start()
+        }
     }
 
     private func connect() async {
@@ -930,6 +941,17 @@ final class AppModel {
 
     func terminateSession(_ id: SessionID) {
         client.post(.terminate(id))
+    }
+
+    /// What the resource monitor measures. A finished session's pid is left
+    /// out: the process is gone, and the number may already be somebody
+    /// else's.
+    func resourceRoots() -> ResourceRoots {
+        var live: [SessionID: Int32] = [:]
+        for session in sessions.values where session.exitCode == nil {
+            if let pid = session.pid { live[session.id] = pid }
+        }
+        return ResourceRoots(sessions: live, daemon: client.daemonProcessID)
     }
 
     /// Starts the session again the way it was started the first time.
@@ -3483,7 +3505,13 @@ final class AppModel {
     func setShowsStatusBar(_ visible: Bool) {
         showsStatusBar = visible
         persist()
-        if visible { usage.start() } else { usage.stop() }
+        if visible {
+            usage.start()
+            resources.start()
+        } else {
+            usage.stop()
+            resources.stop()
+        }
     }
 
     /// Whether the terminals on screen ended up on the GPU.
