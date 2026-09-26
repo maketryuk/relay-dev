@@ -44,6 +44,7 @@ struct RootView: View {
         .animation(.easeOut(duration: 0.16), value: model.isLeftSidebarVisible)
         .background(Theme.Palette.base)
         .overlay { usageOverlay }
+        .overlay { resourcesOverlay }
         .overlay { modalOverlay }
         .overlay { commandPaletteOverlay }
         .overlay {
@@ -108,6 +109,25 @@ struct RootView: View {
                     .padding(.bottom, Theme.Metrics.statusBarHeight + Theme.Spacing.xsmall)
             }
             .background { KeyCaptureView(onEscape: { model.isUsagePopoverOpen = false }) }
+            .transition(.opacity)
+        }
+    }
+
+    /// The same, from the other corner, where the figures that open it are.
+    @ViewBuilder
+    private var resourcesOverlay: some View {
+        if model.isResourcesPopoverOpen {
+            ZStack(alignment: .bottomTrailing) {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture { model.isResourcesPopoverOpen = false }
+
+                ResourcesPopover()
+                    .modalPlate()
+                    .padding(.trailing, Theme.Spacing.small)
+                    .padding(.bottom, Theme.Metrics.statusBarHeight + Theme.Spacing.xsmall)
+            }
+            .background { KeyCaptureView(onEscape: { model.isResourcesPopoverOpen = false }) }
             .transition(.opacity)
         }
     }

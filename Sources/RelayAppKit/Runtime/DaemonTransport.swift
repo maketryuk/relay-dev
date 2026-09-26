@@ -10,6 +10,9 @@ import RelayProtocol
 protocol DaemonTransport: AnyObject {
     var onFrame: ((Data) -> Void)? { get set }
     var onDisconnect: (() -> Void)? { get set }
+    /// The daemon's process, once connected, for counting what Relay itself
+    /// costs the Mac.
+    var peerProcessID: Int32? { get }
 
     func connect() throws
     func send(_ frame: Data)
@@ -33,6 +36,8 @@ final class UnixSocketTransport: DaemonTransport, @unchecked Sendable {
 
     var onFrame: ((Data) -> Void)?
     var onDisconnect: (() -> Void)?
+    /// Written once in `connect`, before the client publishes the transport.
+    private(set) var peerProcessID: Int32?
 
     private let url: URL
     private let queue = DispatchQueue(label: "com.maketryuk.relay.transport", qos: .userInitiated)
@@ -94,6 +99,12 @@ final class UnixSocketTransport: DaemonTransport, @unchecked Sendable {
 
         var noSigpipe: Int32 = 1
         setsockopt(socketFD, SOL_SOCKET, SO_NOSIGPIPE, &noSigpipe, socklen_t(MemoryLayout<Int32>.size))
+        // Asked of the socket rather than inferred from the sessions' parent:
+        // with no session open there is no parent to ask, and the daemon costs
+        // something all the same.
+        var peer: pid_t = 0
+        var peerSize = socklen_t(MemoryLayout<pid_t>.size)
+        peerProcessID = getsockopt(socketFD, SOL_LOCAL, LOCAL_PEERPID, &peer, &peerSize) == 0 && peer > 0 ? peer : nil
         let flags = fcntl(socketFD, F_GETFL, 0)
         _ = fcntl(socketFD, F_SETFL, flags | O_NONBLOCK)
         descriptor = socketFD

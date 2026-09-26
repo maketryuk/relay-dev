@@ -71,6 +71,10 @@ final class DaemonClient: @unchecked Sendable {
         lock.withLock { transport != nil }
     }
 
+    var daemonProcessID: Int32? {
+        lock.withLock { transport?.peerProcessID }
+    }
+
     var subscriberCount: Int {
         lock.withLock { subscribers.count }
     }

@@ -260,6 +260,9 @@ would otherwise show four tabs that are permanently empty.
   written to: `TranscriptReadings` keeps what each one said, by its size and
   modification date. Thirty of them parsed every ten seconds were a fifth of a
   second of CPU each time.
+- The status bar's CPU and memory are read with syscalls, never a fork: every
+  5 s while the bar shows, every 2 s while its popover is open, and not at all
+  while the window is hidden.
 
 ## Input waits for the terminal
 
@@ -333,6 +336,41 @@ instead of "node".
 Results are cached for a couple of seconds. Every scan is two process spawns, so
 polling was never an option; the popover asks when it opens, and a freshly
 started service triggers a short burst of retries while it binds.
+
+## CPU and memory are measured in the window
+
+The status bar's figures look like a cousin of the ports window and are the
+opposite decision. Ports need `lsof` and the whole process table. CPU and
+memory need the process each session started, which the window already has
+from its snapshots, and two `libproc` calls per process, which any process of
+the same user may make. So nothing crosses the socket, the protocol does not
+change, and a daemon inherited from the previous build is measured the same as
+a new one. The daemon's own process is asked of the socket (`LOCAL_PEERPID`),
+since with no session open there is no parent to infer it from.
+
+A session is its whole tree, walked with `proc_listchildpids` from the process
+the daemon forked. Memory is `ri_phys_footprint`, which is what Activity
+Monitor shows; resident size counts a shared library once for every process
+that maps it, and summed over a tree of node processes gives a number nobody
+recognises.
+
+CPU is the difference between two readings, and each reading adds up every
+member's own time and its `ri_child_*` — the time of every child it has
+reaped. That is what makes a tree measurable by its living members: a compiler
+that ran between two readings is gone from the table, and its time is on the
+`make` that waited for it. Two things break the sum, and both are dropped with
+the previous figure kept: a total that goes down, because a process was
+reparented out of the tree or an `exec` started its count again, and one that
+goes up by more than every core could have spent, because a process joined
+carrying its whole lifetime. `rusage_info` counts in Mach ticks — nanoseconds
+on Intel, 125/3 of one on Apple silicon — which is converted once.
+
+Relay's own share is the window's tree and the daemon's, less the sessions
+hanging from the daemon, and with the daemon's reaped time left out: that is
+every session that has ended, and counting it made closing a terminal look
+like Relay spending the terminal's lifetime in a moment. Docker containers run
+in Docker's virtual machine and appear nowhere, which the popover says rather
+than leaving a compose session looking cheap.
 
 ## Shelling out needs exit status, not just stdout
 

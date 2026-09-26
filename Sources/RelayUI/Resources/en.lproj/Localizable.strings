@@ -1,4 +1,5 @@
 /* Relay — English is the source language; the key is the English text. */
+"%.1f GB" = "%.1f GB";
 "%@ already exists." = "%@ already exists.";
 "%@ available" = "%@ available";
 "%@ completed its work." = "%@ completed its work.";
@@ -17,6 +18,7 @@
 "%d behind" = "%d behind";
 "%d changed" = "%d changed";
 "%d conflicted" = "%d conflicted";
+"%d MB" = "%d MB";
 "%d picked" = "%d picked";
 "%d pt" = "%d pt";
 "%d unread" = "%d unread";
@@ -88,10 +90,17 @@
 "Checking whether its branch is merged…" = "Checking whether its branch is merged…";
 "Clean" = "Clean";
 "Clean Up Worktrees" = "Clean Up Worktrees";
+"Close %@?" = "Close %@?";
+"Close All" = "Close All";
+"Close every session in %@?" = "Close every session in %@?";
+"Close every session in this project" = "Close every session in this project";
+"Close Exited (%d)" = "Close Exited (%d)";
+"Close finished sessions?" = "Close finished sessions?";
 "Commits on no branch, lost with it: %d" = "Commits on no branch, lost with it: %d";
 "Commits that are not merged: %d." = "Commits that are not merged: %d.";
 "Could not compare it with %@" = "Could not compare it with %@";
 "Could not start %@" = "Could not start %@";
+"CPU" = "CPU";
 "Custom" = "Custom";
 "CUSTOM COMMAND" = "CUSTOM COMMAND";
 "Cached" = "Cached";
@@ -201,6 +210,7 @@
 "Disconnected" = "Disconnected";
 "Dismiss" = "Dismiss";
 "Display name" = "Display name";
+"Docker containers are not counted: they run in Docker's own virtual machine." = "Docker containers are not counted: they run in Docker's own virtual machine.";
 "Docker is not installed on this Mac." = "Docker is not installed on this Mac.";
 "Docker is not installed. Relay shows the containers an engine is running — Docker Desktop and Colima are both engines it can read." = "Docker is not installed. Relay shows the containers an engine is running — Docker Desktop and Colima are both engines it can read.";
 "Docker is unavailable." = "Docker is unavailable.";
@@ -244,6 +254,7 @@
 "Find" = "Find";
 "Find in Files" = "Find in Files";
 "Finished" = "Finished";
+"finished" = "finished";
 "First %d matches" = "First %d matches";
 "First prompt" = "First prompt";
 "Fix implemented; running tests" = "Fix implemented; running tests";
@@ -290,6 +301,7 @@
 "It is checked out in %@." = "It is checked out in %@.";
 "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing." = "It is handed to ssh-add and kept by the macOS keychain, which ssh reads itself from then on. Relay stores nothing.";
 "It is in the agent and the keychain; ssh will not ask again." = "It is in the agent and the keychain; ssh will not ask again.";
+"It stays in Services, ready to start again." = "It stays in Services, ready to start again.";
 "It was at %@." = "It was at %@.";
 "Its renderer quit. Reloading starts a new one." = "Its renderer quit. Reloading starts a new one.";
 "Jump by number" = "Jump by number";
@@ -312,6 +324,7 @@
 "Make this branch follow the one it is pushed to" = "Make this branch follow the one it is pushed to";
 "Mark all read" = "Mark all read";
 "Match case" = "Match case";
+"MEMORY" = "MEMORY";
 "Merge in progress" = "Merge in progress";
 "Merge only if it can be fast-forwarded" = "Merge only if it can be fast-forwarded";
 "Merge" = "Merge";
@@ -328,6 +341,7 @@
 "Muted projects" = "Muted projects";
 "NEW SESSION" = "NEW SESSION";
 "No services yet. Add one, or let Relay detect a dev command." = "No services yet. Add one, or let Relay detect a dev command.";
+"No sessions" = "No sessions";
 "No worktree fits every filter that is on." = "No worktree fits every filter that is on.";
 "No worktrees to clean up" = "No worktrees to clean up";
 "Not merged into %@" = "Not merged into %@";
@@ -480,6 +494,7 @@
 "Relay cannot see the releases. A private repository needs to be public for updates to work." = "Relay cannot see the releases. A private repository needs to be public for updates to work.";
 "Relay did not start this process" = "Relay did not start this process";
 "Relay has not looked yet" = "Relay has not looked yet";
+"Relay itself: %@ CPU, %@" = "Relay itself: %@ CPU, %@";
 "Relay reads the git branch, package manager and dev command it finds." = "Relay reads the git branch, package manager and dev command it finds.";
 "Relay reads ~/.ssh/config, including Include directives. Nothing there yet." = "Relay reads ~/.ssh/config, including Include directives. Nothing there yet.";
 "Relay takes over supervising them once they are closed." = "Relay takes over supervising them once they are closed.";
@@ -512,6 +527,7 @@
 "Resets in %@" = "Resets in %@";
 "Resolve conflicts" = "Resolve conflicts";
 "Resolve conflicts…" = "Resolve conflicts…";
+"Resources" = "Resources";
 "Restart %@" = "Restart %@";
 "Restart Dev Service" = "Restart Dev Service";
 "Restart container" = "Restart container";
@@ -539,9 +555,11 @@
 "Runs through your shell in the project root." = "Runs through your shell in the project root.";
 "Runtime" = "Runtime";
 "Service" = "Service";
+"Services to stop: %d" = "Services to stop: %d";
 "Session" = "Session";
 "Sessions in them will be closed: %d." = "Sessions in them will be closed: %d.";
 "Sessions to close: %d" = "Sessions to close: %d";
+"Sessions: %@ CPU, %@" = "Sessions: %@ CPU, %@";
 "Shown: %d of %d" = "Shown: %d of %d";
 "Squash-merged into %@" = "Squash-merged into %@";
 "SSH" = "SSH";
@@ -607,6 +625,7 @@
 "Status" = "Status";
 "Status: %@" = "Status: %@";
 "Stop %@" = "Stop %@";
+"Stop %@?" = "Stop %@?";
 "Stop container" = "Stop container";
 "Stop process" = "Stop process";
 "Stop this process?" = "Stop this process?";
@@ -620,6 +639,7 @@
 "Switch to %@" = "Switch to %@";
 "System" = "System";
 "The project's own folder and the main worktree are never removed here." = "The project's own folder and the main worktree are never removed here.";
+"The window, browser tabs, the session daemon and linters" = "The window, browser tabs, the session daemon and linters";
 "Their branches are deleted only if Relay created them and their work is already merged, squashed or rebased in." = "Their branches are deleted only if Relay created them and their work is already merged, squashed or rebased in.";
 "Their folders will be deleted." = "Their folders will be deleted.";
 "TODO markers" = "TODO markers";
@@ -691,6 +711,8 @@
 "Version" = "Version";
 "Waiting for you" = "Waiting for you";
 "Weekly" = "Weekly";
+"What is running in it will be stopped." = "What is running in it will be stopped.";
+"What is running in them will be stopped." = "What is running in them will be stopped.";
 "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly" = "What keeps a long scroll smooth. Turn it off if the terminal draws wrongly";
 "What should be done about these?" = "What should be done about these?";
 "What should it do?" = "What should it do?";
