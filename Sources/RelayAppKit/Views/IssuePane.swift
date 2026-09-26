@@ -458,11 +458,14 @@ private struct IssueFieldsSection: View {
         VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
             ForEach(fields) { field in
                 HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.small) {
-                    Text(verbatim: field.name)
+                    // Two lines rather than cut short: a field made in
+                    // Russian is called "Затраченное время", not "Затр…".
+                    Text(verbatim: field.title)
                         .font(Theme.Typography.rowSecondary)
                         .foregroundStyle(Theme.Palette.textTertiary)
-                        .lineLimit(1)
-                        .frame(width: 96, alignment: .leading)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(width: 104, alignment: .leading)
                     value(of: field)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }

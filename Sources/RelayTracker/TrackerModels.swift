@@ -174,7 +174,13 @@ public enum FieldKind: String, Hashable, Sendable {
 /// A field of an issue, with its value and, when read in full, the values it
 /// could take.
 public struct TrackerField: Hashable, Sendable, Identifiable {
+    /// How the tracker names it in a write, and what Relay recognises it by:
+    /// `Priority`, `Assignee`.
     public var name: String
+    /// How it is shown: the translated name, where the tracker has one —
+    /// `Приоритет` — and the name itself for a field that was made in the
+    /// language it is read in.
+    public var title: String
     public var kind: FieldKind
     public var allowsSeveral: Bool
     /// The value, for a field whose values are options or people.
@@ -196,6 +202,7 @@ public struct TrackerField: Hashable, Sendable, Identifiable {
 
     public init(
         name: String,
+        title: String? = nil,
         kind: FieldKind,
         allowsSeveral: Bool = false,
         values: [FieldOption] = [],
@@ -207,6 +214,7 @@ public struct TrackerField: Hashable, Sendable, Identifiable {
         wireType: String
     ) {
         self.name = name
+        self.title = title ?? name
         self.kind = kind
         self.allowsSeveral = allowsSeveral
         self.values = values

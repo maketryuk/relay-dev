@@ -147,6 +147,7 @@ enum YouTrackMapping {
         let kind = YouTrackAPI.kind(of: wire.type)
         var field = TrackerField(
             name: wire.name,
+            title: nonEmpty(wire.projectCustomField?.field?.localizedName),
             kind: kind,
             allowsSeveral: YouTrackAPI.allowsSeveral(wire.type),
             canBeEmpty: wire.projectCustomField?.canBeEmpty ?? true,

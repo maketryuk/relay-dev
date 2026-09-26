@@ -57,7 +57,7 @@ enum YouTrackAPI {
         "id,idReadable,summary,updated,resolved",
         "project(\(projectFields))",
         "tags(name,\(colorFields))",
-        "customFields(name,$type,value(\(valueFields)))",
+        "customFields(name,$type,value(\(valueFields)),projectCustomField(field(localizedName)))",
     ].joined(separator: ",")
     static let issueFields = [
         "id,idReadable,summary,description,created,updated,resolved",
@@ -65,7 +65,7 @@ enum YouTrackAPI {
         "reporter(\(userFields))",
         "updater(\(userFields))",
         "tags(name,\(colorFields))",
-        "customFields(name,$type,value(\(valueFields)),projectCustomField(canBeEmpty,emptyFieldText,"
+        "customFields(name,$type,value(\(valueFields)),projectCustomField(field(localizedName),canBeEmpty,emptyFieldText,"
             + "bundle(values(\(optionFields)),aggregatedUsers(\(userFields)))))",
         "attachments(id,name,url,thumbnailURL,mimeType,size,removed)",
     ].joined(separator: ",")

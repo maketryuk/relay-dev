@@ -46,6 +46,10 @@ breaking change to stored data.
   System it was English throughout: the app declared no languages of its own,
   which macOS reads as English alone, and it then reads every table inside the
   app in English to match. The menus macOS supplies follow along too.
+- **An issue's fields named as YouTrack names them** — Статус, Исполнитель,
+  Приоритет — rather than by the names it writes them with, which put State and
+  Priority beside fields made in Russian. A long name takes two lines instead
+  of being cut short.
 - **The compact usage bar shows the five-hour limit**, and gives its place to
   the weekly one only when the week is nearly spent. It showed whichever window
   was fullest, which is the week for most of the week, and beside it counted
