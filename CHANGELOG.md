@@ -5,7 +5,7 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
-## Unreleased
+## 0.8.0 — 2026-09-26
 
 ### Added
 
