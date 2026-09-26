@@ -82,106 +82,154 @@ struct IssuePane: View {
         }
     }
 
+    /// Who opened the issue and who changed it last, and when — which is
+    /// most of what says whether it is still being worked on.
+    private func history(of issue: TrackerIssue) -> String? {
+        let now = Date()
+        // An issue read without the dates has them at the epoch.
+        let known = Date(timeIntervalSince1970: 1)
+        var parts: [String] = []
+        if issue.created > known {
+            let when = relayRelativeTime(issue.created, relativeTo: now)
+            parts.append(issue.reporter.map { String(format: relayLocalized("Reported by %@, %@"), $0.name, when) }
+                ?? String(format: relayLocalized("Created %@"), when))
+        }
+        // Changed since it was made, which a minute after is not.
+        if issue.updated > known, issue.updated.timeIntervalSince(issue.created) > 60 {
+            let when = relayRelativeTime(issue.updated, relativeTo: now)
+            parts.append(issue.updater.map { String(format: relayLocalized("Updated by %@, %@"), $0.name, when) }
+                ?? String(format: relayLocalized("Updated %@"), when))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
     // MARK: - Header
 
     private var summary: String { issue?.summary ?? card?.summary ?? "" }
 
+    /// The key on a line of its own above the summary, as the tracker lays an
+    /// issue out: it is what gets copied and said aloud, and beside a summary
+    /// two lines long it pushed the summary into a column of its own.
     private var header: some View {
-        HStack(spacing: Theme.Spacing.small) {
-            Text(verbatim: key)
-                .font(Theme.Typography.mono)
-                .foregroundStyle(Theme.Palette.textSecondary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(Theme.Palette.surfaceRaised)
-                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                .textSelection(.enabled)
-            IssueCopyButton(key: key, summary: summary)
-
-            if let draft = editingSummary {
-                RelayTextField(relayLocalized("Summary"), text: Binding(
-                    get: { draft },
-                    set: { editingSummary = $0 }
-                ), autofocus: true, onSubmit: saveSummary)
-                RelayButton(relayLocalized("Cancel"), kind: .ghost) { editingSummary = nil }
-                RelayButton(relayLocalized("Save"), kind: .primary, action: saveSummary)
-                    .disabled(tracker.writesInFlight.contains(.edit(key)))
-            } else {
-                Text(verbatim: summary)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.Palette.textPrimary)
-                    .lineLimit(2)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if issue != nil {
-                    IconButton(systemImage: "pencil", size: Theme.Metrics.action) { editingSummary = summary }
-                        .relayTooltip(relayLocalized("Edit the summary"))
-                }
-            }
-
-            timerButton
-
-            Menu {
-                IssueHandoverTargets(project: project, key: key)
-            } label: {
+        HStack(alignment: .top, spacing: Theme.Spacing.small) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.small) {
                 HStack(spacing: Theme.Spacing.xsmall) {
-                    Image(systemName: "paperplane")
-                        .font(.system(size: 11, weight: .semibold))
-                    Text(relayLocalized("Send to Agent"))
-                        .font(Theme.Typography.row)
+                    Text(verbatim: key)
+                        .font(Theme.Typography.mono)
+                        .foregroundStyle(Theme.Palette.textSecondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Theme.Palette.surfaceRaised)
+                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        .textSelection(.enabled)
+                    IssueCopyButton(key: key, summary: summary)
+                    if let issue, let history = history(of: issue) {
+                        Text(verbatim: history)
+                            .font(Theme.Typography.rowSecondary)
+                            .foregroundStyle(Theme.Palette.textTertiary)
+                            .lineLimit(1)
+                            .padding(.leading, Theme.Spacing.xsmall)
+                    }
                 }
-                .foregroundStyle(Color.white)
-                .padding(.horizontal, Theme.Spacing.medium)
-                .frame(height: 28)
-                .background(Theme.Palette.accent)
-                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
-            }
-            // A button-styled menu draws its label as given; a borderless one
-            // keeps only the text and the image, and the pill would be lost.
-            .menuStyle(.button)
-            .buttonStyle(.plain)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .clickable()
+                .frame(height: Self.actionHeight)
 
-            Menu {
-                IssueMenuItems(
-                    project: project,
-                    key: key,
-                    summary: summary,
-                    trackerProject: issue?.project ?? card?.project,
-                    offersOpening: false
-                )
-                Divider()
-                Button(relayLocalized("Reload")) { tracker.open(key) }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Theme.Palette.textSecondary)
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
+                if let draft = editingSummary {
+                    HStack(spacing: Theme.Spacing.small) {
+                        RelayTextField(relayLocalized("Summary"), text: Binding(
+                            get: { draft },
+                            set: { editingSummary = $0 }
+                        ), autofocus: true, onSubmit: saveSummary)
+                        RelayButton(relayLocalized("Cancel"), kind: .ghost) { editingSummary = nil }
+                        RelayButton(relayLocalized("Save"), kind: .primary, action: saveSummary)
+                            .disabled(tracker.writesInFlight.contains(.edit(key)))
+                    }
+                } else {
+                    HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.small) {
+                        Text(verbatim: summary)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Theme.Palette.textPrimary)
+                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                        if issue != nil {
+                            IconButton(systemImage: "pencil", size: Theme.Metrics.action) { editingSummary = summary }
+                                .relayTooltip(relayLocalized("Edit the summary"))
+                        }
+                    }
+                }
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .clickable()
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            IconButton(systemImage: "xmark") { model.dismissModal() }
+            // The timer is in the menu: it is started from here seldom enough
+            // that a button beside the summary was mostly in the way.
+            HStack(spacing: Theme.Spacing.small) {
+                sendMenu
+                moreMenu
+                IconButton(systemImage: "xmark", size: Self.actionHeight) { model.dismissModal() }
+            }
+            .frame(height: Self.actionHeight)
         }
         .padding(.horizontal, ModalSurface<EmptyView, EmptyView>.horizontalInset)
-        .padding(.vertical, ModalSurface<EmptyView, EmptyView>.barVerticalInset)
+        // Taller than other panels' bars: it holds two lines, the key and a
+        // summary that may itself be two.
+        .padding(.vertical, Theme.Spacing.large)
     }
 
-    @ViewBuilder
-    private var timerButton: some View {
-        let timer = tracker.timer
-        if timer?.key == key, timer?.isRunning == true {
-            RelayButton(relayLocalized("Stop"), systemImage: "stop.fill") { model.stopTimer() }
-        } else {
-            RelayButton(relayLocalized("Start Timer"), systemImage: "timer") {
-                model.startTimer(for: key, summary: summary, project: issue?.project ?? card?.project)
+    /// The height of everything on the key's line, the buttons across from it
+    /// included, so they line up on one centre rather than on their tops.
+    private static let actionHeight: CGFloat = 28
+
+    private var sendMenu: some View {
+        Menu {
+            IssueHandoverTargets(project: project, key: key)
+        } label: {
+            HStack(spacing: Theme.Spacing.xsmall) {
+                Image(systemName: "paperplane")
+                    .font(.system(size: 11, weight: .semibold))
+                Text(relayLocalized("Send to Agent"))
+                    .font(Theme.Typography.row)
             }
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, Theme.Spacing.medium)
+            .frame(height: Self.actionHeight)
+            .background(Theme.Palette.accent)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
         }
+        // A button-styled menu draws its label as given; a borderless one
+        // keeps only the text and the image, and the pill would be lost.
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .clickable()
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            IssueMenuItems(
+                project: project,
+                key: key,
+                summary: summary,
+                trackerProject: issue?.project ?? card?.project,
+                offersOpening: false
+            )
+            Divider()
+            Button(relayLocalized("Reload")) { tracker.open(key) }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Theme.Palette.textSecondary)
+                .frame(width: Self.actionHeight, height: Self.actionHeight)
+                .contentShape(Rectangle())
+        }
+        // Drawn as given, like the menu beside it; a borderless menu adds
+        // insets of its own and sat higher than the buttons around it.
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .clickable()
+        .relayTooltip(relayLocalized("More"))
     }
 
     private func saveSummary() {
@@ -199,7 +247,7 @@ struct IssuePane: View {
 
     @ViewBuilder
     private func descriptionSection(_ issue: TrackerIssue) -> some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.small) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
             HStack {
                 sectionTitle(relayLocalized("Description"))
                 Spacer()
@@ -249,7 +297,7 @@ struct IssuePane: View {
 
     private func commentsSection(_ issue: TrackerIssue) -> some View {
         let comments = tracker.comments[key] ?? []
-        return VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
+        return VStack(alignment: .leading, spacing: Theme.Spacing.large) {
             sectionTitle(comments.isEmpty
                 ? relayLocalized("Comments")
                 : String(format: relayLocalized("Comments: %d"), comments.count))
@@ -306,7 +354,7 @@ private struct CommentRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: Theme.Spacing.small) {
             TrackerAvatar(name: comment.author?.name ?? "?", avatar: comment.author?.avatar, size: 24)
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.xsmall + 2) {
                 HStack(spacing: Theme.Spacing.xsmall) {
                     Text(verbatim: comment.author?.name ?? relayLocalized("Someone"))
                         .font(Theme.Typography.row)
@@ -380,7 +428,7 @@ struct MarkdownText: View {
         Text(rendered)
             .font(.system(size: 12.5))
             .foregroundStyle(Theme.Palette.textPrimary)
-            .lineSpacing(2)
+            .lineSpacing(4)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
@@ -407,7 +455,7 @@ private struct IssueFieldsSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.small) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
             ForEach(fields) { field in
                 HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.small) {
                     Text(verbatim: field.name)
@@ -550,7 +598,7 @@ private struct IssueTimeSection: View {
                     .font(Theme.Typography.rowSecondary)
                     .foregroundStyle(Theme.Palette.textTertiary)
             } else {
-                VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
+                VStack(alignment: .leading, spacing: Theme.Spacing.large) {
                     ForEach(WorkLog.days(of: shown, in: .current)) { day in
                         daySection(day)
                     }
@@ -615,7 +663,7 @@ private struct IssueTimeSection: View {
     }
 
     private func daySection(_ day: WorkLog.Day) -> some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.xsmall) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.small) {
             HStack {
                 Text(verbatim: TrackerText.day(day.start))
                     .font(Theme.Typography.caption)
@@ -654,7 +702,7 @@ private struct WorkItemRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: Theme.Spacing.small) {
             TrackerAvatar(name: item.author?.name ?? "?", avatar: item.author?.avatar, size: 18)
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: Theme.Spacing.xsmall) {
                     Text(verbatim: item.author?.name ?? relayLocalized("Someone"))
                         .font(Theme.Typography.row)
@@ -684,7 +732,7 @@ private struct WorkItemRow: View {
                 }
             }
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, Theme.Spacing.xsmall)
         .padding(.horizontal, Theme.Spacing.xsmall)
         .background(isMine && isHovering ? Theme.Palette.surfaceHover : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))

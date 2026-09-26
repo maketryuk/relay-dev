@@ -63,6 +63,7 @@ enum YouTrackAPI {
         "id,idReadable,summary,description,created,updated,resolved",
         "project(\(projectFields))",
         "reporter(\(userFields))",
+        "updater(\(userFields))",
         "tags(name,\(colorFields))",
         "customFields(name,$type,value(\(valueFields)),projectCustomField(canBeEmpty,emptyFieldText,"
             + "bundle(values(\(optionFields)),aggregatedUsers(\(userFields)))))",

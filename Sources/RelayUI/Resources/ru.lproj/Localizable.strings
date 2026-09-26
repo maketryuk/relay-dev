@@ -148,6 +148,7 @@
 "Could not read the board" = "Не удалось загрузить доску";
 "Could not start %@" = "Не удалось запустить %@";
 "CPU" = "ЦП";
+"Created %@" = "Создана %@";
 "Current sprint" = "Текущий спринт";
 "Custom" = "Своя команда";
 "CUSTOM COMMAND" = "СВОЯ КОМАНДА";
@@ -339,6 +340,7 @@
 "Markdown. Optional." = "Markdown. Необязательно.";
 "Merge With" = "Объединить с";
 "Mine" = "Мои";
+"More" = "Ещё";
 "Move To" = "Переместить в";
 "Needs a new token" = "Нужен новый токен";
 "New Issue" = "Новая задача";
@@ -360,6 +362,7 @@
 "Relay only sends a token to an https:// address. Check the tracker's address." = "Relay отправляет токен только на адрес https://. Проверьте адрес трекера.";
 "Relay remembers the choice for this project. It can be changed from the menu above." = "Relay запомнит выбор для этого проекта. Изменить его можно в меню сверху.";
 "Reload the board" = "Обновить доску";
+"Reported by %@, %@" = "Автор: %@, %@";
 "Saving…" = "Сохранение…";
 "Send to Agent" = "Отправить агенту";
 "Sending…" = "Отправка…";
@@ -389,6 +392,8 @@
 "Today" = "Сегодня";
 "Token" = "Токен";
 "Tracker" = "Трекер";
+"Updated %@" = "Обновлена %@";
+"Updated by %@, %@" = "Обновлено: %@, %@";
 "What answered is not the tracker's API. Check the address." = "По этому адресу отвечает не API трекера. Проверьте адрес.";
 "What needs doing" = "Что нужно сделать";
 "What was done" = "Что сделано";

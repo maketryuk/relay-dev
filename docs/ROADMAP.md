@@ -149,8 +149,9 @@ workspace is a git worktree.
   put in order, merged and hidden here, for this window only.
 - **An issue in full**: its description, its comments and a reply, its fields
   set from a menu, its summary and description edited in place, and your own
-  comments and time corrected or taken off. Its key and summary copied with
-  the key a link, as the tracker's own button copies them.
+  comments and time corrected or taken off. Who reported it and who changed it
+  last, and its key and summary copied with the key a link, as the tracker's
+  own button copies them.
 - **Handing an issue to an agent**: typed into a running agent's prompt, or a
   new agent's, or the first prompt of a new worktree named after it — in any
   project, the one the tracker project's issues went to last time offered

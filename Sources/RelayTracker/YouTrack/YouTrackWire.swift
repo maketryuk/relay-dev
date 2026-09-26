@@ -107,6 +107,7 @@ enum YouTrackWire {
         var resolved: Int64?
         var project: Project?
         var reporter: User?
+        var updater: User?
         var tags: [Tag]?
         var customFields: [CustomField]?
         var attachments: [Attachment]?

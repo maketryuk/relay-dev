@@ -27,6 +27,11 @@ breaking change to stored data.
 - **Time is added the way YouTrack's Russian says it**: «Добавить затраченное
   время» rather than «Списать время», and the same in the timer and the
   issue.
+- **An issue laid out as YouTrack lays it out**: its key on a line of its own
+  above the summary, with who reported it and who changed it last, and when;
+  more room between its fields, its comments and its lines of text; and the
+  timer started from its menu rather than a button beside the summary, so the
+  buttons left there line up with the key.
 
 ### Fixed
 
