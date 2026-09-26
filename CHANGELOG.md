@@ -9,6 +9,9 @@ breaking change to stored data.
 
 ### Fixed
 
+- **Escape in a popover closes the popover**, not the panel it was opened from:
+  pressed while choosing the day for time being logged, it closed the whole
+  panel and what had been typed in it.
 - **Relay in Russian on a Mac set to Russian.** With the language left on
   System it was English throughout: the app declared no languages of its own,
   which macOS reads as English alone, and it then reads every table inside the

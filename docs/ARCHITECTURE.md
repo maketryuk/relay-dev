@@ -1264,8 +1264,11 @@ sentence as often as at its end, so the reply field is AppKit's text view. The
 `@` counts at the start of a word only — an address is not a mention — and
 offers the people the issue knows of. While the list is open, the arrows,
 Return and Tab act on it, and Escape closes it rather than the panel: the
-panel's key monitor lets Escape through to a first responder that says it has
-a use for it, since otherwise the half-written reply would go with the panel.
+panel's key monitor lets Escape through to a first responder that says it has a
+use for it, since otherwise the half-written reply would go with the panel. The
+monitor acts on keys pressed in its own window only: a popover and a menu are
+windows of their own, and Escape pressed in one closes it rather than the panel
+under it.
 
 **An issue is handed over as a brief.** Its key, summary, link, fields,
 description and the newest twenty comments, in English labels around its own
