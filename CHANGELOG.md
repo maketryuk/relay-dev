@@ -9,6 +9,10 @@ breaking change to stored data.
 
 ### Fixed
 
+- **Relay in Russian on a Mac set to Russian.** With the language left on
+  System it was English throughout: the app declared no languages of its own,
+  which macOS reads as English alone, and it then reads every table inside the
+  app in English to match. The menus macOS supplies follow along too.
 - **The compact usage bar shows the five-hour limit**, and gives its place to
   the weekly one only when the week is nearly spent. It showed whichever window
   was fullest, which is the week for most of the week, and beside it counted
