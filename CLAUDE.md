@@ -108,7 +108,7 @@ Two things, set up once, without which step 4 stops before it builds anything:
   whatever `RELAY_NOTARY_PROFILE` says), either from an Apple ID and an
   app-specific password:
   `xcrun notarytool store-credentials "relay-notary" --apple-id <id>
-  --team-id L79UA6HS32 --password <app-specific-password>`,
+  --team-id 687SJGXV48 --password <app-specific-password>`,
   or from an App Store Connect API key:
   `xcrun notarytool store-credentials "relay-notary" --key AuthKey_XXX.p8
   --key-id XXXXXXXXXX --issuer <issuer-uuid>`.
@@ -141,6 +141,9 @@ blessed it, so an existing install updates itself as usual.
 The team is what has to hold, not the certificate. Moving later to a Developer
 ID issued under the same team keeps every existing install updating; moving to
 one under a different team does not, and everybody has to install by hand once.
+That has happened once: releases up to 0.7.2 were signed under team L79UA6HS32
+and releases from 0.7.3 under 687SJGXV48, so a copy older than 0.7.3 answers
+its update with "signed by someone else" and has to be replaced by hand.
 
 ## Working in Relay while working on Relay
 
