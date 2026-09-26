@@ -106,6 +106,14 @@ struct ResourceMonitorTests {
         #expect(ResourceUsage.between(earlier, two, over: Self.second, cores: 8).cpu == 200)
     }
 
+    @Test("The bar's figure is a share of the whole Mac, every core busy being 100%")
+    func shareOfMac() {
+        #expect(ResourceUsage(cpu: 1_500, footprint: 0, processes: 1).shareOfMac(cores: 15) == 100)
+        #expect(ResourceUsage(cpu: 150, footprint: 0, processes: 1).shareOfMac(cores: 15) == 10)
+        #expect(ResourceUsage(cpu: nil, footprint: 0, processes: 1).shareOfMac(cores: 15) == nil)
+        #expect(ResourceUsage(cpu: 40, footprint: 0, processes: 1).shareOfMac(cores: 0) == 40)
+    }
+
     @Test("A first reading has memory and no CPU")
     func firstReading() {
         let usage = ResourceUsage.between(nil, GroupCost(cpu: 5 * Self.second, footprint: 128, processes: 3), over: 0, cores: 8)

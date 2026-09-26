@@ -49,6 +49,10 @@ breaking change to stored data.
   more room between its fields, its comments and its lines of text; and the
   timer started from its menu rather than a button beside the summary, so the
   buttons left there line up with the key.
+- **The status bar's CPU is a share of the whole Mac**, 100% when every core
+  is busy, rather than of one core, which on a Mac with fifteen cores ran up to
+  1500% and read as something broken. The list it opens still counts each
+  session against one core, as Activity Monitor does.
 
 ### Fixed
 

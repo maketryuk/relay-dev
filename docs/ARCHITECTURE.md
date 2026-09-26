@@ -367,7 +367,11 @@ one on Apple silicon — which is converted once. A reading is stamped when it i
 taken, inside the task that takes it, rather than when it is asked for: under a
 build busy on every core the task can wait a second to start, and a difference
 divided by an interval a second too short read higher than the Mac could have
-been.
+been. The bar shows the result as a share of the whole Mac, every core busy
+being 100%, and the popover it opens shows each session against one core, as
+Activity Monitor's list does: in a strip along the window 1000% read as
+something broken, and in a list of processes one core is what makes a runaway
+stand out.
 
 Relay's own share is the window's tree and the daemon's, less the sessions
 hanging from the daemon, and with the daemon's reaped time left out: that is

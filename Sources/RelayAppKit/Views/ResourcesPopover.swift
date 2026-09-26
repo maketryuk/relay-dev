@@ -85,6 +85,9 @@ struct ResourcesPopover: View {
             Spacer(minLength: 0)
             SortHeading(title: relayLocalized("CPU"), isActive: order == .cpu) { order = .cpu }
                 .frame(width: ResourceColumns.cpu, alignment: .trailing)
+                // The bar shows the whole Mac; this list, each session
+                // against one core, which is what makes a runaway stand out.
+                .relayTooltip(relayLocalized("Of one core, as Activity Monitor counts it"))
             SortHeading(title: relayLocalized("MEMORY"), isActive: order == .memory) { order = .memory }
                 .frame(width: ResourceColumns.memory, alignment: .trailing)
             Color.clear.frame(width: ResourceColumns.action, height: 1)

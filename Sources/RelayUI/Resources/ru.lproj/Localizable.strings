@@ -152,6 +152,7 @@
 "Could not read the board" = "Не удалось загрузить доску";
 "Could not start %@" = "Не удалось запустить %@";
 "CPU" = "ЦП";
+"CPU as a share of the whole Mac (%d cores)" = "CPU — доля всего Mac (ядер: %d)";
 "Created %@" = "Создана %@";
 "Current sprint" = "Текущий спринт";
 "Custom" = "Своя команда";
@@ -362,6 +363,7 @@
 "Not connected" = "Не подключено";
 "Not found, or not visible to your account." = "Не найдено или недоступно вашему аккаунту.";
 "Numbered List" = "Нумерованный список";
+"Of one core, as Activity Monitor counts it" = "От одного ядра, как в Мониторе активности";
 "Only the cards assigned to you" = "Только карточки, назначенные на вас";
 "Open Settings" = "Открыть настройки";
 "Open the attachment" = "Открыть вложение";
