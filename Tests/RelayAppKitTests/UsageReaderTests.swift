@@ -288,7 +288,7 @@ struct UsageWindowNamingTests {
 }
 
 @Suite("Compact usage")
-struct MostUsedWindowTests {
+struct HeadlineWindowTests {
     private func usage(_ fractions: [(UsageWindow.Span, Double)]) -> AgentUsage {
         AgentUsage(
             kind: .claude,
@@ -303,18 +303,48 @@ struct MostUsedWindowTests {
         // weekly one at 90%, and a one-line summary has room for the one that
         // actually stops you.
         let agent = usage([(.rolling(minutes: 300), 0.05), (.weekly, 0.9)])
-        #expect(agent.mostUsedWindow?.span == .weekly)
+        #expect(agent.headlineWindow?.span == .weekly)
+    }
+
+    @Test("A weekly bar fuller than the five-hour one but far from its end leaves the line to the five-hour one")
+    func sessionWindowByDefault() {
+        // The week at 35% and the afternoon at 20% is most of the week, and
+        // the line showed `wk` through all of it.
+        let agent = usage([(.rolling(minutes: 300), 0.2), (.weekly, 0.35), (.model("Fable"), 0.5)])
+        #expect(agent.headlineWindow?.span == .rolling(minutes: 300))
+    }
+
+    @Test("A nearly spent window the five-hour one is fuller than does not take its place")
+    func sessionFullerStillWins() {
+        let agent = usage([(.weekly, 0.85), (.rolling(minutes: 300), 0.95)])
+        #expect(agent.headlineWindow?.span == .rolling(minutes: 300))
+    }
+
+    @Test("A compact line counts down to its own window's reset, a detailed one to the nearest")
+    func countdownFollowsTheShownWindow() {
+        let soon = Date(timeIntervalSince1970: 1_000)
+        let later = Date(timeIntervalSince1970: 9_000)
+        let agent = AgentUsage(
+            kind: .claude,
+            windows: [
+                UsageWindow(span: .rolling(minutes: 300), fraction: 0.1, resetsAt: soon),
+                UsageWindow(span: .weekly, fraction: 0.9, resetsAt: later),
+            ],
+            fetchedAt: nil
+        )
+        #expect(agent.countdownTarget(for: .compact) == later)
+        #expect(agent.countdownTarget(for: .detailed) == soon)
     }
 
     @Test("With nothing consumed it still names a window")
     func neverEmptyWhenThereAreWindows() {
         let agent = usage([(.rolling(minutes: 300), 0), (.weekly, 0)])
-        #expect(agent.mostUsedWindow != nil)
+        #expect(agent.headlineWindow != nil)
     }
 
     @Test("An agent with no windows has nothing to show")
     func emptyAgent() {
-        #expect(usage([]).mostUsedWindow == nil)
+        #expect(usage([]).headlineWindow == nil)
     }
 
     @Test("The countdown follows the window that rolls over soonest")
@@ -331,7 +361,7 @@ struct MostUsedWindowTests {
             fetchedAt: nil
         )
         #expect(agent.nextReset == soon)
-        #expect(agent.mostUsedWindow?.span == .weekly)
+        #expect(agent.headlineWindow?.span == .weekly)
     }
 }
 

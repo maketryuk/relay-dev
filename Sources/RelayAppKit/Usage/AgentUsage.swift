@@ -12,6 +12,15 @@ struct UsageWindow: Equatable, Identifiable, Sendable {
         case weekly
         /// Capped for one model, which names itself.
         case model(String)
+
+        /// How long the window is, for telling the one a working day runs
+        /// into from the ones behind it. A model's cap is a weekly one.
+        var minutes: Int {
+            switch self {
+            case let .rolling(minutes): minutes
+            case .weekly, .model: 7 * 1_440
+            }
+        }
     }
 
     var span: Span
@@ -82,14 +91,31 @@ struct AgentUsage: Equatable, Identifiable, Sendable {
         windows.compactMap(\.resetsAt).min()
     }
 
-    /// The window nearest to stopping you, which is the one a single line should
-    /// show.
+    /// The window a single line shows: the shortest, which is the limit a
+    /// working day runs into, unless a longer one is nearly spent and fuller.
     ///
-    /// Not the shortest window: a five-hour bar at 5% matters less than a weekly
-    /// one at 90%, and the point of a one-line summary is to name the limit that
-    /// will bite first.
-    var mostUsedWindow: UsageWindow? {
-        windows.max { $0.fraction < $1.fraction }
+    /// Not simply the fullest. A week at 35% outranks an afternoon at 20% for
+    /// most of the week, while neither is about to stop anyone, and a line that
+    /// followed it would show the week all week. A longer window matters when
+    /// it is close to its end — a five-hour bar at 5% matters less than a
+    /// weekly one at 90% — and then it is the one shown.
+    var headlineWindow: UsageWindow? {
+        guard let shortest = windows.min(by: { $0.span.minutes < $1.span.minutes }) else { return nil }
+        let pressing = windows.filter { $0.fraction >= Self.nearlySpent && $0.fraction > shortest.fraction }
+        return pressing.max { $0.fraction < $1.fraction } ?? shortest
+    }
+
+    /// How full a longer window has to be to take the line from the shortest.
+    static let nearlySpent = 0.8
+
+    /// The reset a line of this detail counts down to. One window shown is
+    /// counted down on its own: beside `wk`, the five-hour window's two hours
+    /// read as the week's.
+    func countdownTarget(for detail: UsageDetail) -> Date? {
+        switch detail {
+        case .compact: headlineWindow?.resetsAt
+        case .detailed: nextReset
+        }
     }
 }
 
