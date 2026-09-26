@@ -239,7 +239,7 @@ private struct ResourceListHeightKey: PreferenceKey {
 
 /// Widths shared by the headings and the rows beneath them, so the figures
 /// line up in columns and a session's glyph sits under its project's name.
-private enum ResourceColumns {
+enum ResourceColumns {
     static let chevron: CGFloat = 10
     static let glyph: CGFloat = 18
     static let cpu: CGFloat = 46
@@ -248,7 +248,7 @@ private enum ResourceColumns {
 }
 
 /// A column heading that sorts the list by its column.
-private struct SortHeading: View {
+struct SortHeading: View {
     let title: String
     let isActive: Bool
     let action: () -> Void
@@ -257,16 +257,24 @@ private struct SortHeading: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 2) {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 7, weight: .bold))
-                    .opacity(isActive ? 1 : 0)
-                Text(title)
-                    .font(Theme.Typography.sectionHeader)
-                    .tracking(0.7)
-            }
-            .foregroundStyle(isActive || isHovering ? Theme.Palette.textSecondary : Theme.Palette.textTertiary)
-            .contentShape(Rectangle())
+            Text(title)
+                .font(Theme.Typography.sectionHeader)
+                .tracking(0.7)
+                // A word split over two lines reads as two headings; one too
+                // wide for its column runs into the gap beside it instead.
+                .lineLimit(1)
+                .fixedSize()
+                // Hung beside the title rather than laid out with it, so the
+                // column is as wide as its figures need and not that plus a
+                // mark only one column shows at a time.
+                .overlay(alignment: .leading) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 7, weight: .bold))
+                        .opacity(isActive ? 1 : 0)
+                        .alignmentGuide(.leading) { $0[.trailing] + 2 }
+                }
+                .foregroundStyle(isActive || isHovering ? Theme.Palette.textSecondary : Theme.Palette.textTertiary)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .clickable()
