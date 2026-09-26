@@ -123,7 +123,7 @@ final class UpdateController {
         work = Task { [weak self] in
             guard let self else { return }
             do {
-                let staged = try await UpdateInstaller.stage(release, session: self.session) { fraction in
+                let staged = try await UpdateInstaller.stage(release, session: self.session) { [weak self] fraction in
                     Task { @MainActor [weak self] in
                         guard let self, case .downloading = self.state else { return }
                         self.state = .downloading(release, fraction)
