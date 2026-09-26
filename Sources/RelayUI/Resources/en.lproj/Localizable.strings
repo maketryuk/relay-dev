@@ -152,6 +152,7 @@
 "Could not read the board" = "Could not read the board";
 "Could not start %@" = "Could not start %@";
 "CPU" = "CPU";
+"CPU as a share of the whole Mac (%d cores)" = "CPU as a share of the whole Mac (%d cores)";
 "Created %@" = "Created %@";
 "Current sprint" = "Current sprint";
 "Custom" = "Custom";
@@ -362,6 +363,7 @@
 "Not connected" = "Not connected";
 "Not found, or not visible to your account." = "Not found, or not visible to your account.";
 "Numbered List" = "Numbered List";
+"Of one core, as Activity Monitor counts it" = "Of one core, as Activity Monitor counts it";
 "Only the cards assigned to you" = "Only the cards assigned to you";
 "Open Settings" = "Open Settings";
 "Open the attachment" = "Open the attachment";

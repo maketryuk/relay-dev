@@ -36,6 +36,14 @@ struct ResourceUsage: Equatable, Sendable {
         return usage
     }
 
+    /// The CPU as a share of the whole Mac, every core busy being 100%: the
+    /// figure for a strip along the window, where 1000% of one core read as
+    /// something broken. A list of processes keeps the one-core figure, which
+    /// is what Activity Monitor's list shows and what it has always meant there.
+    func shareOfMac(cores: Int) -> Double? {
+        cpu.map { $0 / Double(max(cores, 1)) }
+    }
+
     /// Everything added up. The CPU is nil only when none of it is known yet,
     /// so that one session just started does not blank the total.
     static func total(_ usages: some Collection<ResourceUsage>) -> ResourceUsage {

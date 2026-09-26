@@ -126,13 +126,15 @@ private struct TimerChip: View {
 private struct ResourceChip: View {
     @Environment(AppModel.self) private var model
 
+    private var cores: Int { ProcessInfo.processInfo.activeProcessorCount }
+
     var body: some View {
         let total = model.resources.overall
         Button {
             model.isResourcesPopoverOpen.toggle()
         } label: {
             HStack(spacing: Theme.Spacing.medium) {
-                figure(systemImage: "cpu", value: ResourceFormatting.cpu(total.cpu))
+                figure(systemImage: "cpu", value: ResourceFormatting.cpu(total.shareOfMac(cores: cores)))
                 figure(systemImage: "memorychip", value: ResourceFormatting.memory(total.footprint))
             }
             .padding(.horizontal, Theme.Spacing.small)
@@ -164,16 +166,17 @@ private struct ResourceChip: View {
             ? relayLocalized("No sessions")
             : String(
                 format: relayLocalized("Sessions: %@ CPU, %@"),
-                ResourceFormatting.cpu(sessions.cpu),
+                ResourceFormatting.cpu(sessions.shareOfMac(cores: cores)),
                 ResourceFormatting.memory(sessions.footprint)
             )]
         if let relay = model.resources.relay {
             lines.append(String(
                 format: relayLocalized("Relay itself: %@ CPU, %@"),
-                ResourceFormatting.cpu(relay.cpu),
+                ResourceFormatting.cpu(relay.shareOfMac(cores: cores)),
                 ResourceFormatting.memory(relay.footprint)
             ))
         }
+        lines.append(String(format: relayLocalized("CPU as a share of the whole Mac (%d cores)"), cores))
         return lines.joined(separator: "\n")
     }
 }
