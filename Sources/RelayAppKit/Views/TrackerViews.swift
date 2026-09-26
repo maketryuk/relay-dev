@@ -150,7 +150,7 @@ struct IssueText: View {
             ForEach(Array(IssueMarkdown.segments(of: source).enumerated()), id: \.offset) { _, segment in
                 switch segment {
                 case let .text(text):
-                    MarkdownText(IssueMarkdown.linkingAttachments(in: text) { target in
+                    RichMarkdownText(source: IssueMarkdown.linkingAttachments(in: text) { target in
                         issue.attachment(named: target).flatMap { tracker.resolve($0.url)?.absoluteString }
                     })
                 case let .image(reference, width):

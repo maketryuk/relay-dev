@@ -1317,6 +1317,38 @@ Telegram, and a terminal gets the words. The summary is escaped in the HTML,
 since an issue called `<b>` is an issue and not markup. Without a tracker to
 make the link, only the text goes.
 
+**A description is edited as formatted text and saved as Markdown.** The
+tracker keeps Markdown, and so does everybody else's editor, so `RichMarkdown`
+draws it with cmark-gfm — the parser the Markdown preview uses — into text
+whose meaning is kept in attributes of its own (strong, a heading, code) and
+whose fonts are only ever drawn from those, so a heading's bold face is never
+saved as bold text. Every block is drawn with the source it came from, and a
+block that reads the same when it is saved goes back as that source, byte for
+byte; a description opened and closed unchanged is not written at all, and
+editing one paragraph leaves another's `__bold__` and a setext heading as they
+were. What the editor does not draw — a table, HTML, a task list, a picture
+YouTrack names by its attachment, spaces and all — is shown as the Markdown it
+is and written back as that text, so the worst a block gets is shown as
+written. A block that is written anew is written in the editor's own spelling,
+with only what Markdown would read as a mark escaped: `2*3*4` and `# not a
+heading` come back as typed, and an underscore inside a word stays bare. The
+text view is TextKit 1, because its lists are AppKit's: Return makes the next
+item, Tab nests it, Return on an empty one ends the list, all with the marker
+kept in the text between two tabs, and TextKit 2 does none of it. A quote's bar
+and a code block's box are drawn by the text view under the text, over the
+lines of the whole block, since a colour behind each character stops where the
+characters do; the box stands out into the spacing the block's first and last
+lines keep from their neighbours, which is set again after every edit, because
+a line typed at the end of a block takes the look of the one before it. A
+description and a comment are read through the same drawing, in a text view
+that is not editable, so a text reads the same before it is opened for editing
+and after; its height is laid out at the width SwiftUI offers, which it asks
+for before the view has a frame to take one from. Paste is as plain text,
+because what a web page puts on the clipboard is fonts and colours, which are
+not Markdown. The toolbar's shortcuts are the text view's own key equivalents,
+which AppKit offers the focused view before the menu, so ⌘B is bold while a
+description has the caret and the sidebar everywhere else.
+
 **The timer pauses rather than stops.** Time on it is owed to the issue until it
 is logged or thrown away, so stopping it asks where the time goes, closing that
 question leaves it paused, and starting a timer on another issue puts the
