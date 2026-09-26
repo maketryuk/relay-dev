@@ -55,6 +55,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     case switchBranch
     case newWorktree
     case cleanUpWorktrees
+    case openBoard
 
     case goToDefinition
     case goBack
@@ -104,6 +105,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .switchBranch: "Switch Branch"
         case .newWorktree: "New Worktree"
         case .cleanUpWorktrees: "Clean Up Worktrees"
+        case .openBoard: "Issue Board"
         case .nextProject: "Next Project"
         case .previousProject: "Previous Project"
         case .addProject: "Add Project"
@@ -132,7 +134,7 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .startDefaultService, .restartDefaultService: .services
         case .nextProject, .previousProject, .addProject, .revealProject,
              .projectSettings, .reviewChanges, .switchBranch, .newWorktree,
-             .cleanUpWorktrees: .projects
+             .cleanUpWorktrees, .openBoard: .projects
         case .goToDefinition, .goBack, .findInFile, .searchProject, .toggleMarkdownPreview: .editor
         case .newBrowserTab, .toggleDesignMode, .reloadBrowser, .openBrowserDevTools: .browser
         }
@@ -189,6 +191,9 @@ enum RelayCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .newWorktree: nil
         // And finished as often.
         case .cleanUpWorktrees: nil
+        // I for issues. The board is looked at many times a day, which is what
+        // earns a key; `⌥⌘I` beside it is the browser's inspector.
+        case .openBoard: KeyBinding("i", [.command, .shift])
         case .nextProject: KeyBinding("down", [.command, .option])
         case .previousProject: KeyBinding("up", [.command, .option])
         case .addProject: KeyBinding("n", [.command, .shift])

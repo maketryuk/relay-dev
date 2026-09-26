@@ -151,6 +151,8 @@ struct WorkspaceState: Codable {
     /// The status and comment given to each worktree, by project and then by
     /// the worktree's path as git spells it.
     var worktreeNotes: [String: [String: WorktreeNote]]
+    /// The issue tracker: which one, where, and the board each project shows.
+    var tracker: TrackerSettings
 
     init(
         version: Int = 1,
@@ -182,7 +184,8 @@ struct WorkspaceState: Codable {
         reviewComments: [ReviewComment] = [],
         paneLayouts: [String: PaneNode] = [:],
         browserTabs: [BrowserTab] = [],
-        worktreeNotes: [String: [String: WorktreeNote]] = [:]
+        worktreeNotes: [String: [String: WorktreeNote]] = [:],
+        tracker: TrackerSettings = TrackerSettings()
     ) {
         self.version = version
         self.projects = projects
@@ -214,6 +217,7 @@ struct WorkspaceState: Codable {
         self.paneLayouts = paneLayouts
         self.browserTabs = browserTabs
         self.worktreeNotes = worktreeNotes
+        self.tracker = tracker
     }
 
     init(from decoder: Decoder) throws {
@@ -259,6 +263,9 @@ struct WorkspaceState: Codable {
         worktreeNotes = try (container
             .decodeIfPresent([String: [String: ReadableNote]].self, forKey: .worktreeNotes) ?? [:])
             .mapValues { $0.compactMapValues(\.note) }
+        // Settings this build cannot read cost the connection, not the file:
+        // it is asked for again in Settings.
+        tracker = (try? container.decodeIfPresent(TrackerSettings.self, forKey: .tracker)) ?? TrackerSettings()
     }
 }
 

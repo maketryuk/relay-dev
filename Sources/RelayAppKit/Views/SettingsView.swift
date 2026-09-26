@@ -11,6 +11,7 @@ struct SettingsView: View {
         case general
         case shortcuts
         case notifications
+        case issues
         case about
 
         var id: String { rawValue }
@@ -20,6 +21,7 @@ struct SettingsView: View {
             case .general: "General"
             case .shortcuts: "Shortcuts"
             case .notifications: "Notifications"
+            case .issues: "Issues"
             case .about: "About"
             }
         }
@@ -29,6 +31,7 @@ struct SettingsView: View {
             case .general: "gearshape"
             case .shortcuts: "keyboard"
             case .notifications: "bell"
+            case .issues: "rectangle.split.3x1"
             case .about: "info.circle"
             }
         }
@@ -51,6 +54,9 @@ struct SettingsView: View {
             )
         }
         .tooltipRoot(tooltips)
+        .onAppear {
+            if let requested = model.takeRequestedSettingsTab() { selection = requested }
+        }
     }
 
     private func moveSection(by offset: Int) {
@@ -86,6 +92,7 @@ struct SettingsView: View {
         case .general: GeneralSettingsPane()
         case .shortcuts: ShortcutSettingsPane()
         case .notifications: NotificationSettingsPane()
+        case .issues: TrackerSettingsPane()
         case .about: AboutPane()
         }
     }

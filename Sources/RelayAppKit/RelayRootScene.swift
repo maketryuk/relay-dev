@@ -264,6 +264,9 @@ struct RelayCommands: Commands {
             Button(RelayCommand.projectSettings.localizedTitle) { model.openProjectSettings() }
                 .relayShortcut(model.binding(for: .projectSettings))
 
+            Button(RelayCommand.openBoard.localizedTitle) { model.openBoard() }
+                .relayShortcut(model.binding(for: .openBoard))
+
             if model.shortcutSettings.indexShortcutsEnabled {
                 ForEach(1 ... 9, id: \.self) { number in
                     Button { model.selectProject(atIndex: number - 1) } label: { Text(verbatim: "Project \(number)") }

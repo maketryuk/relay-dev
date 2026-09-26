@@ -324,6 +324,15 @@ struct CommandPaletteView: View {
                 subtitle: relayLocalized("Point at an element and hand it to an agent"),
                 systemImage: "cursorarrow.rays"
             ) { model.toggleDesignMode() })
+            if model.tracker.isEnabled {
+                commands.append(PaletteCommand(
+                    id: "issue-board",
+                    titleKey: "Issue Board",
+                    subtitle: model.tracker.boardID(for: project.id).flatMap(model.tracker.board)?.name
+                        ?? relayLocalized("Cards, columns and time from the tracker"),
+                    systemImage: "rectangle.split.3x1"
+                ) { model.openBoard() })
+            }
             commands.append(PaletteCommand(
                 id: "ports-window",
                 titleKey: "Ports",
@@ -442,6 +451,14 @@ struct CommandPaletteView: View {
     }
 }
 
+/// A view that has a use of its own for Escape at the moment — a list of names
+/// open under the caret — and should have the key before the panel around it
+/// takes it as "close".
+@MainActor
+protocol EscapeConsuming: AnyObject {
+    var consumesEscape: Bool { get }
+}
+
 /// Minimal AppKit bridge for arrow/escape handling, which SwiftUI does not
 /// expose while a `TextField` holds focus.
 struct KeyCaptureView: NSViewRepresentable {
@@ -502,7 +519,11 @@ struct KeyCaptureView: NSViewRepresentable {
                 case 123: handler = self.onMoveLeft
                 // Return and the keypad's enter, which are different keys.
                 case 36, 76: handler = self.onReturn
-                case 53: handler = self.onEscape
+                case 53:
+                    if let responder = event.window?.firstResponder as? EscapeConsuming, responder.consumesEscape {
+                        return event
+                    }
+                    handler = self.onEscape
                 default: handler = nil
                 }
                 guard let handler else { return event }

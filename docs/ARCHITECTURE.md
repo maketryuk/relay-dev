@@ -1170,3 +1170,123 @@ and Codex open an image named by its path.
 The transcript is typed into the prompt the way review notes are, as one paste
 and not submitted, and the overlay comes back for the next click: the loop is
 point, hand over, watch it change, point again.
+
+# Issue trackers are a protocol, and YouTrack is the first
+
+The board, the issue and the timer are the app's; what a tracker is lives in
+`RelayTracker`, a target that links Foundation and nothing else. It holds
+`IssueTracker` — boards, a board's columns and cards, an issue with its
+fields, comments and time — and one conformance to it, `YouTrackTracker`. The
+models are shaped by what a board is everywhere rather than by YouTrack's API:
+columns are the values of one field, a card sits in the column its value names,
+and moving a card is setting that field. GitHub's projects and GitLab's boards
+are the same shape with other words, so a second tracker is a second
+conformance and the views do not change. A plugin system was considered and
+not built: the value of the feature is in what it reaches inside the app — the
+prompt of a running agent, the New Worktree panel, the status bar — and an API
+drawn around one tracker would have frozen exactly those, while they still
+move every week.
+
+**Off means absent.** With no tracker chosen there is no board in the rail, no
+entry in the palette and no request anywhere. With one chosen, nothing is asked
+at launch: the account's name is remembered from the last time the token was
+checked, and the first request that fails with a refused token is what says
+otherwise. A board is read when its panel opens and every 45 seconds while it
+stays open; an issue when it is opened.
+
+**The token is in the keychain,** under the build's own identifier, so the
+development build signs in on its own. The workspace file keeps the address,
+the name, the board each project shows and the timer. The address is refused
+unless it is https — plain http only to this machine — and a redirect is
+answered with the redirect rather than followed, because following it would
+carry the token wherever the server pointed; a redirected API is almost always
+an address typed wrong, which is better said.
+
+**Reading YouTrack.** Every request names its fields, since YouTrack answers
+with those alone, and every list asks for more than YouTrack's default of
+forty-two. A board is its settings (`agiles/{id}`, which are read again with
+the cards so a column added since does not strand them) and the issues of the
+sprint it shows (`agiles/{id}/sprints/{sprint}?fields=issues(…)`); a board
+without sprints still has one, hidden, which is the one read. A custom field's
+value is whatever its kind makes it — an object, a list, a number — and is
+decoded by shape, and its `$type` is kept, because a write has to repeat it.
+Values are shown by their translated name and written by their own. A state a
+state machine governs (`StateMachineIssueCustomField`) takes no value at all,
+only a transition, and which transition leads to which state is the
+workflow's to know; such a field is moved with a command — `State {In
+Progress}` through `/api/commands`, as the command box in YouTrack would —
+and the card read again.
+
+**Taking something off is what the tracker's own delete does.** A comment is
+marked `deleted`, as YouTrack's interface does it, and stays restorable there;
+a `DELETE` of it would remove it from the database outright. An entry of time
+has no such state, so it is deleted, after a question that says how much and
+from which day. Both are offered on your own comments and time only, since
+changing somebody else's is a permission trackers keep for administrators.
+
+**Writes are sent once.** A read that fails in a way that could pass is asked
+twice more; a write never is. A write that went out and heard nothing back is
+reported as in doubt — "reload before trying again" — since doing it twice is
+worse than asking. One that never found the server is simply unreachable.
+Making an issue is a write and up to two more: onto a board filled by hand,
+then into its column. Once the first has succeeded the issue exists, so what
+fails after it is said without calling it a failure to create — Create
+pressed again would make a second one.
+
+**A move lands at once.** A card dropped in a column is drawn there before the
+tracker answers, and put back where it was if the tracker refuses — a workflow
+that will not close an issue without a fix version says so in a toast, and the
+card goes back. A board read that set off before a card was changed here —
+moved, edited, just made — keeps the card as it is on screen however late the
+read lands, because the move's one request routinely answers before the
+read's two. The key is what is dragged, so a card dropped into a terminal
+types it.
+
+**Pictures come from the tracker with the token.** An avatar and an attachment
+are links YouTrack writes from its own root — `/hub/api/rest/avatar/…`,
+`/api/files/…?sign=…` — so they are resolved against the host, and fetched with
+the token only when they are on it; one hosted anywhere else is fetched as
+anybody would fetch it. What arrives is kept by address, a board's avatars and
+the day's screenshots, and one that does not decode as a picture is not asked
+for again. A description refers to its screenshots by the attachment's own
+name, spaces and all — `![](Screenshot 2026-09-23 at 13.13.59.png){width=70%}`
+— which no Markdown reader takes for a link, so the text is taken apart into
+what a line of text can draw and the pictures it cannot, and each picture is
+drawn from the attachment it names. A file is opened from a copy on disk,
+since the address for it wants the token a browser does not have. A card is
+coloured down its edge by the field the board is set up to colour by —
+`colorCoding.prototype`, usually the priority — which also puts that field's
+chip first.
+
+**A mention needs the caret.** SwiftUI's text editor says what the text is but
+not where in it the person is typing, and a name is typed in the middle of a
+sentence as often as at its end, so the reply field is AppKit's text view. The
+`@` counts at the start of a word only — an address is not a mention — and
+offers the people the issue knows of. While the list is open, the arrows,
+Return and Tab act on it, and Escape closes it rather than the panel: the
+panel's key monitor lets Escape through to a first responder that says it has
+a use for it, since otherwise the half-written reply would go with the panel.
+
+**An issue is handed over as a brief.** Its key, summary, link, fields,
+description and the newest twenty comments, in English labels around its own
+words, typed into the agent's prompt and not sent — the review's rule, since it
+is something to read over and add a sentence to. From a card it is read in full
+first, because a card has no description and the description is the brief.
+Starting work on it opens New Worktree filled in: a branch named after the key
+and the summary, and the brief as the first prompt. It can go to any project,
+not only the one whose board it is on: a board often holds several codebases'
+issues — a site's and an app's — so the project an issue is handed to is
+remembered for its tracker project, offered first the next time, and the
+window turns to it, since an agent started in a project nobody is looking at
+is an agent nobody sees start.
+
+**The timer pauses rather than stops.** Time on it is owed to the issue until it
+is logged or thrown away, so stopping it asks where the time goes, closing that
+question leaves it paused, and starting a timer on another issue puts the
+unlogged time to the person first. It is kept in the workspace file, because the
+work it times does not stop when the app does, and shown in the status bar —
+which stays up while it runs even when the bar is switched off — since a timer
+that can only be seen from its issue is one that runs all night. The length
+logged is typed the way it is said (`1h 30m`, `90`, `1:30`, `1ч 30м`) and read
+back beneath the field; days are refused rather than guessed at, because a
+tracker's day is however many hours its administrator set.

@@ -2,6 +2,7 @@ import AppKit
 import Foundation
 import Observation
 import RelayProtocol
+import RelayTracker
 import RelayUI
 
 @MainActor
@@ -252,6 +253,17 @@ final class AppModel {
     let usage = UsageMonitor()
     /// What each session, and Relay itself, costs the Mac in CPU and memory.
     let resources = ResourceMonitor()
+    /// The issue tracker, when one is connected: its boards, what has been
+    /// read of them, and the timer.
+    let tracker = TrackerController()
+    /// What the New Worktree panel is to be filled in with when it opens, for
+    /// a piece of work that already has a name and a brief — an issue.
+    var worktreeDraft: WorktreeDraft?
+    /// The section Settings opens on, for a route into it that means one.
+    var requestedSettingsTab: SettingsView.Tab?
+    /// A timer asked for while another issue's time was still unlogged. It is
+    /// started once that time has been logged or let go.
+    var pendingTimerStart: PendingTimerStart?
     /// How full each visible agent session's context window is.
     /// Past conversations for the selected project, from the agents' own
     /// transcripts rather than from what Relay happens to have run.
@@ -278,6 +290,10 @@ final class AppModel {
         // three. Re-reading the one file that changed costs a parse; walking
         // the project again costs a second.
         editors.onSave = { [weak self] file in self?.reindex(file) }
+        tracker.onChange = { [weak self] in self?.persist() }
+        tracker.onFailure = { [weak self] title, error in
+            self?.present(ToastContent(kind: .error, title: title, message: TrackerText.describe(error)))
+        }
     }
 
     func bootstrap() async {
@@ -304,6 +320,7 @@ final class AppModel {
         terminalUsesGPURendering = state.terminalUsesGPURendering
         reviewComments = state.reviewComments
         worktreeNotes = WorktreeNotes(persisted: state.worktreeNotes)
+        tracker.restore(state.tracker)
         paneLayouts = Dictionary(uniqueKeysWithValues: state.paneLayouts.map {
             (ProjectID(rawValue: $0.key), $0.value)
         })
@@ -3197,7 +3214,7 @@ final class AppModel {
     }
 
     /// Types into a session that is already running, once it is listening.
-    private func deliver(_ pending: PendingInput, to sessionID: SessionID) {
+    func deliver(_ pending: PendingInput, to sessionID: SessionID) {
         // Selected first, so the terminal exists to be asked how it wants its
         // text before anything is typed into it.
         selectSession(sessionID)
@@ -3839,6 +3856,21 @@ final class AppModel {
     func dismissModal() {
         guard !modalStack.isEmpty else { return }
         modalStack.removeLast()
+    }
+
+    /// Closes a panel that finished its work, if it is still the one in front.
+    /// The work may have taken a while, and in that while the person may have
+    /// closed it themselves — in which case the panel now in front is one they
+    /// are looking at, and closing it would be closing the wrong thing.
+    func dismissModal(_ modal: RelayModal) {
+        guard modalStack.last == modal else { return }
+        modalStack.removeLast()
+    }
+
+    /// Closes every panel, for an action whose result is in the window
+    /// behind them: an issue handed to an agent is read in its terminal.
+    func dismissAllModals() {
+        modalStack.removeAll()
     }
 
     /// The settings of whichever project is in front, which is the only one the
@@ -4559,7 +4591,8 @@ final class AppModel {
             reviewComments: reviewComments,
             paneLayouts: Dictionary(uniqueKeysWithValues: paneLayouts.map { ($0.key.rawValue, $0.value) }),
             browserTabs: browserOrder.compactMap { browserPages[$0]?.record },
-            worktreeNotes: worktreeNotes.persisted
+            worktreeNotes: worktreeNotes.persisted,
+            tracker: tracker.settings
         )
     }
 

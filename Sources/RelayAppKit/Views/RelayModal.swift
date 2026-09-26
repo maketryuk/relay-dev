@@ -40,6 +40,16 @@ enum RelayModal: Identifiable, Hashable {
     case sshHostEditor(alias: String?)
     /// Asks once for the passphrase of the key at this path.
     case sshKeyUnlock(keyPath: String)
+    /// The tracker's board for the project: its columns and its cards.
+    case board(ProjectID)
+    /// One issue, opened from the board: to read, edit, comment on and time.
+    case issue(projectID: ProjectID, key: String)
+    /// A new card, in a column when one was named.
+    case newIssue(projectID: ProjectID, boardID: String, columnID: String?)
+    /// Time to record against an issue — measured by the timer, or typed.
+    case logWork(key: String, fromTimer: Bool)
+    /// Time already recorded, to correct or take off.
+    case editWork(key: String, itemID: String)
 
     /// Identified by what it is, not by what it holds: the panel looks the
     /// current object up from the model every time it draws, so it cannot end
@@ -63,6 +73,11 @@ enum RelayModal: Identifiable, Hashable {
         case let .presetEditor(presetID): "preset:\(presetID ?? "new")"
         case let .sshHostEditor(alias): "ssh-host:\(alias ?? "new")"
         case let .sshKeyUnlock(keyPath): "ssh-key:\(keyPath)"
+        case let .board(projectID): "board:\(projectID.rawValue)"
+        case let .issue(projectID, key): "issue:\(projectID.rawValue):\(key)"
+        case let .newIssue(projectID, boardID, columnID): "new-issue:\(projectID.rawValue):\(boardID):\(columnID ?? "")"
+        case let .logWork(key, _): "log-work:\(key)"
+        case let .editWork(key, itemID): "edit-work:\(key):\(itemID)"
         }
     }
 
@@ -90,6 +105,11 @@ enum RelayModal: Identifiable, Hashable {
         case let .sshHostEditor(alias):
             relayLocalized(alias == nil ? "New Host" : "Edit Host")
         case .sshKeyUnlock: relayLocalized("Unlock Key")
+        case .board: relayLocalized("Issue Board")
+        case let .issue(_, key): key
+        case .newIssue: relayLocalized("New Issue")
+        case .logWork: relayLocalized("Log Time")
+        case .editWork: relayLocalized("Edit Time")
         }
     }
 
@@ -115,6 +135,11 @@ enum RelayModal: Identifiable, Hashable {
         case .presetEditor: CGSize(width: 540, height: 580)
         case .sshHostEditor: CGSize(width: 540, height: 620)
         case .sshKeyUnlock: CGSize(width: 440, height: 340)
+        // A board is columns side by side, and it wants all the width there is.
+        case .board: CGSize(width: 1_600, height: 1_000)
+        case .issue: CGSize(width: 1_040, height: 780)
+        case .newIssue: CGSize(width: 560, height: 580)
+        case .logWork, .editWork: CGSize(width: 480, height: 500)
         }
     }
 }
@@ -224,6 +249,24 @@ struct ModalHost: View {
             })
         case let .sshKeyUnlock(keyPath):
             SSHKeyUnlockView(keyPath: keyPath)
+        case let .board(projectID):
+            if let project = model.project(projectID) {
+                BoardPane(project: project)
+            }
+        case let .issue(projectID, key):
+            if let project = model.project(projectID) {
+                IssuePane(project: project, key: key)
+            }
+        case let .newIssue(projectID, boardID, columnID):
+            if let project = model.project(projectID) {
+                NewIssueView(project: project, boardID: boardID, columnID: columnID)
+            }
+        case let .logWork(key, fromTimer):
+            LogWorkView(key: key, fromTimer: fromTimer)
+        case let .editWork(key, itemID):
+            if let item = model.tracker.workItems[key]?.first(where: { $0.id == itemID }) {
+                LogWorkView(key: key, fromTimer: false, editing: item)
+            }
         }
     }
 
@@ -233,7 +276,8 @@ struct ModalHost: View {
         switch modal {
         case .ports, .sshHosts, .settings, .branches, .definitions, .search: false
         case .addProject, .projectSettings, .serviceEditor, .presetEditor, .sshHostEditor, .sshKeyUnlock,
-             .gitTransfer, .conflicts, .merge, .newWorktree, .worktreeCleanup:
+             .gitTransfer, .conflicts, .merge, .newWorktree, .worktreeCleanup,
+             .board, .issue, .newIssue, .logWork, .editWork:
             true
         }
     }

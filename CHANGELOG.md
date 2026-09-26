@@ -5,6 +5,28 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Added
+
+- **YouTrack boards in Relay**, switched on and connected in Settings → Issues
+  with the tracker's address and a permanent token, which is kept in the
+  keychain. Each project shows the board chosen for it, from the rail or ⇧⌘I:
+  its columns and cards, coloured the way the board colours them, a sprint to
+  look at, a filter and only your own. Cards are dragged between columns, and
+  one the tracker refuses to move goes back where it was. An issue opens with
+  its description and screenshots, its files, comments and fields, all of
+  which can be changed from there, your own comments and time included; `@` in a reply offers the people on the
+  issue, and new cards are made in the column they belong to. An issue is
+  handed to an agent as its brief — typed into a running agent's prompt or a
+  new one's, or as the first prompt of a new worktree named after it — in
+  whichever project it belongs to, the one its tracker project's issues went
+  to last time offered first. A timer per issue runs in the status bar and
+  survives a relaunch, and stopping it logs the time, with the kind of work
+  when the project has them; time can also be logged by hand as `1h 30m`,
+  `90` or `1ч 30м`, and an issue lists its time by day, with what everyone and
+  what you logged. With no tracker chosen, none of it is there.
+
 ## 0.7.3 — 2026-09-26
 
 ### Added

@@ -30,7 +30,9 @@ struct RootView: View {
                 }
             }
 
-            if model.showsStatusBar {
+            // A running timer keeps the bar even when it is switched off: the
+            // clock is the one thing on it that costs money to forget.
+            if model.showsStatusBar || model.tracker.timer != nil {
                 StatusBar()
             }
         }
