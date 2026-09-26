@@ -42,6 +42,9 @@ enum RelayModal: Identifiable, Hashable {
     case sshKeyUnlock(keyPath: String)
     /// The tracker's board for the project: its columns and its cards.
     case board(ProjectID)
+    /// How a board's columns are laid out here: their order, which are merged
+    /// and which are hidden.
+    case boardColumns(boardID: String)
     /// One issue, opened from the board: to read, edit, comment on and time.
     case issue(projectID: ProjectID, key: String)
     /// A new card, in a column when one was named.
@@ -74,6 +77,7 @@ enum RelayModal: Identifiable, Hashable {
         case let .sshHostEditor(alias): "ssh-host:\(alias ?? "new")"
         case let .sshKeyUnlock(keyPath): "ssh-key:\(keyPath)"
         case let .board(projectID): "board:\(projectID.rawValue)"
+        case let .boardColumns(boardID): "board-columns:\(boardID)"
         case let .issue(projectID, key): "issue:\(projectID.rawValue):\(key)"
         case let .newIssue(projectID, boardID, columnID): "new-issue:\(projectID.rawValue):\(boardID):\(columnID ?? "")"
         case let .logWork(key, _): "log-work:\(key)"
@@ -106,6 +110,7 @@ enum RelayModal: Identifiable, Hashable {
             relayLocalized(alias == nil ? "New Host" : "Edit Host")
         case .sshKeyUnlock: relayLocalized("Unlock Key")
         case .board: relayLocalized("Issue Board")
+        case .boardColumns: relayLocalized("Board Columns")
         case let .issue(_, key): key
         case .newIssue: relayLocalized("New Issue")
         case .logWork: relayLocalized("Log Time")
@@ -137,6 +142,7 @@ enum RelayModal: Identifiable, Hashable {
         case .sshKeyUnlock: CGSize(width: 440, height: 340)
         // A board is columns side by side, and it wants all the width there is.
         case .board: CGSize(width: 1_600, height: 1_000)
+        case .boardColumns: CGSize(width: 680, height: 640)
         case .issue: CGSize(width: 1_040, height: 780)
         case .newIssue: CGSize(width: 560, height: 580)
         case .logWork, .editWork: CGSize(width: 480, height: 500)
@@ -253,6 +259,8 @@ struct ModalHost: View {
             if let project = model.project(projectID) {
                 BoardPane(project: project)
             }
+        case let .boardColumns(boardID):
+            BoardColumnsView(boardID: boardID)
         case let .issue(projectID, key):
             if let project = model.project(projectID) {
                 IssuePane(project: project, key: key)
@@ -277,7 +285,7 @@ struct ModalHost: View {
         case .ports, .sshHosts, .settings, .branches, .definitions, .search: false
         case .addProject, .projectSettings, .serviceEditor, .presetEditor, .sshHostEditor, .sshKeyUnlock,
              .gitTransfer, .conflicts, .merge, .newWorktree, .worktreeCleanup,
-             .board, .issue, .newIssue, .logWork, .editWork:
+             .board, .boardColumns, .issue, .newIssue, .logWork, .editWork:
             true
         }
     }

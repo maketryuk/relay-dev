@@ -125,8 +125,10 @@ struct IssueCardView: View {
         .contextMenu {
             IssueMenuItems(project: project, key: card.key, summary: card.summary, trackerProject: card.project)
             Divider()
+            // Every column the board has, hidden and merged ones each on
+            // their own: this is how a card goes where the board does not show.
             Menu(relayLocalized("Move To")) {
-                ForEach(snapshot.columns) { column in
+                ForEach(tracker.layout(of: boardID).arranged(snapshot.columns)) { column in
                     Button(column.title) { tracker.move(card, to: column, on: boardID) }
                         .disabled(snapshot.column(of: card)?.id == column.id)
                 }

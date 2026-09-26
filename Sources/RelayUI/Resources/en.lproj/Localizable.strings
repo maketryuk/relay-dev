@@ -42,6 +42,7 @@
 "Accept ours" = "Accept ours";
 "Accept right" = "Accept right";
 "Accept theirs" = "Accept theirs";
+"Add Column" = "Add Column";
 "Add Comment…" = "Add Comment…";
 "Add Project" = "Add Project";
 "Add Project…" = "Add Project…";
@@ -80,11 +81,13 @@
 "As %@ (%@), at %@" = "As %@ (%@), at %@";
 "Asks GitHub for the newest release; nothing about you is sent" = "Asks GitHub for the newest release; nothing about you is sent";
 "At least one marker is needed" = "At least one marker is needed";
+"At most %d" = "At most %d";
 "Attachments: %d" = "Attachments: %d";
 "Automatic" = "Automatic";
 "Back" = "Back";
 "Being rebased: %@" = "Being rebased: %@";
 "Binary file" = "Binary file";
+"Board Columns" = "Board Columns";
 "Boards, cards and time tracking in Relay, and issues handed to agents" = "Boards, cards and time tracking in Relay, and issues handed to agents";
 "Branch" = "Branch";
 "Blank page" = "Blank page";
@@ -99,6 +102,8 @@
 "Browser" = "Browser";
 "Bypass the pre-merge and commit message hooks" = "Bypass the pre-merge and commit message hooks";
 "Bypass the pre-push hook" = "Bypass the pre-push hook";
+"Cards dropped on this column go to %@" = "Cards dropped on this column go to %@";
+"Cards in the column" = "Cards in the column";
 "Cards, columns and time from the tracker" = "Cards, columns and time from the tracker";
 "Checking whether its branch is merged…" = "Checking whether its branch is merged…";
 "Checking…" = "Checking…";
@@ -112,7 +117,10 @@
 "Close Exited (%d)" = "Close Exited (%d)";
 "Close finished sessions?" = "Close finished sessions?";
 "Column" = "Column";
+"Columns" = "Columns";
 "Columns are set up on the board in the tracker." = "Columns are set up on the board in the tracker.";
+"Columns as in the Tracker" = "Columns as in the Tracker";
+"Columns, %d hidden" = "Columns, %d hidden";
 "Comment" = "Comment";
 "Comments" = "Comments";
 "Comments: %d" = "Comments: %d";
@@ -267,6 +275,7 @@
 "Download and restart into the new version" = "Download and restart into the new version";
 "Downloading…" = "Downloading…";
 "Drag a folder here" = "Drag a folder here";
+"Drag to change the order" = "Drag to change the order";
 "Draw on the GPU" = "Draw on the GPU";
 "Drawing on the GPU" = "Drawing on the GPU";
 "Drop an image here, or choose one" = "Drop an image here, or choose one";
@@ -286,6 +295,8 @@
 "Elsewhere on this Mac" = "Elsewhere on this Mac";
 "Enabled" = "Enabled";
 "Error" = "Error";
+"Every column is hidden" = "Every column is hidden";
+"Every column of the board is shown." = "Every column of the board is shown.";
 "Every conflict has to be answered first" = "Every conflict has to be answered first";
 "Everyone" = "Everyone";
 "Everything has been resolved and staged." = "Everything has been resolved and staged.";
@@ -304,7 +315,10 @@
 "Find" = "Find";
 "Find in Files" = "Find in Files";
 "Finished" = "Finished";
+"Give it a column of its own" = "Give it a column of its own";
 "Give it the address and a token, and Relay checks them before keeping either" = "Give it the address and a token, and Relay checks them before keeping either";
+"Hidden columns are hidden here only; the board in the tracker still has them." = "Hidden columns are hidden here only; the board in the tracker still has them.";
+"Hide Column" = "Hide Column";
 "Hours and minutes: 1h 30m, 90m, 1:30" = "Hours and minutes: 1h 30m, 90m, 1:30";
 "How long" = "How long";
 "Issue Board" = "Issue Board";
@@ -314,12 +328,14 @@
 "It is marked deleted, and can be restored in the tracker." = "It is marked deleted, and can be restored in the tracker.";
 "Kept in the keychain — type a new one to replace it" = "Kept in the keychain — type a new one to replace it";
 "Kind of work" = "Kind of work";
+"Laid out for you alone: the board in the tracker, and how everyone else sees it, stay as they are." = "Laid out for you alone: the board in the tracker, and how everyone else sees it, stay as they are.";
 "Log" = "Log";
 "Log Time" = "Log Time";
 "Log Time…" = "Log Time…";
 "Logging…" = "Logging…";
 "Markdown" = "Markdown";
 "Markdown. Optional." = "Markdown. Optional.";
+"Merge With" = "Merge With";
 "Mine" = "Mine";
 "Move To" = "Move To";
 "Needs a new token" = "Needs a new token";
@@ -345,8 +361,12 @@
 "Saving…" = "Saving…";
 "Send to Agent" = "Send to Agent";
 "Sending…" = "Sending…";
+"Set on the board in the tracker" = "Set on the board in the tracker";
+"Set Up Columns…" = "Set Up Columns…";
+"Show All Columns" = "Show All Columns";
 "Sign Out" = "Sign Out";
 "Someone" = "Someone";
+"Split Column" = "Split Column";
 "Start Timer" = "Start Timer";
 "Start Work in a New Worktree…" = "Start Work in a New Worktree…";
 "Stop Timer…" = "Stop Timer…";
@@ -355,6 +375,7 @@
 "The address sends requests on somewhere else. Use the address the tracker is at." = "The address sends requests on somewhere else. Use the address the tracker is at.";
 "The address sends requests on to %@. Use that address instead." = "The address sends requests on to %@. Use that address instead.";
 "The board has no columns" = "The board has no columns";
+"The board's columns are the values of %@" = "The board's columns are the values of %@";
 "The tracker asked for fewer requests. Try again in a moment." = "The tracker asked for fewer requests. Try again in a moment.";
 "The tracker did not answer. Check the address and the connection." = "The tracker did not answer. Check the address and the connection.";
 "The tracker failed (%d). Try again." = "The tracker failed (%d). Try again.";

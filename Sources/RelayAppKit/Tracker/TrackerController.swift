@@ -145,6 +145,7 @@ final class TrackerController {
                 if !settings.address.isEmpty { TrackerKeychain.remove(for: settings.address) }
                 settings.boards = [:]
                 settings.destinations = [:]
+                settings.layouts = [:]
                 chosenSprints = [:]
                 forget(boards: true)
             }
@@ -254,6 +255,21 @@ final class TrackerController {
         settings.boards[projectID.rawValue] = id
         onChange?()
         refreshBoard(id)
+    }
+
+    func layout(of boardID: String) -> BoardLayout {
+        settings.layouts[boardID] ?? BoardLayout()
+    }
+
+    /// Changes how a board is laid out here. Nothing is asked of the tracker:
+    /// the columns and the cards on screen already say everything a layout
+    /// needs.
+    func changeLayout(of boardID: String, _ change: (inout BoardLayout) -> Void) {
+        var layout = layout(of: boardID)
+        change(&layout)
+        guard layout != self.layout(of: boardID) else { return }
+        settings.layouts[boardID] = layout.isEmpty ? nil : layout
+        onChange?()
     }
 
     func chooseSprint(_ sprintID: String?, on boardID: String) {

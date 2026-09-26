@@ -145,7 +145,8 @@ workspace is a git worktree.
   the token goes in the keychain. Off by default, and absent while off.
 - **The board of each project**, chosen once and remembered: its columns, its
   cards, a sprint to look at when it has sprints, a filter and "only mine".
-  Cards are dragged between columns, or moved from their menu.
+  Cards are dragged between columns, or moved from their menu. Columns are
+  put in order, merged and hidden here, for this window only.
 - **An issue in full**: its description, its comments and a reply, its fields
   set from a menu, its summary and description edited in place, and your own
   comments and time corrected or taken off.
