@@ -67,6 +67,10 @@ breaking change to stored data.
   Приоритет — rather than by the names it writes them with, which put State and
   Priority beside fields made in Russian. A long name takes two lines instead
   of being cut short.
+- **CPU under load read higher than it was.** A reading was timed from when
+  it was asked for rather than when it was made, and a build busy on every
+  core could hold it back by a second, which the figure counted as work done
+  in less time than it took.
 - **The compact usage bar shows the five-hour limit**, and gives its place to
   the weekly one only when the week is nearly spent. It showed whichever window
   was fullest, which is the week for most of the week, and beside it counted
