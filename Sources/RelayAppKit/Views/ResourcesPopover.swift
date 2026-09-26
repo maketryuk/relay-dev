@@ -140,8 +140,10 @@ struct ResourcesPopover: View {
     /// belonging to neither.
     private var relayRow: some View {
         HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.small) {
+            // In the glyph column, under the marks of the sessions above it.
+            Color.clear.frame(width: ResourceColumns.chevron, height: 1)
             RelayMark(size: 12, tint: Theme.Palette.textSecondary)
-                .frame(width: ResourceColumns.chevron + Theme.Spacing.small + ResourceColumns.glyph)
+                .frame(width: ResourceColumns.glyph)
                 .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
             VStack(alignment: .leading, spacing: 1) {
                 Text(verbatim: "Relay")
