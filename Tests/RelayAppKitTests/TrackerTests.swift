@@ -228,6 +228,72 @@ struct IssueReferenceTests {
     }
 }
 
+@Suite("Choosing a field's value")
+@MainActor
+struct TrackerFieldPickerTests {
+    // One script: the order of two alphabets is the Mac's language's to say.
+    private let anton = FieldOption(id: "1", name: "anton", title: "Anton Kostyaev", login: "anton")
+    private let jane = FieldOption(id: "2", name: "jane", title: "Jane Doe", login: "jane")
+    private let me = FieldOption(id: "3", name: "nikita", title: "Nikita Payas", login: "nikita")
+
+    private func people(several: Bool = false) -> TrackerField {
+        TrackerField(
+            name: several ? "Участники" : "Assignee",
+            kind: .user,
+            allowsSeveral: several,
+            options: [jane, me, anton],
+            emptyText: "Unassigned",
+            wireType: several ? "MultiUserIssueCustomField" : "SingleUserIssueCustomField"
+        )
+    }
+
+    private func titles(_ rows: [TrackerFieldPicker.Row]) -> [String] {
+        rows.map { row in
+            switch row {
+            case let .none(title): "(\(title))"
+            case let .option(option): option.title
+            }
+        }
+    }
+
+    @Test("People are listed by name with whoever is signed in first, after no one")
+    func peopleOrder() {
+        #expect(titles(TrackerFieldPicker.rows(for: people(), query: "", me: "nikita"))
+            == ["(Unassigned)", "Nikita Payas", "Anton Kostyaev", "Jane Doe"])
+    }
+
+    @Test("A field of several values offers no \"no one\", since that is ticking none")
+    func severalHaveNoEmptyRow() {
+        #expect(titles(TrackerFieldPicker.rows(for: people(several: true), query: "", me: nil))
+            == ["Anton Kostyaev", "Jane Doe", "Nikita Payas"])
+    }
+
+    @Test("A search finds a name typed in the wrong layout, and a login")
+    func search() {
+        let russian = TrackerField(
+            name: "Assignee",
+            kind: .user,
+            options: [FieldOption(id: "1", name: "anton", title: "Антон Костяев", login: "anton"), jane],
+            wireType: "SingleUserIssueCustomField"
+        )
+        #expect(titles(TrackerFieldPicker.rows(for: russian, query: "fynjy", me: nil)) == ["Антон Костяев"])
+        #expect(titles(TrackerFieldPicker.rows(for: people(), query: "jane", me: nil)) == ["Jane Doe"])
+    }
+
+    @Test("States and priorities keep the tracker's order, which is what they mean")
+    func optionOrder() {
+        let priority = TrackerField(
+            name: "Priority",
+            kind: .option,
+            options: ["1 неотложеный", "2 критичный", "3 очень важный"].map { FieldOption(id: $0, name: $0) },
+            canBeEmpty: false,
+            wireType: "SingleEnumIssueCustomField"
+        )
+        #expect(titles(TrackerFieldPicker.rows(for: priority, query: "", me: nil))
+            == ["1 неотложеный", "2 критичный", "3 очень важный"])
+    }
+}
+
 @Suite("Lengths of time in the window's words", .serialized)
 @MainActor
 struct TrackerTextTests {

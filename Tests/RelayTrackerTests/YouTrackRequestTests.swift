@@ -117,6 +117,14 @@ struct YouTrackRequestTests {
 
         let cleared = YouTrackAPI.fieldJSON(FieldChange(field: assignee, values: []))
         #expect(cleared["value"] is NSNull)
+
+        let participants = TrackerField(name: "Участники", kind: .user, allowsSeveral: true, wireType: "MultiUserIssueCustomField")
+        let people = YouTrackAPI.fieldJSON(FieldChange(field: participants, values: [
+            jane, FieldOption(id: "1-3", name: "max", title: "Max", login: "max"),
+        ]))
+        #expect((people["value"] as? [[String: String]]) == [["login": "jane"], ["login": "max"]])
+        let nobody = YouTrackAPI.fieldJSON(FieldChange(field: participants, values: []))
+        #expect((nobody["value"] as? [[String: String]]) == [])
     }
 
     @Test("An edit sends only what changed")

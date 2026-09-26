@@ -187,12 +187,11 @@ workspace is a git worktree.
    card made while another sprint is being looked at, on a board filled by a
    query: YouTrack puts it in the board's default sprint, so it leaves the
    sprint on screen at the next read.
-5. **The rest of an issue.** Fields that hold several values are shown and not
-   edited. A description is edited as formatted text and read the same way, but
-   a table is shown as its Markdown, and a comment is still written as
-   Markdown; a file cannot be attached from Relay; and a mention is offered
-   from the people the issue knows of — its people fields, its reporter, its
-   commenters — rather than from every account on the tracker.
+5. **The rest of an issue.** A description is edited as formatted text and read
+   the same way, but a table is shown as its Markdown, and a comment is still
+   written as Markdown; a file cannot be attached from Relay; and a mention is
+   offered from the people the issue knows of — its people fields, its
+   reporter, its commenters — rather than from every account on the tracker.
 6. **Answers captured from a real instance.** The fixtures YouTrack's tests read
    were written from its documentation and from the answers the YouTrack agent
    plugin reads; one captured from a live board would pin what an instance
