@@ -24,6 +24,17 @@ breaking change to stored data.
   would end. Docker containers are not counted, since they run in Docker's own
   virtual machine, and the list says so.
 
+### Changed
+
+- **This update has to be installed by hand, once.** Relay is now signed by a
+  different team from the one every earlier version carried, and an installed
+  copy only accepts an update signed by its own team, so the in-app updater
+  answers this one with "signed by someone else". Download
+  `Relay-0.7.3.app.zip` from the release, put the Relay inside it in place of
+  the one in Applications, and open it with right-click → Open the first time.
+  macOS asks again for the permissions the old copy had. Updates after this
+  one install themselves as before.
+
 ### Fixed
 
 - **Every session ending at once, with the app, while nothing was being
