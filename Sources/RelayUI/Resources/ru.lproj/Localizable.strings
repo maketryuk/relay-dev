@@ -8,6 +8,7 @@
 "%@ goes to the Trash, where you can get it back." = "%@ отправится в Корзину — оттуда его можно вернуть.";
 "%@ has no branch called %@ yet; pushing creates it." = "На %@ ещё нет ветки %@ — отправка её создаст.";
 "%@ is already open in %@." = "%@ уже открыта в %@.";
+"%@ is another application." = "%@ — другое приложение.";
 "%@ is available" = "Доступна версия %@";
 "%@ is declared in more than one block; this edits the first." = "%@ описан более чем в одном блоке; правится первый.";
 "%@ is not running." = "%@ не запущен.";
@@ -321,6 +322,7 @@
 "Look again" = "Обновить";
 "Looking for containers…" = "Поиск контейнеров…";
 "Looking…" = "Проверка…";
+"macOS is running Relay from a temporary copy, as it does with an application opened straight from a download or a disk image. It can take that copy away at any moment, and every session would end with it." = "macOS запустила Relay из временной копии — так она поступает с приложением, открытым прямо из загрузок или с образа диска. Эту копию она может убрать в любой момент, и все сессии закончатся вместе с ней.";
 "Make this branch follow the one it is pushed to" = "Ветка начнёт следить за той, куда её отправили";
 "Mark all read" = "Отметить всё прочитанным";
 "Match case" = "Учитывать регистр";
@@ -335,6 +337,9 @@
 "Merge…" = "Слить…";
 "Merging in: %@" = "Вливается: %@";
 "Modified" = "Изменён";
+"Move Relay into Applications in Finder and open it from there." = "Перенесите Relay в Программы в Finder и откройте оттуда.";
+"Move Relay to Applications?" = "Перенести Relay в Программы?";
+"Move to Applications" = "Перенести в Программы";
 "Move to Trash" = "Переместить в Корзину";
 "Move to Trash?" = "Переместить в Корзину?";
 "Mute this project" = "Отключить для этого проекта";
@@ -473,6 +478,7 @@
 "Push failed" = "Не удалось отправить изменения";
 "Push…" = "Отправить…";
 "Quick switching" = "Быстрое переключение";
+"Quit" = "Завершить";
 "Re-read branches" = "Перечитать ветки";
 "Re-read files" = "Перечитать файлы";
 "Re-read the working copy" = "Перечитать рабочую копию";
@@ -491,6 +497,7 @@
 "Refresh usage" = "Обновить лимиты";
 "Regular expression" = "Регулярное выражение";
 "Relay cannot replace itself at %@." = "Relay не может заменить себя по пути %@.";
+"Relay cannot run from here" = "Relay не может работать отсюда";
 "Relay cannot see the releases. A private repository needs to be public for updates to work." = "Relay не видит релизы. Для обновлений репозиторий должен быть публичным.";
 "Relay did not start this process" = "Relay не запускал этот процесс";
 "Relay has not looked yet" = "Relay ещё не проверял";
@@ -638,6 +645,7 @@
 "Switch branch" = "Переключить ветку";
 "Switch to %@" = "Перейти в проект %@";
 "System" = "Как в системе";
+"The copy already in Applications will be replaced." = "Копия, которая уже есть в Программах, будет заменена.";
 "The project's own folder and the main worktree are never removed here." = "Папка самого проекта и основной worktree здесь никогда не удаляются.";
 "The window, browser tabs, the session daemon and linters" = "Окно, вкладки браузера, демон сессий и линтеры";
 "Their branches are deleted only if Relay created them and their work is already merged, squashed or rebased in." = "Их ветки удаляются, только если их создал Relay и их работа уже влита — слиянием, squash или rebase.";
