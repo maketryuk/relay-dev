@@ -78,6 +78,7 @@ enum YouTrackWire {
     }
 
     struct ProjectCustomField: Decodable {
+        var field: FieldReference?
         var canBeEmpty: Bool?
         var emptyFieldText: String?
         var bundle: FieldBundle?
@@ -182,6 +183,9 @@ enum YouTrackWire {
 
     struct FieldReference: Decodable {
         var name: String?
+        /// The name in the language of whoever is asking. Absent for a field
+        /// made with a name of its own rather than one YouTrack translates.
+        var localizedName: String?
     }
 
     struct WIPLimit: Decodable {

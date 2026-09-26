@@ -128,7 +128,8 @@ enum YouTrackFixtures {
       "customFields": [
         {"name": "Priority", "$type": "SingleEnumIssueCustomField",
          "value": {"id": "65-1", "name": "Major"},
-         "projectCustomField": {"canBeEmpty": false, "emptyFieldText": "No priority",
+         "projectCustomField": {"field": {"localizedName": "Приоритет", "$type": "CustomField"},
+           "canBeEmpty": false, "emptyFieldText": "No priority",
            "bundle": {"values": [
              {"id": "65-0", "name": "Critical", "color": {"background": "#e30000", "foreground": "#fff"}},
              {"id": "65-1", "name": "Major"},
@@ -143,7 +144,8 @@ enum YouTrackFixtures {
            ], "$type": "UserBundle"}, "$type": "UserProjectCustomField"}},
         {"name": "Spent time", "$type": "PeriodIssueCustomField",
          "value": {"minutes": 95},
-         "projectCustomField": {"canBeEmpty": true, "$type": "PeriodProjectCustomField"}},
+         "projectCustomField": {"field": {"localizedName": null, "$type": "CustomField"},
+           "canBeEmpty": true, "$type": "PeriodProjectCustomField"}},
         {"name": "Notes", "$type": "TextIssueCustomField",
          "value": {"text": "Seen on Safari only", "$type": "TextFieldValue"}},
         {"name": "Story points", "$type": "SimpleIssueCustomField", "value": 5}
@@ -308,6 +310,9 @@ struct YouTrackMappingTests {
         #expect(issue.updater == TrackerUser(id: "1-4", login: "jane", name: "Jane Doe"))
 
         let priority = try #require(issue.field(named: "Priority"))
+        // Shown translated, found and written by its own name.
+        #expect(priority.title == "Приоритет")
+        #expect(try #require(issue.field(named: "Spent time")).title == "Spent time")
         #expect(priority.options.map(\.title) == ["Critical", "Major", "Низкий"])
         #expect(priority.options.map(\.name) == ["Critical", "Major", "Minor"])
         #expect(!priority.canBeEmpty)
