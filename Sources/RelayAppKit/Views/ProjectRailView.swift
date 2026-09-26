@@ -12,9 +12,7 @@ struct ProjectRailView: View {
     @State private var isDropTargeted = false
 
     var body: some View {
-        @Bindable var model = model
-
-        return VStack(spacing: Theme.Spacing.small) {
+        VStack(spacing: Theme.Spacing.small) {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: Theme.Spacing.small) {
                     // Outside the column that can be dragged into order: the

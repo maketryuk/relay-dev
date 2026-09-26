@@ -21,8 +21,6 @@ struct SearchPane: View {
     private var selected: TextHit? { hits.indices.contains(focus.row) ? hits[focus.row] : nil }
 
     var body: some View {
-        @Bindable var model = model
-
         VStack(spacing: 0) {
             field
             RelayDivider()
@@ -45,12 +43,10 @@ struct SearchPane: View {
     }
 
     private var field: some View {
-        @Bindable var model = model
-
-        return HStack(spacing: Theme.Spacing.small) {
+        HStack(spacing: Theme.Spacing.small) {
             RelayTextField(
                 relayLocalized("Search in files"),
-                text: $model.searchQuery,
+                text: Bindable(model).searchQuery,
                 systemImage: "magnifyingglass",
                 autofocus: true
             ) {
