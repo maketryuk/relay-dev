@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import RelayTracker
 import SwiftUI
@@ -182,6 +183,48 @@ struct TrackerChipTests {
         #expect(TrackerChip.palette(for: TrackerColor(background: "#DB3B4B", foreground: "#fff"))?.ink == Color(hex: 0xFFFFFF))
         #expect(TrackerChip.palette(for: nil) == nil)
         #expect(TrackerChip.palette(for: TrackerColor(background: "red", foreground: "#fff")) == nil)
+    }
+}
+
+@Suite("An issue copied to paste into a chat")
+struct IssueReferenceTests {
+    private let link = URL(string: "https://yt.example/issue/WEB-342")!
+
+    @Test("The key and the summary on one line, and the key alone without one")
+    func text() {
+        #expect(IssueReference.text(key: "WEB-342", summary: "Login redirects") == "WEB-342 Login redirects")
+        #expect(IssueReference.text(key: "WEB-342", summary: "") == "WEB-342")
+    }
+
+    @Test("In HTML the key is the link, and the summary cannot become markup")
+    func html() {
+        #expect(IssueReference.html(key: "WEB-342", summary: "Show <b> & \"quotes\"", link: link)
+            == #"<a href="https://yt.example/issue/WEB-342">WEB-342</a> Show &lt;b&gt; &amp; &quot;quotes&quot;"#)
+    }
+
+    @Test("In RTF the key carries the link and the summary does not")
+    func rtf() throws {
+        let data = try #require(IssueReference.rtf(key: "WEB-342", summary: "Вход ведёт на пустую страницу", link: link))
+        let read = try NSAttributedString(data: data, options: [.documentType: NSAttributedString.DocumentType.rtf], documentAttributes: nil)
+        #expect(read.string == "WEB-342 Вход ведёт на пустую страницу")
+        #expect(read.attribute(.link, at: 0, effectiveRange: nil) as? URL == link)
+        #expect(read.attribute(.link, at: 8, effectiveRange: nil) == nil)
+    }
+
+    @Test("All three go on the clipboard together, and only the text without a link")
+    @MainActor
+    func clipboard() {
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("relay.tests.\(UUID().uuidString)"))
+        defer { pasteboard.releaseGlobally() }
+
+        IssueReference.copy(key: "WEB-342", summary: "Login redirects", link: link, to: pasteboard)
+        #expect(pasteboard.string(forType: .string) == "WEB-342 Login redirects")
+        #expect(pasteboard.string(forType: .html)?.contains(#"href="https://yt.example/issue/WEB-342""#) == true)
+        #expect(pasteboard.data(forType: .rtf) != nil)
+
+        IssueReference.copy(key: "WEB-342", summary: "Login redirects", link: nil, to: pasteboard)
+        #expect(pasteboard.string(forType: .string) == "WEB-342 Login redirects")
+        #expect(pasteboard.string(forType: .html) == nil)
     }
 }
 

@@ -17,6 +17,10 @@ breaking change to stored data.
   column the others were merged into. The layout is kept per board and is
   yours alone: the board in the tracker, and everyone else's view of it, stays
   as it was.
+- **An issue copied the way YouTrack copies it**: its key and summary on one
+  line, with the key a link to the issue, so a chat that reads links — Telegram
+  among them — shows one. From the button beside the key in the issue, from a
+  card when the pointer is on it, and from the card's menu.
 
 ### Changed
 
