@@ -32,6 +32,12 @@ breaking change to stored data.
   description and a comment read the same way, headings, lists, quotes and code
   included, where they used to show everything but emphasis and links as
   written.
+- **An issue's fields chosen from a list with a search**, as YouTrack's are: a
+  state or a priority in its colours, people with their pictures and yourself
+  first, found by name or login even typed in the other keyboard layout, and
+  picked with the arrows and Return. A field that holds several values takes
+  several ticks — participants among them, which could not be changed at all
+  before — and they are set together when the list closes.
 
 ### Changed
 

@@ -455,33 +455,16 @@ private struct IssueFieldsSection: View {
         }
     }
 
+    /// A value that can be changed opens the list it is chosen from, several
+    /// values as well as one.
     @ViewBuilder
     private func value(of field: TrackerField) -> some View {
-        if field.isEditable && !field.allowsSeveral {
-            Menu {
-                if field.canBeEmpty {
-                    Button(field.emptyText ?? relayLocalized("None")) { set(field, to: nil) }
-                    Divider()
-                }
-                ForEach(field.options) { option in
-                    Button {
-                        set(field, to: option)
-                    } label: {
-                        if field.values.first?.name == option.name {
-                            Label(option.title, systemImage: "checkmark")
-                        } else {
-                            Text(verbatim: option.title)
-                        }
-                    }
-                }
-            } label: {
+        if field.isEditable {
+            FieldValueButton(field: field, isEnabled: !tracker.writesInFlight.contains(.edit(issue.key))) {
                 valueLabel(field, isEditable: true)
+            } onChoose: { values in
+                set(field, to: values)
             }
-            .menuStyle(.button)
-            .buttonStyle(.plain)
-            .menuIndicator(.hidden)
-            .clickable()
-            .disabled(tracker.writesInFlight.contains(.edit(issue.key)))
         } else {
             valueLabel(field, isEditable: false)
         }
@@ -525,10 +508,31 @@ private struct IssueFieldsSection: View {
         }
     }
 
-    private func set(_ field: TrackerField, to option: FieldOption?) {
-        guard field.values.first?.name != option?.name else { return }
-        let change = IssueChange(fields: [FieldChange(field: field, values: option.map { [$0] } ?? [])])
+    private func set(_ field: TrackerField, to values: [FieldOption]) {
+        let change = IssueChange(fields: [FieldChange(field: field, values: values)])
         Task { _ = await tracker.update(issue.key, with: change) }
+    }
+}
+
+/// A field's value as a button that opens the list to choose it from.
+private struct FieldValueButton<Label: View>: View {
+    let field: TrackerField
+    let isEnabled: Bool
+    @ViewBuilder let label: () -> Label
+    let onChoose: ([FieldOption]) -> Void
+
+    @State private var isPicking = false
+
+    var body: some View {
+        Button { isPicking = true } label: {
+            label().contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .clickable(isEnabled)
+        .disabled(!isEnabled)
+        .popover(isPresented: $isPicking, arrowEdge: .leading) {
+            TrackerFieldPicker(field: field, isPresented: $isPicking, onChoose: onChoose)
+        }
     }
 }
 
