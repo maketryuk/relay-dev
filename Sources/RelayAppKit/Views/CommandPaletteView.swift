@@ -510,7 +510,10 @@ struct KeyCaptureView: NSViewRepresentable {
             }
             guard monitor == nil else { return }
             monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                guard let self else { return event }
+                // A key pressed in a popover or a menu is that window's: the
+                // panel under it closing on Escape pressed in its popover took
+                // the panel away with half an edit in it.
+                guard let self, event.window === self.window else { return event }
                 let handler: (() -> Void)?
                 switch event.keyCode {
                 case 125: handler = self.onMoveDown
