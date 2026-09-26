@@ -131,7 +131,7 @@
 "Could not create the issue" = "Не удалось создать задачу";
 "Could not delete the comment on %@" = "Не удалось удалить комментарий в %@";
 "Could not delete the time on %@" = "Не удалось удалить время в %@";
-"Could not log time on %@" = "Не удалось списать время на %@";
+"Could not log time on %@" = "Не удалось добавить затраченное время в %@";
 "Could not move %@" = "Не удалось переместить %@";
 "Could not open %@" = "Не удалось открыть %@";
 "Could not read %@" = "Не удалось загрузить %@";
@@ -314,10 +314,10 @@
 "It is marked deleted, and can be restored in the tracker." = "Он будет помечен удалённым, и его можно будет восстановить в трекере.";
 "Kept in the keychain — type a new one to replace it" = "Хранится в связке ключей — введите новый, чтобы заменить";
 "Kind of work" = "Тип работы";
-"Log" = "Списать";
-"Log Time" = "Списать время";
-"Log Time…" = "Списать время…";
-"Logging…" = "Списание…";
+"Log" = "Добавить";
+"Log Time" = "Добавить затраченное время";
+"Log Time…" = "Добавить затраченное время…";
+"Logging…" = "Добавление…";
 "Markdown" = "Markdown";
 "Markdown. Optional." = "Markdown. Необязательно.";
 "Mine" = "Мои";
@@ -328,7 +328,7 @@
 "No answer came back, so it may or may not have been done. Reload before trying again." = "Ответ не пришёл, поэтому неизвестно, выполнено ли действие. Обновите, прежде чем пробовать снова.";
 "No boards yet" = "Досок пока нет";
 "No description" = "Нет описания";
-"No time logged yet" = "Времени пока не списано";
+"No time logged yet" = "Затраченного времени пока нет";
 "Not a length Relay can read. Try 1h 30m." = "Relay не понимает такую длительность. Попробуйте 1ч 30м.";
 "Not connected" = "Не подключено";
 "Not found, or not visible to your account." = "Не найдено или недоступно вашему аккаунту.";
@@ -350,7 +350,7 @@
 "Start Timer" = "Запустить таймер";
 "Start Work in a New Worktree…" = "Начать работу в новом worktree…";
 "Stop Timer…" = "Остановить таймер…";
-"Stop and log" = "Остановить и списать";
+"Stop and log" = "Остановить и добавить затраченное время";
 "Summary" = "Заголовок";
 "The address sends requests on somewhere else. Use the address the tracker is at." = "Адрес перенаправляет запросы в другое место. Укажите адрес, по которому находится трекер.";
 "The address sends requests on to %@. Use that address instead." = "Адрес перенаправляет запросы на %@. Укажите этот адрес.";
@@ -374,7 +374,7 @@
 "Write a comment — @ to mention someone" = "Напишите комментарий — @, чтобы упомянуть";
 "Yesterday" = "Вчера";
 "You" = "Вы";
-"You have logged no time here" = "Вы ещё не списывали время на эту задачу";
+"You have logged no time here" = "Вы ещё не добавляли затраченное время в эту задачу";
 "Your account is not allowed to do that." = "Вашему аккаунту это не разрешено.";
 "finished" = "завершился";
 "First %d matches" = "Первые %d совпадений";

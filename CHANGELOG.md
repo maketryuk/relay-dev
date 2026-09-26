@@ -7,6 +7,12 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Changed
+
+- **Time is added the way YouTrack's Russian says it**: «Добавить затраченное
+  время» rather than «Списать время», and the same in the timer and the
+  issue.
+
 ### Fixed
 
 - **Escape in a popover closes the popover**, not the panel it was opened from:
