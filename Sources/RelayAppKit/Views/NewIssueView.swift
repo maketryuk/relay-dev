@@ -70,7 +70,11 @@ struct NewIssueView: View {
                     }
 
                     field(relayLocalized("Description")) {
-                        RelayTextEditor(relayLocalized("Markdown. Optional."), text: $description, minHeight: 160)
+                        RichMarkdownEditor(
+                            placeholder: relayLocalized("Write a description, or paste one here"),
+                            markdown: $description,
+                            minHeight: 180
+                        )
                     }
                 }
                 .padding(.horizontal, ModalSurface<EmptyView, EmptyView>.horizontalInset)

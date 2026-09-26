@@ -21,6 +21,17 @@ breaking change to stored data.
   line, with the key a link to the issue, so a chat that reads links — Telegram
   among them — shows one. From the button beside the key in the issue, from a
   card when the pointer is on it, and from the card's menu.
+- **Descriptions written the way YouTrack writes them.** A visual editor with
+  the tracker's toolbar — normal text and headings, bold, italic,
+  strikethrough, quote, code, a link, bulleted and numbered lists, and ⌘B, ⌘I,
+  ⌘E, ⌘K — with the Markdown a switch away, in the issue and in a new one; a
+  quote has its bar down the side and code its own box. What is saved is still
+  Markdown, and only the paragraphs that were changed are written anew: the
+  rest go back exactly as they were written, and a table, a task list or a
+  picture YouTrack names by its file is shown as its Markdown and kept. A
+  description and a comment read the same way, headings, lists, quotes and code
+  included, where they used to show everything but emphasis and links as
+  written.
 
 ### Changed
 

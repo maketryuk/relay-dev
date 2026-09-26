@@ -256,10 +256,11 @@ struct IssuePane: View {
                 }
             }
             if let draft = editingDescription {
-                RelayTextEditor(relayLocalized("Markdown"), text: Binding(
-                    get: { draft },
-                    set: { editingDescription = $0 }
-                ), minHeight: 220)
+                RichMarkdownEditor(
+                    placeholder: relayLocalized("Write a description, or paste one here"),
+                    markdown: Binding(get: { draft }, set: { editingDescription = $0 }),
+                    minHeight: 260
+                )
                 HStack {
                     Spacer()
                     RelayButton(relayLocalized("Cancel"), kind: .ghost) { editingDescription = nil }
@@ -411,32 +412,6 @@ private struct CommentRow: View {
         Task {
             if await tracker.updateComment(comment, text: text, on: issue.key) { draft = nil }
         }
-    }
-}
-
-/// Markdown as far as a line of text can draw it: emphasis, code and links.
-/// Headings and lists stay as written, which reads well enough in a comment
-/// and costs nothing like a web view per paragraph.
-struct MarkdownText: View {
-    let source: String
-
-    init(_ source: String) {
-        self.source = source
-    }
-
-    var body: some View {
-        Text(rendered)
-            .font(.system(size: 12.5))
-            .foregroundStyle(Theme.Palette.textPrimary)
-            .lineSpacing(4)
-            .textSelection(.enabled)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var rendered: AttributedString {
-        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        return (try? AttributedString(markdown: source, options: options)) ?? AttributedString(source)
     }
 }
 
