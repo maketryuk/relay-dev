@@ -161,14 +161,17 @@ final class ResourceMonitor {
         }
         let roots = roots()
         let app = getpid()
-        let now = DispatchTime.now().uptimeNanoseconds
         let survey = await Task.detached(priority: .utility) {
+            // Stamped as it is read, not as it is asked for: with a build busy
+            // on every core a task of this priority can wait a second to
+            // start, and that second, counted against the reading before it,
+            // made the CPU spent look spent in less time than it was.
             ResourceSurvey.take(
                 sessions: roots.sessions,
                 app: app,
                 daemon: roots.daemon,
                 table: KernelProcessTable(),
-                at: now
+                at: DispatchTime.now().uptimeNanoseconds
             )
         }.value
         guard !Task.isCancelled else { return }

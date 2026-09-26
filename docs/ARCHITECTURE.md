@@ -355,15 +355,19 @@ that maps it, and summed over a tree of node processes gives a number nobody
 recognises.
 
 CPU is the difference between two readings, and each reading adds up every
-member's own time and its `ri_child_*` — the time of every child it has
-reaped. That is what makes a tree measurable by its living members: a compiler
-that ran between two readings is gone from the table, and its time is on the
-`make` that waited for it. Two things break the sum, and both are dropped with
-the previous figure kept: a total that goes down, because a process was
-reparented out of the tree or an `exec` started its count again, and one that
-goes up by more than every core could have spent, because a process joined
-carrying its whole lifetime. `rusage_info` counts in Mach ticks — nanoseconds
-on Intel, 125/3 of one on Apple silicon — which is converted once.
+member's own time and its `ri_child_*` — the time of every child it has reaped.
+That is what makes a tree measurable by its living members: a compiler that ran
+between two readings is gone from the table, and its time is on the `make` that
+waited for it. Two things break the sum, and both are dropped with the previous
+figure kept: a total that goes down, because a process was reparented out of
+the tree or an `exec` started its count again, and one that goes up by more
+than every core could have spent, because a process joined carrying its whole
+lifetime. `rusage_info` counts in Mach ticks — nanoseconds on Intel, 125/3 of
+one on Apple silicon — which is converted once. A reading is stamped when it is
+taken, inside the task that takes it, rather than when it is asked for: under a
+build busy on every core the task can wait a second to start, and a difference
+divided by an interval a second too short read higher than the Mac could have
+been.
 
 Relay's own share is the window's tree and the daemon's, less the sessions
 hanging from the daemon, and with the daemon's reaped time left out: that is
