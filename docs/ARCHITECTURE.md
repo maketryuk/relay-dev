@@ -1274,11 +1274,15 @@ for again. A description refers to its screenshots by the attachment's own
 name, spaces and all — `![](Screenshot 2026-09-23 at 13.13.59.png){width=70%}`
 — which no Markdown reader takes for a link, so the text is taken apart into
 what a line of text can draw and the pictures it cannot, and each picture is
-drawn from the attachment it names. A file is opened from a copy on disk,
-since the address for it wants the token a browser does not have. A card is
-coloured down its edge by the field the board is set up to colour by —
+drawn from the attachment it names. A file is opened from a copy on disk, since
+the address for it wants the token a browser does not have. A card is coloured
+down its edge by the field the board is set up to colour by —
 `colorCoding.prototype`, usually the priority — which also puts that field's
-chip first.
+chip first; a board coloured by nothing sends no `colorCoding` at all and has
+no edge. A value the tracker colours — a priority, a state, a tag — is drawn in
+both of its colours, fill and ink, as the tracker draws it: YouTrack keeps the
+hue in either, a red fill with white text or a pale pink one with deep pink
+text, and a tint taken from the fill alone drew the second almost white.
 
 **A mention needs the caret.** SwiftUI's text editor says what the text is but
 not where in it the person is typing, and a name is typed in the middle of a

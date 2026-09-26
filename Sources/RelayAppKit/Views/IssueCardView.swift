@@ -78,11 +78,11 @@ struct IssueCardView: View {
             if !chips.isEmpty || card.assignee != nil || !card.tags.isEmpty {
                 HStack(spacing: Theme.Spacing.xsmall) {
                     ForEach(chips, id: \.id) { option in
-                        Badge(option.title, tint: option.color.map(Color.init(tracker:)) ?? Theme.Palette.textSecondary)
+                        TrackerChip(text: option.title, color: option.color)
                             .lineLimit(1)
                     }
                     ForEach(card.tags.prefix(2), id: \.name) { tag in
-                        Badge(tag.name, systemImage: "tag", tint: tag.color.map(Color.init(tracker:)) ?? Theme.Palette.textTertiary)
+                        TrackerChip(text: tag.name, systemImage: "tag", color: tag.color)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 0)

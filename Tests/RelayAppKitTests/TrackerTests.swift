@@ -1,5 +1,6 @@
 import Foundation
 import RelayTracker
+import SwiftUI
 import Testing
 
 @testable import RelayAppKit
@@ -163,6 +164,24 @@ struct TrackerSettingsTests {
             from: Data(#"{"projects": [], "tracker": {"boards": "not a map"}}"#.utf8)
         )
         #expect(state.tracker == TrackerSettings())
+    }
+}
+
+@Suite("A value in the tracker's colours")
+struct TrackerChipTests {
+    @Test("Fill and ink are both the tracker's, so a pale fill keeps the hue its text carries")
+    func paleFill() throws {
+        // YouTrack's "critical" as a live instance sends it.
+        let palette = try #require(TrackerChip.palette(for: TrackerColor(background: "#FCC3E2", foreground: "#C01173")))
+        #expect(palette.fill == Color(hex: 0xFCC3E2))
+        #expect(palette.ink == Color(hex: 0xC01173))
+    }
+
+    @Test("The short form is read, and no colour or a broken one is drawn as a value with none")
+    func unreadable() {
+        #expect(TrackerChip.palette(for: TrackerColor(background: "#DB3B4B", foreground: "#fff"))?.ink == Color(hex: 0xFFFFFF))
+        #expect(TrackerChip.palette(for: nil) == nil)
+        #expect(TrackerChip.palette(for: TrackerColor(background: "red", foreground: "#fff")) == nil)
     }
 }
 

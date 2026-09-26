@@ -26,6 +26,10 @@ breaking change to stored data.
 
 ### Fixed
 
+- **Priorities, states and tags in YouTrack's own colours**, fill and text, on
+  the card and in the issue. Only the fill was taken, and the text tinted with
+  it, so a value YouTrack draws pale with coloured text — a critical priority,
+  a light-blue state — came out almost white.
 - **Escape in a popover closes the popover**, not the panel it was opened from:
   pressed while choosing the day for time being logged, it closed the whole
   panel and what had been typed in it.
