@@ -111,6 +111,20 @@ if [ ! -d "$APP/Contents/Resources/Relay_RelayUI.bundle" ]; then
   exit 1
 fi
 
+# The languages the app speaks, as the string tables it ships say. macOS asks
+# the app itself and not the bundles inside it: an app that names none is an
+# English app whatever its tables hold, and its bundles are read in English to
+# match, so a Mac set to Russian got a Relay in English.
+LOCALIZATIONS=""
+for table in "$APP/Contents/Resources/Relay_RelayUI.bundle/Contents/Resources/"*.lproj; do
+  [ -d "$table" ] || continue
+  LOCALIZATIONS="$LOCALIZATIONS<string>$(basename "$table" .lproj)</string>"
+done
+if [ -z "$LOCALIZATIONS" ]; then
+  echo "error: Relay_RelayUI.bundle holds no string tables" >&2
+  exit 1
+fi
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -131,6 +145,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSApplicationCategoryType</key><string>public.app-category.developer-tools</string>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
     <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleLocalizations</key><array>$LOCALIZATIONS</array>
     <key>CFBundleSignature</key><string>????</string>
     <key>NSHumanReadableCopyright</key><string>Relay</string>
     <key>LSUIElement</key><false/>
