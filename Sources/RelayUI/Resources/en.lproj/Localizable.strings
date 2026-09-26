@@ -148,6 +148,7 @@
 "Could not read the board" = "Could not read the board";
 "Could not start %@" = "Could not start %@";
 "CPU" = "CPU";
+"Created %@" = "Created %@";
 "Current sprint" = "Current sprint";
 "Custom" = "Custom";
 "CUSTOM COMMAND" = "CUSTOM COMMAND";
@@ -339,6 +340,7 @@
 "Markdown. Optional." = "Markdown. Optional.";
 "Merge With" = "Merge With";
 "Mine" = "Mine";
+"More" = "More";
 "Move To" = "Move To";
 "Needs a new token" = "Needs a new token";
 "New Issue" = "New Issue";
@@ -360,6 +362,7 @@
 "Relay only sends a token to an https:// address. Check the tracker's address." = "Relay only sends a token to an https:// address. Check the tracker's address.";
 "Relay remembers the choice for this project. It can be changed from the menu above." = "Relay remembers the choice for this project. It can be changed from the menu above.";
 "Reload the board" = "Reload the board";
+"Reported by %@, %@" = "Reported by %@, %@";
 "Saving…" = "Saving…";
 "Send to Agent" = "Send to Agent";
 "Sending…" = "Sending…";
@@ -389,6 +392,8 @@
 "Today" = "Today";
 "Token" = "Token";
 "Tracker" = "Tracker";
+"Updated %@" = "Updated %@";
+"Updated by %@, %@" = "Updated by %@, %@";
 "What answered is not the tracker's API. Check the address." = "What answered is not the tracker's API. Check the address.";
 "What needs doing" = "What needs doing";
 "What was done" = "What was done";

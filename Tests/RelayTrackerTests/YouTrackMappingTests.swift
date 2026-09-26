@@ -116,6 +116,7 @@ enum YouTrackFixtures {
       "resolved": null,
       "project": {"id": "0-3", "shortName": "WEB", "name": "Website"},
       "reporter": {"id": "1-3", "login": "max", "fullName": ""},
+      "updater": {"id": "1-4", "login": "jane", "fullName": "Jane Doe"},
       "tags": [],
       "attachments": [
         {"id": "74-1", "name": "Screenshot 2026-09-23 at 13.13.59.png", "url": "/api/files/74-1?sign=abc&updated=1",
@@ -304,6 +305,7 @@ struct YouTrackMappingTests {
         let issue = YouTrackMapping.issue(try YouTrackFixtures.decode(YouTrackWire.Issue.self, YouTrackFixtures.issue))
         #expect(issue.description == "Steps:\n1. Log in\n2. See nothing")
         #expect(issue.reporter == TrackerUser(id: "1-3", login: "max", name: "max"))
+        #expect(issue.updater == TrackerUser(id: "1-4", login: "jane", name: "Jane Doe"))
 
         let priority = try #require(issue.field(named: "Priority"))
         #expect(priority.options.map(\.title) == ["Critical", "Major", "Низкий"])

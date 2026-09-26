@@ -114,6 +114,7 @@ enum YouTrackMapping {
             description: wire.description ?? "",
             project: project(wire.project),
             reporter: user(wire.reporter),
+            updater: user(wire.updater),
             created: date(wire.created) ?? Date(timeIntervalSince1970: 0),
             updated: date(wire.updated) ?? Date(timeIntervalSince1970: 0),
             resolved: date(wire.resolved),

@@ -373,6 +373,8 @@ public struct TrackerIssue: Equatable, Sendable, Identifiable {
     public var description: String
     public var project: TrackerProject
     public var reporter: TrackerUser?
+    /// Who changed it last.
+    public var updater: TrackerUser?
     public var created: Date
     public var updated: Date
     public var resolved: Date?
@@ -389,6 +391,7 @@ public struct TrackerIssue: Equatable, Sendable, Identifiable {
         description: String = "",
         project: TrackerProject,
         reporter: TrackerUser? = nil,
+        updater: TrackerUser? = nil,
         created: Date = Date(timeIntervalSince1970: 0),
         updated: Date = Date(timeIntervalSince1970: 0),
         resolved: Date? = nil,
@@ -402,6 +405,7 @@ public struct TrackerIssue: Equatable, Sendable, Identifiable {
         self.description = description
         self.project = project
         self.reporter = reporter
+        self.updater = updater
         self.created = created
         self.updated = updated
         self.resolved = resolved
