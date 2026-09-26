@@ -421,7 +421,7 @@ private struct IssueFieldsSection: View {
             if !issue.tags.isEmpty {
                 HStack(spacing: Theme.Spacing.xsmall) {
                     ForEach(issue.tags, id: \.name) { tag in
-                        Badge(tag.name, systemImage: "tag", tint: tag.color.map(Color.init(tracker:)) ?? Theme.Palette.textTertiary)
+                        TrackerChip(text: tag.name, systemImage: "tag", color: tag.color)
                     }
                 }
             }
@@ -462,18 +462,22 @@ private struct IssueFieldsSection: View {
 
     private func valueLabel(_ field: TrackerField, isEditable: Bool) -> some View {
         HStack(spacing: Theme.Spacing.xsmall) {
-            if let color = field.values.first?.color, field.kind == .option {
-                Circle()
-                    .fill(Color(tracker: color))
-                    .frame(width: 7, height: 7)
-            }
             if field.kind == .user, !field.allowsSeveral, let person = field.values.first {
                 TrackerAvatar(name: person.title, avatar: person.avatar, size: 16)
             }
-            Text(verbatim: shown(field))
-                .font(Theme.Typography.row)
-                .foregroundStyle(field.isEmpty ? Theme.Palette.textTertiary : Theme.Palette.textPrimary)
-                .lineLimit(2)
+            // Drawn as the tracker draws it when it gives the values colours,
+            // so a priority is recognised here by the colour it has there.
+            if field.kind == .option, field.values.contains(where: { $0.color != nil }) {
+                ForEach(field.values) { option in
+                    TrackerChip(text: option.title, color: option.color)
+                        .lineLimit(1)
+                }
+            } else {
+                Text(verbatim: shown(field))
+                    .font(Theme.Typography.row)
+                    .foregroundStyle(field.isEmpty ? Theme.Palette.textTertiary : Theme.Palette.textPrimary)
+                    .lineLimit(2)
+            }
             if isEditable {
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 8, weight: .semibold))

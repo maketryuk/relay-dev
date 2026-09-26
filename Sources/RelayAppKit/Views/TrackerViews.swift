@@ -31,6 +31,48 @@ struct TrackerAvatar: View {
     }
 }
 
+/// A value as the tracker colours it — a priority, a state, a tag — in its
+/// own fill and its own ink.
+///
+/// Both, because a tracker's palette keeps the hue in either one: YouTrack's
+/// urgent is a red fill with white text, its critical a pale pink fill with
+/// deep pink text. A tint taken from the fill alone drew the second almost
+/// white, which is a priority nobody could tell apart from another.
+struct TrackerChip: View {
+    let text: String
+    var systemImage: String?
+    let color: TrackerColor?
+
+    var body: some View {
+        if let palette = Self.palette(for: color) {
+            HStack(spacing: 3) {
+                if let systemImage {
+                    Image(systemName: systemImage).font(.system(size: 9, weight: .medium))
+                }
+                Text(verbatim: text)
+            }
+            .font(Theme.Typography.caption)
+            .foregroundStyle(palette.ink)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1.5)
+            .background(palette.fill)
+            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        } else {
+            Badge(text, systemImage: systemImage, tint: Theme.Palette.textSecondary)
+        }
+    }
+
+    /// The fill and the ink, or nil when the tracker gave no colour or one
+    /// that is not a colour, which is drawn as a value with none.
+    nonisolated static func palette(for color: TrackerColor?) -> (fill: Color, ink: Color)? {
+        guard let color,
+              let fill = Color.fromTrackerHex(color.background),
+              let ink = Color.fromTrackerHex(color.foreground)
+        else { return nil }
+        return (fill, ink)
+    }
+}
+
 /// A picture from the tracker — an attachment, drawn where the text put it.
 struct TrackerPicture: View {
     @Environment(AppModel.self) private var model
