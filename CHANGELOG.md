@@ -24,6 +24,16 @@ breaking change to stored data.
   would end. Docker containers are not counted, since they run in Docker's own
   virtual machine, and the list says so.
 
+### Fixed
+
+- **Every session ending at once, with the app, while nothing was being
+  done.** macOS runs an app opened where it was downloaded from a temporary
+  copy, and takes that copy away when it sees fit. Relay and the process
+  holding its terminals both ran from it, and both went with it. Relay now
+  leaves that copy before it starts anything, and reopens from where it really
+  is; one opened from a disk image offers to move itself into Applications
+  first.
+
 ## 0.7.2 — 2026-09-25
 
 ### Added

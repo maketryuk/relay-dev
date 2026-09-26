@@ -11,6 +11,11 @@ public enum RelayApplication {
     /// rather than left to the compiler's mood.
     @MainActor
     public static func main() {
+        // Before anything at all: a copy macOS can take away must not be what
+        // the daemon is started from.
+        if let original = Translocation.originalLocation(of: Bundle.main.bundleURL) {
+            Translocation.leave(for: original)
+        }
         // Before the model reads anything: an install written by a build that
         // kept its files in Application Support has to be found where this one
         // looks, and the first thing to look is the workspace store.

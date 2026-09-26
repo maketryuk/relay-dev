@@ -502,6 +502,49 @@ The same investigation exposed a second gap: `DaemonClient` had no request
 timeout, so a frame the daemon could not decode would leave the UI waiting
 forever. Requests now fail after twenty seconds.
 
+# Relay leaves App Translocation before it starts the daemon
+
+The daemon outlives the app only as long as the file it runs from does. macOS
+runs a quarantined app that Finder never moved from a read-only copy under
+`AppTranslocation`, and removes that copy when it decides to: once, `lsd`
+removed it 14 ms after a volume of Software Update's was unmounted, with the app
+open. Every process whose code was paged in from the copy then died of SIGBUS
+in the same millisecond, *"object has no pager because the backing vnode was
+force unmounted"*, and the daemon ships in the same bundle, so it was one of
+them, and every terminal went with it. A daemon started from a mounted disk
+image is exposed the same way when the image is ejected.
+
+So `RelayApplication.main()` asks where it is running before anything else:
+before the workspace is read and before a daemon is looked for, so a
+translocated launch never starts one. `Translocation` then leaves the copy in
+one of two ways:
+
+- **In place**, when the quarantine flag can be cleared from the original —
+  the usual case, an app in `/Applications` or `~/Downloads`. Once the flag is
+  gone macOS runs the bundle where it lies, which is what a move in Finder
+  would have achieved. The copy starts the original once its own process has
+  gone, since while it runs `open` may bring it forward instead.
+- **By copying into Applications**, when the original cannot be changed: a
+  disk image. The copy replaces an earlier Relay there, and refuses anything
+  else that has the name.
+
+The reopened copy carries an argument that stops it trying the same thing
+twice. Without it, a macOS that translocated for some other reason than the
+flag would be reopened in a loop; with it, the person is asked.
+
+Whether a path is translocated, and from where, is answered by
+`SecTranslocateIsTranslocatedURL` and `SecTranslocateCreateOriginalPathForURL`,
+which Security exports without a public header. They have kept their
+signatures since macOS 10.12, and Sparkle and LetsMove use them. They are
+looked up with `dlsym`, so a macOS that drops them runs Relay as before rather
+than failing to load it. The flag is only removed from Relay's own bundle, and
+only after Gatekeeper has let that bundle run.
+
+The file operations are tested against real bundles and extended attributes.
+The translocated launch is not: macOS creates a translocation only for
+LaunchServices, and refuses `SecTranslocateCreateSecureDirectoryForURL` to
+anything else, so no test can make one.
+
 # Sessions name themselves
 
 Naming sessions "Claude 2", "Claude 3" tells the user nothing. Naming them after
