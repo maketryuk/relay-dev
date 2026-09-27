@@ -73,6 +73,19 @@ struct KernelProcessTable: ProcessTable {
         )
     }
 
+    /// The directory a process is in now: for a shell, wherever `cd` last
+    /// took it, which the directory its session was started in says nothing
+    /// about.
+    func currentDirectory(of pid: Int32) -> String? {
+        var info = proc_vnodepathinfo()
+        let size = Int32(MemoryLayout<proc_vnodepathinfo>.size)
+        guard proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &info, size) == size else { return nil }
+        let path = withUnsafeBytes(of: info.pvi_cdir.vip_path) { raw in
+            String(decoding: raw.prefix { $0 != 0 }, as: UTF8.self)
+        }
+        return path.isEmpty ? nil : path
+    }
+
     /// Split so that a process that has run for months cannot overflow on the
     /// way to being converted.
     private static func nanoseconds(_ ticks: UInt64) -> UInt64 {

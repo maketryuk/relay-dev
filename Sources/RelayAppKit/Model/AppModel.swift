@@ -1283,6 +1283,40 @@ final class AppModel {
         }
     }
 
+    /// Where a link ⌘-clicked in a terminal goes: a file into the pane beside
+    /// it, at the line written after it, a folder to Finder, and an address to
+    /// whatever macOS opens it with.
+    ///
+    /// A relative path is looked for where the session's shell is now, then
+    /// where the session started, then in the project: `rg` prints paths from
+    /// wherever it was run, an agent from where it was started, and the two
+    /// are not always the same place.
+    func followTerminalLink(_ link: String, from sessionID: SessionID) {
+        guard let session = sessions[sessionID] else { return }
+        // A path an SSH session prints is on the other machine.
+        guard session.kind != .ssh else {
+            if let url = TerminalLink.address(of: link) { NSWorkspace.shared.open(url) }
+            return
+        }
+
+        let directories = [
+            session.pid.flatMap { KernelProcessTable().currentDirectory(of: $0) },
+            session.workingDirectory,
+            workingRoot(of: session.projectID),
+        ].compactMap { $0 }
+        switch TerminalLink.destination(of: link, from: directories) {
+        case let .file(path, line, column):
+            guard openFile(at: path, in: session.projectID), let line else { return }
+            editors[path]?.jump(toLine: line, column: column)
+        case let .folder(path):
+            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: path)
+        case let .external(url):
+            NSWorkspace.shared.open(url)
+        case nil:
+            break
+        }
+    }
+
     func setShowsMarkdownPreview(_ shows: Bool) {
         guard shows != showsMarkdownPreview else { return }
         showsMarkdownPreview = shows
@@ -2225,6 +2259,7 @@ final class AppModel {
             fontSize: CGFloat(terminalFontSize),
             usesAcceleratedRendering: terminalUsesGPURendering
         )
+        surface.onOpenLink = { [weak self] link in self?.followTerminalLink(link, from: sessionID) }
         for evicted in surfaceCache.store(surface, for: sessionID, keeping: selectedSessionID) {
             client.post(.detach(evicted))
         }

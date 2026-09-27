@@ -182,6 +182,19 @@ Output is coalesced into one feed per runloop turn. A chatty agent emits hundred
 of small chunks per second; feeding each separately makes the renderer, not the
 PTY, the bottleneck.
 
+**A ⌘-click is SwiftTerm's to find and Relay's to follow.** SwiftTerm finds the
+link under the pointer — an OSC 8 target, an address, or a path, read Ghostty's
+way, including one an agent wrapped onto the next line itself and indented — and
+hands over only its text. `TerminalLink` decides what that text names by asking
+the disk: the path as written, then without a `:line:column` after it, then
+without the punctuation of the sentence it ended, with a relative one looked for
+where the session's shell is now (`proc_pidinfo`), where the session started,
+and in the project. The disk goes first because `URL(string:)` reads
+`README.md:3` as an address with the scheme `readme.md`. A file opens in the
+pane beside the terminal, at its line; a folder in Finder; an address goes to
+macOS. An SSH session's paths are on the other machine and are not looked for on
+this one.
+
 ## Persistence
 
 Workspace configuration is a single atomically-written JSON file. SwiftData was

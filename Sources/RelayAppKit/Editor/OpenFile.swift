@@ -99,6 +99,28 @@ final class OpenFile: @preconcurrency Identifiable {
         caret = range.location
     }
 
+    /// The same, at a line and column the way a compiler or `grep` writes
+    /// them: 1-based, with no column meaning the start of the line.
+    func jump(toLine line: Int, column: Int? = nil) {
+        jump(to: NSRange(location: Self.offset(ofLine: line, column: column, in: text), length: 0))
+    }
+
+    /// Where a line and column are in `text`. Never past the end of that
+    /// line, and the end of the file for a line it does not have: output
+    /// printed before the file was cut short still names somewhere in it.
+    static func offset(ofLine line: Int, column: Int?, in text: String) -> Int {
+        let source = text as NSString
+        var start = 0
+        var number = 1
+        while number < line, start < source.length {
+            start = NSMaxRange(source.lineRange(for: NSRange(location: start, length: 0)))
+            number += 1
+        }
+        var contentsEnd = 0
+        source.getLineStart(nil, end: nil, contentsEnd: &contentsEnd, for: NSRange(location: start, length: 0))
+        return min(start + max((column ?? 1) - 1, 0), contentsEnd)
+    }
+
     /// Goes to a local name's declaration and marks everywhere it is used.
     func show(_ binding: LocalBinding) {
         jump(to: binding.definition)

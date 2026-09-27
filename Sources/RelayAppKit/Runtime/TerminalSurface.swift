@@ -65,6 +65,11 @@ final class TerminalSurface: NSObject, @preconcurrency TerminalViewDelegate {
     /// What the renderer settled on, which is not always what was asked for.
     var isDrawingOnGPU: Bool { terminalView.isUsingMetalRenderer }
 
+    /// Where a ⌘-clicked link is handed. The model's to follow, because a path
+    /// is only a file once it is known which directory the session is in, and
+    /// a file opens in a pane of the session's project.
+    var onOpenLink: ((String) -> Void)?
+
     private weak var client: DaemonClient?
     private var pendingOutput = Data()
     private var isFlushScheduled = false
@@ -184,8 +189,7 @@ final class TerminalSurface: NSObject, @preconcurrency TerminalViewDelegate {
     func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
 
     func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
-        guard let url = URL(string: link), url.scheme != nil else { return }
-        NSWorkspace.shared.open(url)
+        onOpenLink?(link)
     }
 
     func bell(source: TerminalView) {

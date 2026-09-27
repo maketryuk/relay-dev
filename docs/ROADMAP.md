@@ -202,7 +202,8 @@ workspace is a git worktree.
 ## Then
 
 - **The rest of the editor.** A file opens from the Git panel, the file tree,
-  a name in the palette and a search; ⌘-click goes to where a name is declared.
+  a name in the palette, a search and a path ⌘-clicked in a terminal; ⌘-click
+  goes to where a name is declared.
   Still to do: watching the directory so the tree and the open buffers notice
   what an agent wrote, replacing what a search found, and re-parsing only what
   changed rather than the whole file after a pause.

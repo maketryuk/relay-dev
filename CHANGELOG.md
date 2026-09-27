@@ -5,6 +5,17 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Fixed
+
+- **A path ⌘-clicked in a terminal opens in Relay**, in the pane beside the
+  terminal and at the line when one is written after it, as in
+  `Sources/App.swift:42:7`. It lit up under the pointer and then nothing
+  happened, since only an address with a scheme was followed. A path an agent
+  wrapped onto the next line opens whole, a relative one is looked for where the
+  terminal is, and a folder opens in Finder.
+
 ## 0.8.1 — 2026-09-27
 
 ### Added
