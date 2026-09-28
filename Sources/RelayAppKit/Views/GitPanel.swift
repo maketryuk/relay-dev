@@ -618,10 +618,13 @@ private struct DiffBody: View {
     /// The line a remark is being written on, if any.
     @State private var composingAt: Int?
     @State private var draft = ""
-    @State private var hoveredLine: Int?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        // Lazy, so that a line is made when it scrolls into view. Made all at
+        // once, a file with thousands of changed lines stopped the window for
+        // seconds when it was opened, and again for every change to the model
+        // while it stayed open.
+        LazyVStack(alignment: .leading, spacing: 0) {
             ForEach(Array(diff.hunks.enumerated()), id: \.element.id) { index, hunk in
                 if let hidden = hiddenLines(before: index), hidden > 0 {
                     UnmodifiedGap(count: hidden) {
@@ -649,8 +652,6 @@ private struct DiffBody: View {
     private func row(_ line: DiffLine) -> some View {
         DiffLineRow(
             line: line,
-            isHovered: hoveredLine == line.id,
-            onHover: { hoveredLine = $0 ? line.id : (hoveredLine == line.id ? nil : hoveredLine) },
             onComment: {
                 composingAt = line.id
                 draft = ""
@@ -702,9 +703,12 @@ private struct UnmodifiedGap: View {
 
 private struct DiffLineRow: View {
     let line: DiffLine
-    let isHovered: Bool
-    let onHover: (Bool) -> Void
     let onComment: () -> Void
+
+    /// The row's own rather than the diff's: held by the diff, every move of
+    /// the pointer from one line to the next ran the whole diff's body again,
+    /// thousands of lines compared to change the colour of two.
+    @State private var isHovered = false
 
     /// The gutter is as wide as the widest line number the panel is likely to
     /// show, and never changes width: a column that resizes under the pointer
@@ -755,7 +759,7 @@ private struct DiffLineRow: View {
                 .relayTooltip(relayLocalized("Comment on this line"))
             }
         }
-        .onHover(perform: onHover)
+        .onHover { isHovered = $0 }
     }
 
     private var number: String {

@@ -19,6 +19,10 @@ breaking change to stored data.
 - **Typing reaches the terminal that was clicked**, with a file open beside
   it. Once the file had been clicked into, clicking back into the terminal left
   the keyboard in the file, and nothing typed reached the session.
+- **A long diff opens at once.** A file with thousands of changed lines stopped
+  the window for seconds when its diff was opened in the Git panel, and again
+  as the pointer moved across it, since every line was drawn rather than those
+  on screen.
 - **A path ⌘-clicked in a terminal with no file at it says so.** It did
   nothing, which is what a file an agent has just moved elsewhere looked like:
   its old path stays on screen, and the click seemed to have stopped working.
