@@ -214,7 +214,7 @@ struct GitPane: View {
     private var files: some View {
         ScrollView(.vertical, showsIndicators: true) {
             LazyVStack(alignment: .leading, spacing: Theme.Spacing.small) {
-                ForEach(ordered) { change in
+                ForEach(changes.ordered) { change in
                     FileCard(
                         project: project,
                         change: change,
@@ -224,14 +224,6 @@ struct GitPane: View {
             }
             .padding(Theme.Spacing.small)
         }
-    }
-
-    /// Conflicts first, because nothing else can be committed until they are
-    /// gone; then whatever is still in flight; then what is already staged.
-    private var ordered: [GitChange] {
-        changes.conflicted
-            + changes.changes.filter { !$0.isConflicted && !$0.isStaged }
-            + changes.changes.filter { !$0.isConflicted && $0.isStaged }
     }
 
     // MARK: - Footer

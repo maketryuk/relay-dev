@@ -78,6 +78,38 @@ struct GitStatusParserTests {
         #expect(copy.staged.isEmpty)
     }
 
+    @Test("Ticking a file leaves it where it was")
+    func tickingKeepsOrder() {
+        // git lists untracked files after every tracked one, so a new file
+        // staged moves up among them on its own; and a list sectioned by state
+        // moves whatever is ticked to the other section. Either way the row
+        // under the pointer is a different file after the click.
+        let before = GitStatusParser.parse(porcelainV2: porcelain([
+            "1 .M N... 100644 100644 100644 8e7218f 8e7218f Sources/B.swift",
+            "1 .M N... 100644 100644 100644 8e7218f 8e7218f Sources/D.swift",
+            "? Sources/A.swift",
+            "? Sources/C.swift",
+        ]))
+        let after = GitStatusParser.parse(porcelainV2: porcelain([
+            "1 A. N... 000000 100644 100644 0000000 8e7218f Sources/A.swift",
+            "1 M. N... 100644 100644 100644 8e7218f 1111111 Sources/B.swift",
+            "1 .M N... 100644 100644 100644 8e7218f 8e7218f Sources/D.swift",
+            "? Sources/C.swift",
+        ]))
+        let listed = ["Sources/A.swift", "Sources/B.swift", "Sources/C.swift", "Sources/D.swift"]
+        #expect(before.ordered.map(\.path) == listed)
+        #expect(after.ordered.map(\.path) == listed)
+    }
+
+    @Test("A conflict is listed before anything that can be ticked")
+    func conflictsFirst() {
+        let copy = GitStatusParser.parse(porcelainV2: porcelain([
+            "1 .M N... 100644 100644 100644 8e7218f 8e7218f Sources/A.swift",
+            "u UU N... 100644 100644 100644 100644 1111111 2222222 3333333 Sources/Z.swift",
+        ]))
+        #expect(copy.ordered.map(\.path) == ["Sources/Z.swift", "Sources/A.swift"])
+    }
+
     @Test("Branch headers are not files")
     func headersIgnored() {
         let copy = GitStatusParser.parse(porcelainV2: porcelain([

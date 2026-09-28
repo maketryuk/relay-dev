@@ -101,6 +101,18 @@ struct GitWorkingCopy: Equatable, Sendable {
     var unstaged: [GitChange] { changes.filter(\.isUnstaged) }
     var conflicted: [GitChange] { changes.filter(\.isConflicted) }
 
+    /// The order the panel lists them in: conflicts first, because nothing
+    /// else can be committed until they are gone, then everything else by path.
+    ///
+    /// By path rather than by state, and rather than in the order git prints
+    /// them, because a tick changes the state and git lists a new file after
+    /// every tracked one until it is staged. Either way the row under the
+    /// pointer would be another file after each click.
+    var ordered: [GitChange] {
+        let byPath = changes.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+        return byPath.filter(\.isConflicted) + byPath.filter { !$0.isConflicted }
+    }
+
     var isEmpty: Bool { changes.isEmpty }
 }
 

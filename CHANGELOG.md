@@ -5,6 +5,16 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Fixed
+
+- **A file ticked in the Git panel stays where it was.** Ticking one moved it
+  to the bottom of the list, among the staged files, and the file below took
+  its place under the pointer; a new file moved again, since git lists it after
+  every tracked one until it is staged. Files are now listed by path, with
+  conflicts still first.
+
 ## 0.8.3 — 2026-09-28
 
 ### Changed
