@@ -15,9 +15,14 @@ enum GitWorkingCopyReader {
     /// What the working copy holds, with the size of each change.
     static func changes(at root: String) -> GitWorkingCopy? {
         guard GitProbe.isRepository(at: root) else { return nil }
+        // Every untracked file rather than git's default of folding a new
+        // folder into one entry: a folder cannot be opened, diffed, counted or
+        // ticked a file at a time, and Open on one said the file was missing.
+        // A folder of thousands of new files is then thousands of rows, which
+        // is what it is; what is ignored stays out either way.
         guard let status = Shell.capture(
             executable,
-            arguments: ["-C", root, "status", "--porcelain=v2", "-z"],
+            arguments: ["-C", root, "status", "--porcelain=v2", "-z", "--untracked-files=all"],
             timeout: 8
         ), status.succeeded else { return nil }
 

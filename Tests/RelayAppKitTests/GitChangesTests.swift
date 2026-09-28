@@ -358,3 +358,20 @@ struct GitBranchParserTests {
         #expect(remote.switchName == "feature")
     }
 }
+
+@Suite("Reading the working copy")
+struct GitWorkingCopyReaderTests {
+    @Test("A file in a new folder is listed as the file, not as the folder")
+    func fileInNewFolder() throws {
+        // git folds a folder with nothing tracked in it into the folder, and a
+        // folder is not something the panel can open, diff or count lines of:
+        // Open said it could not open the file.
+        let directory = try TemporaryDirectory()
+        try Git.run(["init", "-q"], in: directory.url.path)
+        try directory.write("one\ntwo\n", to: "NewFolder/notes.swift")
+
+        let copy = try #require(GitWorkingCopyReader.changes(at: directory.url.path))
+        #expect(copy.changes.map(\.path) == ["NewFolder/notes.swift"])
+        #expect(copy.changes.first?.insertions == 2)
+    }
+}

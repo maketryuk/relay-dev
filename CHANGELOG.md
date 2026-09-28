@@ -21,6 +21,10 @@ breaking change to stored data.
   its place under the pointer; a new file moved again, since git lists it after
   every tracked one until it is staged. Files are now listed by path, with
   conflicts still first.
+- **A file in a new folder opens from the Git panel.** Git listed the folder
+  rather than the files in it, so the panel showed one row for the folder,
+  with no lines counted and no diff, and Open said the file could not be
+  opened. Each new file now has its own row.
 
 ## 0.8.3 — 2026-09-28
 
