@@ -91,7 +91,9 @@ struct SessionRow: View {
                 IconButton(systemImage: "xmark", help: "", size: 16) {
                     model.closeSession(session.id)
                 }
-                .relayTooltip(relayLocalized("Close session"), shortcut: model.binding(for: .closeSession))
+                // No shortcut beside it: ⌘W closes the view of a session, and
+                // this is the one place that ends it.
+                .relayTooltip(relayLocalized("Close session"))
             }
         }
     }

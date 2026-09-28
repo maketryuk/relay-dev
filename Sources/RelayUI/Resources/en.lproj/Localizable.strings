@@ -186,6 +186,7 @@
 "Close Pane" = "Close Pane";
 "Close Tab" = "Close Tab";
 "Close session" = "Close session";
+"Close this view — the session keeps running" = "Close this view — the session keeps running";
 "Close this view — the service keeps running" = "Close this view — the service keeps running";
 "Close" = "Close";
 "Codex · ask first" = "Codex · ask first";

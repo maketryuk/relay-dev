@@ -186,6 +186,7 @@
 "Close Pane" = "Закрыть панель";
 "Close Tab" = "Закрыть вкладку";
 "Close session" = "Закрыть сессию";
+"Close this view — the session keeps running" = "Закрыть окно — сессия продолжит работать";
 "Close this view — the service keeps running" = "Закрыть окно — сервис продолжит работать";
 "Close" = "Закрыть";
 "Codex · ask first" = "Codex · спрашивать";

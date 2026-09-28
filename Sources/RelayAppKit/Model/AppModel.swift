@@ -982,30 +982,28 @@ final class AppModel {
         launch(SessionRestart.spec(for: session))
     }
 
-    /// What the cross on a pane and ⌘W do.
+    /// What the cross on a pane and ⌘W do: take the session off the screen
+    /// and leave it running, in the sidebar, to be shown again from there.
     ///
-    /// A service is taken off the screen and left running; anything else is
-    /// closed. Everywhere else on macOS a cross in a corner closes a window,
-    /// and here it ended the process behind it — so the gesture that means "I
-    /// am done looking at this" killed the dev server being looked at, which
-    /// is a mistake nobody makes once. Stopping a service is the stop button
-    /// beside it in the sidebar: deliberate, and named after what it does.
-    func dismissSession(_ id: SessionID) {
-        guard sessions[id]?.role.isService == true else { return closeSession(id) }
-        hideSession(id)
-    }
-
-    /// Takes a session off the screen without touching what is running in it.
+    /// Everywhere else on macOS a cross in a corner closes a view, and here it
+    /// ended the process behind it — first for services, which took down the
+    /// dev server being looked at, and then for everything else, which took
+    /// down an agent and its conversation. Ending a session is the sidebar's:
+    /// the cross on its row, or Close in its menu, where what is closed is the
+    /// session rather than a view of it.
     func hideSession(_ id: SessionID) {
         guard let snapshot = sessions[id] else { return }
-        if let layout = paneLayouts[snapshot.projectID] {
-            paneLayouts[snapshot.projectID] = PaneLayout.removing(id, from: layout)
+        let projectID = snapshot.projectID
+        if let layout = paneLayouts[projectID] {
+            paneLayouts[projectID] = PaneLayout.removing(id, from: layout)
         }
         persist()
         // Selected last, since selecting puts a session into the focused pane
-        // and would undo the removal if it happened the other way round.
+        // and would undo the removal if it happened the other way round. A
+        // terminal still on screen takes over; with none left the pane stays
+        // empty, since putting up another one is not what closing a view asks.
         guard selectedSessionID == id else { return }
-        selectedSessionID = interactiveSessions(in: snapshot.projectID).first?.id
+        selectedSessionID = paneLayouts[projectID].flatMap { PaneLayout.sessions(in: $0).first }
         if let next = selectedSessionID { selectSession(next) }
     }
 
@@ -1443,7 +1441,7 @@ final class AppModel {
             if let browser = focusedBrowser {
                 closeBrowser(browser)
             } else if let id = selectedSessionID {
-                dismissSession(id)
+                hideSession(id)
             }
             return
         }

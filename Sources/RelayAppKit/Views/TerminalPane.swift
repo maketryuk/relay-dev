@@ -218,12 +218,12 @@ struct TerminalPane: View {
             }
 
             IconButton(systemImage: "xmark", help: "") {
-                model.dismissSession(session.id)
+                model.hideSession(session.id)
             }
             .relayTooltip(
                 session.role.isService
                     ? relayLocalized("Close this view — the service keeps running")
-                    : relayLocalized("Close session"),
+                    : relayLocalized("Close this view — the session keeps running"),
                 shortcut: model.binding(for: .closeSession)
             )
         }

@@ -7,6 +7,13 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Changed
+
+- **The cross on a terminal and ⌘W take it off the screen and leave it
+  running.** The session stays in the sidebar, to be shown again from there,
+  and is ended only from the sidebar: the cross on its row, or Close in its
+  menu. Closing a pane used to end the agent in it, conversation and all.
+
 ### Fixed
 
 - **Typing reaches the terminal that was clicked**, with a file open beside
