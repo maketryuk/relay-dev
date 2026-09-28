@@ -15,6 +15,7 @@
 "%@ is waiting for input." = "%@ is waiting for input.";
 "%@ logged on %@ is taken off %@." = "%@ logged on %@ is taken off %@.";
 "%@ needs you" = "%@ needs you";
+"%@ of %@" = "%@ of %@";
 "%@ was made, but not put where it was asked for" = "%@ was made, but not put where it was asked for";
 "%@ will be deleted. This cannot be undone." = "%@ will be deleted. This cannot be undone.";
 "%@ will go back to the last committed version." = "%@ will go back to the last committed version.";
@@ -28,6 +29,7 @@
 "%d picked" = "%d picked";
 "%d pt" = "%d pt";
 "%d unread" = "%d unread";
+"+%d more" = "+%d more";
 "A branch of its own, checked out in a folder of its own." = "A branch of its own, checked out in a folder of its own.";
 "A branch Relay made goes with its worktree only when it is merged. Any other branch stays." = "A branch Relay made goes with its worktree only when it is merged. Any other branch stays.";
 "A Chromium tab, with design mode" = "A Chromium tab, with design mode";
@@ -87,6 +89,7 @@
 "Back" = "Back";
 "Being rebased: %@" = "Being rebased: %@";
 "Binary file" = "Binary file";
+"Board" = "Board";
 "Board Columns" = "Board Columns";
 "Boards, cards and time tracking in Relay, and issues handed to agents" = "Boards, cards and time tracking in Relay, and issues handed to agents";
 "Bold" = "Bold";
@@ -289,6 +292,7 @@
 "Drawing on the GPU" = "Drawing on the GPU";
 "Drop an image here, or choose one" = "Drop an image here, or choose one";
 "Drop to add" = "Drop to add";
+"Earlier" = "Earlier";
 "Edit Comment…" = "Edit Comment…";
 "Edit Host" = "Edit Host";
 "Edit Preset" = "Edit Preset";
@@ -341,6 +345,7 @@
 "Kept in the keychain — type a new one to replace it" = "Kept in the keychain — type a new one to replace it";
 "Kind of work" = "Kind of work";
 "Laid out for you alone: the board in the tracker, and how everyone else sees it, stay as they are." = "Laid out for you alone: the board in the tracker, and how everyone else sees it, stay as they are.";
+"Later" = "Later";
 "Link" = "Link";
 "Log" = "Log";
 "Log Time" = "Log Time";
@@ -349,6 +354,7 @@
 "Markdown" = "Markdown";
 "Merge With" = "Merge With";
 "Mine" = "Mine";
+"Month" = "Month";
 "More" = "More";
 "Move To" = "Move To";
 "Needs a new token" = "Needs a new token";
@@ -365,6 +371,7 @@
 "Numbered List" = "Numbered List";
 "Of one core, as Activity Monitor counts it" = "Of one core, as Activity Monitor counts it";
 "Only the cards assigned to you" = "Only the cards assigned to you";
+"Open Issue" = "Open Issue";
 "Open Settings" = "Open Settings";
 "Open the attachment" = "Open the attachment";
 "Open the page tokens are made on" = "Open the page tokens are made on";
@@ -375,6 +382,7 @@
 "Relay only sends a token to an https:// address. Check the tracker's address." = "Relay only sends a token to an https:// address. Check the tracker's address.";
 "Relay remembers the choice for this project. It can be changed from the menu above." = "Relay remembers the choice for this project. It can be changed from the menu above.";
 "Reload the board" = "Reload the board";
+"Reload the time" = "Reload the time";
 "Remove Link" = "Remove Link";
 "Reported by %@, %@" = "Reported by %@, %@";
 "Saving…" = "Saving…";
@@ -386,6 +394,7 @@
 "Show All Columns" = "Show All Columns";
 "Sign Out" = "Sign Out";
 "Someone" = "Someone";
+"Spent %@ of %@" = "Spent %@ of %@";
 "Split Column" = "Split Column";
 "Start Timer" = "Start Timer";
 "Start Work in a New Worktree…" = "Start Work in a New Worktree…";
@@ -411,6 +420,7 @@
 "Updated %@" = "Updated %@";
 "Updated by %@, %@" = "Updated by %@, %@";
 "Visual" = "Visual";
+"Week" = "Week";
 "What answered is not the tracker's API. Check the address." = "What answered is not the tracker's API. Check the address.";
 "What needs doing" = "What needs doing";
 "What was done" = "What was done";
@@ -591,6 +601,7 @@
 "Open in Default App" = "Open in Default App";
 "Open in Default Browser" = "Open in Default Browser";
 "Open in Editor" = "Open in Editor";
+"Open in External Editor" = "Open in External Editor";
 "Open in Finder" = "Open in Finder";
 "Open in browser" = "Open in browser";
 "Open in the config file" = "Open in the config file";
@@ -600,7 +611,6 @@
 "OpenCode" = "OpenCode";
 "Opens the existing branch %@ in %@" = "Opens the existing branch %@ in %@";
 "Options" = "Options";
-"Open in External Editor" = "Open in External Editor";
 "Other declarations: %d" = "Other declarations: %d";
 "Other directives" = "Other directives";
 "Other hosts" = "Other hosts";

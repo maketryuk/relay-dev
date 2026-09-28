@@ -141,6 +141,30 @@ struct YouTrackRequestTests {
         #expect(everything.keys.sorted() == ["customFields", "description", "summary"])
     }
 
+    @Test("Time across issues is asked for by person and by day, with the issue it was spent on")
+    func timeAcrossIssues() {
+        let request = YouTrackAPI.workItems(by: "sam", from: "2026-09-27", through: "2026-10-05")
+        #expect(request.path == "workItems")
+        #expect(query(request, "author") == "sam")
+        #expect(query(request, "startDate") == "2026-09-27")
+        #expect(query(request, "endDate") == "2026-10-05")
+        #expect(query(request, "$top") == YouTrackAPI.listLimit)
+        #expect(query(request, "$skip") == nil)
+        #expect(query(request, "fields")?.contains("issue(idReadable,summary,project(") == true)
+
+        let next = YouTrackAPI.workItems(by: "sam", from: "2026-09-27", through: "2026-10-05", skip: 500)
+        #expect(query(next, "$skip") == "500")
+    }
+
+    @Test("A day is written as the filters take it, in the calendar it fell in")
+    func writtenDay() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try #require(TimeZone(identifier: "Europe/Moscow"))
+        // Half past eleven at night on the 27th in UTC is already the 28th in Moscow.
+        let moment = Date(timeIntervalSince1970: 1_790_551_800)
+        #expect(YouTrackAPI.day(moment, in: calendar) == "2026-09-28")
+    }
+
     @Test("Time is logged in minutes on a day given in milliseconds")
     func workBody() throws {
         let day = Date(timeIntervalSince1970: 1_539_000_000)

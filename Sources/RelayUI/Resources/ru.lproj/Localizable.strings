@@ -15,6 +15,7 @@
 "%@ is waiting for input." = "%@ ждёт ввода.";
 "%@ logged on %@ is taken off %@." = "%@ за %@ будет снято с %@.";
 "%@ needs you" = "%@ ждёт вас";
+"%@ of %@" = "%@ из %@";
 "%@ was made, but not put where it was asked for" = "%@ создана, но не туда, куда просили";
 "%@ will be deleted. This cannot be undone." = "%@ будет удалён. Это необратимо.";
 "%@ will go back to the last committed version." = "%@ вернётся к последней закоммиченной версии.";
@@ -28,6 +29,7 @@
 "%d picked" = "выбрано: %d";
 "%d pt" = "%d пт";
 "%d unread" = "непрочитанных: %d";
+"+%d more" = "ещё %d";
 "A branch of its own, checked out in a folder of its own." = "Своя ветка в своей папке.";
 "A branch Relay made goes with its worktree only when it is merged. Any other branch stays." = "Ветка, созданная Relay, уходит вместе с worktree, только если она влита. Любая другая остаётся.";
 "A Chromium tab, with design mode" = "Вкладка Chromium с режимом дизайна";
@@ -87,6 +89,7 @@
 "Back" = "Назад";
 "Being rebased: %@" = "Перекладывается: %@";
 "Binary file" = "Двоичный файл";
+"Board" = "Доска";
 "Board Columns" = "Колонки доски";
 "Boards, cards and time tracking in Relay, and issues handed to agents" = "Доски, карточки и учёт времени в Relay, а задачи — сразу агентам";
 "Bold" = "Жирный";
@@ -289,6 +292,7 @@
 "Drawing on the GPU" = "Рисуется на GPU";
 "Drop an image here, or choose one" = "Перетащите изображение или выберите файл";
 "Drop to add" = "Отпустите, чтобы добавить";
+"Earlier" = "Раньше";
 "Edit Comment…" = "Изменить комментарий…";
 "Edit Host" = "Изменить хост";
 "Edit Preset" = "Изменить пресет";
@@ -341,6 +345,7 @@
 "Kept in the keychain — type a new one to replace it" = "Хранится в связке ключей — введите новый, чтобы заменить";
 "Kind of work" = "Тип работы";
 "Laid out for you alone: the board in the tracker, and how everyone else sees it, stay as they are." = "Это видите только вы: доска в трекере и то, как её видят другие, остаются как были.";
+"Later" = "Позже";
 "Link" = "Ссылка";
 "Log" = "Добавить";
 "Log Time" = "Добавить затраченное время";
@@ -349,6 +354,7 @@
 "Markdown" = "Markdown";
 "Merge With" = "Объединить с";
 "Mine" = "Мои";
+"Month" = "Месяц";
 "More" = "Ещё";
 "Move To" = "Переместить в";
 "Needs a new token" = "Нужен новый токен";
@@ -365,6 +371,7 @@
 "Numbered List" = "Нумерованный список";
 "Of one core, as Activity Monitor counts it" = "От одного ядра, как в Мониторе активности";
 "Only the cards assigned to you" = "Только карточки, назначенные на вас";
+"Open Issue" = "Открыть задачу";
 "Open Settings" = "Открыть настройки";
 "Open the attachment" = "Открыть вложение";
 "Open the page tokens are made on" = "Открыть страницу, где создаются токены";
@@ -375,6 +382,7 @@
 "Relay only sends a token to an https:// address. Check the tracker's address." = "Relay отправляет токен только на адрес https://. Проверьте адрес трекера.";
 "Relay remembers the choice for this project. It can be changed from the menu above." = "Relay запомнит выбор для этого проекта. Изменить его можно в меню сверху.";
 "Reload the board" = "Обновить доску";
+"Reload the time" = "Обновить время";
 "Remove Link" = "Убрать ссылку";
 "Reported by %@, %@" = "Автор: %@, %@";
 "Saving…" = "Сохранение…";
@@ -386,6 +394,7 @@
 "Show All Columns" = "Показать все колонки";
 "Sign Out" = "Выйти";
 "Someone" = "Кто-то";
+"Spent %@ of %@" = "Затрачено %@ из %@";
 "Split Column" = "Разъединить колонку";
 "Start Timer" = "Запустить таймер";
 "Start Work in a New Worktree…" = "Начать работу в новом worktree…";
@@ -411,6 +420,7 @@
 "Updated %@" = "Обновлена %@";
 "Updated by %@, %@" = "Обновлено: %@, %@";
 "Visual" = "Визуальный";
+"Week" = "Неделя";
 "What answered is not the tracker's API. Check the address." = "По этому адресу отвечает не API трекера. Проверьте адрес.";
 "What needs doing" = "Что нужно сделать";
 "What was done" = "Что сделано";
@@ -591,6 +601,7 @@
 "Open in Default App" = "Открыть в приложении по умолчанию";
 "Open in Default Browser" = "Открыть в браузере по умолчанию";
 "Open in Editor" = "Открыть в редакторе";
+"Open in External Editor" = "Открыть во внешнем редакторе";
 "Open in Finder" = "Показать в Finder";
 "Open in browser" = "Открыть в браузере";
 "Open in the config file" = "Открыть в файле конфигурации";
@@ -600,7 +611,6 @@
 "OpenCode" = "OpenCode";
 "Opens the existing branch %@ in %@" = "Откроет существующую ветку %@ в %@";
 "Options" = "Параметры";
-"Open in External Editor" = "Открыть во внешнем редакторе";
 "Other declarations: %d" = "Другие объявления: %d";
 "Other directives" = "Прочие директивы";
 "Other hosts" = "Другие хосты";

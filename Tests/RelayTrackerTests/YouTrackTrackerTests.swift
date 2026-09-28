@@ -250,6 +250,81 @@ struct YouTrackTrackerTests {
         #expect(types.isEmpty)
     }
 
+    private static var utc: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        return calendar
+    }
+
+    /// Midnight of a day in September 2026, in UTC.
+    private static func september(_ day: Int) -> Date {
+        utc.date(from: DateComponents(year: 2026, month: 9, day: day))!
+    }
+
+    private func asked(_ request: URLRequest, _ name: String) -> String? {
+        URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == name }?.value
+    }
+
+    @Test("Time across issues keeps the days asked for, and reads a day either side of them")
+    func timeAcrossIssues() async throws {
+        let (tracker, transport) = tracker([
+            "GET /api/workItems": [.init(status: 200, body: """
+            [
+              {"id": "w0", "date": 1790424000000, "duration": {"minutes": 15},
+               "issue": {"idReadable": "WEB-1", "summary": "Before"}},
+              {"id": "w2", "date": 1790683200000, "duration": {"minutes": 40}, "type": {"id": "t1", "name": "Frontend"},
+               "issue": {"idReadable": "WEB-2", "summary": "Later", "project": {"id": "0-3", "shortName": "WEB"}}},
+              {"id": "w1", "date": 1790596800000, "duration": {"minutes": 30},
+               "issue": {"idReadable": "WEB-1", "summary": "Login"}}
+            ]
+            """)],
+        ])
+
+        let entries = try await tracker.workItems(
+            by: "sam",
+            from: Self.september(28),
+            through: Self.september(29),
+            in: Self.utc
+        )
+
+        #expect(entries.map(\.id) == ["w1", "w2"])
+        #expect(entries.map(\.issueKey) == ["WEB-1", "WEB-2"])
+        #expect(entries.last?.item.type?.name == "Frontend")
+        let request = try #require(transport.sent.first)
+        #expect(asked(request, "author") == "sam")
+        #expect(asked(request, "startDate") == "2026-09-27")
+        #expect(asked(request, "endDate") == "2026-09-30")
+    }
+
+    @Test("A range with more time in it than one list holds is read to its end")
+    func timeAcrossPages() async throws {
+        let item = #"{"id": "w%d", "date": 1790596800000, "duration": {"minutes": 1}, "issue": {"idReadable": "WEB-1"}}"#
+        let full = "[" + (0 ..< 500).map { String(format: item, $0) }.joined(separator: ",") + "]"
+        let rest = "[" + String(format: item, 500) + "]"
+        let (tracker, transport) = tracker([
+            "GET /api/workItems": [.init(status: 200, body: full), .init(status: 200, body: rest)],
+        ])
+
+        let entries = try await tracker.workItems(
+            by: "sam",
+            from: Self.september(28),
+            through: Self.september(28),
+            in: Self.utc
+        )
+
+        #expect(entries.count == 501)
+        #expect(transport.sent.count == 2)
+        #expect(asked(transport.sent[1], "$skip") == "500")
+    }
+
+    @Test("An account that may not read the working week is given eight hours, Monday to Friday")
+    func scheduleWhenForbidden() async throws {
+        let (tracker, _) = tracker([
+            "GET /api/admin/timeTrackingSettings/workTimeSettings": [.init(status: 403, body: "")],
+        ])
+        #expect(try await tracker.workSchedule() == .standard)
+    }
+
     @Test("A link the tracker wrote from its root is the host's, and an address stays itself")
     func resolvesLinks() {
         let cloud = URL(string: "https://studio.youtrack.cloud")!

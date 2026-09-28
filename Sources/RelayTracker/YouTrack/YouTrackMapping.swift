@@ -243,6 +243,36 @@ enum YouTrackMapping {
         )
     }
 
+    /// Nil for an entry that came without its issue, which a timesheet has
+    /// nowhere to put.
+    static func timeEntry(_ wire: YouTrackWire.WorkItem) -> TrackerTimeEntry? {
+        guard let issue = wire.issue, let key = issue.idReadable, !key.isEmpty else { return nil }
+        return TrackerTimeEntry(
+            item: workItem(wire),
+            issueKey: key,
+            summary: issue.summary ?? "",
+            project: issue.project.map { project($0) }
+        )
+    }
+
+    /// YouTrack counts the days of the week from Monday as 1, so Monday to
+    /// Saturday read the same whether Sunday is counted first or last; Sunday
+    /// is 7 one way and 0 the other, and is read as either.
+    static func workSchedule(_ wire: YouTrackWire.WorkTimeSettings) -> TrackerWorkSchedule {
+        let days = Set((wire.workDays ?? []).compactMap { day -> Int? in
+            switch day {
+            case 0, 7: 1
+            case 1 ... 6: day + 1
+            default: nil
+            }
+        })
+        let minutes = wire.minutesADay ?? 0
+        return TrackerWorkSchedule(
+            minutesADay: minutes > 0 ? minutes : TrackerWorkSchedule.standard.minutesADay,
+            workdays: days.isEmpty ? TrackerWorkSchedule.standard.workdays : days
+        )
+    }
+
     static func workTypes(_ wire: YouTrackWire.TimeTrackingSettings) -> [TrackerWorkType] {
         guard wire.enabled ?? true else { return [] }
         return (wire.workItemTypes ?? []).map { TrackerWorkType(id: $0.id, name: $0.name ?? $0.id) }

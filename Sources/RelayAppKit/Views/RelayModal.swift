@@ -273,7 +273,7 @@ struct ModalHost: View {
         case let .logWork(key, fromTimer):
             LogWorkView(key: key, fromTimer: fromTimer)
         case let .editWork(key, itemID):
-            if let item = model.tracker.workItems[key]?.first(where: { $0.id == itemID }) {
+            if let item = model.tracker.workItem(itemID, on: key) {
                 LogWorkView(key: key, fromTimer: false, editing: item)
             }
         }

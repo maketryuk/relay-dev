@@ -524,6 +524,41 @@ public struct TrackerWorkItem: Hashable, Sendable, Identifiable {
     }
 }
 
+/// Time one person recorded, with the issue it was recorded on: a line of a
+/// timesheet, which spans issues rather than belonging to one.
+public struct TrackerTimeEntry: Hashable, Sendable, Identifiable {
+    public var item: TrackerWorkItem
+    public var issueKey: String
+    public var summary: String
+    public var project: TrackerProject?
+
+    public var id: String { item.id }
+
+    public init(item: TrackerWorkItem, issueKey: String, summary: String, project: TrackerProject? = nil) {
+        self.item = item
+        self.issueKey = issueKey
+        self.summary = summary
+        self.project = project
+    }
+}
+
+/// How long a working day is and which days are worked, as the tracker counts
+/// them: what a day of a timesheet is measured against.
+public struct TrackerWorkSchedule: Hashable, Sendable {
+    public var minutesADay: Int
+    /// As `Calendar` numbers them, from Sunday as 1.
+    public var workdays: Set<Int>
+
+    public init(minutesADay: Int, workdays: Set<Int>) {
+        self.minutesADay = minutesADay
+        self.workdays = workdays
+    }
+
+    /// Eight hours, Monday to Friday: what YouTrack starts with, and what is
+    /// assumed when the tracker will not say.
+    public static let standard = TrackerWorkSchedule(minutesADay: 480, workdays: [2, 3, 4, 5, 6])
+}
+
 /// Time to record against an issue.
 public struct WorkEntry: Equatable, Sendable {
     public var minutes: Int

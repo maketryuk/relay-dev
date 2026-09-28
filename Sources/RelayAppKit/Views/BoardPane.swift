@@ -5,7 +5,7 @@ import RelayUI
 import SwiftUI
 
 /// The tracker's board for a project: its columns side by side, and cards that
-/// are dragged between them.
+/// are dragged between them — and beside it, the time you recorded, any day.
 ///
 /// Opened over the window rather than beside it, like the other things one
 /// consults and closes: the point is to pick the next piece of work, hand it to
@@ -16,6 +16,12 @@ struct BoardPane: View {
 
     @State private var filter = ""
     @State private var onlyMine = false
+    @State private var tab: Tab = .board
+
+    enum Tab: CaseIterable {
+        case board
+        case time
+    }
 
     private var tracker: TrackerController { model.tracker }
     private var boardID: String? { tracker.boardID(for: project.id) }
@@ -37,8 +43,10 @@ struct BoardPane: View {
         .task {
             if tracker.boards.isEmpty { tracker.refreshBoards() }
         }
-        .task(id: boardID) {
-            guard let boardID else { return }
+        // Only while the board is what is shown: a board behind the
+        // timesheet is a board nobody is looking at.
+        .task(id: tab == .board ? boardID : nil) {
+            guard tab == .board, let boardID else { return }
             tracker.refreshBoard(boardID)
             // Ends with the panel: a board nobody is looking at costs nothing.
             while !Task.isCancelled {
@@ -53,57 +61,70 @@ struct BoardPane: View {
 
     private var header: some View {
         HStack(spacing: Theme.Spacing.small) {
-            Text(relayLocalized("Issue Board"))
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Theme.Palette.textPrimary)
-                .lineLimit(1)
+            RelayTabs(Tab.allCases, selection: $tab, title: title(of:))
 
-            if tracker.isConnected {
-                boardMenu
-                if let board = snapshot?.board ?? boardID.flatMap(tracker.board), board.usesSprints {
-                    sprintMenu(board)
-                }
-                if let boardID, let snapshot, !snapshot.columns.isEmpty {
-                    columnsButton(snapshot, on: boardID)
-                }
-            }
-
-            Spacer(minLength: Theme.Spacing.small)
-
-            if snapshot != nil {
-                RelayTextField(relayLocalized("Filter cards"), text: $filter, systemImage: "line.3.horizontal.decrease")
-                    .frame(width: 220)
-                Chip(isSelected: onlyMine, action: { onlyMine.toggle() }) {
-                    Text(relayLocalized("Mine"))
-                        .font(Theme.Typography.row)
-                        .foregroundStyle(onlyMine ? Theme.Palette.textPrimary : Theme.Palette.textSecondary)
-                        .fixedSize()
-                }
-                .fixedSize()
-                .relayTooltip(relayLocalized("Only the cards assigned to you"))
-            }
-
-            if let boardID {
-                IconButton(
-                    systemImage: "arrow.clockwise",
-                    size: Theme.Metrics.action + 2,
-                    isBusy: tracker.boardsBeingRead.contains(boardID)
-                ) {
-                    tracker.refreshBoard(boardID)
-                }
-                .relayTooltip(relayLocalized("Reload the board"))
-
-                if snapshot != nil {
-                    RelayButton(relayLocalized("New Issue"), systemImage: "plus", kind: .primary) {
-                        model.beginNewIssue(on: boardID, in: nil, projectID: project.id)
-                    }
-                }
+            if tab == .board {
+                boardControls
+            } else {
+                Spacer(minLength: Theme.Spacing.small)
             }
 
             IconButton(systemImage: "xmark") { model.dismissModal() }
         }
         .padding(.horizontal, ModalSurface<EmptyView, EmptyView>.horizontalInset)
         .padding(.vertical, ModalSurface<EmptyView, EmptyView>.barVerticalInset)
+    }
+
+    private func title(of tab: Tab) -> String {
+        switch tab {
+        case .board: relayLocalized("Board")
+        case .time: relayLocalized("Time")
+        }
+    }
+
+    @ViewBuilder
+    private var boardControls: some View {
+        if tracker.isConnected {
+            boardMenu
+            if let board = snapshot?.board ?? boardID.flatMap(tracker.board), board.usesSprints {
+                sprintMenu(board)
+            }
+            if let boardID, let snapshot, !snapshot.columns.isEmpty {
+                columnsButton(snapshot, on: boardID)
+            }
+        }
+
+        Spacer(minLength: Theme.Spacing.small)
+
+        if snapshot != nil {
+            RelayTextField(relayLocalized("Filter cards"), text: $filter, systemImage: "line.3.horizontal.decrease")
+                .frame(width: 220)
+            Chip(isSelected: onlyMine, action: { onlyMine.toggle() }) {
+                Text(relayLocalized("Mine"))
+                    .font(Theme.Typography.row)
+                    .foregroundStyle(onlyMine ? Theme.Palette.textPrimary : Theme.Palette.textSecondary)
+                    .fixedSize()
+            }
+            .fixedSize()
+            .relayTooltip(relayLocalized("Only the cards assigned to you"))
+        }
+
+        if let boardID {
+            IconButton(
+                systemImage: "arrow.clockwise",
+                size: Theme.Metrics.action + 2,
+                isBusy: tracker.boardsBeingRead.contains(boardID)
+            ) {
+                tracker.refreshBoard(boardID)
+            }
+            .relayTooltip(relayLocalized("Reload the board"))
+
+            if snapshot != nil {
+                RelayButton(relayLocalized("New Issue"), systemImage: "plus", kind: .primary) {
+                    model.beginNewIssue(on: boardID, in: nil, projectID: project.id)
+                }
+            }
+        }
     }
 
     private var boardMenu: some View {
@@ -237,7 +258,9 @@ struct BoardPane: View {
         case .checking:
             ProgressView().controlSize(.small)
         case .connected:
-            if let boardID {
+            if tab == .time {
+                TimesheetView(project: project)
+            } else if let boardID {
                 if let snapshot {
                     BoardColumns(project: project, boardID: boardID, snapshot: snapshot, filter: filter, onlyMine: onlyMine)
                 } else if let failure = tracker.boardFailures[boardID] {

@@ -33,17 +33,13 @@ struct LogWorkView: View {
         editing.map { .editWork(key: key, itemID: $0.id) } ?? .logWork(key: key, fromTimer: fromTimer)
     }
 
-    private var project: TrackerProject? {
-        tracker.issues[key]?.project ?? tracker.card(key)?.project ?? tracker.timer.flatMap { $0.key == key ? $0.project : nil }
-    }
+    private var project: TrackerProject? { tracker.project(of: key) }
 
     private var types: [TrackerWorkType] {
         project.flatMap { tracker.workTypes[$0.id] } ?? []
     }
 
-    private var summary: String {
-        tracker.issues[key]?.summary ?? tracker.card(key)?.summary ?? tracker.timer.map(\.summary) ?? ""
-    }
+    private var summary: String { tracker.summary(of: key) ?? "" }
 
     var body: some View {
         ModalSurface(relayLocalized(editing == nil ? "Log Time" : "Edit Time"), onDismiss: dismiss) {

@@ -49,6 +49,14 @@ final class TrackerController {
     /// The kinds of work each project records time as, by the tracker's
     /// project identifier.
     private(set) var workTypes: [String: [TrackerWorkType]] = [:]
+    /// What the signed-in account recorded on any issue, by entry, for every
+    /// day the timesheet has read — so a week gone back to is on screen at
+    /// once, and read again behind it.
+    private(set) var timeEntries: [String: TrackerTimeEntry] = [:]
+    private(set) var isReadingTime = false
+    private(set) var timeFailure: TrackerError?
+    /// What a day of the timesheet is measured against, once asked.
+    private(set) var workSchedule: TrackerWorkSchedule?
     /// Writes in flight, so the control that sent one can say it is waiting
     /// and cannot send it twice.
     private(set) var writesInFlight: Set<Write> = []
@@ -78,6 +86,10 @@ final class TrackerController {
     /// Reads of an issue in flight, so a second caller waits on the first
     /// rather than going without.
     @ObservationIgnored private var reads: [String: Task<Bool, Never>] = [:]
+    /// Which read of the timesheet is the latest: a week paged past before its
+    /// answer came must not land over the one paged to.
+    @ObservationIgnored private var timeReads = 0
+    @ObservationIgnored private var hasAskedForSchedule = false
     /// A count of the changes made here, and the count at which each card was
     /// last changed. A board read that set off before a card was changed is
     /// older than the change, however late it arrives, and must not undo it —
@@ -213,6 +225,10 @@ final class TrackerController {
         comments = [:]
         workItems = [:]
         workTypes = [:]
+        timeEntries = [:]
+        timeFailure = nil
+        workSchedule = nil
+        hasAskedForSchedule = false
     }
 
     static func address(for kind: TrackerKind, typed: String) -> String? {
@@ -535,6 +551,7 @@ final class TrackerController {
             if let index = self.workItems[key]?.firstIndex(where: { $0.id == item.id }) {
                 self.workItems[key]?[index] = updated
             }
+            self.timeEntries[item.id]?.item = updated
             // The issue's spent time is the tracker's sum of these.
             if self.issues[key] != nil { self.open(key) }
         }
@@ -545,6 +562,7 @@ final class TrackerController {
         return await writing(.changeWork(item.id), failure: String(format: relayLocalized("Could not delete the time on %@"), key)) {
             try await tracker.deleteWork(item.id, on: key)
             self.workItems[key]?.removeAll { $0.id == item.id }
+            self.timeEntries[item.id] = nil
             if self.issues[key] != nil { self.open(key) }
         }
     }
@@ -588,10 +606,81 @@ final class TrackerController {
         return await writing(.work(key), failure: String(format: relayLocalized("Could not log time on %@"), key)) {
             let item = try await tracker.logWork(entry, on: key)
             self.workItems[key, default: []].insert(item, at: 0)
+            self.timeEntries[item.id] = TrackerTimeEntry(
+                item: item,
+                issueKey: key,
+                summary: self.summary(of: key) ?? "",
+                project: self.project(of: key)
+            )
             // The spent-time field is the tracker's sum, and only it knows how
             // the sum is kept; reading the issue again is how to see it.
             if self.issues[key] != nil { self.open(key) }
         }
+    }
+
+    // MARK: - Time across issues
+
+    /// Reads what the signed-in account recorded between two days, both
+    /// included, over whatever was read of them before. Quiet like a board:
+    /// what is on screen stays until the answer replaces it.
+    func readTime(from first: Date, through last: Date, in calendar: Calendar = .current) {
+        guard let tracker, let login = user?.login else { return }
+        timeReads += 1
+        let read = timeReads
+        isReadingTime = true
+        loadWorkSchedule()
+        Task { [weak self] in
+            let result: Result<[TrackerTimeEntry], any Error>
+            do {
+                result = .success(try await tracker.workItems(by: login, from: first, through: last, in: calendar))
+            } catch {
+                result = .failure(error)
+            }
+            guard let self, read == self.timeReads else { return }
+            self.isReadingTime = false
+            switch result {
+            case let .success(entries):
+                // Everything the answer covers is replaced, so an entry taken
+                // off in the tracker's own window goes from here too.
+                let start = calendar.startOfDay(for: first)
+                let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: last)) ?? last
+                self.timeEntries = self.timeEntries.filter { $0.value.item.date < start || $0.value.item.date >= end }
+                for entry in entries { self.timeEntries[entry.id] = entry }
+                self.timeFailure = nil
+            case let .failure(error):
+                self.timeFailure = self.noted(error)
+            }
+        }
+    }
+
+    private func loadWorkSchedule() {
+        guard let tracker, !hasAskedForSchedule else { return }
+        hasAskedForSchedule = true
+        Task { [weak self] in
+            self?.workSchedule = (try? await tracker.workSchedule()) ?? .standard
+        }
+    }
+
+    /// One entry of time, from the issue it was read with or from the
+    /// timesheet: either can be where it is corrected from.
+    func workItem(_ itemID: String, on key: String) -> TrackerWorkItem? {
+        workItems[key]?.first { $0.id == itemID } ?? timeEntries[itemID]?.item
+    }
+
+    /// What is known of an issue's summary without asking: from the issue, its
+    /// card, a line of the timesheet or the timer.
+    func summary(of key: String) -> String? {
+        issues[key]?.summary
+            ?? card(key)?.summary
+            ?? timeEntries.values.first { $0.issueKey == key }?.summary
+            ?? timer.flatMap { $0.key == key ? $0.summary : nil }
+    }
+
+    func project(of key: String) -> TrackerProject? {
+        issues[key]?.project
+            ?? card(key)?.project
+            ?? timeEntries.values.first { $0.issueKey == key }?.project
+            ?? timer.flatMap { $0.key == key ? $0.project : nil }
     }
 
     private func writing(_ write: Write, failure title: String, _ body: () async throws -> Void) async -> Bool {

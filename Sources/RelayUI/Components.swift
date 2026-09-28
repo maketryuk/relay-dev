@@ -930,6 +930,92 @@ public struct Chip<Content: View>: View {
     }
 }
 
+// MARK: - Tabs
+
+/// A few views of one thing side by side, with a plate under the one shown
+/// that slides to the next when another is chosen.
+///
+/// Where the choice is which view fills the space below, rather than a
+/// setting: chips say "one of these is picked", and a plate that travels says
+/// "the same place, looked at another way". AppKit's segmented control would
+/// say it too, in a look borrowed from somewhere else.
+public struct RelayTabs<Item: Hashable>: View {
+    private let items: [Item]
+    @Binding private var selection: Item
+    private let title: @MainActor (Item) -> String
+
+    @Namespace private var plate
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hovered: Item?
+
+    /// The track's inset around the plate, so the plate's corners follow the
+    /// track's at an even distance.
+    private static var inset: CGFloat { 3 }
+
+    public init(_ items: [Item], selection: Binding<Item>, title: @escaping @MainActor (Item) -> String) {
+        self.items = items
+        _selection = selection
+        self.title = title
+    }
+
+    public var body: some View {
+        HStack(spacing: 0) {
+            ForEach(items, id: \.self) { item in
+                tab(item)
+            }
+        }
+        .padding(Self.inset)
+        .background(Theme.Palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small + Self.inset, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.small + Self.inset, style: .continuous)
+                .strokeBorder(Theme.Palette.border, lineWidth: 1)
+        )
+        // Only the plate moves: what the tabs switch between is swapped at
+        // once, since a board fading out under a sliding plate is two motions
+        // where one says it.
+        .animation(reduceMotion ? nil : .spring(response: 0.34, dampingFraction: 0.82), value: selection)
+        .animation(.easeOut(duration: 0.1), value: hovered)
+        .fixedSize()
+    }
+
+    private func tab(_ item: Item) -> some View {
+        let isSelected = item == selection
+        return Button {
+            selection = item
+        } label: {
+            Text(verbatim: title(item))
+                .font(Theme.Typography.row)
+                .foregroundStyle(isSelected || hovered == item ? Theme.Palette.textPrimary : Theme.Palette.textSecondary)
+                .lineLimit(1)
+                .padding(.horizontal, Theme.Spacing.medium)
+                .frame(height: 22)
+                .background {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
+                            .fill(Theme.Palette.surfaceActive)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
+                                    .strokeBorder(Theme.Palette.borderStrong.opacity(0.6), lineWidth: 0.5)
+                            )
+                            .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
+                            .matchedGeometryEffect(id: "plate", in: plate)
+                    }
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .clickable()
+        .onHover { isHovering in
+            if isHovering {
+                hovered = item
+            } else if hovered == item {
+                hovered = nil
+            }
+        }
+    }
+}
+
 // MARK: - Checkbox
 
 /// A small square with a label, for the settings that come in sets.

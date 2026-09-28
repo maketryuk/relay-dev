@@ -160,6 +160,10 @@ workspace is a git worktree.
   relaunch, and time logged — from the timer or typed — with a kind of work
   when the project has them. The record is listed by day, with what everyone
   and what you logged.
+- **A timesheet**, beside the board: what you logged on any issue, a week of
+  columns or a month of days, against the working day the tracker is set up
+  with. Any day is a click away, and each entry is corrected or taken off
+  where it stands.
 - **New cards**, in the column they were made in.
 - **Pictures**: people's avatars, the screenshots a description or a comment
   shows, the issue's files, and a card coloured by the field the board is set
@@ -197,7 +201,12 @@ workspace is a git worktree.
    plugin reads; one captured from a live board would pin what an instance
    really sends — a merged column, a board filled by hand, and above all a
    state a state machine governs, which is moved by command on the strength of
-   the documentation alone.
+   the documentation alone. The timesheet's list of time across issues and the
+   working week it is measured against are read the same way.
+7. **The rest of the timesheet.** Time is logged from an issue, not from a day
+   of the timesheet, since that needs an issue to be picked there — which is a
+   search the window does not have yet. And a kind of work is written as its
+   name, where the tracker's own timesheet gives each kind a colour.
 
 ## Then
 

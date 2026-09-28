@@ -152,6 +152,19 @@ enum YouTrackWire {
         var duration: Duration?
         var author: User?
         var type: WorkType?
+        /// Asked for only across issues; on one issue's list it is that issue.
+        var issue: WorkItemIssue?
+    }
+
+    struct WorkItemIssue: Decodable {
+        var idReadable: String?
+        var summary: String?
+        var project: Project?
+    }
+
+    struct WorkTimeSettings: Decodable {
+        var minutesADay: Int?
+        var workDays: [Int]?
     }
 
     struct TimeTrackingSettings: Decodable {

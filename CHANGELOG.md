@@ -7,6 +7,14 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Added
+
+- **A timesheet beside the issue board.** The board's window has a Time tab:
+  what you logged on any issue, as a week of columns or a month of days, each
+  day against the working day the tracker is set up with. The arrows, Today
+  and a calendar get to any day. An entry opens to be corrected, and its key
+  opens the issue.
+
 ### Changed
 
 - **Open in the Git and TODO panels opens the file in Relay**, in the pane

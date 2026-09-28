@@ -88,6 +88,52 @@ public struct YouTrackTracker: IssueTracker {
         return wire.map(YouTrackMapping.workItem).sorted { $0.date > $1.date }
     }
 
+    public func workItems(
+        by login: String,
+        from first: Date,
+        through last: Date,
+        in calendar: Calendar
+    ) async throws -> [TrackerTimeEntry] {
+        // A day either side: YouTrack reads the days in the account's time
+        // zone, which need not be this Mac's, and an entry on the edge would
+        // otherwise be lost to whichever of the two is ahead. What is kept is
+        // the days asked for, by the calendar they were asked in.
+        let start = calendar.startOfDay(for: first)
+        let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: last)) ?? last
+        let before = calendar.date(byAdding: .day, value: -1, to: start) ?? start
+        let limit = Int(YouTrackAPI.listLimit) ?? 500
+        var entries: [TrackerTimeEntry] = []
+        var read = 0
+        while true {
+            let request = YouTrackAPI.workItems(
+                by: login,
+                from: YouTrackAPI.day(before, in: calendar),
+                through: YouTrackAPI.day(end, in: calendar),
+                skip: read
+            )
+            let page: [YouTrackWire.WorkItem] = try await perform(request)
+            entries += page.compactMap(YouTrackMapping.timeEntry)
+            read += page.count
+            // A month of time cut off at a list's length would be a month
+            // that looks shorter than it was, with nothing to say so.
+            guard page.count == limit else { break }
+        }
+        return entries
+            .filter { $0.item.date >= start && $0.item.date < end }
+            .sorted { $0.item.date < $1.item.date }
+    }
+
+    public func workSchedule() async throws -> TrackerWorkSchedule {
+        do {
+            let wire: YouTrackWire.WorkTimeSettings = try await perform(YouTrackAPI.workSchedule())
+            return YouTrackMapping.workSchedule(wire)
+        } catch let error as TrackerError where error.kind == .forbidden || error.kind == .notFound {
+            // An administrator's page, like the kinds of work: an account
+            // that may log time need not be allowed to read it.
+            return .standard
+        }
+    }
+
     public func workTypes(in project: TrackerProject) async throws -> [TrackerWorkType] {
         do {
             let wire: YouTrackWire.TimeTrackingSettings = try await perform(YouTrackAPI.workTypes(in: project.id))

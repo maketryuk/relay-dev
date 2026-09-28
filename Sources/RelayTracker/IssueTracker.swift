@@ -37,6 +37,16 @@ public protocol IssueTracker: Sendable {
 
     func workItems(on key: String) async throws -> [TrackerWorkItem]
 
+    /// Everything one person recorded, on whatever issue, from the first day
+    /// to the last, both included, oldest first. The days are `calendar`'s:
+    /// it says where one ends.
+    func workItems(by login: String, from first: Date, through last: Date, in calendar: Calendar) async throws
+        -> [TrackerTimeEntry]
+
+    /// How long a working day is and which days are worked. `standard` when
+    /// the tracker does not say, or will not say to this account.
+    func workSchedule() async throws -> TrackerWorkSchedule
+
     /// The kinds of work a project records time as. Empty when it has none, or
     /// when the account is not allowed to read them.
     func workTypes(in project: TrackerProject) async throws -> [TrackerWorkType]

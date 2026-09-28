@@ -82,6 +82,7 @@ enum YouTrackAPI {
     ].joined(separator: ",")
     static let commentFields = "id,text,created,deleted,author(\(userFields))"
     static let workItemFields = "id,date,text,duration(minutes),author(\(userFields)),type(id,name)"
+    static let timeEntryFields = workItemFields + ",issue(idReadable,summary,project(\(projectFields)))"
 
     /// YouTrack answers a list with forty-two entries unless told otherwise,
     /// which is a board missing its last column's worth of anything.
@@ -142,6 +143,31 @@ enum YouTrackAPI {
 
     static func workItems(on key: String) -> YouTrackRequest {
         get("issues/\(escaped(key))/timeTracking/workItems", fields: workItemFields, top: listLimit)
+    }
+
+    /// One person's time on every issue between two days, both included,
+    /// written the way YouTrack's own filter takes them: `2026-09-28`.
+    /// `skip` is how many have been read already, for a range with more than
+    /// one list's worth in it.
+    static func workItems(by login: String, from first: String, through last: String, skip: Int = 0) -> YouTrackRequest {
+        var request = get("workItems", fields: timeEntryFields, top: listLimit)
+        request.query += [
+            URLQueryItem(name: "author", value: login),
+            URLQueryItem(name: "startDate", value: first),
+            URLQueryItem(name: "endDate", value: last),
+        ]
+        if skip > 0 { request.query.append(URLQueryItem(name: "$skip", value: String(skip))) }
+        return request
+    }
+
+    static func workSchedule() -> YouTrackRequest {
+        get("admin/timeTrackingSettings/workTimeSettings", fields: "minutesADay,workDays")
+    }
+
+    /// The day a moment falls on in `calendar`, as the filters write one.
+    static func day(_ date: Date, in calendar: Calendar) -> String {
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 
     static func workTypes(in projectID: String) -> YouTrackRequest {

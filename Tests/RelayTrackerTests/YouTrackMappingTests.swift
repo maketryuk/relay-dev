@@ -211,6 +211,33 @@ struct YouTrackMappingTests {
         #expect(read[1].colorField == nil)
     }
 
+    @Test("A working week is read with Sunday counted either first or last")
+    func workSchedule() {
+        let weekdays = YouTrackMapping.workSchedule(.init(minutesADay: 420, workDays: [1, 2, 3, 4, 5]))
+        #expect(weekdays == TrackerWorkSchedule(minutesADay: 420, workdays: [2, 3, 4, 5, 6]))
+        #expect(YouTrackMapping.workSchedule(.init(minutesADay: 480, workDays: [6, 7])).workdays == [7, 1])
+        #expect(YouTrackMapping.workSchedule(.init(minutesADay: 480, workDays: [0])).workdays == [1])
+        // Nothing said is the ordinary week, not a week with no work in it.
+        #expect(YouTrackMapping.workSchedule(.init(minutesADay: nil, workDays: nil)) == .standard)
+    }
+
+    @Test("A line of a timesheet needs the issue it was recorded on")
+    func timeEntry() throws {
+        let decoder = JSONDecoder()
+        let wire = try decoder.decode(YouTrackWire.WorkItem.self, from: Data("""
+        {"id": "w1", "date": 1790596800000, "duration": {"minutes": 30},
+         "issue": {"idReadable": "WEB-1", "summary": "Login", "project": {"id": "0-3", "shortName": "WEB"}}}
+        """.utf8))
+        let entry = try #require(YouTrackMapping.timeEntry(wire))
+        #expect(entry.issueKey == "WEB-1")
+        #expect(entry.summary == "Login")
+        #expect(entry.project?.key == "WEB")
+        #expect(entry.item.minutes == 30)
+
+        let orphan = try decoder.decode(YouTrackWire.WorkItem.self, from: Data(#"{"id": "w2"}"#.utf8))
+        #expect(YouTrackMapping.timeEntry(orphan) == nil)
+    }
+
     @Test("A person's picture is kept as the tracker wrote it")
     func avatars() throws {
         #expect(try snapshot().cards[0].assignee?.avatar == "/hub/api/rest/avatar/abc?s=48")
