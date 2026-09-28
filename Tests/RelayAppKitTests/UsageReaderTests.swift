@@ -520,7 +520,7 @@ struct ClaudeCredentialsTests {
     func namesTheKeychainAccount() {
         // Claude Code 2.1 keeps SSO logins under a fixed name, so looking the
         // item up under the login name would find nothing.
-        #expect(ClaudeCredentials.account(for: "nikita") == "nikita")
+        #expect(ClaudeCredentials.account(for: "sam") == "sam")
         #expect(ClaudeCredentials.account(for: "first.last-2") == "first.last-2")
         #expect(ClaudeCredentials.account(for: "first@example.com") == "claude-code-user")
         #expect(ClaudeCredentials.account(for: "") == "claude-code-user")
