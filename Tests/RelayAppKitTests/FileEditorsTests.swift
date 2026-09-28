@@ -324,6 +324,30 @@ struct SingleFilePaneTests {
     }
 }
 
+@Suite("Opening a file a panel names")
+@MainActor
+struct ProjectFileOpeningTests {
+    @Test("A path relative to the project opens in a pane, at its line")
+    func atTheLine() throws {
+        // The TODO panel and the Git panel name files the way git does, and
+        // used to hand them to another application to open.
+        let directory = try TemporaryDirectory()
+        try directory.write("first\nsecond\nthird\n", to: "Sources/notes.swift")
+        let store = try TemporaryDirectory()
+        let model = AppModel(store: WorkspaceStore(url: store.url.appendingPathComponent("workspace.json")))
+        model.addProject(at: directory.url)
+        let project = try #require(model.projects.first)
+        let path = directory.url.appendingPathComponent("Sources/notes.swift").path
+
+        model.openProjectFile("Sources/notes.swift", line: 2, in: project)
+
+        let file = try #require(model.editors[path])
+        #expect(PaneLayout.files(in: try #require(model.paneLayout(for: project.id))) == [path])
+        #expect(file.caret == ("first\n" as NSString).length)
+        _ = (directory, store)
+    }
+}
+
 @Suite("File tree")
 struct FileTreeTests {
     private func directory(_ build: (URL) throws -> Void) throws -> String {

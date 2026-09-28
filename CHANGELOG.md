@@ -7,6 +7,13 @@ breaking change to stored data.
 
 ## Unreleased
 
+### Changed
+
+- **Open in the Git and TODO panels opens the file in Relay**, in the pane
+  beside the terminal, and a TODO opens at its line. Both used to hand the
+  file to another application. The project's own editor is still in each
+  file's context menu, as Open in External Editor.
+
 ### Fixed
 
 - **A file ticked in the Git panel stays where it was.** Ticking one moved it

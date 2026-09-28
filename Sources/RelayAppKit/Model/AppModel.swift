@@ -1271,6 +1271,21 @@ final class AppModel {
         return true
     }
 
+    /// Opens a file a panel names — relative to the working copy, the way git
+    /// and the TODO scan write it — in a pane, at a line when one is known.
+    ///
+    /// In a pane rather than in another application: a file is opened from a
+    /// panel to read it or change a line of it beside the agent working on
+    /// it, and another editor is a long way to go for that. The project's own
+    /// editor is still `openFileInEditor`, asked for by name.
+    func openProjectFile(_ path: String, line: Int? = nil, in project: Project) {
+        let absolute = URL(fileURLWithPath: workingRoot(of: project.id) ?? project.rootPath)
+            .appendingPathComponent(path)
+            .path
+        guard openFile(at: absolute, in: project.id), let line else { return }
+        editors[absolute]?.jump(toLine: line)
+    }
+
     /// Where a link clicked in a Markdown preview goes: another file into the
     /// pane, the way the tree would open it, and the web to the browser.
     func follow(_ link: MarkdownLink, in projectID: ProjectID) {

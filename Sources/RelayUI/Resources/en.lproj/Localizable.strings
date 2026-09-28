@@ -294,7 +294,6 @@
 "Edit Preset" = "Edit Preset";
 "Edit Service" = "Edit Service";
 "Edit Time" = "Edit Time";
-"Edit here" = "Edit here";
 "Edit the comment" = "Edit the comment";
 "Edit the config file" = "Edit the config file";
 "Edit" = "Edit";
@@ -594,7 +593,6 @@
 "Open in Editor" = "Open in Editor";
 "Open in Finder" = "Open in Finder";
 "Open in browser" = "Open in browser";
-"Open in editor" = "Open in editor";
 "Open in the config file" = "Open in the config file";
 "Open localhost:%d" = "Open localhost:%d";
 "Open port %d" = "Open port %d";
@@ -602,6 +600,7 @@
 "OpenCode" = "OpenCode";
 "Opens the existing branch %@ in %@" = "Opens the existing branch %@ in %@";
 "Options" = "Options";
+"Open in External Editor" = "Open in External Editor";
 "Other declarations: %d" = "Other declarations: %d";
 "Other directives" = "Other directives";
 "Other hosts" = "Other hosts";

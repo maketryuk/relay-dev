@@ -294,7 +294,6 @@
 "Edit Preset" = "Изменить пресет";
 "Edit Service" = "Изменить сервис";
 "Edit Time" = "Изменить время";
-"Edit here" = "Править здесь";
 "Edit the comment" = "Изменить комментарий";
 "Edit the config file" = "Открыть файл конфигурации";
 "Edit" = "Изменить";
@@ -594,7 +593,6 @@
 "Open in Editor" = "Открыть в редакторе";
 "Open in Finder" = "Показать в Finder";
 "Open in browser" = "Открыть в браузере";
-"Open in editor" = "Открыть в редакторе";
 "Open in the config file" = "Открыть в файле конфигурации";
 "Open localhost:%d" = "Открыть localhost:%d";
 "Open port %d" = "Открыть порт %d";
@@ -602,6 +600,7 @@
 "OpenCode" = "OpenCode";
 "Opens the existing branch %@ in %@" = "Откроет существующую ветку %@ в %@";
 "Options" = "Параметры";
+"Open in External Editor" = "Открыть во внешнем редакторе";
 "Other declarations: %d" = "Другие объявления: %d";
 "Other directives" = "Прочие директивы";
 "Other hosts" = "Другие хосты";

@@ -515,15 +515,21 @@ private struct FileCard: View {
                         .relayTooltip(relayLocalized("Copy path"))
                     IconButton(systemImage: "arrow.uturn.backward", help: "", size: Theme.Metrics.action, action: onDiscard)
                         .relayTooltip(relayLocalized("Discard"))
-                    IconButton(systemImage: "square.and.pencil", help: "", size: Theme.Metrics.action) { edit() }
-                        .relayTooltip(relayLocalized("Edit here"))
-                    IconButton(systemImage: "arrow.up.forward.square", help: "", size: Theme.Metrics.action) { open() }
+                    IconButton(systemImage: "doc.text", help: "", size: Theme.Metrics.action) { open() }
                         .relayTooltip(relayLocalized("Open"))
                 }
             }
         }
         .padding(.horizontal, Theme.Spacing.small)
         .padding(.vertical, 6)
+        .contextMenu {
+            Button(relayLocalized("Open")) { open() }
+            Button(relayLocalized("Open in External Editor")) {
+                model.openFileInEditor(change.path, in: project)
+            }
+            Divider()
+            Button(relayLocalized("Copy path")) { copyPath() }
+        }
     }
 
     private var counts: some View {
@@ -586,16 +592,7 @@ private struct FileCard: View {
     }
 
     private func open() {
-        model.openFileInEditor(change.path, in: project)
-    }
-
-    /// Opens the file in a pane rather than in another application: the point
-    /// of looking at a diff is usually to change one line of it, and a round
-    /// trip through another editor is a long way to go for that.
-    private func edit() {
-        let url = URL(fileURLWithPath: model.workingRoot(of: project.id) ?? project.rootPath)
-            .appendingPathComponent(change.path)
-        model.openFile(at: url.path, in: project.id)
+        model.openProjectFile(change.path, in: project)
     }
 }
 

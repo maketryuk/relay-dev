@@ -282,11 +282,11 @@ private struct TodoRow: View {
                             }
                         }
                         IconButton(
-                            systemImage: "arrow.up.forward.square",
-                            help: relayLocalized("Open in editor"),
+                            systemImage: "doc.text",
+                            help: relayLocalized("Open"),
                             size: Theme.Metrics.action
                         ) {
-                            model.openFileInEditor(todo.path, line: todo.line, in: project)
+                            model.openProjectFile(todo.path, line: todo.line, in: project)
                         }
                     }
                 }
@@ -302,7 +302,10 @@ private struct TodoRow: View {
         .onHover { isHovering = $0 }
         .help(todo.text)
         .contextMenu {
-            Button(relayLocalized("Open in editor")) {
+            Button(relayLocalized("Open")) {
+                model.openProjectFile(todo.path, line: todo.line, in: project)
+            }
+            Button(relayLocalized("Open in External Editor")) {
                 model.openFileInEditor(todo.path, line: todo.line, in: project)
             }
             Button(relayLocalized("Copy")) {
