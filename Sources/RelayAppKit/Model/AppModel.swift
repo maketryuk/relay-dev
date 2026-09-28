@@ -1313,7 +1313,10 @@ final class AppModel {
         case let .external(url):
             NSWorkspace.shared.open(url)
         case nil:
-            break
+            // Usually a file that has since been moved — an agent asked to
+            // put it somewhere else leaves the old path on screen — and a
+            // ⌘-click that does nothing reads as a click that did not work.
+            present(ToastContent(kind: .error, title: relayLocalized("No such file"), message: link))
         }
     }
 

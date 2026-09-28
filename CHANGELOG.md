@@ -12,6 +12,9 @@ breaking change to stored data.
 - **Typing reaches the terminal that was clicked**, with a file open beside
   it. Once the file had been clicked into, clicking back into the terminal left
   the keyboard in the file, and nothing typed reached the session.
+- **A path ⌘-clicked in a terminal with no file at it says so.** It did
+  nothing, which is what a file an agent has just moved elsewhere looked like:
+  its old path stays on screen, and the click seemed to have stopped working.
 
 ## 0.8.2 — 2026-09-27
 

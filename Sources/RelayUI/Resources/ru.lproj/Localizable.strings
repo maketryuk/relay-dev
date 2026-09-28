@@ -555,6 +555,7 @@
 "No projects yet" = "Пока нет проектов";
 "No remote" = "Нет удалённого";
 "No sessions yet" = "Пока нет сессий";
+"No such file" = "Такого файла нет";
 "No ssh-agent is running, so every connection asks for the passphrase." = "ssh-agent не запущен, поэтому парольную фразу спрашивают при каждом подключении.";
 "No textual difference" = "Текстовых отличий нет";
 "No upstream" = "Без upstream";

@@ -200,8 +200,10 @@ where the session's shell is now (`proc_pidinfo`), where the session started,
 and in the project. The disk goes first because `URL(string:)` reads
 `README.md:3` as an address with the scheme `readme.md`. A file opens in the
 pane beside the terminal, at its line; a folder in Finder; an address goes to
-macOS. An SSH session's paths are on the other machine and are not looked for on
-this one.
+macOS. A path with nothing at it says so, since it is usually a file an agent
+has since moved and a ⌘-click that does nothing reads as one that did not work.
+An SSH session's paths are on the other machine and are not looked for on this
+one.
 
 ## Persistence
 
