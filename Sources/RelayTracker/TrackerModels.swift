@@ -578,11 +578,20 @@ public struct WorkEntry: Equatable, Sendable {
 /// A new value for one field: none clears it.
 public struct FieldChange: Equatable, Sendable {
     public var field: TrackerField
+    /// For a field of options or people.
     public var values: [FieldOption]
+    /// For a date: the day, as a calendar names it. A date field holds a day
+    /// rather than a moment, and which moment stands for the day is the
+    /// tracker's to say.
+    public var day: DateComponents?
+    /// For a length of time.
+    public var minutes: Int?
 
-    public init(field: TrackerField, values: [FieldOption]) {
+    public init(field: TrackerField, values: [FieldOption] = [], day: DateComponents? = nil, minutes: Int? = nil) {
         self.field = field
         self.values = values
+        self.day = day
+        self.minutes = minutes
     }
 }
 
@@ -646,10 +655,14 @@ public struct IssueDraft: Equatable, Sendable {
     public var project: TrackerProject
     public var summary: String
     public var description: String
+    /// The fields given a value of their own. Any other starts as the project
+    /// starts it, which is the value the form showed for it.
+    public var fields: [FieldChange]
 
-    public init(project: TrackerProject, summary: String, description: String = "") {
+    public init(project: TrackerProject, summary: String, description: String = "", fields: [FieldChange] = []) {
         self.project = project
         self.summary = summary
         self.description = description
+        self.fields = fields
     }
 }

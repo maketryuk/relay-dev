@@ -69,6 +69,10 @@ enum YouTrackAPI {
             + "bundle(values(\(optionFields)),aggregatedUsers(\(userFields)))))",
         "attachments(id,name,url,thumbnailURL,mimeType,size,removed)",
     ].joined(separator: ",")
+    /// An issue's fields as a new one would have them: what each could be and
+    /// what the project starts it as, and nothing of the issue's own.
+    static let draftFields = "id,customFields(name,$type,projectCustomField(field(localizedName),canBeEmpty,"
+        + "emptyFieldText,defaultValues(\(valueFields)),bundle(values(\(optionFields)),aggregatedUsers(\(userFields)))))"
     static let boardFields = [
         "id,name",
         "projects(\(projectFields))",
@@ -113,6 +117,17 @@ enum YouTrackAPI {
 
     static func card(_ key: String) -> YouTrackRequest {
         get("issues/\(escaped(key))", fields: cardFields)
+    }
+
+    /// One issue of the project, read for the fields it has rather than for
+    /// itself. The project's own list of fields is an administrator's page,
+    /// and answers anybody else with an empty list rather than a refusal;
+    /// every issue, though, carries every field of its project, and with each
+    /// what the project starts a new issue with.
+    static func newIssueFields(in project: TrackerProject) -> YouTrackRequest {
+        var request = get("issues", fields: draftFields, top: "1")
+        request.query.append(URLQueryItem(name: "query", value: "project: {\(project.key)}"))
+        return request
     }
 
     /// Applies a command the way the command box in YouTrack does, workflows
@@ -172,6 +187,12 @@ enum YouTrackAPI {
 
     static func workTypes(in projectID: String) -> YouTrackRequest {
         get("admin/projects/\(escaped(projectID))/timeTrackingSettings", fields: "enabled,workItemTypes(id,name)")
+    }
+
+    /// Which field the project adds the time logged up in: a length of time
+    /// like an estimate, and to be left alone.
+    static func timeSpentField(in projectID: String) -> YouTrackRequest {
+        get("admin/projects/\(escaped(projectID))/timeTrackingSettings", fields: "enabled,timeSpent(field(name))")
     }
 
     static func updateComment(_ commentID: String, text: String, on key: String) -> YouTrackRequest {
@@ -247,11 +268,13 @@ enum YouTrackAPI {
     }
 
     static func create(_ draft: IssueDraft) -> YouTrackRequest {
-        post("issues", fields: cardFields, body: [
+        var body: [String: Any] = [
             "project": ["id": draft.project.id],
             "summary": draft.summary,
             "description": draft.description,
-        ])
+        ]
+        if !draft.fields.isEmpty { body["customFields"] = draft.fields.map(fieldJSON) }
+        return post("issues", fields: cardFields, body: body)
     }
 
     /// Puts an issue on a board that is filled by hand.
@@ -264,21 +287,39 @@ enum YouTrackAPI {
     }
 
     /// One field as a write names it: by name, with its kind repeated back,
-    /// and each value by the name the tracker gave it — a person by login.
+    /// and each value by the name the tracker gave it — a person by login, a
+    /// day by its noon, a length by its minutes.
     static func fieldJSON(_ change: FieldChange) -> [String: Any] {
         let field = change.field
         func value(_ option: FieldOption) -> [String: Any] {
             field.kind == .user ? ["login": option.login ?? option.name] : ["name": option.name]
         }
         let written: Any
-        if field.allowsSeveral {
-            written = change.values.map(value)
-        } else if let first = change.values.first {
-            written = value(first)
-        } else {
-            written = NSNull()
+        switch field.kind {
+        case .date:
+            written = change.day.flatMap(noon).map(milliseconds) ?? NSNull()
+        case .period:
+            written = change.minutes.map { ["minutes": $0] } ?? NSNull()
+        case .option, .user, .text, .other:
+            if field.allowsSeveral {
+                written = change.values.map(value)
+            } else if let first = change.values.first {
+                written = value(first)
+            } else {
+                written = NSNull()
+            }
         }
         return ["name": field.name, "$type": field.wireType, "value": written]
+    }
+
+    /// The moment YouTrack keeps a day as, and writes one picked in its own
+    /// calendar as: noon in UTC, which is the same day in every time zone
+    /// people work in. Midnight in Moscow is still the day before in UTC.
+    static func noon(of day: DateComponents) -> Date? {
+        guard let year = day.year, let month = day.month, let date = day.day else { return nil }
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(identifier: "UTC") ?? utc.timeZone
+        return utc.date(from: DateComponents(year: year, month: month, day: date, hour: 12))
     }
 
     // MARK: - Field kinds

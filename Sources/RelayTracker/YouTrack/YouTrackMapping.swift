@@ -180,6 +180,32 @@ enum YouTrackMapping {
         return field
     }
 
+    /// The fields of the issue as a new one in its project would have them:
+    /// the project's defaults for values, and none of the issue's own.
+    ///
+    /// Without the time-tracking settings, which say which length of time is
+    /// the one the tracker adds up, no length of time is offered at all: the
+    /// spent time is the sum of the time logged rather than a value to give,
+    /// and an estimate left out is less wrong than a field that looks
+    /// settable and is not.
+    static func newIssueFields(
+        of wire: YouTrackWire.Issue,
+        timeTracking: YouTrackWire.TimeTrackingSettings?
+    ) -> [TrackerField] {
+        let addedUp: Set<String>? = timeTracking.map { settings in
+            guard settings.enabled != false, let name = settings.timeSpent?.field?.name else { return [] }
+            return [name]
+        }
+        return (wire.customFields ?? []).compactMap { custom -> TrackerField? in
+            var bare = custom
+            bare.value = nil
+            var made = field(bare)
+            if made.kind == .period, addedUp?.contains(made.name) ?? true { return nil }
+            made.values = (custom.projectCustomField?.defaultValues ?? []).compactMap { option($0, kind: made.kind) }
+            return made
+        }
+    }
+
     /// A single value is an option for a field of options and people, and a
     /// line of text for the rest — a period's `1h 30m`, a text field's body.
     private static func place(_ entity: YouTrackWire.Entity, in field: inout TrackerField) {

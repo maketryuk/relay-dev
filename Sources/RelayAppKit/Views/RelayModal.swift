@@ -144,8 +144,9 @@ enum RelayModal: Identifiable, Hashable {
         case .board: CGSize(width: 1_600, height: 1_000)
         case .boardColumns: CGSize(width: 680, height: 640)
         case .issue: CGSize(width: 1_040, height: 780)
-        // As wide as the description's toolbar, which is the tracker's own.
-        case .newIssue: CGSize(width: 720, height: 660)
+        // The description as wide as its toolbar, which is the tracker's own,
+        // and the fields beside it as wide as they are beside an issue.
+        case .newIssue: CGSize(width: 1_020, height: 660)
         case .logWork, .editWork: CGSize(width: 480, height: 500)
         }
     }

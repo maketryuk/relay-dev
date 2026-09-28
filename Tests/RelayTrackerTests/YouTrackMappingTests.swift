@@ -168,6 +168,57 @@ enum YouTrackFixtures {
     ]
     """
 
+    /// One issue of a project, read for its fields as a new issue would have
+    /// them: its own values beside the project's defaults, which are what
+    /// counts. Shaped after a live answer, with names of its own.
+    static let newIssueFields = """
+    [
+      {
+        "id": "2-35",
+        "customFields": [
+          {"name": "State", "$type": "StateIssueCustomField",
+           "value": {"id": "67-2", "name": "In Progress", "$type": "StateBundleElement"},
+           "projectCustomField": {"field": {"localizedName": "Статус"}, "canBeEmpty": false, "emptyFieldText": "No state",
+             "defaultValues": [{"id": "67-0", "name": "Open", "localizedName": "Открыта", "$type": "StateBundleElement"}],
+             "bundle": {"values": [{"id": "67-0", "name": "Open", "localizedName": "Открыта"},
+                                   {"id": "67-2", "name": "In Progress", "localizedName": "В работе"}]},
+             "$type": "StateProjectCustomField"}},
+          {"name": "Assignee", "$type": "SingleUserIssueCustomField",
+           "value": {"id": "1-2", "login": "jane", "fullName": "Jane Doe", "$type": "User"},
+           "projectCustomField": {"field": {"localizedName": "Исполнитель"}, "canBeEmpty": true, "emptyFieldText": "Unassigned",
+             "defaultValues": [],
+             "bundle": {"aggregatedUsers": [{"id": "1-2", "login": "jane", "fullName": "Jane Doe"},
+                                            {"id": "1-3", "login": "max", "fullName": "Max Kay"}]},
+             "$type": "UserProjectCustomField"}},
+          {"name": "Участники", "$type": "MultiUserIssueCustomField",
+           "value": [{"id": "1-3", "login": "max", "fullName": "Max Kay", "$type": "User"}],
+           "projectCustomField": {"field": {}, "canBeEmpty": true, "emptyFieldText": "Нет: участники",
+             "defaultValues": [{"id": "1-2", "login": "jane", "fullName": "Jane Doe", "$type": "User"}],
+             "bundle": {"aggregatedUsers": [{"id": "1-2", "login": "jane", "fullName": "Jane Doe"}]},
+             "$type": "UserProjectCustomField"}},
+          {"name": "Due Date", "$type": "DateIssueCustomField", "value": 1542582000000,
+           "projectCustomField": {"field": {"localizedName": "Срок"}, "canBeEmpty": true, "emptyFieldText": "Нет: срок",
+             "$type": "SimpleProjectCustomField"}},
+          {"name": "Estimation", "$type": "PeriodIssueCustomField",
+           "value": {"minutes": 150, "presentation": "2h 30m", "$type": "PeriodValue"},
+           "projectCustomField": {"field": {}, "canBeEmpty": true, "emptyFieldText": "?", "$type": "PeriodProjectCustomField"}},
+          {"name": "Spent time", "$type": "PeriodIssueCustomField",
+           "value": {"minutes": 95, "presentation": "1h 35m", "$type": "PeriodValue"},
+           "projectCustomField": {"field": {}, "canBeEmpty": true, "emptyFieldText": "?", "$type": "PeriodProjectCustomField"}},
+          {"name": "Priority", "$type": "SingleEnumIssueCustomField",
+           "value": {"id": "65-1", "name": "Major", "$type": "EnumBundleElement"},
+           "projectCustomField": {"field": {"localizedName": "Приоритет"}, "canBeEmpty": false, "emptyFieldText": "No priority",
+             "defaultValues": [{"id": "65-2", "name": "Normal", "color": {"background": "#e5f6ff", "foreground": "#0070b8"},
+                                "$type": "EnumBundleElement"}],
+             "bundle": {"values": [{"id": "65-1", "name": "Major"}, {"id": "65-2", "name": "Normal"}]},
+             "$type": "EnumProjectCustomField"}},
+          {"name": "Notes", "$type": "TextIssueCustomField", "value": {"text": "Seen on Safari only", "$type": "TextFieldValue"},
+           "projectCustomField": {"field": {}, "canBeEmpty": true, "$type": "TextProjectCustomField"}}
+        ]
+      }
+    ]
+    """
+
     static func decode<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
         try JSONDecoder().decode(T.self, from: Data(json.utf8))
     }
@@ -379,6 +430,64 @@ struct YouTrackMappingTests {
         #expect(work.map(\.minutes) == [30, 65])
         #expect(work[0].type == TrackerWorkType(id: "65-0", name: "Development"))
         #expect(work[1].text == "")
+    }
+
+    @Test("A new issue's fields start as the project starts them, with nothing of the issue they were read off")
+    func newIssueFields() throws {
+        let issue = try YouTrackFixtures.decode([YouTrackWire.Issue].self, YouTrackFixtures.newIssueFields)[0]
+        let settings = try YouTrackFixtures.decode(
+            YouTrackWire.TimeTrackingSettings.self,
+            #"{"enabled": true, "timeSpent": {"field": {"name": "Spent time"}}}"#
+        )
+        let fields = YouTrackMapping.newIssueFields(of: issue, timeTracking: settings)
+        // In the project's order, which is the order the tracker's form shows.
+        #expect(fields.map(\.name) == ["State", "Assignee", "Участники", "Due Date", "Estimation", "Priority", "Notes"])
+
+        let state = try #require(fields.first { $0.name == "State" })
+        #expect(state.values.map(\.name) == ["Open"])
+        #expect(state.values.map(\.title) == ["Открыта"])
+        #expect(state.options.map(\.name) == ["Open", "In Progress"])
+
+        let assignee = try #require(fields.first { $0.name == "Assignee" })
+        #expect(assignee.values.isEmpty)
+        #expect(assignee.title == "Исполнитель")
+        #expect(assignee.options.map(\.login) == ["jane", "max"])
+        #expect(assignee.isEditable)
+
+        let participants = try #require(fields.first { $0.name == "Участники" })
+        #expect(participants.allowsSeveral)
+        #expect(participants.values.map(\.login) == ["jane"])
+
+        let due = try #require(fields.first { $0.name == "Due Date" })
+        #expect(due.kind == .date)
+        #expect(due.date == nil)
+        #expect(due.title == "Срок")
+        #expect(due.emptyText == "Нет: срок")
+
+        let estimate = try #require(fields.first { $0.name == "Estimation" })
+        #expect(estimate.text == nil)
+        #expect(estimate.isEmpty)
+
+        let priority = try #require(fields.first { $0.name == "Priority" })
+        #expect(priority.values.map(\.name) == ["Normal"])
+        #expect(priority.values.first?.color == TrackerColor(background: "#e5f6ff", foreground: "#0070b8"))
+        #expect(!priority.canBeEmpty)
+
+        #expect(fields.first { $0.name == "Notes" }?.text == nil)
+    }
+
+    @Test("A length of time is offered only when it is known not to be the one the tracker adds up")
+    func newIssueLengths() throws {
+        let issue = try YouTrackFixtures.decode([YouTrackWire.Issue].self, YouTrackFixtures.newIssueFields)[0]
+        func lengths(_ settings: String?) throws -> [String] {
+            let read = try settings.map { try YouTrackFixtures.decode(YouTrackWire.TimeTrackingSettings.self, $0) }
+            return YouTrackMapping.newIssueFields(of: issue, timeTracking: read).filter { $0.kind == .period }.map(\.name)
+        }
+        #expect(try lengths(#"{"enabled": true, "timeSpent": {"field": {"name": "Spent time"}}}"#) == ["Estimation"])
+        // Not adding anything up, the field is a length like any other.
+        #expect(try lengths(#"{"enabled": false, "timeSpent": {"field": {"name": "Spent time"}}}"#) == ["Estimation", "Spent time"])
+        #expect(try lengths(#"{"enabled": true}"#) == ["Estimation", "Spent time"])
+        #expect(try lengths(nil).isEmpty)
     }
 
     @Test("A project that does not track time has no kinds of work")

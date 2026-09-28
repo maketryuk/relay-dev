@@ -432,18 +432,7 @@ private struct IssueFieldsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
             ForEach(fields) { field in
-                HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.small) {
-                    // Two lines rather than cut short: a field made in
-                    // Russian is called "Затраченное время", not "Затр…".
-                    Text(verbatim: field.title)
-                        .font(Theme.Typography.rowSecondary)
-                        .foregroundStyle(Theme.Palette.textTertiary)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(width: 104, alignment: .leading)
-                    value(of: field)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                TrackerFieldRow(title: field.title) { value(of: field) }
             }
             if !issue.tags.isEmpty {
                 HStack(spacing: Theme.Spacing.xsmall) {
@@ -461,78 +450,18 @@ private struct IssueFieldsSection: View {
     private func value(of field: TrackerField) -> some View {
         if field.isEditable {
             FieldValueButton(field: field, isEnabled: !tracker.writesInFlight.contains(.edit(issue.key))) {
-                valueLabel(field, isEditable: true)
+                TrackerFieldValue(field: field, isEditable: true)
             } onChoose: { values in
                 set(field, to: values)
             }
         } else {
-            valueLabel(field, isEditable: false)
-        }
-    }
-
-    private func valueLabel(_ field: TrackerField, isEditable: Bool) -> some View {
-        HStack(spacing: Theme.Spacing.xsmall) {
-            if field.kind == .user, !field.allowsSeveral, let person = field.values.first {
-                TrackerAvatar(name: person.title, avatar: person.avatar, size: 16)
-            }
-            // Drawn as the tracker draws it when it gives the values colours,
-            // so a priority is recognised here by the colour it has there.
-            if field.kind == .option, field.values.contains(where: { $0.color != nil }) {
-                ForEach(field.values) { option in
-                    TrackerChip(text: option.title, color: option.color)
-                        .lineLimit(1)
-                }
-            } else {
-                Text(verbatim: shown(field))
-                    .font(Theme.Typography.row)
-                    .foregroundStyle(field.isEmpty ? Theme.Palette.textTertiary : Theme.Palette.textPrimary)
-                    .lineLimit(2)
-            }
-            if isEditable {
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 8, weight: .semibold))
-                    .foregroundStyle(Theme.Palette.textTertiary)
-            }
-        }
-    }
-
-    private func shown(_ field: TrackerField) -> String {
-        switch field.kind {
-        case .option, .user:
-            let titles = field.values.map(\.title)
-            return titles.isEmpty ? (field.emptyText ?? "—") : titles.joined(separator: ", ")
-        case .date:
-            return field.date.map(TrackerText.day) ?? "—"
-        case .period, .text, .other:
-            return field.text ?? "—"
+            TrackerFieldValue(field: field, isEditable: false)
         }
     }
 
     private func set(_ field: TrackerField, to values: [FieldOption]) {
         let change = IssueChange(fields: [FieldChange(field: field, values: values)])
         Task { _ = await tracker.update(issue.key, with: change) }
-    }
-}
-
-/// A field's value as a button that opens the list to choose it from.
-private struct FieldValueButton<Label: View>: View {
-    let field: TrackerField
-    let isEnabled: Bool
-    @ViewBuilder let label: () -> Label
-    let onChoose: ([FieldOption]) -> Void
-
-    @State private var isPicking = false
-
-    var body: some View {
-        Button { isPicking = true } label: {
-            label().contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .clickable(isEnabled)
-        .disabled(!isEnabled)
-        .popover(isPresented: $isPicking, arrowEdge: .leading) {
-            TrackerFieldPicker(field: field, isPresented: $isPicking, onChoose: onChoose)
-        }
     }
 }
 

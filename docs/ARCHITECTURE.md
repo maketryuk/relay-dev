@@ -1264,6 +1264,26 @@ then into its column. Once the first has succeeded the issue exists, so what
 fails after it is said without calling it a failure to create — Create
 pressed again would make a second one.
 
+**A new issue's fields are read off an issue of its project.** The project's
+own list of fields (`admin/projects/{id}/customFields`) is an administrator's
+page, and answers anybody else with an empty list rather than a refusal. Every
+issue, though, carries every field of its project, and each field's
+`projectCustomField` names its values and the ones a new issue starts with
+(`defaultValues`) — readable by anyone who can read the issue. So the form asks
+for one issue of the project (`issues?query=project: {KEY}&$top=1`), keeps the
+fields and the defaults and none of that issue's values, and shows each field
+as the project would start it. The write names only what was changed, and the
+tracker fills in the rest with the defaults the form showed. The board's own
+field is the column's to set, by moving the card after it is made, as before.
+A length of time is offered only once the time-tracking settings have said
+which one is the spent time, which YouTrack adds up itself; when they cannot
+be read none is offered, since a field that looks settable and is not is worse
+than an estimate left out. A day is written as YouTrack's own calendar
+writes one, at noon UTC, which is the same day in every time zone people work
+in; midnight in Moscow is still the day before in UTC. A project nobody has
+made an issue in yet has nothing to read the fields off, and its first issue is
+made as it was before: with the project's defaults and no choice of them.
+
 **A move lands at once.** A card dropped in a column is drawn there before the
 tracker answers, and put back where it was if the tracker refuses — a workflow
 that will not close an issue without a fix version says so in a toast, and the

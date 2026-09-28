@@ -164,7 +164,10 @@ workspace is a git worktree.
   columns or a month of days, against the working day the tracker is set up
   with. Any day is a click away, and each entry is corrected or taken off
   where it stands.
-- **New cards**, in the column they were made in.
+- **New cards**, in the column they were made in, with the project's fields
+  beside the description as the tracker's own form has them — the assignee,
+  other people, a due date, an estimate, a priority — each starting at the
+  project's default.
 - **Pictures**: people's avatars, the screenshots a description or a comment
   shows, the issue's files, and a card coloured by the field the board is set
   up to colour by.
@@ -196,6 +199,8 @@ workspace is a git worktree.
    written as Markdown; a file cannot be attached from Relay; and a mention is
    offered from the people the issue knows of — its people fields, its
    reporter, its commenters — rather than from every account on the tracker.
+   A day and a length of time are set on a new issue but not yet changed on
+   one that exists, and a field of text or a number is set on neither.
 6. **Answers captured from a real instance.** The fixtures YouTrack's tests read
    were written from its documentation and from the answers the YouTrack agent
    plugin reads; one captured from a live board would pin what an instance

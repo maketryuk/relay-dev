@@ -53,7 +53,7 @@ struct LogWorkView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         RelayTextField("1h 30m", text: $duration, autofocus: true, onSubmit: log)
                             .frame(width: 180)
-                        Text(verbatim: durationReading)
+                        Text(verbatim: TrackerText.reading(ofLength: duration))
                             .font(Theme.Typography.caption)
                             .foregroundStyle(minutes == nil && !duration.isEmpty
                                 ? Theme.Palette.statusError
@@ -138,14 +138,6 @@ struct LogWorkView: View {
     private var primaryTitle: String {
         if editing != nil { return relayLocalized(isLogging ? "Saving…" : "Save") }
         return relayLocalized(isLogging ? "Logging…" : "Log")
-    }
-
-    /// Says what the typed length was read as, or that it was not.
-    private var durationReading: String {
-        if let minutes { return "= " + TrackerText.duration(minutes: minutes) }
-        return duration.isEmpty
-            ? relayLocalized("Hours and minutes: 1h 30m, 90m, 1:30")
-            : relayLocalized("Not a length Relay can read. Try 1h 30m.")
     }
 
     private func log() {

@@ -49,6 +49,16 @@ enum TrackerText {
         }
     }
 
+    /// What a length typed as it would be said was read as, or that it was
+    /// not — shown under the field, so a typo is caught before it is written
+    /// anywhere.
+    static func reading(ofLength typed: String) -> String {
+        if let minutes = WorkDuration.minutes(from: typed) { return "= " + duration(minutes: minutes) }
+        return typed.isEmpty
+            ? relayLocalized("Hours and minutes: 1h 30m, 90m, 1:30")
+            : relayLocalized("Not a length Relay can read. Try 1h 30m.")
+    }
+
     /// `14 сент. 2026 г.`, in the window's language rather than the Mac's.
     static func day(_ date: Date) -> String {
         date.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, locale: Localization.shared.locale))

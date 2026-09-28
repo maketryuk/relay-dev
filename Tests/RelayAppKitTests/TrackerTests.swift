@@ -186,6 +186,28 @@ struct TrackerChipTests {
     }
 }
 
+@Suite("The fields of a new issue")
+struct NewIssueFieldsTests {
+    @Test("Every field a value can be given is offered, but not the board's own, which the column sets")
+    func settable() {
+        let open = FieldOption(id: "s", name: "Open")
+        let jane = FieldOption(id: "1-2", name: "jane", title: "Jane Doe", login: "jane")
+        let fields = [
+            TrackerField(name: "State", kind: .option, options: [open], wireType: "StateIssueCustomField"),
+            TrackerField(name: "Assignee", kind: .user, options: [jane], wireType: "SingleUserIssueCustomField"),
+            TrackerField(name: "Due Date", kind: .date, wireType: "DateIssueCustomField"),
+            TrackerField(name: "Estimation", kind: .period, wireType: "PeriodIssueCustomField"),
+            // A choice whose choices the tracker did not say cannot be made.
+            TrackerField(name: "Subsystem", kind: .option, wireType: "SingleOwnedIssueCustomField"),
+            TrackerField(name: "Notes", kind: .text, wireType: "TextIssueCustomField"),
+            TrackerField(name: "Story points", kind: .other, wireType: "SimpleIssueCustomField"),
+        ]
+        let offered = NewIssueView.settable(fields, columnField: "State")
+        #expect(offered.map(\.name) == ["Assignee", "Due Date", "Estimation"])
+        #expect(NewIssueView.settable(fields, columnField: nil).map(\.name) == ["State", "Assignee", "Due Date", "Estimation"])
+    }
+}
+
 @Suite("An issue copied to paste into a chat")
 struct IssueReferenceTests {
     private let link = URL(string: "https://yt.example/issue/WEB-342")!

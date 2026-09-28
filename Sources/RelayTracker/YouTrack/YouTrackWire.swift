@@ -82,6 +82,9 @@ enum YouTrackWire {
         var canBeEmpty: Bool?
         var emptyFieldText: String?
         var bundle: FieldBundle?
+        /// What a new issue in the project starts with. Asked for only when
+        /// making one, and absent for a kind of field that has no defaults.
+        var defaultValues: [Entity]?
     }
 
     struct CustomField: Decodable {
@@ -170,6 +173,12 @@ enum YouTrackWire {
     struct TimeTrackingSettings: Decodable {
         var enabled: Bool?
         var workItemTypes: [WorkType]?
+        /// The field the time logged on an issue is added up in.
+        var timeSpent: TimeTrackingField?
+    }
+
+    struct TimeTrackingField: Decodable {
+        var field: FieldReference?
     }
 
     struct SprintReference: Decodable {

@@ -5,6 +5,16 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Added
+
+- **A new issue is given its fields as it is made.** The New Issue panel lists
+  the project's fields beside the description, as YouTrack's own form does:
+  the assignee, other people, a due date, an estimate, the priority, and the
+  project and column, each showing what the project starts it with. Only what
+  was changed is written; the rest is left to the project.
+
 ## 0.8.4 — 2026-09-28
 
 ### Added

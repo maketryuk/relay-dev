@@ -49,6 +49,11 @@ final class TrackerController {
     /// The kinds of work each project records time as, by the tracker's
     /// project identifier.
     private(set) var workTypes: [String: [TrackerWorkType]] = [:]
+    /// The fields a new issue in each project is made with, by the tracker's
+    /// project identifier. Absent until asked; empty when the tracker could
+    /// not say.
+    private(set) var newIssueFields: [String: [TrackerField]] = [:]
+    private(set) var newIssueFieldsBeingRead: Set<String> = []
     /// What the signed-in account recorded on any issue, by entry, for every
     /// day the timesheet has read — so a week gone back to is on screen at
     /// once, and read again behind it.
@@ -225,6 +230,7 @@ final class TrackerController {
         comments = [:]
         workItems = [:]
         workTypes = [:]
+        newIssueFields = [:]
         timeEntries = [:]
         timeFailure = nil
         workSchedule = nil
@@ -473,6 +479,26 @@ final class TrackerController {
         Task { [weak self] in
             let types = (try? await tracker.workTypes(in: project)) ?? []
             self?.workTypes[project.id] = types
+        }
+    }
+
+    /// Read again whenever a new issue is begun, over what was read before,
+    /// which stays on screen meanwhile: a field added to the project since, or
+    /// a default changed, is then in the next form. A failure is kept quiet
+    /// and keeps what was there, since the form makes an issue without the
+    /// fields, as the project would start it.
+    func loadNewIssueFields(for project: TrackerProject) {
+        guard let tracker, !newIssueFieldsBeingRead.contains(project.id) else { return }
+        newIssueFieldsBeingRead.insert(project.id)
+        Task { [weak self] in
+            let fields = try? await tracker.newIssueFields(in: project)
+            guard let self else { return }
+            self.newIssueFieldsBeingRead.remove(project.id)
+            if let fields {
+                self.newIssueFields[project.id] = fields
+            } else if self.newIssueFields[project.id] == nil {
+                self.newIssueFields[project.id] = []
+            }
         }
     }
 

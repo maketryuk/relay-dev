@@ -224,6 +224,73 @@ struct YouTrackRequestTests {
         #expect(written["summary"] as? String == "S")
     }
 
+    @Test("A new issue gives its fields the values chosen for them, and names no others")
+    func createWithFields() throws {
+        let project = TrackerProject(id: "0-3", key: "WEB", name: "Website")
+        let jane = FieldOption(id: "1-2", name: "jane", title: "Jane Doe", login: "jane")
+        let draft = IssueDraft(project: project, summary: "S", fields: [
+            FieldChange(
+                field: TrackerField(name: "Assignee", kind: .user, wireType: "SingleUserIssueCustomField"),
+                values: [jane]
+            ),
+            FieldChange(
+                field: TrackerField(name: "Due Date", kind: .date, wireType: "DateIssueCustomField"),
+                day: DateComponents(year: 2026, month: 10, day: 5)
+            ),
+            FieldChange(
+                field: TrackerField(name: "Estimation", kind: .period, wireType: "PeriodIssueCustomField"),
+                minutes: 90
+            ),
+        ])
+        let written = try #require(try body(YouTrackAPI.create(draft))["customFields"] as? [[String: Any]])
+        #expect(written.map { $0["name"] as? String } == ["Assignee", "Due Date", "Estimation"])
+        #expect(written.map { $0["$type"] as? String } == [
+            "SingleUserIssueCustomField", "DateIssueCustomField", "PeriodIssueCustomField",
+        ])
+        #expect((written[0]["value"] as? [String: String]) == ["login": "jane"])
+        // Noon in UTC on 5 October 2026: the day wherever it is read.
+        #expect((written[1]["value"] as? NSNumber)?.int64Value == 1_791_201_600_000)
+        #expect((written[2]["value"] as? [String: Int]) == ["minutes": 90])
+
+        let plain = try body(YouTrackAPI.create(IssueDraft(project: project, summary: "S")))
+        #expect(plain["customFields"] == nil)
+    }
+
+    @Test("A day and a length taken away are written as none")
+    func clearedDayAndLength() {
+        let due = TrackerField(name: "Due Date", kind: .date, wireType: "DateIssueCustomField")
+        #expect(YouTrackAPI.fieldJSON(FieldChange(field: due))["value"] is NSNull)
+        let estimate = TrackerField(name: "Estimation", kind: .period, wireType: "PeriodIssueCustomField")
+        #expect(YouTrackAPI.fieldJSON(FieldChange(field: estimate))["value"] is NSNull)
+    }
+
+    @Test("A day is kept at its noon in UTC, whatever the month and the year", arguments: [
+        (DateComponents(year: 2026, month: 1, day: 1), "2026-01-01T12:00:00Z"),
+        (DateComponents(year: 2024, month: 2, day: 29), "2024-02-29T12:00:00Z"),
+        (DateComponents(year: 2026, month: 12, day: 31), "2026-12-31T12:00:00Z"),
+    ])
+    func noon(day: DateComponents, expected: String) throws {
+        let noon = try #require(YouTrackAPI.noon(of: day))
+        #expect(noon == ISO8601DateFormatter().date(from: expected))
+    }
+
+    @Test("A new issue's fields are read off one issue of its project, with the project's defaults")
+    func newIssueFieldsRequest() {
+        let request = YouTrackAPI.newIssueFields(in: TrackerProject(id: "0-3", key: "WEB", name: "Website"))
+        #expect(request.method == .get)
+        #expect(request.path == "issues")
+        #expect(query(request, "query") == "project: {WEB}")
+        #expect(query(request, "$top") == "1")
+        let fields = query(request, "fields") ?? ""
+        #expect(fields.contains("defaultValues("))
+        #expect(fields.contains("aggregatedUsers("))
+        #expect(!fields.contains("value("))
+
+        let spent = YouTrackAPI.timeSpentField(in: "0-3")
+        #expect(spent.path == "admin/projects/0-3/timeTrackingSettings")
+        #expect(query(spent, "fields") == "enabled,timeSpent(field(name))")
+    }
+
     @Test("A command names a value with spaces in braces, and drops braces from it")
     func commandQueries() {
         #expect(YouTrackAPI.commandQuery(field: "State", value: "In Progress") == "State {In Progress}")

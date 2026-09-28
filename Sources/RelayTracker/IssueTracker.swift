@@ -64,6 +64,13 @@ public protocol IssueTracker: Sendable {
 
     func update(_ key: String, with change: IssueChange) async throws -> TrackerIssue
 
+    /// The fields an issue made in the project has, each with the values it
+    /// could take and the ones it starts with — the project's defaults. Only
+    /// the fields a new issue can be given a value in: not the time spent,
+    /// which the tracker adds up itself. Empty when the tracker cannot say,
+    /// which leaves a new issue to start as the project starts it.
+    func newIssueFields(in project: TrackerProject) async throws -> [TrackerField]
+
     /// Creates an issue and puts it on the board, in `column` when one is named.
     /// Throws only when the issue was not made: once it exists, what went wrong
     /// in putting it where it was asked for is in the answer, so a person who

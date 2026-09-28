@@ -194,6 +194,26 @@ public struct YouTrackTracker: IssueTracker {
         return try await issue(key)
     }
 
+    public func newIssueFields(in project: TrackerProject) async throws -> [TrackerField] {
+        async let timeTracking = timeTrackingSettings(in: project)
+        let sample: [YouTrackWire.Issue] = try await perform(YouTrackAPI.newIssueFields(in: project))
+        // A project nobody has made an issue in yet has nothing to read the
+        // fields off; its first issue starts as the project starts it.
+        guard let issue = sample.first else { return [] }
+        return YouTrackMapping.newIssueFields(of: issue, timeTracking: await timeTracking)
+    }
+
+    /// Nil when they cannot be read, for whatever reason: they only decide
+    /// whether a length of time is offered, and a new issue is better made
+    /// without one than not shown its other fields.
+    private func timeTrackingSettings(in project: TrackerProject) async -> YouTrackWire.TimeTrackingSettings? {
+        do {
+            return try await perform(YouTrackAPI.timeSpentField(in: project.id)) as YouTrackWire.TimeTrackingSettings
+        } catch {
+            return nil
+        }
+    }
+
     public func create(_ draft: IssueDraft, in column: BoardColumn?, on snapshot: BoardSnapshot) async throws -> CreatedIssue {
         let created: YouTrackWire.Issue = try await perform(YouTrackAPI.create(draft))
         var card = YouTrackMapping.card(created)

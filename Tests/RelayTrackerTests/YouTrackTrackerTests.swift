@@ -175,6 +175,41 @@ struct YouTrackTrackerTests {
         ])
     }
 
+    @Test("A new issue's fields are read off an issue of the project, without the time the tracker adds up")
+    func newIssueFields() async throws {
+        let (tracker, transport) = tracker([
+            "GET /api/issues": [.init(status: 200, body: YouTrackFixtures.newIssueFields)],
+            "GET /api/admin/projects/0-3/timeTrackingSettings": [
+                .init(status: 200, body: #"{"enabled": true, "timeSpent": {"field": {"name": "Spent time"}}}"#),
+            ],
+        ])
+        let project = TrackerProject(id: "0-3", key: "WEB", name: "Website")
+
+        let fields = try await tracker.newIssueFields(in: project)
+        #expect(fields.map(\.name) == ["State", "Assignee", "Участники", "Due Date", "Estimation", "Priority", "Notes"])
+        #expect(Set(transport.paths) == ["GET /api/issues", "GET /api/admin/projects/0-3/timeTrackingSettings"])
+    }
+
+    @Test("Time-tracking settings that cannot be read cost a new issue its lengths of time, not its other fields")
+    func newIssueFieldsWithoutTimeTracking() async throws {
+        let (tracker, _) = tracker([
+            "GET /api/issues": [.init(status: 200, body: YouTrackFixtures.newIssueFields)],
+            "GET /api/admin/projects/0-3/timeTrackingSettings": [.init(status: 403, body: "{}")],
+        ])
+        let fields = try await tracker.newIssueFields(in: TrackerProject(id: "0-3", key: "WEB", name: "Website"))
+        #expect(fields.map(\.name) == ["State", "Assignee", "Участники", "Due Date", "Priority", "Notes"])
+    }
+
+    @Test("A project nobody has made an issue in has no fields to offer")
+    func newIssueFieldsOfAnEmptyProject() async throws {
+        let (tracker, _) = tracker([
+            "GET /api/issues": [.init(status: 200, body: "[]")],
+            "GET /api/admin/projects/0-3/timeTrackingSettings": [.init(status: 200, body: #"{"enabled": true}"#)],
+        ])
+        let fields = try await tracker.newIssueFields(in: TrackerProject(id: "0-3", key: "WEB", name: "Website"))
+        #expect(fields.isEmpty)
+    }
+
     @Test("An issue made and then refused its column is made, and says so")
     func createdButMisplaced() async throws {
         let created = """
