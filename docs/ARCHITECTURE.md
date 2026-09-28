@@ -182,6 +182,14 @@ Output is coalesced into one feed per runloop turn. A chatty agent emits hundred
 of small chunks per second; feeding each separately makes the renderer, not the
 PTY, the bottleneck.
 
+**A click on a terminal takes the keyboard itself.** With the GPU drawing, the
+view under the pointer is SwiftTerm's `MTKView`, which accepts no keyboard, so
+AppKit's own click-to-focus leaves it wherever it was, and
+`RelayTerminalView.mouseDown` asks for it instead. The redraw cannot stand in
+for the click: it takes the keyboard only from something that is not taking
+text, so that a project can be renamed while a session writes output, and a
+file that has been clicked into is taking text.
+
 **A ⌘-click is SwiftTerm's to find and Relay's to follow.** SwiftTerm finds the
 link under the pointer — an OSC 8 target, an address, or a path, read Ghostty's
 way, including one an agent wrapped onto the next line itself and indented — and

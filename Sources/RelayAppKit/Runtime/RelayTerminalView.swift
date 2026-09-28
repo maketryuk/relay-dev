@@ -46,6 +46,19 @@ final class RelayTerminalView: TerminalView {
         registerForDraggedTypes([.fileURL])
     }
 
+    /// A click takes the keyboard, asked for outright.
+    ///
+    /// AppKit gives the keyboard to the view a click lands on, and with the
+    /// GPU drawing, that is SwiftTerm's Metal view, which takes none: the
+    /// click reached the terminal and the keyboard stayed where it was. With
+    /// nothing else taking text the next redraw handed it over and nobody
+    /// noticed; beside a file that had been clicked into, it stayed in the
+    /// file, and what was typed never reached the session.
+    override func mouseDown(with event: NSEvent) {
+        window?.makeFirstResponder(self)
+        super.mouseDown(with: event)
+    }
+
     /// A CAMetalLayer binds to a window's surface, so there has to be a window
     /// before the renderer can be swapped in.
     override func viewDidMoveToWindow() {

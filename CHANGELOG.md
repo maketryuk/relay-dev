@@ -5,6 +5,14 @@ bug fixes: it goes up for every build that ships and resets when the minor
 moves. A minor is a milestone worth telling someone about; a major is a
 breaking change to stored data.
 
+## Unreleased
+
+### Fixed
+
+- **Typing reaches the terminal that was clicked**, with a file open beside
+  it. Once the file had been clicked into, clicking back into the terminal left
+  the keyboard in the file, and nothing typed reached the session.
+
 ## 0.8.2 — 2026-09-27
 
 ### Fixed

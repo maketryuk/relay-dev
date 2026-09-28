@@ -159,8 +159,8 @@ final class TerminalSurface: NSObject, @preconcurrency TerminalViewDelegate {
     /// a project while a session runs is impossible, because the caret is
     /// pulled out of the field between one keystroke and the next.
     ///
-    /// Clicking the terminal still works: that goes through `focus()`, which
-    /// asks outright rather than as a side effect of drawing.
+    /// Clicking the terminal still works: `RelayTerminalView.mouseDown` asks
+    /// outright rather than as a side effect of drawing.
     func focusUnlessEditingElsewhere() {
         guard let responder = terminalView.window?.firstResponder else {
             focus()
